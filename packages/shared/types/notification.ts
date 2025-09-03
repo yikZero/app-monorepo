@@ -1,3 +1,5 @@
+import type { IKeyOfIcons } from '@onekeyhq/components';
+
 import type { IEndpointInfo } from './endpoint';
 import type { CrossEventEmitter } from '@onekeyfe/cross-inpage-provider-core';
 import type { Socket } from 'socket.io-client';
@@ -251,4 +253,5 @@ export type INotificationPushMessageListItem = {
   referId: string;
   readed: boolean | undefined;
   createdAt: string;
+  icon: IKeyOfIcons;
 };
