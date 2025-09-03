@@ -30,7 +30,10 @@ import { EModalNotificationsRoutes } from '@onekeyhq/shared/src/routes/notificat
 import notificationsUtils, {
   NOTIFICATION_ACCOUNT_ACTIVITY_DEFAULT_MAX_ACCOUNT_COUNT,
 } from '@onekeyhq/shared/src/utils/notificationsUtils';
-import { ENotificationPushTopicTypes, type INotificationPushMessageListItem } from '@onekeyhq/shared/types/notification';
+import {
+  ENotificationPushTopicTypes,
+  type INotificationPushMessageListItem,
+} from '@onekeyhq/shared/types/notification';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { ListItem } from '../../../components/ListItem';
@@ -267,24 +270,27 @@ function NotificationList() {
   );
 
   const contentView = useMemo(() => {
-    if (isLoading || isLoading === undefined) {
-      return (
-        <Stack gap="$1.5" px="$5">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Stack key={index} gap="$1" py="$2">
-              <Stack py="$1">
-                <Skeleton h="$3" w="$16" />
-              </Stack>
-              <Stack py="$1">
-                <Skeleton h="$3" w="$48" />
-              </Stack>
-            </Stack>
-          ))}
-        </Stack>
-      );
-    }
+    // if (isLoading || isLoading === undefined) {
+    //   return (
+    //     <Stack gap="$1.5" px="$5">
+    //       {Array.from({ length: 3 }).map((_, index) => (
+    //         <Stack key={index} gap="$1" py="$2">
+    //           <Stack py="$1">
+    //             <Skeleton h="$3" w="$16" />
+    //           </Stack>
+    //           <Stack py="$1">
+    //             <Skeleton h="$3" w="$48" />
+    //           </Stack>
+    //         </Stack>
+    //       ))}
+    //     </Stack>
+    //   );
+    // }
     return (
       <SectionList
+        contentContainerStyle={{
+          pb: bottom || '$5',
+        }}
         sections={sectionsData}
         renderSectionHeader={
           ({ section: { title } }) => null // <SectionList.SectionHeader title={title} />
@@ -379,12 +385,12 @@ function NotificationList() {
   );
 
   return (
-    <Page scrollEnabled safeAreaEnabled={false}>
+    <Page safeAreaEnabled={false}>
       <Page.Header
         title={intl.formatMessage({ id: ETranslations.global_notifications })}
         headerRight={renderHeaderRight}
       />
-      <Page.Body pb={bottom || '$5'}>
+      <Page.Body>
         <Tabs.TabBar
           tabNames={tabTitles}
           onTabPress={handleTabPress}
@@ -393,7 +399,7 @@ function NotificationList() {
             h: 44,
           }}
         />
-        <YStack pt="$3">
+        <YStack pt="$3" flex={1}>
           <MaxAccountLimitWarning />
           {contentView}
         </YStack>
