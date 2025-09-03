@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { noop } from 'lodash';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
 import {
@@ -10,6 +11,8 @@ import {
   Empty,
   HeaderButtonGroup,
   HeaderIconButton,
+  Icon,
+  Image,
   Page,
   SectionList,
   SizableText,
@@ -90,10 +93,31 @@ function NotificationItem({
 } & IListItemProps) {
   const { formatDistanceToNow } = useFormatDate();
 
-  const { title, content } = item.body;
+  const { title, content, extras } = item.body;
   const { createdAt, readed, msgId } = item;
   const [{ badge }] = useNotificationsAtom();
   const [readedMap] = useNotificationsReadedAtom();
+  const imageElement = useMemo(() => {
+    if (extras?.image) {
+      return <Image size={28} source={{ uri: extras.image }} />;
+    }
+    if (item.icon) {
+      return (
+        <Stack
+          w={28}
+          h={28}
+          bg="$bgStrong"
+          borderColor="$borderSubdued"
+          borderWidth={StyleSheet.hairlineWidth}
+          borderRadius="$full"
+          ai="center"
+          jc="center"
+        >
+          <Icon name={item.icon} color="$icon" size="$4.5" />
+        </Stack>
+      );
+    }
+  }, [extras?.image, item.icon]);
   return (
     <ListItem
       gap="$0.5"
@@ -105,13 +129,20 @@ function NotificationItem({
       }}
       {...rest}
     >
-      <XStack alignItems="baseline" gap="$3" pr="$1.5">
-        <SizableText flex={1} size="$headingSm" numberOfLines={1}>
-          {title}
-        </SizableText>
-        <SizableText size="$bodySm" color="$textSubdued" flexShrink={0}>
-          {formatDistanceToNow(new Date(createdAt))}
-        </SizableText>
+      <XStack alignItems="flex-start" gap="$3" pr="$1.5">
+        {imageElement}
+        <YStack flex={1}>
+          <SizableText flex={1} size="$headingSm" numberOfLines={1}>
+            {title}
+          </SizableText>
+
+          <SizableText size="$bodyMd" flex={1} maxWidth="$96" pt="$1" pb="$1.5">
+            {content}
+          </SizableText>
+          <SizableText size="$bodySm" color="$textSubdued" flexShrink={0}>
+            {formatDistanceToNow(new Date(createdAt))}
+          </SizableText>
+        </YStack>
         {!readed && !!badge && !readedMap?.[msgId] ? (
           <Stack
             position="absolute"
@@ -124,9 +155,6 @@ function NotificationItem({
           />
         ) : null}
       </XStack>
-      <SizableText size="$bodyMd" flex={1} maxWidth="$96">
-        {content}
-      </SizableText>
     </ListItem>
   );
 }
@@ -341,7 +369,7 @@ function NotificationList() {
         ListFooterComponent={<Stack h={bottom || '$5'} />}
       />
     );
-  }, [isLoading, bottom, intl, navigation, sectionsData]);
+  }, [bottom, intl, navigation, sectionsData]);
 
   const tabs = useMemo(
     () => [
