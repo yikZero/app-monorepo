@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { noop } from 'lodash';
 import { useIntl } from 'react-intl';
+import { useSharedValue } from 'react-native-reanimated';
 
 import {
   Alert,
@@ -14,7 +15,9 @@ import {
   SizableText,
   Skeleton,
   Stack,
+  Tabs,
   XStack,
+  YStack,
   useSafeAreaInsets,
 } from '@onekeyhq/components';
 import {
@@ -27,7 +30,7 @@ import { EModalNotificationsRoutes } from '@onekeyhq/shared/src/routes/notificat
 import notificationsUtils, {
   NOTIFICATION_ACCOUNT_ACTIVITY_DEFAULT_MAX_ACCOUNT_COUNT,
 } from '@onekeyhq/shared/src/utils/notificationsUtils';
-import type { INotificationPushMessageListItem } from '@onekeyhq/shared/types/notification';
+import { ENotificationPushTopicTypes, type INotificationPushMessageListItem } from '@onekeyhq/shared/types/notification';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { ListItem } from '../../../components/ListItem';
@@ -281,61 +284,99 @@ function NotificationList() {
       );
     }
     return (
-      <>
-        <SectionList
-          sections={sectionsData}
-          renderSectionHeader={
-            ({ section: { title } }) => null // <SectionList.SectionHeader title={title} />
-          }
-          renderItem={({
-            item,
-            index,
-          }: {
-            item: INotificationPushMessageListItem;
-            index: number;
-          }) => {
-            const itemView = (
-              <NotificationItemMemo
-                key={item.msgId || index}
-                item={item}
-                {...(index !== 0 && {
-                  mt: '$2.5',
-                })}
-                onPress={() => {
-                  void notificationsUtils.navigateToNotificationDetail({
-                    navigation,
-                    message: item.body,
-                    notificationAccountId:
-                      item?.body?.extras?.params?.accountId,
-                    notificationId:
-                      item?.msgId ||
-                      item?.body?.extras?.params?.msgId ||
-                      item?.body?.extras?.msgId ||
-                      '',
-                  });
-                }}
-              />
-            );
-            return itemView;
-          }}
-          estimatedItemSize="$20"
-          ListEmptyComponent={
-            <Empty
-              pt={170}
-              icon="BellOutline"
-              title={intl.formatMessage({
-                id: ETranslations.notifications_empty_title,
+      <SectionList
+        sections={sectionsData}
+        renderSectionHeader={
+          ({ section: { title } }) => null // <SectionList.SectionHeader title={title} />
+        }
+        renderItem={({
+          item,
+          index,
+        }: {
+          item: INotificationPushMessageListItem;
+          index: number;
+        }) => {
+          const itemView = (
+            <NotificationItemMemo
+              key={item.msgId || index}
+              item={item}
+              {...(index !== 0 && {
+                mt: '$2.5',
               })}
-              description={intl.formatMessage({
-                id: ETranslations.notifications_empty_desc,
-              })}
+              onPress={() => {
+                void notificationsUtils.navigateToNotificationDetail({
+                  navigation,
+                  message: item.body,
+                  notificationAccountId: item?.body?.extras?.params?.accountId,
+                  notificationId:
+                    item?.msgId ||
+                    item?.body?.extras?.params?.msgId ||
+                    item?.body?.extras?.msgId ||
+                    '',
+                });
+              }}
             />
-          }
-          ListFooterComponent={<Stack h={bottom || '$5'} />}
-        />
-      </>
+          );
+          return itemView;
+        }}
+        estimatedItemSize="$20"
+        ListEmptyComponent={
+          <Empty
+            pt={170}
+            icon="BellOutline"
+            title={intl.formatMessage({
+              id: ETranslations.notifications_empty_title,
+            })}
+            description={intl.formatMessage({
+              id: ETranslations.notifications_empty_desc,
+            })}
+          />
+        }
+        ListFooterComponent={<Stack h={bottom || '$5'} />}
+      />
     );
   }, [isLoading, bottom, intl, navigation, sectionsData]);
+
+  const tabs = useMemo(
+    () => [
+      {
+        id: 'all',
+        name: intl.formatMessage({ id: ETranslations.global_all }),
+      },
+      {
+        id: ENotificationPushTopicTypes.accountActivity,
+        name: intl.formatMessage({
+          id: ETranslations.notifications_notifications_account_activity_label,
+        }),
+      },
+      {
+        id: ENotificationPushTopicTypes.coinPriceAlert,
+        name: intl.formatMessage({
+          id: ETranslations.notifications_notifications_price_alert_label,
+        }),
+      },
+      {
+        id: ENotificationPushTopicTypes.system,
+        name: 'System',
+      },
+    ],
+
+    [intl],
+  );
+  const tabTitles = useMemo(() => {
+    return tabs.map((tab) => tab.name);
+  }, [tabs]);
+  const focusedTab = useSharedValue<string>(tabs[0].name);
+
+  const handleTabPress = useCallback(
+    (tabName: string) => {
+      const tab = tabs.find((i) => i.name === tabName);
+      if (tab) {
+        focusedTab.value = tab.name;
+      }
+    },
+    [focusedTab, tabs],
+  );
 
   return (
     <Page scrollEnabled safeAreaEnabled={false}>
@@ -344,8 +385,18 @@ function NotificationList() {
         headerRight={renderHeaderRight}
       />
       <Page.Body pb={bottom || '$5'}>
-        <MaxAccountLimitWarning />
-        {contentView}
+        <Tabs.TabBar
+          tabNames={tabTitles}
+          onTabPress={handleTabPress}
+          focusedTab={focusedTab}
+          tabItemStyle={{
+            h: 44,
+          }}
+        />
+        <YStack pt="$3">
+          <MaxAccountLimitWarning />
+          {contentView}
+        </YStack>
       </Page.Body>
     </Page>
   );
