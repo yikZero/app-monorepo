@@ -4,7 +4,7 @@ import { useIntl } from 'react-intl';
 import semver from 'semver';
 
 import { Dialog, SizableText } from '@onekeyhq/components';
-import { ETranslations } from '@onekeyhq/desktop/app/i18n';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
 import { useAppUpdateInfo } from '../components/UpdateReminder/hooks';
