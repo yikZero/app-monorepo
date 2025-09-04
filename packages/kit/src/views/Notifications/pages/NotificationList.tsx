@@ -306,22 +306,6 @@ function NotificationList() {
   const isVersionCompatible = useVersionCompatible();
 
   const contentView = useMemo(() => {
-    // if (isLoading || isLoading === undefined) {
-    //   return (
-    //     <Stack gap="$1.5" px="$5">
-    //       {Array.from({ length: 3 }).map((_, index) => (
-    //         <Stack key={index} gap="$1" py="$2">
-    //           <Stack py="$1">
-    //             <Skeleton h="$3" w="$16" />
-    //           </Stack>
-    //           <Stack py="$1">
-    //             <Skeleton h="$3" w="$48" />
-    //           </Stack>
-    //         </Stack>
-    //       ))}
-    //     </Stack>
-    //   );
-    // }
     return (
       <SectionList
         useFlashList
@@ -367,23 +351,37 @@ function NotificationList() {
           );
           return itemView;
         }}
-        estimatedItemSize="$20"
         ListEmptyComponent={
-          <Empty
-            pt={170}
-            icon="BellOutline"
-            title={intl.formatMessage({
-              id: ETranslations.notifications_empty_title,
-            })}
-            description={intl.formatMessage({
-              id: ETranslations.notifications_empty_desc,
-            })}
-          />
+          isLoading || isLoading === undefined ? (
+            <Stack gap="$1.5" px="$5">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Stack key={index} gap="$1" py="$2">
+                  <Stack py="$1">
+                    <Skeleton h="$3" w="$16" />
+                  </Stack>
+                  <Stack py="$1">
+                    <Skeleton h="$3" w="$48" />
+                  </Stack>
+                </Stack>
+              ))}
+            </Stack>
+          ) : (
+            <Empty
+              pt={170}
+              icon="BellOutline"
+              title={intl.formatMessage({
+                id: ETranslations.notifications_empty_title,
+              })}
+              description={intl.formatMessage({
+                id: ETranslations.notifications_empty_desc,
+              })}
+            />
+          )
         }
         ListFooterComponent={<Stack h={bottom || '$5'} />}
       />
     );
-  }, [bottom, intl, navigation, sectionsData]);
+  }, [bottom, intl, isLoading, isVersionCompatible, navigation, sectionsData]);
 
   const tabs = useMemo(
     () => [
