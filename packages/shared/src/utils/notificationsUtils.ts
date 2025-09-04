@@ -138,6 +138,16 @@ async function navigateToNotificationDetail({
         }
         break;
       case ENotificationPushMessageMode.dialog:
+        try {
+          const payloadObj = JSON.parse(payload || '');
+          appEventBus.emit(
+            EAppEventBusNames.ShowNotificationViewDialog,
+            payloadObj,
+          );
+        } catch (error) {
+          showFallbackUpdateDialog();
+        }
+
         break;
       case ENotificationPushMessageMode.openInBrowser:
         if (payload) {

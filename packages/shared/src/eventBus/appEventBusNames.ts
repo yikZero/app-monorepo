@@ -108,4 +108,5 @@ export enum EAppEventBusNames {
   ShowHardwareErrorDialog = 'ShowHardwareErrorDialog',
   SwapPanelDismissKeyboard = 'SwapPanelDismissKeyboard',
   ShowFallbackUpdateDialog = 'ShowFallbackUpdateDialog',
+  ShowNotificationViewDialog = 'ShowNotificationViewDialog',
 }

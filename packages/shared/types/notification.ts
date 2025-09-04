@@ -1,4 +1,4 @@
-import type { IKeyOfIcons } from '@onekeyhq/components';
+import type { IDialogShowProps, IKeyOfIcons } from '@onekeyhq/components';
 
 import type { IEndpointInfo } from './endpoint';
 import type { CrossEventEmitter } from '@onekeyfe/cross-inpage-provider-core';
@@ -265,4 +265,20 @@ export type INotificationPushMessageListItem = {
   readed: boolean | undefined;
   createdAt: string;
   icon: IKeyOfIcons;
+};
+
+export enum ENotificationViewDialogActionType {
+  navigate = 'navigate',
+  openInApp = 'openInApp',
+  openInBrowser = 'openInBrowser',
+}
+
+export type INotificationViewDialogPayload = Omit<
+  IDialogShowProps,
+  'onConfirm' | 'onCancel' | 'renderContent'
+> & {
+  onConfirm: {
+    actionType: ENotificationViewDialogActionType;
+    payload: string | Record<string, Record<string, string>>;
+  };
 };

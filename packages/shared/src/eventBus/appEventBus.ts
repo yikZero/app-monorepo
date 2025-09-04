@@ -4,6 +4,7 @@ import { cloneDeep } from 'lodash';
 
 import type {
   IDialogLoadingProps,
+  IDialogShowProps,
   IQrcodeDrawType,
 } from '@onekeyhq/components';
 import type { ISubSettingConfig } from '@onekeyhq/kit/src/views/Setting/pages/Tab/config';
@@ -340,6 +341,15 @@ export interface IAppEventBusPayload {
   [EAppEventBusNames.SwapPanelDismissKeyboard]: undefined;
   [EAppEventBusNames.ShowFallbackUpdateDialog]: {
     version: string | null | undefined;
+  };
+  [EAppEventBusNames.ShowNotificationViewDialog]: Omit<
+    IDialogShowProps,
+    'onConfirm' | 'onCancel' | 'renderContent'
+  > & {
+    onConfirm: {
+      actionType: 'navigate' | 'openInApp' | 'openInBrowser';
+      payload: string | Record<string, Record<string, string>>;
+    };
   };
 }
 
