@@ -110,6 +110,7 @@ export enum ENotificationPushSyncMethod {
   append = 'append', // append or replace
 }
 export enum ENotificationPushTopicTypes {
+  all = 'all',
   accountActivity = 'accountActivity',
   coinPriceAlert = 'coinPriceAlert',
   system = 'system',

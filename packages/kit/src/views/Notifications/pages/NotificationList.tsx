@@ -284,14 +284,48 @@ function NotificationList() {
     }
   }, [firstTimeGuideOpened, navigation, setNotificationsData]);
 
-  const { result = [], isLoading } = usePromiseResult(
+  const tabs = useMemo(
+    () => [
+      {
+        id: ENotificationPushTopicTypes.all,
+        name: intl.formatMessage({ id: ETranslations.global_all }),
+      },
+      {
+        id: ENotificationPushTopicTypes.accountActivity,
+        name: intl.formatMessage({
+          id: ETranslations.notifications_notifications_account_activity_label,
+        }),
+      },
+      {
+        id: ENotificationPushTopicTypes.system,
+        name: 'System',
+      },
+    ],
+
+    [intl],
+  );
+
+  const tabTitles = useMemo(() => {
+    return tabs.map((tab) => tab.name);
+  }, [tabs]);
+  const focusedTab = useSharedValue<string>(tabs[0].name);
+  const {
+    result = [],
+    isLoading,
+    run: reFetchList,
+  } = usePromiseResult(
     async () => {
       noop(lastReceivedTime);
       void backgroundApiProxy.serviceNotification.refreshBadgeFromServer();
-      const r = await backgroundApiProxy.serviceNotification.fetchMessageList();
+      const topicType = tabs.find((tab) => tab.name === focusedTab.value)?.id;
+      const r = await backgroundApiProxy.serviceNotification.fetchMessageList(
+        !topicType || topicType === ENotificationPushTopicTypes.all
+          ? undefined
+          : [topicType],
+      );
       return r;
     },
-    [lastReceivedTime],
+    [focusedTab.value, lastReceivedTime, tabs],
     {
       watchLoading: true,
       checkIsFocused: false,
@@ -383,39 +417,15 @@ function NotificationList() {
     );
   }, [bottom, intl, isLoading, isVersionCompatible, navigation, sectionsData]);
 
-  const tabs = useMemo(
-    () => [
-      {
-        id: 'all',
-        name: intl.formatMessage({ id: ETranslations.global_all }),
-      },
-      {
-        id: ENotificationPushTopicTypes.accountActivity,
-        name: intl.formatMessage({
-          id: ETranslations.notifications_notifications_account_activity_label,
-        }),
-      },
-      {
-        id: ENotificationPushTopicTypes.system,
-        name: 'System',
-      },
-    ],
-
-    [intl],
-  );
-  const tabTitles = useMemo(() => {
-    return tabs.map((tab) => tab.name);
-  }, [tabs]);
-  const focusedTab = useSharedValue<string>(tabs[0].name);
-
   const handleTabPress = useCallback(
     (tabName: string) => {
       const tab = tabs.find((i) => i.name === tabName);
       if (tab) {
         focusedTab.value = tab.name;
+        void reFetchList();
       }
     },
-    [focusedTab, tabs],
+    [focusedTab, reFetchList, tabs],
   );
 
   return (
