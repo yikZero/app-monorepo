@@ -113,7 +113,7 @@ export enum ENotificationPushTopicTypes {
   all = 'all',
   accountActivity = 'accountActivity',
   coinPriceAlert = 'coinPriceAlert',
-  system = 'system',
+  system = 'announcement',
 }
 // /notification/v1/account/register
 // /notification/v1/account/unregister
