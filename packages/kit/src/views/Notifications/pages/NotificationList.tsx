@@ -130,7 +130,20 @@ function NotificationItem({
       {...rest}
     >
       <XStack alignItems="flex-start" gap="$3" pr="$1.5">
-        {imageElement}
+        <YStack>
+          {imageElement}
+          {!readed && !!badge && !readedMap?.[msgId] ? (
+            <Stack
+              position="absolute"
+              top={0}
+              right={0}
+              borderRadius="$full"
+              bg="$bgCriticalStrong"
+              w="$2"
+              h="$2"
+            />
+          ) : null}
+        </YStack>
         <YStack flex={1}>
           <SizableText flex={1} size="$headingSm" numberOfLines={1}>
             {title}
@@ -143,17 +156,6 @@ function NotificationItem({
             {formatDistanceToNow(new Date(createdAt))}
           </SizableText>
         </YStack>
-        {!readed && !!badge && !readedMap?.[msgId] ? (
-          <Stack
-            position="absolute"
-            top="$1.5"
-            right="$-2"
-            borderRadius="$full"
-            bg="$bgCriticalStrong"
-            w="$2"
-            h="$2"
-          />
-        ) : null}
       </XStack>
     </ListItem>
   );
@@ -316,6 +318,7 @@ function NotificationList() {
     // }
     return (
       <SectionList
+        useFlashList
         contentContainerStyle={{
           pb: bottom || '$5',
         }}
