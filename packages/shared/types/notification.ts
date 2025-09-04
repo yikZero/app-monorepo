@@ -185,6 +185,13 @@ export enum ENotificationPushMessageAckAction {
   clicked = 'clicked',
   readed = 'readed',
 }
+
+export enum ENotificationPushMessageMode {
+  page = 1,
+  dialog = 2,
+  openInBrowser = 3,
+  openInApp = 4,
+}
 // /notification/v1/message/ack
 export type INotificationPushMessageAckParams = {
   remotePushMessageInfo?: INotificationPushMessageInfo;
@@ -195,6 +202,8 @@ export type INotificationPushMessageExtras = {
   badge?: string;
   msgId: string; // TODO obsoleted, use params.msgId instead
   miniBundlerVersion?: string;
+  mode?: ENotificationPushMessageMode;
+  payload?: string;
   topic: ENotificationPushTopicTypes.accountActivity;
   image?: string;
   // params is a json string on Android

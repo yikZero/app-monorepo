@@ -99,9 +99,6 @@ function NotificationItem({
   const [{ badge }] = useNotificationsAtom();
   const [readedMap] = useNotificationsReadedAtom();
   const imageElement = useMemo(() => {
-    if (extras?.image) {
-      return <Image size={28} source={{ uri: extras.image }} />;
-    }
     if (item.icon) {
       return (
         <Stack
@@ -117,6 +114,9 @@ function NotificationItem({
           <Icon name={item.icon} color="$icon" size="$4.5" />
         </Stack>
       );
+    }
+    if (extras?.image) {
+      return <Image size={28} source={{ uri: extras.image }} />;
     }
   }, [extras?.image, item.icon]);
   return (
@@ -157,6 +157,9 @@ function NotificationItem({
             {formatDistanceToNow(new Date(createdAt))}
           </SizableText>
         </YStack>
+        {item.topicType === ENotificationPushTopicTypes.system ? (
+          <Image source={{ uri: extras?.image }} size="$16" borderRadius={6} />
+        ) : null}
       </XStack>
     </ListItem>
   );
@@ -350,6 +353,8 @@ function NotificationList() {
                     message: item.body,
                     notificationAccountId:
                       item?.body?.extras?.params?.accountId,
+                    mode: item.body.extras?.mode,
+                    payload: item.body.extras?.payload,
                     notificationId:
                       item?.msgId ||
                       item?.body?.extras?.params?.msgId ||

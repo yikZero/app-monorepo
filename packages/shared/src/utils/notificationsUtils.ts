@@ -6,6 +6,7 @@ import type { IAppNavigation } from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import {
   ENotificationPermission,
   ENotificationPushMessageAckAction,
+  ENotificationPushMessageMode,
 } from '../../types/notification';
 import appGlobals from '../appGlobals';
 import platformEnv from '../platformEnv';
@@ -14,6 +15,7 @@ import { EModalNotificationsRoutes } from '../routes/notifications';
 import { ERootRoutes } from '../routes/root';
 
 import extUtils from './extUtils';
+import { openUrlExternal, openUrlInApp } from './openUrlUtils';
 import { buildModalRouteParams } from './routeUtils';
 
 import type { INotificationPushMessageInfo } from '../../types/notification';
@@ -43,12 +45,16 @@ async function navigateToNotificationDetail({
   message,
   isFromNotificationClick,
   navigation,
+  mode,
+  payload,
 }: {
   notificationId: string;
   notificationAccountId?: string;
   message: INotificationPushMessageInfo | undefined;
   isFromNotificationClick?: boolean; // click by system notification banner
   navigation?: IAppNavigation;
+  mode?: ENotificationPushMessageMode;
+  payload?: string;
 }) {
   let routes: string[] = [];
   let params: any = {};
@@ -96,11 +102,39 @@ async function navigateToNotificationDetail({
     );
   }
 
+  // For new versions with mode set, handle the mode properly
+  if (mode) {
+    switch (mode) {
+      case ENotificationPushMessageMode.page:
+        break;
+      case ENotificationPushMessageMode.dialog:
+        break;
+      case ENotificationPushMessageMode.openInBrowser:
+        if (payload) {
+          openUrlExternal(payload);
+        }
+        break;
+      case ENotificationPushMessageMode.openInApp:
+        if (payload) {
+          openUrlInApp(payload);
+        }
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+
+  // For backward compatibility with older versions:
+  // If no specific mode is set, use default navigation behavior
+  // - For extension background: open in expanded tab or side panel
+  // - For other platforms: use modal navigation with route params
+  // eslint-disable-next-line import/no-named-as-default-member, no-lonely-if
+
   if (routes.length === 0) {
     return;
   }
 
-  // eslint-disable-next-line import/no-named-as-default-member
   if (platformEnv.isExtensionBackground) {
     // TODO not working for side panel
     await extUtils.openExpandTabOrSidePanel({
