@@ -9,6 +9,7 @@ import type { IJPushRemotePushMessageInfo } from '@onekeyhq/shared/types/notific
 import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import { WalletBackupPreCheckContainer } from '../../components/WalletBackup';
 import useAppNavigation from '../../hooks/useAppNavigation';
+import { useVersionCompatible } from '../../hooks/useVersionCompatible';
 import { JotaiContextRootProvidersAutoMount } from '../../states/jotai/utils/JotaiContextStoreMirrorTracker';
 import { PrimeGlobalEffect } from '../../views/Prime/hooks/PrimeGlobalEffect';
 import { Bootstrap } from '../Bootstrap';
@@ -45,6 +46,7 @@ function GlobalRootAppNavigationUpdate() {
 }
 
 export function ColdStartByNotification() {
+  const isVersionCompatible = useVersionCompatible();
   useEffect(() => {
     const options: IJPushRemotePushMessageInfo | null =
       ColdStartByNotification.launchNotification as IJPushRemotePushMessageInfo | null;
@@ -67,6 +69,10 @@ export function ColdStartByNotification() {
       const icon = options?.image;
       const badge = options.aps?.badge?.toString() || '';
 
+      if (!isVersionCompatible(options.miniBundlerVersion)) {
+        return;
+      }
+
       void backgroundApiProxy.serviceNotification.handleColdStartByNotification(
         {
           notificationId: options.msgId,
@@ -88,7 +94,7 @@ export function ColdStartByNotification() {
         },
       );
     }
-  }, []);
+  }, [isVersionCompatible]);
   return null;
 }
 ColdStartByNotification.launchNotification = null;

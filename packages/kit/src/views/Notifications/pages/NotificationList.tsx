@@ -43,6 +43,7 @@ import { ListItem } from '../../../components/ListItem';
 import useAppNavigation from '../../../hooks/useAppNavigation';
 import useFormatDate from '../../../hooks/useFormatDate';
 import { usePromiseResult } from '../../../hooks/usePromiseResult';
+import { useVersionCompatible } from '../../../hooks/useVersionCompatible';
 
 import type { IListItemProps } from '../../../components/ListItem';
 
@@ -299,6 +300,8 @@ function NotificationList() {
     [result],
   );
 
+  const isVersionCompatible = useVersionCompatible();
+
   const contentView = useMemo(() => {
     // if (isLoading || isLoading === undefined) {
     //   return (
@@ -341,16 +344,19 @@ function NotificationList() {
                 mt: '$2.5',
               })}
               onPress={() => {
-                void notificationsUtils.navigateToNotificationDetail({
-                  navigation,
-                  message: item.body,
-                  notificationAccountId: item?.body?.extras?.params?.accountId,
-                  notificationId:
-                    item?.msgId ||
-                    item?.body?.extras?.params?.msgId ||
-                    item?.body?.extras?.msgId ||
-                    '',
-                });
+                if (isVersionCompatible(item.body.extras?.miniBundlerVersion)) {
+                  void notificationsUtils.navigateToNotificationDetail({
+                    navigation,
+                    message: item.body,
+                    notificationAccountId:
+                      item?.body?.extras?.params?.accountId,
+                    notificationId:
+                      item?.msgId ||
+                      item?.body?.extras?.params?.msgId ||
+                      item?.body?.extras?.msgId ||
+                      '',
+                  });
+                }
               }}
             />
           );

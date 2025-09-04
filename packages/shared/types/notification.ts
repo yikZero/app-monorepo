@@ -194,6 +194,7 @@ export type INotificationPushMessageAckParams = {
 export type INotificationPushMessageExtras = {
   badge?: string;
   msgId: string; // TODO obsoleted, use params.msgId instead
+  miniBundlerVersion?: string;
   topic: ENotificationPushTopicTypes.accountActivity;
   image?: string;
   // params is a json string on Android
