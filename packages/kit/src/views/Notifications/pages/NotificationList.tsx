@@ -387,12 +387,6 @@ function NotificationList() {
         }),
       },
       {
-        id: ENotificationPushTopicTypes.coinPriceAlert,
-        name: intl.formatMessage({
-          id: ETranslations.notifications_notifications_price_alert_label,
-        }),
-      },
-      {
         id: ENotificationPushTopicTypes.system,
         name: 'System',
       },
