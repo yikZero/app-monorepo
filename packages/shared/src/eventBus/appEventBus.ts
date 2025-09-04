@@ -338,6 +338,9 @@ export interface IAppEventBusPayload {
   };
   [EAppEventBusNames.ShowHardwareErrorDialog]: IHardwareErrorDialogPayload;
   [EAppEventBusNames.SwapPanelDismissKeyboard]: undefined;
+  [EAppEventBusNames.ShowFallbackUpdateDialog]: {
+    version: string | null | undefined;
+  };
 }
 
 export enum EEventBusBroadcastMethodNames {

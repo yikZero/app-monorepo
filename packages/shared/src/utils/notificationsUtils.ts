@@ -9,6 +9,7 @@ import {
   ENotificationPushMessageMode,
 } from '../../types/notification';
 import appGlobals from '../appGlobals';
+import { EAppEventBusNames, appEventBus } from '../eventBus/appEventBus';
 import platformEnv from '../platformEnv';
 import { EModalAssetDetailRoutes, EModalRoutes } from '../routes';
 import { EModalNotificationsRoutes } from '../routes/notifications';
@@ -47,6 +48,7 @@ async function navigateToNotificationDetail({
   navigation,
   mode,
   payload,
+  localParams,
 }: {
   notificationId: string;
   notificationAccountId?: string;
@@ -55,6 +57,7 @@ async function navigateToNotificationDetail({
   navigation?: IAppNavigation;
   mode?: ENotificationPushMessageMode;
   payload?: string;
+  localParams?: Record<string, string>;
 }) {
   let routes: string[] = [];
   let params: any = {};
@@ -102,10 +105,37 @@ async function navigateToNotificationDetail({
     );
   }
 
+  const showFallbackUpdateDialog = () => {
+    appEventBus.emit(EAppEventBusNames.ShowFallbackUpdateDialog, {
+      version: payload,
+    });
+  };
+
   // For new versions with mode set, handle the mode properly
   if (mode) {
     switch (mode) {
       case ENotificationPushMessageMode.page:
+        try {
+          const { screen, params: navigationParams } = JSON.parse(
+            payload || '',
+          ) as {
+            screen: string;
+            params: Record<string, any>;
+          };
+          // Recursively find and merge the deepest params
+
+          let targetParams = navigationParams;
+          while (
+            targetParams?.params &&
+            typeof targetParams.params === 'object'
+          ) {
+            targetParams = targetParams.params;
+          }
+          Object.assign(targetParams, localParams);
+          appGlobals.$navigationRef.current?.navigate(screen, navigationParams);
+        } catch (error) {
+          showFallbackUpdateDialog();
+        }
         break;
       case ENotificationPushMessageMode.dialog:
         break;

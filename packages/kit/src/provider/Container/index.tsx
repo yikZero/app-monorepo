@@ -3,6 +3,10 @@ import { useEffect } from 'react';
 import { RootSiblingParent } from 'react-native-root-siblings';
 
 import appGlobals from '@onekeyhq/shared/src/appGlobals';
+import {
+  EAppEventBusNames,
+  appEventBus,
+} from '@onekeyhq/shared/src/eventBus/appEventBus';
 import LazyLoad from '@onekeyhq/shared/src/lazyLoad';
 import type { IJPushRemotePushMessageInfo } from '@onekeyhq/shared/types/notification';
 
@@ -46,7 +50,8 @@ function GlobalRootAppNavigationUpdate() {
 }
 
 export function ColdStartByNotification() {
-  const isVersionCompatible = useVersionCompatible();
+  const { isVersionCompatible, showFallbackUpdateDialog } =
+    useVersionCompatible();
   useEffect(() => {
     const options: IJPushRemotePushMessageInfo | null =
       ColdStartByNotification.launchNotification as IJPushRemotePushMessageInfo | null;
@@ -73,6 +78,17 @@ export function ColdStartByNotification() {
         return;
       }
 
+      const handleShowFallbackUpdateDialog = ({
+        version,
+      }: {
+        version: string | null | undefined;
+      }) => {
+        showFallbackUpdateDialog(version);
+      };
+      appEventBus.on(
+        EAppEventBusNames.ShowFallbackUpdateDialog,
+        handleShowFallbackUpdateDialog,
+      );
       void backgroundApiProxy.serviceNotification.handleColdStartByNotification(
         {
           notificationId: options.msgId,
@@ -93,8 +109,14 @@ export function ColdStartByNotification() {
           },
         },
       );
+      return () => {
+        appEventBus.off(
+          EAppEventBusNames.ShowFallbackUpdateDialog,
+          handleShowFallbackUpdateDialog,
+        );
+      };
     }
-  }, [isVersionCompatible]);
+  }, [isVersionCompatible, showFallbackUpdateDialog]);
   return null;
 }
 ColdStartByNotification.launchNotification = null;

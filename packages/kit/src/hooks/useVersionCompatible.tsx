@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useIntl } from 'react-intl';
 import semver from 'semver';
@@ -13,15 +13,8 @@ export const useVersionCompatible = () => {
   const intl = useIntl();
   const appUpdateInfo = useAppUpdateInfo();
 
-  return useCallback(
+  const showFallbackUpdateDialog = useCallback(
     (version: string | null | undefined) => {
-      if (!version) {
-        return true;
-      }
-      if (semver.gte(platformEnv.version ?? '0.0.0', version)) {
-        return true;
-      }
-
       Dialog.show({
         icon: 'InfoCircleOutline',
         title: 'Update to continue',
@@ -29,7 +22,7 @@ export const useVersionCompatible = () => {
           <SizableText size="$bodyLg">
             The feature you tapped on requires version
             <SizableText size="$bodyLg" fontWeight="bold">
-              {`v${version}`}
+              {version ? `v${version}` : 'Latest Version'}
             </SizableText>
             or higher. Please update your app to continue.
           </SizableText>
@@ -42,8 +35,29 @@ export const useVersionCompatible = () => {
           id: ETranslations.global_cancel,
         }),
       });
+    },
+    [appUpdateInfo, intl],
+  );
+
+  const isVersionCompatible = useCallback(
+    (version: string | null | undefined) => {
+      if (!version) {
+        return true;
+      }
+      if (semver.gte(platformEnv.version ?? '0.0.0', version)) {
+        return true;
+      }
+
+      setTimeout(() => {
+        showFallbackUpdateDialog(version);
+      }, 100);
       return false;
     },
-    [intl, appUpdateInfo],
+    [showFallbackUpdateDialog],
+  );
+
+  return useMemo(
+    () => ({ isVersionCompatible, showFallbackUpdateDialog }),
+    [isVersionCompatible, showFallbackUpdateDialog],
   );
 };
