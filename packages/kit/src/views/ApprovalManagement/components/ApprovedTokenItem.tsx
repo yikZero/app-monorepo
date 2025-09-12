@@ -132,7 +132,7 @@ function ApprovedTokenItem(props: IProps) {
               size="$bodyLgMedium"
               autoFormatter="balance-marketCap"
             >
-              2098989.2919
+              {approval.allowanceParsed}
             </NumberSizeableText>
           )
         }
