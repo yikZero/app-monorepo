@@ -127,11 +127,12 @@ function ApprovedTokenItem(props: IProps) {
             })
           ) : (
             <NumberSizeableText
+              numberOfLines={1}
               textAlign="right"
               size="$bodyLgMedium"
-              formatter="balance"
+              autoFormatter="balance-marketCap"
             >
-              {approval.allowanceParsed}
+              2098989.2919
             </NumberSizeableText>
           )
         }
