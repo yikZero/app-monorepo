@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "건너뜀",
   "wallet.approval_bulk_revoke_status_succeeded": "성공",
   "wallet.approval_bulk_revoke_total_gas": "총 가스",
+  "wallet.approval_cancel": "취소",
   "wallet.approval_contract_controlled_by_eoa": "EOA에 의해 제어되는 계약",
   "wallet.approval_contract_scam_contract": "이것은 알려진 스캠 계약입니다",
   "wallet.approval_inactive_suggestion_description": "불필요한 권한을 해제하려면 해당 승인을 철회하세요.",

@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "Ignoré",
   "wallet.approval_bulk_revoke_status_succeeded": "Opération réussie",
   "wallet.approval_bulk_revoke_total_gas": "Gaz total",
+  "wallet.approval_cancel": "Annuler",
   "wallet.approval_contract_controlled_by_eoa": "Contrat contrôlé par EOA",
   "wallet.approval_contract_scam_contract": "Ceci est un contrat d'escroquerie connu",
   "wallet.approval_inactive_suggestion_description": "Révoquez-les pour libérer les autorisations inutiles.",

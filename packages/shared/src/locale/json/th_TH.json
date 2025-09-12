@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "ข้ามไปแล้ว",
   "wallet.approval_bulk_revoke_status_succeeded": "สำเร็จ",
   "wallet.approval_bulk_revoke_total_gas": "ค่าแก๊สทั้งหมด",
+  "wallet.approval_cancel": "ยกเลิก",
   "wallet.approval_contract_controlled_by_eoa": "สัญญาที่ควบคุมโดย EOA",
   "wallet.approval_contract_scam_contract": "นี่คือสัญญาหลอกลวงที่รู้จักกัน",
   "wallet.approval_inactive_suggestion_description": "เพิกถอนเพื่อล้างการอนุญาตที่ไม่จำเป็น",

@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "Пропущено",
   "wallet.approval_bulk_revoke_status_succeeded": "Успешно",
   "wallet.approval_bulk_revoke_total_gas": "Всего газа",
+  "wallet.approval_cancel": "Отмена",
   "wallet.approval_contract_controlled_by_eoa": "Контракт, контролируемый EOA",
   "wallet.approval_contract_scam_contract": "Это известный мошеннический контракт",
   "wallet.approval_inactive_suggestion_description": "Отзовите их, чтобы освободить ненужные разрешения.",

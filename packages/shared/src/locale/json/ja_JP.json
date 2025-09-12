@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "スキ���プ",
   "wallet.approval_bulk_revoke_status_succeeded": "成功",
   "wallet.approval_bulk_revoke_total_gas": "��計ガス",
+  "wallet.approval_cancel": "キャンセル",
   "wallet.approval_contract_controlled_by_eoa": "EOA によって制御されるコントラクト",
   "wallet.approval_contract_scam_contract": "これは既知の詐欺契約です",
   "wallet.approval_inactive_suggestion_description": "不要な権限を解放するために、これらを取り消してください。",

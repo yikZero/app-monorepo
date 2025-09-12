@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "Dilewati",
   "wallet.approval_bulk_revoke_status_succeeded": "Berhasil",
   "wallet.approval_bulk_revoke_total_gas": "Total gas",
+  "wallet.approval_cancel": "Batalkan",
   "wallet.approval_contract_controlled_by_eoa": "Kontrak yang dikendalikan oleh EOA",
   "wallet.approval_contract_scam_contract": "Ini adalah kontrak penipuan yang diketahui",
   "wallet.approval_inactive_suggestion_description": "Cabut otorisasi untuk mengosongkan izin yang tidak perlu.",

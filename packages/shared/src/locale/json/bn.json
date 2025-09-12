@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "এড়িয়ে যাওয়া হয়েছে",
   "wallet.approval_bulk_revoke_status_succeeded": "সফল হয়েছে",
   "wallet.approval_bulk_revoke_total_gas": "মোট গ্যাস",
+  "wallet.approval_cancel": "বাতিল করুন",
   "wallet.approval_contract_controlled_by_eoa": "EOA দ্বারা নিয়ন্ত্রিত চুক্তি",
   "wallet.approval_contract_scam_contract": "এটি একটি পরিচিত স্ক্যাম চুক্তি",
   "wallet.approval_inactive_suggestion_description": "অপ্রয়োজনীয় অনুমতি খালি করতে সেগুলি প্রত্যাহার করুন।",

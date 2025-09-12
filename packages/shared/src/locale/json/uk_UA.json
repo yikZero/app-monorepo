@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "Пропущено",
   "wallet.approval_bulk_revoke_status_succeeded": "Успішно",
   "wallet.approval_bulk_revoke_total_gas": "Загальний газ",
+  "wallet.approval_cancel": "Скасувати",
   "wallet.approval_contract_controlled_by_eoa": "Контракт, що контролюється EOA",
   "wallet.approval_contract_scam_contract": "Це відомий шахрайський контракт",
   "wallet.approval_inactive_suggestion_description": "Скасуйте їх, щоб звільнити непотрібні дозволи.",

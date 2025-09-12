@@ -3192,6 +3192,7 @@
   "wallet.approval_bulk_revoke_status_skipped": "छोड़ दिया गया",
   "wallet.approval_bulk_revoke_status_succeeded": "सफल रहा",
   "wallet.approval_bulk_revoke_total_gas": "कुल गैस",
+  "wallet.approval_cancel": "रद्द करें",
   "wallet.approval_contract_controlled_by_eoa": "EOA द्वारा नियंत्रित अनुबंध",
   "wallet.approval_contract_scam_contract": "यह एक ज्ञात घोटाला अनुबंध है",
   "wallet.approval_inactive_suggestion_description": "अनावश्यक अनुमतियाँ हटाने के लिए इन्हें रद्द करें।",

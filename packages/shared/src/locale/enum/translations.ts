@@ -3197,6 +3197,7 @@
   wallet_approval_bulk_revoke_status_skipped = 'wallet.approval_bulk_revoke_status_skipped',
   wallet_approval_bulk_revoke_status_succeeded = 'wallet.approval_bulk_revoke_status_succeeded',
   wallet_approval_bulk_revoke_total_gas = 'wallet.approval_bulk_revoke_total_gas',
+  wallet_approval_cancel = 'wallet.approval_cancel',
   wallet_approval_contract_controlled_by_eoa = 'wallet.approval_contract_controlled_by_eoa',
   wallet_approval_contract_scam_contract = 'wallet.approval_contract_scam_contract',
   wallet_approval_inactive_suggestion_description = 'wallet.approval_inactive_suggestion_description',
