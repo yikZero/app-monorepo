@@ -182,7 +182,11 @@ export function PrimeBenefitsList({
         })}
         onPress={() => {
           if (isPrimeSubscriptionActive) {
-            navigation.navigate(EModalRoutes.ApprovalManagementModal);
+            Toast.success({
+              title: intl.formatMessage({
+                id: ETranslations.global_bulk_revoke,
+              }),
+            });
           } else {
             defaultLogger.prime.subscription.primeEntryClick({
               featureName: EPrimeFeatures.BulkRevoke,
