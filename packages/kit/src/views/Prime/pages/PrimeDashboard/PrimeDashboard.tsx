@@ -47,7 +47,7 @@ import { PrimeUserInfo } from './PrimeUserInfo';
 import type { ISubscriptionPeriod } from '../../hooks/usePrimePaymentTypes';
 import type { RouteProp } from '@react-navigation/core';
 
-function PrimeBanner() {
+function PrimeBanner({ isPrimeActive = false }: { isPrimeActive?: boolean }) {
   const intl = useIntl();
 
   return (
@@ -62,9 +62,11 @@ function PrimeBanner() {
         textAlign="center"
         color="$textSubdued"
       >
-        {intl.formatMessage({
-          id: ETranslations.prime_description,
-        })}
+        {isPrimeActive
+          ? intl.formatMessage({
+              id: ETranslations.prime_unlock_description,
+            })
+          : intl.formatMessage({ id: ETranslations.prime_description })}
       </SizableText>
     </YStack>
   );
@@ -338,7 +340,7 @@ export default function PrimeDashboard({
               borderBottomColor="$borderSubdued"
             >
               <PrimeLottieAnimation />
-              <PrimeBanner />
+              <PrimeBanner isPrimeActive={isPrimeSubscriptionActive} />
               {isLoggedInMaybe ? <PrimeUserInfo /> : null}
             </Stack>
 
