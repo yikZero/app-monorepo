@@ -32,7 +32,6 @@ import { usePrimeCloudSyncPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import type { IPrimeParamList } from '@onekeyhq/shared/src/routes/prime';
 import stringUtils from '@onekeyhq/shared/src/utils/stringUtils';
@@ -448,9 +447,7 @@ export default function PagePrimeFeatures() {
           featureName: selectedFeature,
         });
       }
-      navigation.pushModal(EModalRoutes.PrimeModal, {
-        screen: EPrimePages.PrimeDashboard,
-      });
+      navigation.push(EPrimePages.PrimeDashboard);
       return;
     }
     if (isPackagesLoading) {

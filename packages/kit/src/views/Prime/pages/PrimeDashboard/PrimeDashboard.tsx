@@ -7,6 +7,7 @@ import { StyleSheet } from 'react-native';
 import {
   Icon,
   IconButton,
+  NavCloseButton,
   Page,
   SizableText,
   Spinner,
@@ -303,7 +304,9 @@ export default function PrimeDashboard({
   return (
     <>
       <Theme name="dark">
-        <Page.CloseButton />
+        <Stack position="absolute" left="$5" top={top || '$5'} zIndex="$5">
+          <NavCloseButton onPress={() => navigation.popStack()} />
+        </Stack>
         <Stack position="absolute" right="$5" top={top || '$5'} zIndex="$5">
           <IconButton
             onPress={() => {
