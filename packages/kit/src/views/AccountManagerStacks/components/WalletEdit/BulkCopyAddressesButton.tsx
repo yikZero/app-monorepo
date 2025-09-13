@@ -34,7 +34,10 @@ export function BulkCopyAddressesButton({
       label={intl.formatMessage({
         id: ETranslations.global_bulk_copy_addresses,
       })}
-      onPress={async () => {
+      onPress={async (close) => {
+        close?.();
+        // 先关闭 Action 等 150ms 再弹出 Modal，避免弹出后再关闭的问题
+        await timerUtils.wait(150);
         if (!isPrimeUser) {
           // FullModal 会导致层次问题
           navigation?.pushModal(EModalRoutes.PrimeModal, {
