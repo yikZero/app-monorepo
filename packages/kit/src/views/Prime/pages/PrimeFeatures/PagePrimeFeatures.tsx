@@ -489,7 +489,7 @@ export default function PagePrimeFeatures() {
 
   const page = (
     <>
-      <Page.BackButton />
+      {showAllFeatures ? <Page.BackButton /> : <Page.CloseButton />}
       <Page>
         <Theme name="dark">
           <Page.Header
