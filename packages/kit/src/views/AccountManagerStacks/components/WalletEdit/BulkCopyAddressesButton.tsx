@@ -11,6 +11,7 @@ import { EModalBulkCopyAddressesRoutes } from '@onekeyhq/shared/src/routes/bulkC
 import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
+import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
 export function BulkCopyAddressesButton({
   wallet,
@@ -35,7 +36,8 @@ export function BulkCopyAddressesButton({
       })}
       onPress={async () => {
         if (!isPrimeUser) {
-          navigation?.pushFullModal(EModalRoutes.PrimeModal, {
+          // FullModal 会导致层次问题
+          navigation?.pushModal(EModalRoutes.PrimeModal, {
             screen: EPrimePages.PrimeFeatures,
             params: {
               showAllFeatures: false,
