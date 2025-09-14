@@ -2182,7 +2182,7 @@
   "prime.time_error_description": "システム時刻エラー。OneKey Cloud が正常に機能できません。デバイスの時刻を正確に設定してください。",
   "prime.time_error_title": "時刻エラー",
   "prime.transfer_description": "リカバリーフレーズと秘密鍵をデバイス間で手動で転送します。",
-  "prime.unlock_description": "高度な機能をアンロックして、暗号資産管理の体験を向上させましょう。",
+  "prime.unlock_description": "暗号資産の管理体験を高める高度な機能。",
   "prime.update_email_address": "メールアドレスを更新する",
   "prime.update_email_address_description": "メールアドレスを更新するには、まず現在のメールアドレスを確認してください。",
   "prime.verification_code": "確認コード",

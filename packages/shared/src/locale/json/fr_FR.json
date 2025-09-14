@@ -2182,7 +2182,7 @@
   "prime.time_error_description": "Erreur d'heure système. OneKey Cloud ne peut pas fonctionner correctement. Veuillez régler votre appareil à l'heure exacte.",
   "prime.time_error_title": "Erreur d'horloge",
   "prime.transfer_description": "Transférez manuellement les phrases de récupération et les clés privées entre les appareils.",
-  "prime.unlock_description": "Débloquez des fonctionnalités avancées pour améliorer votre expérience de gestion des actifs cryptographiques.",
+  "prime.unlock_description": "Des fonctionnalités avancées pour améliorer votre expérience de gestion des actifs crypto.",
   "prime.update_email_address": "Mettre à jour l'adresse e-mail",
   "prime.update_email_address_description": "Pour mettre à jour votre adresse e-mail, veuillez d'abord vérifier l'e-mail actuel.",
   "prime.verification_code": "Code de vérification",
