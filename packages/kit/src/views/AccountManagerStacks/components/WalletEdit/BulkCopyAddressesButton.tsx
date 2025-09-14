@@ -36,10 +36,10 @@ export function BulkCopyAddressesButton({
       })}
       onPress={async (close) => {
         close?.();
-        // 先关闭 Action 等 150ms 再弹出 Modal，避免弹出后再关闭的问题
+        // Close the Action first and wait 150ms before ejecting the Modal to avoid the problem of closing after ejecting
         await timerUtils.wait(150);
         if (!isPrimeUser) {
-          // FullModal 会导致层次问题
+          // FullModal can cause hierarchy issues
           navigation?.pushModal(EModalRoutes.PrimeModal, {
             screen: EPrimePages.PrimeFeatures,
             params: {
