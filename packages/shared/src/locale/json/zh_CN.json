@@ -3187,7 +3187,7 @@
   "wallet.approval_bulk_revoke_method_bulk_desc": "一键批量撤销，自动跳过高 Gas 或失败的交易。",
   "wallet.approval_bulk_revoke_method_bulk_revoke": "批量撤销",
   "wallet.approval_bulk_revoke_method_one_by_one_desc": "逐一取消授权，每笔都需在钱包中确认。",
-  "wallet.approval_bulk_revoke_method_one_by_one_title": "逐个取消",
+  "wallet.approval_bulk_revoke_method_one_by_one_title": "逐一取消",
   "wallet.approval_bulk_revoke_method_title": "选择撤销方式",
   "wallet.approval_bulk_revoke_one_by_one": "逐一",
   "wallet.approval_bulk_revoke_prime_description": "OneKey Prime 会员可一键撤销全部 {number} 项授权。",
