@@ -26,7 +26,6 @@ import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import approvalUtils from '@onekeyhq/shared/src/utils/approvalUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
-import { EContractApprovalAlertType } from '@onekeyhq/shared/types/approval';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { EmptyAccount, EmptyWallet } from '../../../components/Empty';
@@ -112,48 +111,59 @@ export function HomePageView({
   }, [network, indexedAccount]);
 
   usePromiseResult(async () => {
-    if (network?.id && account?.id) {
-      const resp =
-        await backgroundApiProxy.serviceApproval.fetchAccountApprovals({
+    if (!network?.id || !account?.id) return;
+
+    const resp = await backgroundApiProxy.serviceApproval.fetchAccountApprovals(
+      {
+        networkId: network.id,
+        accountId: account.id,
+        indexedAccountId: indexedAccount?.id,
+        accountAddress: account.address,
+      },
+    );
+
+    // Suggestion trigger condition: risky or inactive approvals exist
+    const hasApprovalsToSuggest = approvalUtils.checkIsExistRiskApprovals({
+      contractApprovals: resp.contractApprovals,
+    });
+    // Pure risk presence for account overview state
+    const hasRiskApprovals = resp.contractApprovals.some(
+      (i) => i.isRiskContract,
+    );
+    const hasInactiveApprovals = resp.contractApprovals.some(
+      (i) => i.isInactiveApproval,
+    );
+
+    if (!hasApprovalsToSuggest) return;
+
+    if (hasRiskApprovals) {
+      updateApprovalsInfo({ hasRiskApprovals: true });
+    }
+
+    const shouldShow =
+      await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
+        {
           networkId: network.id,
           accountId: account.id,
-          indexedAccountId: indexedAccount?.id,
-          accountAddress: account.address,
-        });
+        },
+      );
 
-      if (
-        approvalUtils.checkIsExistRiskApprovals({
-          contractApprovals: resp.contractApprovals,
-        })
-      ) {
-        updateApprovalsInfo({ hasRiskApprovals: true });
-        const shouldShowRiskApprovalsRevokeSuggestion =
-          await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
-            {
-              networkId: network.id,
-              accountId: account.id,
-            },
-          );
+    if (!shouldShow) return;
 
-        if (shouldShowRiskApprovalsRevokeSuggestion) {
-          await timerUtils.wait(2000);
-          navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
-            screen: EModalApprovalManagementRoutes.RevokeSuggestion,
-            params: {
-              approvals: resp.contractApprovals.filter(
-                (item) => item.isRiskContract,
-              ),
-              contractMap: resp.contractMap,
-              tokenMap: resp.tokenMap,
-              alertType: EContractApprovalAlertType.Risk,
-              accountId: account.id,
-              networkId: network.id,
-              autoShow: true,
-            },
-          });
-        }
-      }
-    }
+    await timerUtils.wait(2000);
+    navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
+      screen: EModalApprovalManagementRoutes.RevokeSuggestion,
+      params: {
+        approvals: resp.contractApprovals.filter(
+          (item) => item.isRiskContract || item.isInactiveApproval,
+        ),
+        contractMap: resp.contractMap,
+        tokenMap: resp.tokenMap,
+        accountId: account.id,
+        networkId: network.id,
+        autoShow: true,
+      },
+    });
   }, [
     network?.id,
     indexedAccount?.id,

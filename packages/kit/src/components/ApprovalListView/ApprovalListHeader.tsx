@@ -7,7 +7,6 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
 import type { IContractApproval } from '@onekeyhq/shared/types/approval';
-import { EContractApprovalAlertType } from '@onekeyhq/shared/types/approval';
 
 import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import useAppNavigation from '../../hooks/useAppNavigation';
@@ -42,9 +41,8 @@ function ApprovalListHeader({
 
   const [showInactiveApprovalsAlert, setShowInactiveApprovalsAlert] =
     useState(false);
-
-  const [inactiveApprovalsAlertOpacity, setInactiveApprovalsAlertOpacity] =
-    useState(0);
+  const [hideCombinedAlert, setHideCombinedAlert] = useState(false);
+  const [alertOpacity, setAlertOpacity] = useState(0);
   const [tableHeaderOpacity, setTableHeaderOpacity] = useState(0);
 
   const { result: shouldShowInactiveApprovalsAlert } =
@@ -101,21 +99,14 @@ function ApprovalListHeader({
     );
   }, [intl, tableLayout, tableHeaderOpacity, approvals?.length]);
 
-  const handleViewRiskApprovals = useCallback(
-    ({
-      alertType,
-      approvals: _approvals,
-    }: {
-      alertType: EContractApprovalAlertType;
-      approvals: IContractApproval[];
-    }) => {
+  const handleViewApprovals = useCallback(
+    ({ approvals: _approvals }: { approvals: IContractApproval[] }) => {
       navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
         screen: EModalApprovalManagementRoutes.RevokeSuggestion,
         params: {
           approvals: _approvals,
           contractMap,
           tokenMap,
-          alertType,
           accountId,
           networkId,
         },
@@ -141,105 +132,95 @@ function ApprovalListHeader({
     );
   }, [approvals]);
 
-  const handleCloseInactiveApprovalsAlert = useCallback(async () => {
-    await backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig(
-      {
-        accountId,
-        networkId,
-      },
-    );
-    setShowInactiveApprovalsAlert(false);
+  const handleCloseCombinedAlert = useCallback(async () => {
+    if (showInactiveApprovalsAlert) {
+      await backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig(
+        {
+          accountId,
+          networkId,
+        },
+      );
+      setShowInactiveApprovalsAlert(false);
+    }
+    setHideCombinedAlert(true);
     setTimeout(() => {
       recomputeLayout();
     }, 350);
-  }, [accountId, networkId, recomputeLayout]);
+  }, [accountId, networkId, recomputeLayout, showInactiveApprovalsAlert]);
 
   const renderRiskOverview = useCallback(() => {
-    if (
-      riskApprovals.length === 0 &&
-      (warningApprovals.length === 0 || !showInactiveApprovalsAlert)
-    ) {
+    const includeInactive = showInactiveApprovalsAlert;
+    const riskyNumber = riskApprovals.length;
+    const inactiveNumber = includeInactive ? warningApprovals.length : 0;
+
+    if (hideCombinedAlert || (riskyNumber === 0 && inactiveNumber === 0)) {
       return null;
+    }
+
+    const hasRisk = riskyNumber > 0;
+    const hasInactive = inactiveNumber > 0;
+
+    let descriptionId: ETranslations;
+    if (hasRisk && hasInactive) {
+      descriptionId = ETranslations.wallet_approval_alert_title_summary;
+    } else if (hasRisk) {
+      descriptionId = ETranslations.wallet_approval_risky_suggestion_title;
+    } else {
+      descriptionId = ETranslations.wallet_approval_inactive_suggestion_title;
+    }
+
+    let approvalsToView: IContractApproval[];
+    if (hasRisk && hasInactive) {
+      approvalsToView = [...riskApprovals, ...warningApprovals];
+    } else if (hasRisk) {
+      approvalsToView = riskApprovals;
+    } else {
+      approvalsToView = warningApprovals;
     }
 
     return (
       <YStack px="$5" py="$3" gap="$5">
-        {riskApprovals.length > 0 ? (
-          <Alert
-            icon="ShieldExclamationOutline"
-            title={intl.formatMessage({
-              id: ETranslations.wallet_revoke_suggestion,
-            })}
-            description={intl.formatMessage(
-              {
-                id: ETranslations.wallet_approval_risky_suggestion_title,
-              },
-              {
-                number: (
-                  <SizableText color="$textCritical">
-                    {riskApprovals.length}
-                  </SizableText>
-                ) as unknown as string,
-              },
-            )}
-            type="danger"
-            action={{
-              primary: intl.formatMessage({
-                id: ETranslations.global_view,
-              }),
-              onPrimaryPress: () => {
-                handleViewRiskApprovals({
-                  alertType: EContractApprovalAlertType.Risk,
-                  approvals: riskApprovals,
-                });
-              },
-            }}
-          />
-        ) : null}
-        {shouldShowInactiveApprovalsAlert && warningApprovals.length > 0 ? (
-          <Alert
-            opacity={inactiveApprovalsAlertOpacity}
-            onClose={handleCloseInactiveApprovalsAlert}
-            icon="ShieldExclamationOutline"
-            title={intl.formatMessage({
-              id: ETranslations.wallet_revoke_suggestion,
-            })}
-            description={intl.formatMessage(
-              {
-                id: ETranslations.wallet_approval_inactive_suggestion_title,
-              },
-              {
-                number: (
-                  <SizableText size="$bodyMdMedium" color="$textCaution">
-                    {warningApprovals.length}
-                  </SizableText>
-                ) as unknown as string,
-              },
-            )}
-            closable
-            type="warning"
-            action={{
-              primary: intl.formatMessage({
-                id: ETranslations.global_view,
-              }),
-              onPrimaryPress: () => {
-                handleViewRiskApprovals({
-                  alertType: EContractApprovalAlertType.Warning,
-                  approvals: warningApprovals,
-                });
-              },
-            }}
-          />
-        ) : null}
+        <Alert
+          opacity={alertOpacity}
+          onClose={handleCloseCombinedAlert}
+          icon="ShieldExclamationOutline"
+          title={intl.formatMessage({
+            id: ETranslations.wallet_revoke_suggestion,
+          })}
+          description={intl.formatMessage(
+            { id: descriptionId },
+            {
+              riskyNumber: (
+                <SizableText color="$textCritical">{riskyNumber}</SizableText>
+              ) as unknown as string,
+              inactiveNumber: (
+                <SizableText color="$textCaution">{inactiveNumber}</SizableText>
+              ) as unknown as string,
+              number: (
+                <SizableText color={hasRisk ? '$textCritical' : '$textCaution'}>
+                  {hasRisk ? riskyNumber : inactiveNumber}
+                </SizableText>
+              ) as unknown as string,
+            },
+          )}
+          closable
+          type={hasRisk ? 'danger' : 'warning'}
+          action={{
+            primary: intl.formatMessage({ id: ETranslations.global_view }),
+            onPrimaryPress: () => {
+              handleViewApprovals({ approvals: approvalsToView });
+            },
+          }}
+        />
       </YStack>
     );
   }, [
-    handleCloseInactiveApprovalsAlert,
-    handleViewRiskApprovals,
-    inactiveApprovalsAlertOpacity,
+    alertOpacity,
+    handleCloseCombinedAlert,
+    handleViewApprovals,
+    hideCombinedAlert,
     intl,
     riskApprovals,
-    shouldShowInactiveApprovalsAlert,
     showInactiveApprovalsAlert,
     warningApprovals,
   ]);
@@ -249,9 +230,7 @@ function ApprovalListHeader({
 
     setTimeout(() => {
       recomputeLayout();
-      if (shouldShowInactiveApprovalsAlert) {
-        setInactiveApprovalsAlertOpacity(1);
-      }
+      setAlertOpacity(1);
       setTableHeaderOpacity(1);
     }, 350);
   }, [shouldShowInactiveApprovalsAlert, recomputeLayout]);

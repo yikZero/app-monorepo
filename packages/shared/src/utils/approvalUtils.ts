@@ -119,7 +119,9 @@ function checkIsExistRiskApprovals({
 }: {
   contractApprovals: IContractApproval[];
 }) {
-  return contractApprovals.some((item) => item.isRiskContract);
+  return contractApprovals.some(
+    (item) => item.isRiskContract || item.isInactiveApproval,
+  );
 }
 
 export default {
