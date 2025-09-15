@@ -7,7 +7,6 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
 import type { IContractApproval } from '@onekeyhq/shared/types/approval';
-import { EContractApprovalAlertType } from '@onekeyhq/shared/types/approval';
 
 import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import useAppNavigation from '../../hooks/useAppNavigation';
@@ -42,16 +41,22 @@ function ApprovalListHeader({
 
   const { tableLayout, accountId, networkId } = useApprovalListViewContext();
 
-  const [showInactiveApprovalsAlert, setShowInactiveApprovalsAlert] =
-    useState(false);
-
-  const [inactiveApprovalsAlertOpacity, setInactiveApprovalsAlertOpacity] =
-    useState(0);
+  const [showApprovalsAlert, setShowApprovalsAlert] = useState(false);
+  const [approvalsAlertOpacity, setApprovalsAlertOpacity] = useState(0);
   const [tableHeaderOpacity, setTableHeaderOpacity] = useState(0);
 
   const { result: shouldShowInactiveApprovalsAlert } =
     usePromiseResult(async () => {
       return backgroundApiProxy.serviceApproval.shouldShowInactiveApprovalsAlert(
+        {
+          accountId,
+          networkId,
+        },
+      );
+    }, [accountId, networkId]);
+  const { result: shouldShowRiskApprovalsAlert } =
+    usePromiseResult(async () => {
+      return backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
         {
           accountId,
           networkId,
@@ -104,20 +109,13 @@ function ApprovalListHeader({
   }, [intl, tableLayout, tableHeaderOpacity, approvals?.length]);
 
   const handleViewRiskApprovals = useCallback(
-    ({
-      alertType,
-      approvals: _approvals,
-    }: {
-      alertType: EContractApprovalAlertType;
-      approvals: IContractApproval[];
-    }) => {
+    ({ approvals: _approvals }: { approvals: IContractApproval[] }) => {
       navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
         screen: EModalApprovalManagementRoutes.RevokeSuggestion,
         params: {
           approvals: _approvals,
           contractMap,
           tokenMap,
-          alertType,
           accountId,
           networkId,
         },
@@ -143,125 +141,149 @@ function ApprovalListHeader({
     );
   }, [approvals]);
 
-  const handleCloseInactiveApprovalsAlert = useCallback(async () => {
-    await backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig(
-      {
-        accountId,
-        networkId,
-      },
-    );
-    setShowInactiveApprovalsAlert(false);
+  const handleCloseApprovalsAlert = useCallback(async () => {
+    const tasks: Promise<unknown>[] = [];
+    if (riskApprovals.length > 0) {
+      tasks.push(
+        backgroundApiProxy.serviceApproval.updateRiskApprovalsRevokeSuggestionConfig(
+          {
+            accountId,
+            networkId,
+          },
+        ),
+      );
+    }
+    if (warningApprovals.length > 0) {
+      tasks.push(
+        backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig({
+          accountId,
+          networkId,
+        }),
+      );
+    }
+    if (tasks.length) {
+      await Promise.all(tasks);
+    }
+    setShowApprovalsAlert(false);
     setTimeout(() => {
       recomputeLayout();
     }, 350);
-  }, [accountId, networkId, recomputeLayout]);
+  }, [
+    accountId,
+    networkId,
+    recomputeLayout,
+    riskApprovals.length,
+    warningApprovals.length,
+  ]);
 
   const renderRiskOverview = useCallback(() => {
     if (hideRiskOverview) {
       return null;
     }
 
-    if (
-      riskApprovals.length === 0 &&
-      (warningApprovals.length === 0 || !showInactiveApprovalsAlert)
-    ) {
+    const riskyNumber = riskApprovals.length;
+    const inactiveNumber = warningApprovals.length;
+    if (!showApprovalsAlert || (riskyNumber === 0 && inactiveNumber === 0)) {
       return null;
     }
 
     return (
       <YStack px="$5" py="$3" gap="$5">
-        {riskApprovals.length > 0 ? (
-          <Alert
-            icon="ShieldExclamationOutline"
-            title={intl.formatMessage({
-              id: ETranslations.wallet_revoke_suggestion,
-            })}
-            description={intl.formatMessage(
-              {
-                id: ETranslations.wallet_approval_risky_suggestion_title,
-              },
+        <Alert
+          opacity={approvalsAlertOpacity}
+          onClose={handleCloseApprovalsAlert}
+          icon="ShieldExclamationOutline"
+          title={intl.formatMessage({
+            id: ETranslations.wallet_revoke_suggestion,
+          })}
+          description={(() => {
+            if (riskyNumber > 0 && inactiveNumber > 0) {
+              return intl.formatMessage(
+                { id: ETranslations.wallet_approval_alert_title_summary },
+                {
+                  riskyNumber: (
+                    <SizableText color="$textCritical">
+                      {riskyNumber}
+                    </SizableText>
+                  ) as unknown as string,
+                  inactiveNumber: (
+                    <SizableText color="$textCaution">
+                      {inactiveNumber}
+                    </SizableText>
+                  ) as unknown as string,
+                },
+              );
+            }
+            if (riskyNumber > 0) {
+              return intl.formatMessage(
+                { id: ETranslations.wallet_approval_risky_suggestion_title },
+                {
+                  number: (
+                    <SizableText color="$textCritical">
+                      {riskyNumber}
+                    </SizableText>
+                  ) as unknown as string,
+                },
+              );
+            }
+            return intl.formatMessage(
+              { id: ETranslations.wallet_approval_inactive_suggestion_title },
               {
                 number: (
-                  <SizableText color="$textCritical">
-                    {riskApprovals.length}
+                  <SizableText color="$textCaution">
+                    {inactiveNumber}
                   </SizableText>
                 ) as unknown as string,
               },
-            )}
-            type="danger"
-            action={{
-              primary: intl.formatMessage({
-                id: ETranslations.global_view,
-              }),
-              onPrimaryPress: () => {
-                handleViewRiskApprovals({
-                  alertType: EContractApprovalAlertType.Risk,
-                  approvals: riskApprovals,
-                });
-              },
-            }}
-          />
-        ) : null}
-        {shouldShowInactiveApprovalsAlert && warningApprovals.length > 0 ? (
-          <Alert
-            opacity={inactiveApprovalsAlertOpacity}
-            onClose={handleCloseInactiveApprovalsAlert}
-            icon="ShieldExclamationOutline"
-            title={intl.formatMessage({
-              id: ETranslations.wallet_revoke_suggestion,
-            })}
-            description={intl.formatMessage(
-              {
-                id: ETranslations.wallet_approval_inactive_suggestion_title,
-              },
-              {
-                number: (
-                  <SizableText size="$bodyMdMedium" color="$textCaution">
-                    {warningApprovals.length}
-                  </SizableText>
-                ) as unknown as string,
-              },
-            )}
-            closable
-            type="warning"
-            action={{
-              primary: intl.formatMessage({
-                id: ETranslations.global_view,
-              }),
-              onPrimaryPress: () => {
-                handleViewRiskApprovals({
-                  alertType: EContractApprovalAlertType.Warning,
-                  approvals: warningApprovals,
-                });
-              },
-            }}
-          />
-        ) : null}
+            );
+          })()}
+          closable
+          type={riskyNumber > 0 ? 'danger' : 'warning'}
+          action={{
+            primary: intl.formatMessage({ id: ETranslations.global_view }),
+            onPrimaryPress: () => {
+              let approvalsToView: IContractApproval[] = [];
+              if (riskyNumber > 0 && inactiveNumber > 0) {
+                approvalsToView = [...riskApprovals, ...warningApprovals];
+              } else if (riskyNumber > 0) {
+                approvalsToView = riskApprovals;
+              } else {
+                approvalsToView = warningApprovals;
+              }
+              handleViewRiskApprovals({ approvals: approvalsToView });
+            },
+          }}
+        />
       </YStack>
     );
   }, [
-    handleCloseInactiveApprovalsAlert,
+    handleCloseApprovalsAlert,
     handleViewRiskApprovals,
     hideRiskOverview,
-    inactiveApprovalsAlertOpacity,
+    approvalsAlertOpacity,
     intl,
     riskApprovals,
-    shouldShowInactiveApprovalsAlert,
-    showInactiveApprovalsAlert,
+    showApprovalsAlert,
     warningApprovals,
   ]);
 
   useEffect(() => {
-    setShowInactiveApprovalsAlert(!!shouldShowInactiveApprovalsAlert);
+    const targetShow =
+      !!shouldShowInactiveApprovalsAlert || !!shouldShowRiskApprovalsAlert;
+    setShowApprovalsAlert(targetShow);
 
     setTimeout(() => {
       recomputeLayout();
-      if (shouldShowInactiveApprovalsAlert) {
-        setInactiveApprovalsAlertOpacity(1);
+      if (targetShow) {
+        setApprovalsAlertOpacity(1);
       }
       setTableHeaderOpacity(1);
     }, 350);
-  }, [shouldShowInactiveApprovalsAlert, recomputeLayout]);
+  }, [
+    shouldShowInactiveApprovalsAlert,
+    shouldShowRiskApprovalsAlert,
+    recomputeLayout,
+  ]);
 
   return (
     <>
