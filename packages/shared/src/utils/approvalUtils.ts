@@ -1,4 +1,5 @@
 import type { IContractApproval } from '@onekeyhq/shared/types/approval';
+import { EContractApprovalAlertType } from '@onekeyhq/shared/types/approval';
 
 function buildSelectedTokenKey({
   contractAddress,
@@ -122,6 +123,48 @@ function checkIsExistRiskApprovals({
   return contractApprovals.some((item) => item.isRiskContract);
 }
 
+// Additional helpers for approval classification and UI decisions
+export function categorizeApprovalsByRisk({
+  approvals,
+}: {
+  approvals: IContractApproval[];
+}): {
+  riskApprovals: IContractApproval[];
+  inactiveApprovals: IContractApproval[];
+  hasRiskApprovals: boolean;
+  hasInactiveApprovals: boolean;
+} {
+  const riskApprovals: IContractApproval[] = [];
+  const inactiveApprovals: IContractApproval[] = [];
+
+  approvals.forEach((item) => {
+    if (item.isRiskContract) {
+      riskApprovals.push(item);
+    } else if (item.isInactiveApproval) {
+      inactiveApprovals.push(item);
+    }
+  });
+
+  return {
+    riskApprovals,
+    inactiveApprovals,
+    hasRiskApprovals: riskApprovals.length > 0,
+    hasInactiveApprovals: inactiveApprovals.length > 0,
+  };
+}
+
+export function deriveRevokeSuggestionAlertType({
+  hasRiskApprovals,
+  hasInactiveApprovals,
+}: {
+  hasRiskApprovals: boolean;
+  hasInactiveApprovals: boolean;
+}): EContractApprovalAlertType | undefined {
+  if (hasRiskApprovals) return EContractApprovalAlertType.Risk;
+  if (hasInactiveApprovals) return EContractApprovalAlertType.Warning;
+  return undefined;
+}
+
 export default {
   buildContractMapKey,
   buildTokenMapKey,
@@ -130,4 +173,6 @@ export default {
   buildToggleSelectAllTokensMap,
   checkIsSelectAllTokens,
   checkIsExistRiskApprovals,
+  categorizeApprovalsByRisk,
+  deriveRevokeSuggestionAlertType,
 };

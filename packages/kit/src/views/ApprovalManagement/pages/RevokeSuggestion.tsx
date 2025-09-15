@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo } from 'react';
 
 import { useRoute } from '@react-navigation/core';
-import { useIntl } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 
 import {
   Icon,
@@ -134,61 +134,75 @@ function RevokeSuggestion() {
   );
 
   const renderRevokeSuggestionOverview = useCallback(() => {
+    const isWarning = alertType === EContractApprovalAlertType.Warning;
+    const riskyNumber = approvals.filter((i) => i.isRiskContract).length;
+    const inactiveNumber = approvals.filter((i) => i.isInactiveApproval).length;
+    const isSummary = riskyNumber > 0 && inactiveNumber > 0;
+
+    const isCritical = isSummary || !isWarning;
+    let descId =
+      ETranslations.wallet_approval_risky_detected_suggestion_description;
+    if (isSummary) {
+      descId = ETranslations.wallet_approval_summary_suggestion_desc_all;
+    } else if (isWarning) {
+      descId = ETranslations.wallet_approval_inactive_suggestion_description;
+    }
+
     return (
       <YStack p="$5" gap="$4">
         <XStack>
           <Stack
             borderRadius="$full"
-            bg={
-              alertType === EContractApprovalAlertType.Warning
-                ? '$bgCaution'
-                : '$bgCritical'
-            }
+            bg={isCritical ? '$bgCritical' : '$bgCaution'}
             p="$3"
           >
             <Icon
               name="ShieldExclamationOutline"
               size="$8"
-              color={
-                alertType === EContractApprovalAlertType.Warning
-                  ? '$iconCaution'
-                  : '$iconCritical'
-              }
+              color={isCritical ? '$iconCritical' : '$iconCaution'}
             />
           </Stack>
         </XStack>
         <YStack gap="$1">
           <SizableText size="$heading2xl">
-            {intl.formatMessage(
-              {
-                id:
-                  alertType === EContractApprovalAlertType.Warning
+            {isSummary ? (
+              <FormattedMessage
+                id={ETranslations.wallet_approval_summary_suggestion_title}
+                values={{
+                  riskyNumber: (
+                    <SizableText size="$heading2xl" color="$textCritical">
+                      {riskyNumber}
+                    </SizableText>
+                  ),
+                  inactiveNumber: (
+                    <SizableText size="$heading2xl" color="$textCaution">
+                      {inactiveNumber}
+                    </SizableText>
+                  ),
+                }}
+              />
+            ) : (
+              <FormattedMessage
+                id={
+                  isWarning
                     ? ETranslations.wallet_approval_inactive_suggestion_title
-                    : ETranslations.wallet_approval_risky_suggestion_title,
-              },
-              {
-                number: (
-                  <SizableText
-                    size="$heading2xl"
-                    color={
-                      alertType === EContractApprovalAlertType.Warning
-                        ? '$textCaution'
-                        : '$textCritical'
-                    }
-                  >
-                    {approvals.length}
-                  </SizableText>
-                ),
-              },
+                    : ETranslations.wallet_approval_risky_suggestion_title
+                }
+                values={{
+                  number: (
+                    <SizableText
+                      size="$heading2xl"
+                      color={isCritical ? '$textCritical' : '$textCaution'}
+                    >
+                      {isWarning ? inactiveNumber : riskyNumber}
+                    </SizableText>
+                  ),
+                }}
+              />
             )}
           </SizableText>
-          <SizableText size="$bodyMd" color="$textSubdued">
-            {intl.formatMessage({
-              id:
-                alertType === EContractApprovalAlertType.Warning
-                  ? ETranslations.wallet_approval_inactive_suggestion_description
-                  : ETranslations.wallet_approval_risky_detected_suggestion_description,
-            })}
+          <SizableText size="$bodyLg" color="$textSubdued">
+            {intl.formatMessage({ id: descId })}
           </SizableText>
         </YStack>
       </YStack>
@@ -196,15 +210,18 @@ function RevokeSuggestion() {
   }, [alertType, approvals, intl]);
 
   const renderRevokeSuggestionList = useCallback(() => {
+    const riskyNumber = approvals.filter((i) => i.isRiskContract).length;
+    const inactiveNumber = approvals.filter((i) => i.isInactiveApproval).length;
+    const isSummary = riskyNumber > 0 && inactiveNumber > 0;
     return (
       <ApprovalListView
-        hideRiskBadge
+        hideRiskBadge={!isSummary}
         onPress={handleApprovalItemOnPress}
         accountId={accountId}
         networkId={networkId}
       />
     );
-  }, [accountId, handleApprovalItemOnPress, networkId]);
+  }, [accountId, approvals, handleApprovalItemOnPress, networkId]);
 
   const handleSelectAll = useCallback(() => {
     const selectedTokensTemp = approvalUtils.buildToggleSelectAllTokensMap({

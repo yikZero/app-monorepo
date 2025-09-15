@@ -23,10 +23,12 @@ import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EModalRoutes, ETabRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
-import approvalUtils from '@onekeyhq/shared/src/utils/approvalUtils';
+import {
+  categorizeApprovalsByRisk,
+  deriveRevokeSuggestionAlertType,
+} from '@onekeyhq/shared/src/utils/approvalUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
-import { EContractApprovalAlertType } from '@onekeyhq/shared/types/approval';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { EmptyAccount, EmptyWallet } from '../../../components/Empty';
@@ -120,37 +122,67 @@ export function HomePageView({
           indexedAccountId: indexedAccount?.id,
           accountAddress: account.address,
         });
+      const {
+        riskApprovals,
+        inactiveApprovals,
+        hasRiskApprovals,
+        hasInactiveApprovals,
+      } = categorizeApprovalsByRisk({ approvals: resp.contractApprovals });
 
-      if (
-        approvalUtils.checkIsExistRiskApprovals({
-          contractApprovals: resp.contractApprovals,
-        })
-      ) {
-        updateApprovalsInfo({ hasRiskApprovals: true });
-        const shouldShowRiskApprovalsRevokeSuggestion =
-          await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
-            {
-              networkId: network.id,
-              accountId: account.id,
-            },
-          );
+      // update flag explicitly to avoid stale state
+      updateApprovalsInfo({ hasRiskApprovals });
 
-        if (shouldShowRiskApprovalsRevokeSuggestion) {
+      if (hasRiskApprovals || hasInactiveApprovals) {
+        const alertType = deriveRevokeSuggestionAlertType({
+          hasRiskApprovals,
+          hasInactiveApprovals,
+        });
+
+        let shouldAutoShow = false;
+        if (hasRiskApprovals) {
+          shouldAutoShow =
+            await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
+              {
+                networkId: network.id,
+                accountId: account.id,
+              },
+            );
+        } else if (hasInactiveApprovals) {
+          shouldAutoShow =
+            await backgroundApiProxy.serviceApproval.shouldShowInactiveApprovalsAlert(
+              {
+                networkId: network.id,
+                accountId: account.id,
+              },
+            );
+        }
+
+        if (shouldAutoShow) {
           await timerUtils.wait(2000);
-          navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
-            screen: EModalApprovalManagementRoutes.RevokeSuggestion,
-            params: {
-              approvals: resp.contractApprovals.filter(
-                (item) => item.isRiskContract,
-              ),
-              contractMap: resp.contractMap,
-              tokenMap: resp.tokenMap,
-              alertType: EContractApprovalAlertType.Risk,
-              accountId: account.id,
-              networkId: network.id,
-              autoShow: true,
-            },
-          });
+
+          let approvalsToShow: typeof riskApprovals = [];
+          if (hasRiskApprovals && hasInactiveApprovals) {
+            approvalsToShow = [...riskApprovals, ...inactiveApprovals];
+          } else if (hasRiskApprovals) {
+            approvalsToShow = riskApprovals;
+          } else {
+            approvalsToShow = inactiveApprovals;
+          }
+
+          if (alertType && approvalsToShow.length > 0) {
+            navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
+              screen: EModalApprovalManagementRoutes.RevokeSuggestion,
+              params: {
+                approvals: approvalsToShow,
+                contractMap: resp.contractMap,
+                tokenMap: resp.tokenMap,
+                alertType,
+                accountId: account.id,
+                networkId: network.id,
+                autoShow: true,
+              },
+            });
+          }
         }
       }
     }
