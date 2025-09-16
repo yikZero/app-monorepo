@@ -132,45 +132,27 @@ export function HomePageView({
         riskApprovals.length > 0
       ) {
         updateApprovalsInfo({ hasRiskApprovals: true });
-      }
-
-      const [shouldShowRisk, shouldShowInactive] = await Promise.all([
-        riskApprovals.length > 0
-          ? backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
-              {
-                networkId: network.id,
-                accountId: account.id,
-              },
-            )
-          : Promise.resolve(false),
-        inactiveApprovals.length > 0
-          ? backgroundApiProxy.serviceApproval.shouldShowInactiveApprovalsAlert(
-              {
-                networkId: network.id,
-                accountId: account.id,
-              },
-            )
-          : Promise.resolve(false),
-      ]);
-
-      // Only non-watching wallets should trigger the modal
-      if (
-        !accountUtils.isWatchingWallet({ walletId: wallet?.id }) &&
-        (shouldShowRisk || shouldShowInactive) &&
-        (riskApprovals.length > 0 || inactiveApprovals.length > 0)
-      ) {
-        await timerUtils.wait(2000);
-        navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
-          screen: EModalApprovalManagementRoutes.RevokeSuggestion,
-          params: {
-            approvals: [...riskApprovals, ...inactiveApprovals],
-            contractMap: resp.contractMap,
-            tokenMap: resp.tokenMap,
-            accountId: account.id,
-            networkId: network.id,
-            autoShow: true,
-          },
-        });
+        const shouldShowRisk =
+          await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
+            {
+              networkId: network.id,
+              accountId: account.id,
+            },
+          );
+        if (shouldShowRisk) {
+          await timerUtils.wait(2000);
+          navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
+            screen: EModalApprovalManagementRoutes.RevokeSuggestion,
+            params: {
+              approvals: [...riskApprovals, ...inactiveApprovals],
+              contractMap: resp.contractMap,
+              tokenMap: resp.tokenMap,
+              accountId: account.id,
+              networkId: network.id,
+              autoShow: true,
+            },
+          });
+        }
       }
     }
   }, [
