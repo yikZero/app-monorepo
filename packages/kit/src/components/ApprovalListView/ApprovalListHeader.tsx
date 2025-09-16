@@ -54,15 +54,6 @@ function ApprovalListHeader({
         },
       );
     }, [accountId, networkId]);
-  const { result: shouldShowRiskApprovalsAlert } =
-    usePromiseResult(async () => {
-      return backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
-        {
-          accountId,
-          networkId,
-        },
-      );
-    }, [accountId, networkId]);
 
   const [{ approvals }] = useApprovalListAtom();
   const [{ tokenMap }] = useTokenMapAtom();
@@ -142,39 +133,17 @@ function ApprovalListHeader({
   }, [approvals]);
 
   const handleCloseApprovalsAlert = useCallback(async () => {
-    const tasks: Promise<unknown>[] = [];
-    if (riskApprovals.length > 0) {
-      tasks.push(
-        backgroundApiProxy.serviceApproval.updateRiskApprovalsRevokeSuggestionConfig(
-          {
-            accountId,
-            networkId,
-          },
-        ),
-      );
-    }
-    if (warningApprovals.length > 0) {
-      tasks.push(
-        backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig({
-          accountId,
-          networkId,
-        }),
-      );
-    }
-    if (tasks.length) {
-      await Promise.all(tasks);
-    }
+    await backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig(
+      {
+        accountId,
+        networkId,
+      },
+    );
     setShowApprovalsAlert(false);
     setTimeout(() => {
       recomputeLayout();
     }, 350);
-  }, [
-    accountId,
-    networkId,
-    recomputeLayout,
-    riskApprovals.length,
-    warningApprovals.length,
-  ]);
+  }, [accountId, networkId, recomputeLayout]);
 
   const renderRiskOverview = useCallback(() => {
     if (hideRiskOverview) {
@@ -268,8 +237,7 @@ function ApprovalListHeader({
   ]);
 
   useEffect(() => {
-    const targetShow =
-      !!shouldShowInactiveApprovalsAlert || !!shouldShowRiskApprovalsAlert;
+    const targetShow = !!shouldShowInactiveApprovalsAlert;
     setShowApprovalsAlert(targetShow);
 
     setTimeout(() => {
@@ -279,11 +247,7 @@ function ApprovalListHeader({
       }
       setTableHeaderOpacity(1);
     }, 350);
-  }, [
-    shouldShowInactiveApprovalsAlert,
-    shouldShowRiskApprovalsAlert,
-    recomputeLayout,
-  ]);
+  }, [shouldShowInactiveApprovalsAlert, recomputeLayout]);
 
   return (
     <>
