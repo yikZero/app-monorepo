@@ -129,17 +129,19 @@ export function HomePageView({
 
       if (
         !accountUtils.isWatchingWallet({ walletId: wallet?.id }) &&
-        riskApprovals.length > 0
+        (riskApprovals.length > 0 || inactiveApprovals.length > 0)
       ) {
-        updateApprovalsInfo({ hasRiskApprovals: true });
-        const shouldShowRisk =
+        if (riskApprovals.length > 0) {
+          updateApprovalsInfo({ hasRiskApprovals: true });
+        }
+        const shouldShowRiskApprovalsRevokeSuggestion =
           await backgroundApiProxy.serviceApproval.shouldShowRiskApprovalsRevokeSuggestion(
             {
               networkId: network.id,
               accountId: account.id,
             },
           );
-        if (shouldShowRisk) {
+        if (shouldShowRiskApprovalsRevokeSuggestion) {
           await timerUtils.wait(2000);
           navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
             screen: EModalApprovalManagementRoutes.RevokeSuggestion,
