@@ -17,7 +17,6 @@ import {
   useSafeAreaInsets,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
-import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import type { IOneKeyError } from '@onekeyhq/shared/src/errors/types/errorTypes';
@@ -29,7 +28,6 @@ import type { IPrimeParamList } from '@onekeyhq/shared/src/routes/prime';
 import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import stringUtils from '@onekeyhq/shared/src/utils/stringUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
-import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 import type { IPrimeServerUserInfo } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import { usePrimePurchaseCallback } from '../../components/PrimePurchaseDialog/PrimePurchaseDialog';
@@ -356,20 +354,11 @@ export default function PrimeDashboard({
             ) : null}
 
             {isReady ? (
-              <>
-                <AccountSelectorProviderMirror
-                  config={{
-                    sceneName: EAccountSelectorSceneName.home,
-                  }}
-                  enabledNum={[0]}
-                >
-                  <PrimeBenefitsList
-                    selectedSubscriptionPeriod={selectedSubscriptionPeriod}
-                    networkId={route.params?.networkId}
-                    serverUserInfo={serverUserInfo}
-                  />
-                </AccountSelectorProviderMirror>
-              </>
+              <PrimeBenefitsList
+                selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+                networkId={route.params?.networkId}
+                serverUserInfo={serverUserInfo}
+              />
             ) : (
               <Spinner my="$10" />
             )}
