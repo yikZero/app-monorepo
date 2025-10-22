@@ -1,13 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { CommonActions } from '@react-navigation/native';
 import { MotiView } from 'moti';
 import { StyleSheet } from 'react-native';
 
-import {
-  type IActionListSection,
-  IconButton,
-} from '@onekeyhq/components/src/actions';
+import type { IActionListSection } from '@onekeyhq/components/src/actions';
 import { OneKeyLogo } from '@onekeyhq/components/src/content';
 import {
   EPortalContainerConstantName,
@@ -83,7 +80,7 @@ function TabItemView({
     () => (
       <YStack
         ai={isCollapse ? 'center' : undefined}
-        gap={isCollapse ? '$1' : undefined}
+        gap={isCollapse ? '$0.5' : undefined}
         py={isCollapse ? 5 : undefined}
         onPress={options.tabbarOnPress ?? onPress}
         onHoverIn={() => {
@@ -118,7 +115,12 @@ function TabItemView({
           testID={route.name.toLowerCase()}
         />
         {isCollapse ? (
-          <SizableText size="$bodySmMedium" textAlign="center">
+          <SizableText
+            size="$bodySmMedium"
+            cursor="default"
+            color="$text"
+            textAlign="center"
+          >
             {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
           </SizableText>
         ) : null}
@@ -144,6 +146,13 @@ export function DesktopLeftSideBar({
   const { top } = useSafeAreaInsets(); // used for ipad
   const theme = useTheme();
   const [isHovering, setIsHovering] = useState(false);
+  const [isToggleHovered, setIsToggleHovered] = useState(false);
+
+  useEffect(() => {
+    if (!isHovering) {
+      setIsToggleHovered(false);
+    }
+  }, [isHovering]);
 
   const { gtMd } = useMedia();
   const isShowWebTabBar = platformEnv.isDesktop || platformEnv.isNativeIOS;
@@ -250,6 +259,20 @@ export function DesktopLeftSideBar({
         position="relative"
         flex={1}
         testID="Desktop-AppSideBar-Content-Container"
+        onHoverIn={
+          isCollapse
+            ? () => {
+                setIsHovering(true);
+              }
+            : undefined
+        }
+        onHoverOut={
+          isCollapse
+            ? () => {
+                setIsHovering(false);
+              }
+            : undefined
+        }
       >
         <MotiView
           animate={{
@@ -306,17 +329,29 @@ export function DesktopLeftSideBar({
           jc="center"
         >
           {isHovering ? (
-            <IconButton
+            <YStack
+              aria-label="Toggle sidebar"
+              role="button"
+              height="$12"
+              width="$2"
+              animation="quick"
+              bg={isToggleHovered ? '$neutral8' : '$neutral6'}
+              borderRadius="$full"
+              cursor="e-resize"
+              pressStyle={{
+                bg: '$neutral7',
+              }}
+              onHoverIn={() => {
+                setIsToggleHovered(true);
+              }}
+              onHoverOut={() => {
+                setIsToggleHovered(false);
+              }}
               onPress={() => {
                 setAppSideBarStatus((prev) => ({
                   ...prev,
                   isCollapsed: false,
                 }));
-              }}
-              icon="ChevronRightSmallOutline"
-              size="large"
-              iconProps={{
-                color: '$iconSubdued',
               }}
             />
           ) : null}
