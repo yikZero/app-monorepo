@@ -233,10 +233,15 @@ function DesktopCustomTabBarItem({
         tabBarStyle={
           isCollapse
             ? {
-                width: 36,
-                height: 36,
                 alignItems: 'center',
                 justifyContent: 'center',
+              }
+            : undefined
+        }
+        tabBarItemStyle={
+          isCollapse
+            ? {
+                height: 36,
               }
             : undefined
         }
@@ -293,7 +298,6 @@ function DesktopCustomTabBarItem({
         placement="right"
         renderContent={
           <XStack
-            p="$2"
             gap="$2"
             onHoverIn={handleHoverIn}
             onHoverOut={handleHoverOut}

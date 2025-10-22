@@ -325,35 +325,57 @@ export function DesktopLeftSideBar({
           top={0}
           bottom={0}
           width={4}
+          pb="$20"
           ai="center"
           jc="center"
         >
           {isHovering ? (
-            <YStack
-              aria-label="Toggle sidebar"
-              role="button"
-              height="$12"
-              width="$2"
-              animation="quick"
-              bg={isToggleHovered ? '$neutral8' : '$neutral6'}
-              borderRadius="$full"
-              cursor="e-resize"
-              pressStyle={{
-                bg: '$neutral7',
+            <MotiView
+              from={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={
+                {
+                  type: 'timing',
+                  duration: 200,
+                } as MotiTransition
+              }
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
               }}
-              onHoverIn={() => {
-                setIsToggleHovered(true);
-              }}
-              onHoverOut={() => {
-                setIsToggleHovered(false);
-              }}
-              onPress={() => {
-                setAppSideBarStatus((prev) => ({
-                  ...prev,
-                  isCollapsed: false,
-                }));
-              }}
-            />
+            >
+              <YStack
+                aria-label="Toggle sidebar"
+                role="button"
+                height="$12"
+                width="$2"
+                bg={isToggleHovered ? '$neutral8' : '$neutral6'}
+                borderRadius="$full"
+                cursor="e-resize"
+                pressStyle={{
+                  bg: '$neutral7',
+                }}
+                focusVisibleStyle={{
+                  outlineWidth: 2,
+                  outlineColor: '$focusRing',
+                  outlineStyle: 'solid',
+                }}
+                onHoverIn={() => {
+                  setIsToggleHovered(true);
+                }}
+                onHoverOut={() => {
+                  setIsToggleHovered(false);
+                }}
+                onPress={() => {
+                  setAppSideBarStatus((prev) => ({
+                    ...prev,
+                    isCollapsed: false,
+                  }));
+                }}
+              />
+            </MotiView>
           ) : null}
         </YStack>
       ) : null}
