@@ -2894,6 +2894,7 @@
   settings_protection_allowlist_content = 'settings_protection.allowlist_content',
   settings_protection_allowlist_title = 'settings_protection.allowlist_title',
   shortcut_collapse_sidebar = 'shortcut.collapse_sidebar',
+  shortcut_expand_sidebar = 'shortcut.expand_sidebar',
   shortcut_go_back = 'shortcut.go_back',
   shortcut_go_forward = 'shortcut.go_forward',
   shortcut_hide_sidebar = 'shortcut.hide_sidebar',

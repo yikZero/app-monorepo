@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "启用此功能后，您只能向钱包内的账户或地址簿中保存的地址发送资金。",
   "settings_protection.allowlist_title": "转账白名单",
   "shortcut.collapse_sidebar": "收起侧边栏",
+  "shortcut.expand_sidebar": "展开侧边栏",
   "shortcut.go_back": "返回",
   "shortcut.go_forward": "前进",
   "shortcut.hide_sidebar": "隐藏侧边栏",

@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "Quando questa funzione è attiva, puoi inviare fondi solo verso account del tuo portafoglio o indirizzi salvati nella rubrica.",
   "settings_protection.allowlist_title": "Trasferisci lista di autorizzazione",
   "shortcut.collapse_sidebar": "Comprimi la barra laterale",
+  "shortcut.expand_sidebar": "Espandi la barra laterale",
   "shortcut.go_back": "Torna indietro",
   "shortcut.go_forward": "Andare avanti",
   "shortcut.hide_sidebar": "Nascondi la barra laterale",

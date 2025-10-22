@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "यह सुविधा सक्षम होने पर, आप केवल अपने वॉलेट के खातों या पता पुस्तिका में सहेजे गए पतों पर ही धन भेज सकते हैं।",
   "settings_protection.allowlist_title": "स्थानांतरण अनुमति सूची",
   "shortcut.collapse_sidebar": "साइडबार को संक्षिप्त करें",
+  "shortcut.expand_sidebar": "साइडबार का विस्तार करें",
   "shortcut.go_back": "वापस जाओ",
   "shortcut.go_forward": "आगे बढ़ो",
   "shortcut.hide_sidebar": "किनारे की बाधा को हटाएं",

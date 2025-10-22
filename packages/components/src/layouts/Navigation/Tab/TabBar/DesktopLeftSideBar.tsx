@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { CommonActions } from '@react-navigation/native';
 import { MotiView } from 'moti';
+import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
+import { Tooltip } from '@onekeyhq/components/src/actions';
 import type { IActionListSection } from '@onekeyhq/components/src/actions';
 import { OneKeyLogo } from '@onekeyhq/components/src/content';
 import {
@@ -25,12 +27,13 @@ import {
 } from '@onekeyhq/components/src/utils/sidebar';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useAppSideBarStatusAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms/settings';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EEnterWay } from '@onekeyhq/shared/src/logger/scopes/dex';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes/tab';
 import { ETabMarketRoutes } from '@onekeyhq/shared/src/routes/tabMarket';
-import { type EShortcutEvents } from '@onekeyhq/shared/src/shortcuts/shortcuts.enum';
+import { EShortcutEvents } from '@onekeyhq/shared/src/shortcuts/shortcuts.enum';
 import { ESwapSource } from '@onekeyhq/shared/types/swap/types';
 
 import HeaderCollapseButton from '../../Header/HeaderCollapseButton';
@@ -140,6 +143,7 @@ export function DesktopLeftSideBar({
 }: BottomTabBarProps & {
   extraConfig?: ITabNavigatorExtraConfig<string>;
 }) {
+  const intl = useIntl();
   const { routes } = state;
   const [{ isCollapsed: isCollapse }, setAppSideBarStatus] =
     useAppSideBarStatusAtom();
@@ -346,34 +350,46 @@ export function DesktopLeftSideBar({
                 width: '100%',
               }}
             >
-              <YStack
-                aria-label="Toggle sidebar"
-                role="button"
-                height="$12"
-                width="$2"
-                bg={isToggleHovered ? '$neutral8' : '$neutral6'}
-                borderRadius="$full"
-                cursor="e-resize"
-                pressStyle={{
-                  bg: '$neutral7',
-                }}
-                focusVisibleStyle={{
-                  outlineWidth: 2,
-                  outlineColor: '$focusRing',
-                  outlineStyle: 'solid',
-                }}
-                onHoverIn={() => {
-                  setIsToggleHovered(true);
-                }}
-                onHoverOut={() => {
-                  setIsToggleHovered(false);
-                }}
-                onPress={() => {
-                  setAppSideBarStatus((prev) => ({
-                    ...prev,
-                    isCollapsed: false,
-                  }));
-                }}
+              <Tooltip
+                placement="right"
+                renderTrigger={
+                  <YStack
+                    aria-label="Toggle sidebar"
+                    role="button"
+                    height="$12"
+                    width="$2"
+                    bg={isToggleHovered ? '$neutral8' : '$neutral6'}
+                    borderRadius="$full"
+                    cursor="e-resize"
+                    pressStyle={{
+                      bg: '$neutral7',
+                    }}
+                    focusVisibleStyle={{
+                      outlineWidth: 2,
+                      outlineColor: '$focusRing',
+                      outlineStyle: 'solid',
+                    }}
+                    onHoverIn={() => {
+                      setIsToggleHovered(true);
+                    }}
+                    onHoverOut={() => {
+                      setIsToggleHovered(false);
+                    }}
+                    onPress={() => {
+                      setAppSideBarStatus((prev) => ({
+                        ...prev,
+                        isCollapsed: false,
+                      }));
+                    }}
+                  />
+                }
+                renderContent={
+                  <Tooltip.Text shortcutKey={EShortcutEvents.SideBar}>
+                    {intl.formatMessage({
+                      id: ETranslations.shortcut_expand_sidebar,
+                    })}
+                  </Tooltip.Text>
+                }
               />
             </MotiView>
           ) : null}

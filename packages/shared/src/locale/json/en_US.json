@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "When enabled, you can only send funds to accounts within the wallet or to any address in the address book.",
   "settings_protection.allowlist_title": "Transfer allowlist",
   "shortcut.collapse_sidebar": "Collapse sidebar",
+  "shortcut.expand_sidebar": "Expand sidebar",
   "shortcut.go_back": "Go back",
   "shortcut.go_forward": "Go forward",
   "shortcut.hide_sidebar": "Hide sidebar",

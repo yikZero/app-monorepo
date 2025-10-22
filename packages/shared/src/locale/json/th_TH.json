@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "เมื่อเปิดใช้งานฟีเจอร์นี้ คุณจะสามารถส่งเงินได้เฉพาะไปยังบัญชีในกระเป๋าเงินของคุณหรือที่อยู่ที่บันทึกไว้ในสมุดที่อยู่เท่านั้น",
   "settings_protection.allowlist_title": "โอนรายการที่อนุญาต",
   "shortcut.collapse_sidebar": "ยุบแถบด้านข้าง",
+  "shortcut.expand_sidebar": "ขยายแถบด้านข้าง",
   "shortcut.go_back": "ย้อนกลับ",
   "shortcut.go_forward": "เดินหน้าต่อไป",
   "shortcut.hide_sidebar": "ซ่อนแถบด้านข้าง",

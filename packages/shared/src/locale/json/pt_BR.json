@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "Quando esta função está ativada, você só pode enviar fundos para contas da sua carteira ou endereços salvos no livro de endereços.",
   "settings_protection.allowlist_title": "Transferir lista de permitidos",
   "shortcut.collapse_sidebar": "Recolher barra lateral",
+  "shortcut.expand_sidebar": "Expandir a barra lateral",
   "shortcut.go_back": "Volte",
   "shortcut.go_forward": "Vá em frente",
   "shortcut.hide_sidebar": "Ocultar barra lateral",

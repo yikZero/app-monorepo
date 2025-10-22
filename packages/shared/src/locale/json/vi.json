@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "Khi bật tính năng này, bạn chỉ có thể gửi tiền đến các tài khoản trong ví của mình hoặc địa chỉ đã lưu trong sổ địa chỉ.",
   "settings_protection.allowlist_title": "Chuyển danh sách cho phép",
   "shortcut.collapse_sidebar": "Thu gọn thanh bên",
+  "shortcut.expand_sidebar": "Mở rộng thanh bên",
   "shortcut.go_back": "Quay lại",
   "shortcut.go_forward": "Tiến về phía trước",
   "shortcut.hide_sidebar": "Ẩn thanh bên",

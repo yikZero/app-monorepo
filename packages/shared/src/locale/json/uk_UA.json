@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "Коли цю функцію увімкнено, ви можете надсилати кошти лише на рахунки вашого гаманця або збережені адреси з адресної книги.",
   "settings_protection.allowlist_title": "Перенесення списку дозволених",
   "shortcut.collapse_sidebar": "Згорнути бічну панель",
+  "shortcut.expand_sidebar": "Розгорнути бічну панель",
   "shortcut.go_back": "Іди назад",
   "shortcut.go_forward": "Іди вперед",
   "shortcut.hide_sidebar": "Приховати бічну панель",

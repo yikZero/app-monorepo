@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "この機能を有効にすると、ウォレット内のアカウントまたはアドレス帳に登録されたアドレスへのみ送金できるようになります。",
   "settings_protection.allowlist_title": "転送許可リスト",
   "shortcut.collapse_sidebar": "サイドバーを折りたたむ",
+  "shortcut.expand_sidebar": "サイドバーを展開",
   "shortcut.go_back": "戻る",
   "shortcut.go_forward": "前進する",
   "shortcut.hide_sidebar": "サイドバーを非表示",

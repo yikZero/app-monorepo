@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "啟用此功能後，您只能向錢包內的帳戶或地址簿中儲存的地址發送資金。",
   "settings_protection.allowlist_title": "轉帳白名單",
   "shortcut.collapse_sidebar": "收合側邊欄",
+  "shortcut.expand_sidebar": "展開側邊欄",
   "shortcut.go_back": "返回",
   "shortcut.go_forward": "前進",
   "shortcut.hide_sidebar": "隱藏側邊欄",

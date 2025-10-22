@@ -2889,6 +2889,7 @@
   "settings_protection.allowlist_content": "Cuando esta función está activada, solo puedes enviar fondos a cuentas de tu billetera o direcciones guardadas en la libreta de direcciones.",
   "settings_protection.allowlist_title": "Transferir lista de permitidos",
   "shortcut.collapse_sidebar": "Contraer barra lateral",
+  "shortcut.expand_sidebar": "Expandir la barra lateral",
   "shortcut.go_back": "Volver",
   "shortcut.go_forward": "Avanzar",
   "shortcut.hide_sidebar": "Ocultar barra lateral",
