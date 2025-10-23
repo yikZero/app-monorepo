@@ -151,13 +151,6 @@ export function DesktopLeftSideBar({
   const { top } = useSafeAreaInsets(); // used for ipad
   const theme = useTheme();
   const [isHovering, setIsHovering] = useState(false);
-  const [isToggleHovered, setIsToggleHovered] = useState(false);
-
-  useEffect(() => {
-    if (!isHovering) {
-      setIsToggleHovered(false);
-    }
-  }, [isHovering]);
 
   const { gtMd } = useMedia();
   const isShowWebTabBar = platformEnv.isDesktop || platformEnv.isNativeIOS;
@@ -264,20 +257,6 @@ export function DesktopLeftSideBar({
         position="relative"
         flex={1}
         testID="Desktop-AppSideBar-Content-Container"
-        onHoverIn={
-          isCollapse
-            ? () => {
-                setIsHovering(true);
-              }
-            : undefined
-        }
-        onHoverOut={
-          isCollapse
-            ? () => {
-                setIsHovering(false);
-              }
-            : undefined
-        }
       >
         <MotiView
           animate={{
@@ -326,10 +305,10 @@ export function DesktopLeftSideBar({
             setIsHovering(false);
           }}
           zIndex={1000}
-          right={-2}
+          right={-3}
           top={0}
           bottom={0}
-          width={4}
+          width={6}
           pb="$20"
           ai="center"
           jc="center"
@@ -359,7 +338,10 @@ export function DesktopLeftSideBar({
                     role="button"
                     height="$12"
                     width="$2"
-                    bg={isToggleHovered ? '$neutral8' : '$neutral6'}
+                    bg="$neutral6"
+                    hoverStyle={{
+                      bg: '$neutral8',
+                    }}
                     borderRadius="$full"
                     cursor="e-resize"
                     pressStyle={{
@@ -369,12 +351,6 @@ export function DesktopLeftSideBar({
                       outlineWidth: 2,
                       outlineColor: '$focusRing',
                       outlineStyle: 'solid',
-                    }}
-                    onHoverIn={() => {
-                      setIsToggleHovered(true);
-                    }}
-                    onHoverOut={() => {
-                      setIsToggleHovered(false);
                     }}
                     onPress={() => {
                       setAppSideBarStatus((prev) => ({
