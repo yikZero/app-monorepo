@@ -84,8 +84,8 @@ function TabItemView({
       <YStack
         ai={isCollapse ? 'center' : undefined}
         gap={isCollapse ? '$0.5' : undefined}
-        pt={isCollapse ? 2 : undefined}
-        pb={isCollapse ? 8 : undefined}
+        pt={isCollapse ? 6 : undefined}
+        pb={isCollapse ? 6 : undefined}
         onPress={options.tabbarOnPress ?? onPress}
         onHoverIn={() => {
           if (isCollapse) {
@@ -120,7 +120,7 @@ function TabItemView({
         />
         {isCollapse ? (
           <SizableText
-            size="$bodySmMedium"
+            size="$bodyXsMedium"
             cursor="default"
             color="$text"
             textAlign="center"
