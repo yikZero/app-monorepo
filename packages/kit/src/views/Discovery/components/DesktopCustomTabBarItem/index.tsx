@@ -303,7 +303,7 @@ function DesktopCustomTabBarItem({
             onHoverOut={handleHoverOut}
           >
             <DesktopTabItemImage avatarSrc={tab?.favicon} selected={isActive} />
-            <SizableText size="$bodyMd" numberOfLines={1}>
+            <SizableText size="$bodyMd" width="$24" numberOfLines={1}>
               {label}
             </SizableText>
             <IconButton
