@@ -84,7 +84,8 @@ function TabItemView({
       <YStack
         ai={isCollapse ? 'center' : undefined}
         gap={isCollapse ? '$0.5' : undefined}
-        py={isCollapse ? 5 : undefined}
+        pt={isCollapse ? 2 : undefined}
+        pb={isCollapse ? 8 : undefined}
         onPress={options.tabbarOnPress ?? onPress}
         onHoverIn={() => {
           if (isCollapse) {
