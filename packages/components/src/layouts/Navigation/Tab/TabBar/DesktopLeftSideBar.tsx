@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CommonActions } from '@react-navigation/native';
 import { MotiView } from 'moti';
@@ -341,6 +341,7 @@ export function DesktopLeftSideBar({
   const { top } = useSafeAreaInsets(); // used for ipad
   const theme = useTheme();
   const [isHovering, setIsHovering] = useState(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isShowWebTabBar = platformEnv.isDesktop || platformEnv.isNativeIOS;
 
@@ -453,6 +454,23 @@ export function DesktopLeftSideBar({
     navigation,
   ]);
 
+  const handleHoverIn = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovering(true);
+    }, 200); // 200ms delay to prevent quick hover triggers
+  }, []);
+
+  const handleHoverOut = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setIsHovering(false);
+  }, []);
+
   const handleToggleCollapse = useCallback(() => {
     defaultLogger.app.page.navigationToggle();
     setAppSideBarStatus((prev) => ({
@@ -463,6 +481,16 @@ export function DesktopLeftSideBar({
   }, [setAppSideBarStatus, setIsHovering]);
 
   useShortcuts(EShortcutEvents.SideBar, handleToggleCollapse);
+
+  // Cleanup timer on unmount to prevent memory leak
+  useEffect(
+    () => () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <MotiView
@@ -579,12 +607,8 @@ export function DesktopLeftSideBar({
       <YStack
         testID="Desktop-AppSideBar-Separator"
         position="absolute"
-        onHoverIn={() => {
-          setIsHovering(true);
-        }}
-        onHoverOut={() => {
-          setIsHovering(false);
-        }}
+        onHoverIn={handleHoverIn}
+        onHoverOut={handleHoverOut}
         onPress={handleToggleCollapse}
         cursor="pointer"
         zIndex={1000}
@@ -621,6 +645,7 @@ export function DesktopLeftSideBar({
                         ? 'ChevronRightSmallOutline'
                         : 'ChevronLeftSmallOutline'
                     }
+                    cursor="pointer"
                     size="small"
                     bg="$bgApp"
                     elevation={5}
