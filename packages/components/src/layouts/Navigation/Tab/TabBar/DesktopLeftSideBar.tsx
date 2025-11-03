@@ -5,7 +5,7 @@ import { MotiView } from 'moti';
 import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
-import { Tooltip } from '@onekeyhq/components/src/actions';
+import { IconButton, Tooltip } from '@onekeyhq/components/src/actions';
 import type { IActionListSection } from '@onekeyhq/components/src/actions';
 import {
   EPortalContainerConstantName,
@@ -585,68 +585,59 @@ export function DesktopLeftSideBar({
         onHoverOut={() => {
           setIsHovering(false);
         }}
+        onPress={handleToggleCollapse}
+        cursor="pointer"
         zIndex={1000}
         right={-8}
         top={0}
         bottom={0}
         width={16}
-        ai="center"
-        jc="center"
       >
         {isHovering ? (
-          <MotiView
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={
-              {
-                type: 'timing',
-                duration: 200,
-              } as MotiTransition
-            }
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              paddingBottom: 96,
-            }}
-          >
-            <Tooltip
-              placement="right"
-              renderTrigger={
-                <YStack
-                  aria-label="Toggle sidebar"
-                  role="button"
-                  height="$20"
-                  width="$5"
-                  ai="center"
-                  jc="center"
-                  cursor={isCollapse ? 'e-resize' : 'w-resize'}
-                  onPress={handleToggleCollapse}
-                >
-                  <YStack
-                    height="$16"
-                    width="$2"
-                    bg="$neutral6"
-                    hoverStyle={{
-                      bg: '$neutral8',
-                    }}
-                    borderRadius="$full"
-                    pointerEvents="none"
-                  />
-                </YStack>
-              }
-              renderContent={
-                <Tooltip.Text shortcutKey={EShortcutEvents.SideBar}>
-                  {intl.formatMessage({
-                    id: isCollapse
-                      ? ETranslations.shortcut_expand_sidebar
-                      : ETranslations.shortcut_collapse_sidebar,
-                  })}
-                </Tooltip.Text>
-              }
+          <>
+            <YStack
+              position="absolute"
+              left={8}
+              top={0}
+              bottom={0}
+              width={1.5}
+              bg="$borderStrong"
+              pointerEvents="none"
+              animation="quick"
+              enterStyle={{
+                opacity: 0,
+              }}
+              opacity={1}
             />
-          </MotiView>
+            <YStack ai="center" jc="center" width="100%" mt="$24">
+              <Tooltip
+                open
+                placement="right"
+                renderTrigger={
+                  <IconButton
+                    aria-label="Toggle sidebar"
+                    icon={
+                      isCollapse
+                        ? 'ChevronRightSmallOutline'
+                        : 'ChevronLeftSmallOutline'
+                    }
+                    size="small"
+                    bg="$bgApp"
+                    elevation={5}
+                  />
+                }
+                renderContent={
+                  <Tooltip.Text shortcutKey={EShortcutEvents.SideBar}>
+                    {intl.formatMessage({
+                      id: isCollapse
+                        ? ETranslations.shortcut_expand_sidebar
+                        : ETranslations.shortcut_collapse_sidebar,
+                    })}
+                  </Tooltip.Text>
+                }
+              />
+            </YStack>
+          </>
         ) : null}
       </YStack>
     </MotiView>
