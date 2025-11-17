@@ -1,10 +1,12 @@
 import { useCallback, useMemo } from 'react';
 
+import { StyleSheet } from 'react-native';
 import { useIntl } from 'react-intl';
 
 import {
   Badge,
   Button,
+  Empty,
   Heading,
   Icon,
   Page,
@@ -16,13 +18,40 @@ import {
 } from '@onekeyhq/components';
 import { useNetworkDoctorStateAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { ENetworkConnectivityLevel } from '@onekeyhq/shared/src/modules/NetworkDoctor/types';
 
 import useAppNavigation from '../../../hooks/useAppNavigation';
+
+// Hook to map connectivity level to i18n translations
+const useConnectivityLevelMap = () => {
+  const intl = useIntl();
+  return useMemo<Record<ENetworkConnectivityLevel, string>>(
+    () => ({
+      [ENetworkConnectivityLevel.COMPLETELY_DOWN]: intl.formatMessage({
+        id: ETranslations.global_network_doctor_conclusion_completely_down,
+      }),
+      [ENetworkConnectivityLevel.INTERNATIONAL_RESTRICTED]: intl.formatMessage({
+        id: ETranslations.global_network_doctor_conclusion_access_limited,
+      }),
+      [ENetworkConnectivityLevel.ONEKEY_BLOCKED]: intl.formatMessage({
+        id: ETranslations.global_network_doctor_issues_found,
+      }),
+      [ENetworkConnectivityLevel.ONEKEY_SERVICE_ERROR]: intl.formatMessage({
+        id: ETranslations.global_network_doctor_conclusion_unknown,
+      }),
+      [ENetworkConnectivityLevel.HEALTHY]: intl.formatMessage({
+        id: ETranslations.global_network_doctor_conclusion_healthy,
+      }),
+    }),
+    [intl],
+  );
+};
 
 function NetworkDoctorResult() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const [doctorState] = useNetworkDoctorStateAtom();
+  const connectivityLevelMap = useConnectivityLevelMap();
 
   const { status, progress, result, error } = doctorState;
 
@@ -108,53 +137,44 @@ function NetworkDoctorResult() {
     const isHealthy = summary.allCriticalChecksPassed;
 
     return (
-      <YStack gap="$5" p="$5" flex={1}>
-        <YStack gap="$4" alignItems="center">
-          <Icon
-            name={isHealthy ? 'CheckRadioSolid' : 'ErrorSolid'}
-            size="$16"
-            color={isHealthy ? '$iconSuccess' : '$iconCritical'}
-          />
-
-          <Heading size="$headingXl" textAlign="center">
-            {isHealthy
-              ? intl.formatMessage({
-                  id: ETranslations.global_network_doctor_all_checks_passed,
-                })
-              : intl.formatMessage({
-                  id: ETranslations.global_network_doctor_issues_found,
-                })}
-          </Heading>
-
-          <SizableText size="$bodyLg" color="$textSubdued" textAlign="center">
-            {conclusion.summary}
-          </SizableText>
-        </YStack>
+      <YStack p="$5" gap="$5">
+        {/* Empty component for icon, title, description */}
+        <Empty
+          p="$0"
+          icon={isHealthy ? 'CheckRadioSolid' : 'ErrorSolid'}
+          iconProps={{
+            color: isHealthy ? '$iconSuccess' : '$iconCritical',
+          }}
+          title={intl.formatMessage({
+            id: isHealthy
+              ? ETranslations.global_network_doctor_all_checks_passed
+              : ETranslations.global_network_doctor_issues_found,
+          })}
+          description={conclusion.summary}
+        />
 
         {/* Diagnosis Details */}
         {!isHealthy && conclusion.suggestedActions.length > 0 ? (
-          <YStack gap="$3" mt="$4">
-            <Heading size="$headingMd">
+          <YStack gap="$2" mt="$6">
+            <Heading size="$bodyMdMedium" color="$textSubdued" pl="$4">
               {intl.formatMessage({
                 id: ETranslations.global_network_doctor_suggested_actions_title,
               })}
             </Heading>
             <YStack
-              p="$3"
-              bg={
-                conclusion.assessment === 'blocked'
-                  ? '$bgCritical'
-                  : '$bgCaution'
-              }
+              p="$4"
+              bg="$bgSubdued"
+              borderWidth={StyleSheet.hairlineWidth}
+              borderColor="$neutral3"
               borderRadius="$3"
               gap="$2"
             >
-              <SizableText size="$bodyMd" fontWeight="600">
-                {conclusion.connectivityLevel.replace(/_/g, ' ')}
+              <SizableText size="$bodyMdMedium" color="$text">
+                {connectivityLevelMap[conclusion.connectivityLevel]}
               </SizableText>
-              <YStack gap="$1" pl="$3" mt="$2">
+              <YStack gap="$1" mt="$1">
                 {conclusion.suggestedActions.map((action, idx) => (
-                  <SizableText key={idx} size="$bodySm" color="$textSubdued">
+                  <SizableText key={idx} size="$bodyMd" color="$textSubdued">
                     {idx + 1}. {action}
                   </SizableText>
                 ))}
@@ -166,7 +186,7 @@ function NetworkDoctorResult() {
         {/* Intermediate Issues (Debug Info) */}
         {conclusion.intermediateIssues &&
         conclusion.intermediateIssues.length > 0 ? (
-          <YStack gap="$2" mt="$2">
+          <YStack gap="$2">
             <Heading size="$headingSm">
               {intl.formatMessage({
                 id: ETranslations.global_network_doctor_debug_info_title,
@@ -179,65 +199,28 @@ function NetworkDoctorResult() {
             ))}
           </YStack>
         ) : null}
-
-        <Stack flex={1} />
-
-        {/* Action Buttons */}
-        <YStack gap="$3">
-          {!isHealthy ? (
-            <Button
-              variant="primary"
-              onPress={handleContactSupport}
-              icon="HeadsetOutline"
-            >
-              {intl.formatMessage({
-                id: ETranslations.global_network_doctor_btn_contact_support,
-              })}
-            </Button>
-          ) : null}
-
-          <Button variant="secondary" onPress={handleClose}>
-            {intl.formatMessage({
-              id: ETranslations.global_network_doctor_btn_close,
-            })}
-          </Button>
-        </YStack>
       </YStack>
     );
-  }, [result, handleContactSupport, handleClose, intl]);
+  }, [result, intl]);
 
   // Render error view
   const renderError = useMemo(() => {
     if (!error) return null;
 
     return (
-      <YStack
-        gap="$5"
-        p="$5"
-        flex={1}
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Icon name="ErrorSolid" size="$16" color="$iconCritical" />
-
-        <Heading size="$headingXl" textAlign="center">
-          {intl.formatMessage({
-            id: ETranslations.global_network_doctor_error_title,
-          })}
-        </Heading>
-
-        <SizableText size="$bodyLg" color="$textSubdued" textAlign="center">
-          {error}
-        </SizableText>
-
-        <Button variant="primary" onPress={handleClose} mt="$4">
-          {intl.formatMessage({
-            id: ETranslations.global_network_doctor_btn_close,
-          })}
-        </Button>
-      </YStack>
+      <Empty
+        icon="ErrorSolid"
+        iconProps={{ color: '$iconCritical' }}
+        title={intl.formatMessage({
+          id: ETranslations.global_network_doctor_error_title,
+        })}
+        description={`${intl.formatMessage({
+          id: ETranslations.global_an_error_occurred_desc,
+        })}\n\n${String(error)}`}
+        descriptionProps={{ size: '$bodyMd' }}
+      />
     );
-  }, [error, handleClose, intl]);
+  }, [error, intl]);
 
   return (
     <Page>
@@ -265,6 +248,38 @@ function NetworkDoctorResult() {
           </YStack>
         ) : null}
       </Page.Body>
+      {status === 'completed' || status === 'failed' ? (
+        <Page.Footer>
+          <Page.FooterActions
+            onCancelText={intl.formatMessage({
+              id: ETranslations.global_close,
+            })}
+            cancelButtonProps={{
+              onPress: handleClose,
+              variant: 'secondary',
+            }}
+            onConfirmText={
+              status === 'completed' &&
+              result &&
+              !result.summary.allCriticalChecksPassed
+                ? intl.formatMessage({
+                    id: ETranslations.global_network_doctor_btn_contact_support,
+                  })
+                : undefined
+            }
+            confirmButtonProps={
+              status === 'completed' &&
+              result &&
+              !result.summary.allCriticalChecksPassed
+                ? {
+                    onPress: handleContactSupport,
+                    icon: 'HelpSupportOutline',
+                  }
+                : undefined
+            }
+          />
+        </Page.Footer>
+      ) : null}
     </Page>
   );
 }

@@ -1179,6 +1179,7 @@
   global_change_passcode = 'global.change_passcode',
   global_change_password = 'global.change_password',
   global_change_wallpaper = 'global.change_wallpaper',
+  global_check = 'global.check',
   global_check_for_updates = 'global.check_for_updates',
   global_check_it_out = 'global.check_it_out',
   global_checking_device = 'global.checking_device',
