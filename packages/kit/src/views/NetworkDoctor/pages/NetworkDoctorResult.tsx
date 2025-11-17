@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
+import { useIntl } from 'react-intl';
+
 import {
   Badge,
   Button,
@@ -13,10 +15,12 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { useNetworkDoctorStateAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 
 import useAppNavigation from '../../../hooks/useAppNavigation';
 
 function NetworkDoctorResult() {
+  const intl = useIntl();
   const navigation = useAppNavigation();
   const [doctorState] = useNetworkDoctorStateAtom();
 
@@ -38,7 +42,9 @@ function NetworkDoctorResult() {
         <YStack gap="$4" alignItems="center" justifyContent="center" flex={1}>
           <Icon name="LoaderSolid" size="$12" color="$iconActive" />
           <SizableText size="$bodyLg" color="$textSubdued">
-            Initializing...
+            {intl.formatMessage({
+              id: ETranslations.global_network_doctor_initializing,
+            })}
           </SizableText>
         </YStack>
       );
@@ -47,7 +53,11 @@ function NetworkDoctorResult() {
     return (
       <YStack gap="$4" p="$5">
         <XStack justifyContent="space-between" alignItems="center">
-          <Heading size="$headingLg">Network Diagnostics Running</Heading>
+          <Heading size="$headingLg">
+            {intl.formatMessage({
+              id: ETranslations.global_network_doctor_running_title,
+            })}
+          </Heading>
           <Badge badgeType="default" badgeSize="sm">
             <Badge.Text>{progress.percentage}%</Badge.Text>
           </Badge>
@@ -87,7 +97,7 @@ function NetworkDoctorResult() {
         </YStack>
       </YStack>
     );
-  }, [progress]);
+  }, [progress, intl]);
 
   // Render completed view
   const renderCompleted = useMemo(() => {
@@ -107,7 +117,13 @@ function NetworkDoctorResult() {
           />
 
           <Heading size="$headingXl" textAlign="center">
-            {isHealthy ? 'All Checks Passed' : 'Network Issues Detected'}
+            {isHealthy
+              ? intl.formatMessage({
+                  id: ETranslations.global_network_doctor_all_checks_passed,
+                })
+              : intl.formatMessage({
+                  id: ETranslations.global_network_doctor_issues_found,
+                })}
           </Heading>
 
           <SizableText size="$bodyLg" color="$textSubdued" textAlign="center">
@@ -118,7 +134,11 @@ function NetworkDoctorResult() {
         {/* Diagnosis Details */}
         {!isHealthy && conclusion.suggestedActions.length > 0 ? (
           <YStack gap="$3" mt="$4">
-            <Heading size="$headingMd">Suggested Actions</Heading>
+            <Heading size="$headingMd">
+              {intl.formatMessage({
+                id: ETranslations.global_network_doctor_suggested_actions_title,
+              })}
+            </Heading>
             <YStack
               p="$3"
               bg={
@@ -147,7 +167,11 @@ function NetworkDoctorResult() {
         {conclusion.intermediateIssues &&
         conclusion.intermediateIssues.length > 0 ? (
           <YStack gap="$2" mt="$2">
-            <Heading size="$headingSm">Debug Info</Heading>
+            <Heading size="$headingSm">
+              {intl.formatMessage({
+                id: ETranslations.global_network_doctor_debug_info_title,
+              })}
+            </Heading>
             {conclusion.intermediateIssues.map((issue, idx) => (
               <SizableText key={idx} size="$bodyXs" color="$textDisabled">
                 • {issue}
@@ -166,17 +190,21 @@ function NetworkDoctorResult() {
               onPress={handleContactSupport}
               icon="HeadsetOutline"
             >
-              Contact Support
+              {intl.formatMessage({
+                id: ETranslations.global_network_doctor_btn_contact_support,
+              })}
             </Button>
           ) : null}
 
           <Button variant="secondary" onPress={handleClose}>
-            Close
+            {intl.formatMessage({
+              id: ETranslations.global_network_doctor_btn_close,
+            })}
           </Button>
         </YStack>
       </YStack>
     );
-  }, [result, handleContactSupport, handleClose]);
+  }, [result, handleContactSupport, handleClose, intl]);
 
   // Render error view
   const renderError = useMemo(() => {
@@ -193,7 +221,9 @@ function NetworkDoctorResult() {
         <Icon name="ErrorSolid" size="$16" color="$iconCritical" />
 
         <Heading size="$headingXl" textAlign="center">
-          Error
+          {intl.formatMessage({
+            id: ETranslations.global_network_doctor_error_title,
+          })}
         </Heading>
 
         <SizableText size="$bodyLg" color="$textSubdued" textAlign="center">
@@ -201,15 +231,21 @@ function NetworkDoctorResult() {
         </SizableText>
 
         <Button variant="primary" onPress={handleClose} mt="$4">
-          Close
+          {intl.formatMessage({
+            id: ETranslations.global_network_doctor_btn_close,
+          })}
         </Button>
       </YStack>
     );
-  }, [error, handleClose]);
+  }, [error, handleClose, intl]);
 
   return (
     <Page>
-      <Page.Header title="Network Diagnostics" />
+      <Page.Header
+        title={intl.formatMessage({
+          id: ETranslations.global_network_doctor_title,
+        })}
+      />
       <Page.Body>
         {status === 'running' ? renderProgress : null}
         {status === 'completed' ? renderCompleted : null}
@@ -217,10 +253,14 @@ function NetworkDoctorResult() {
         {status === 'idle' ? (
           <YStack gap="$4" alignItems="center" justifyContent="center" flex={1}>
             <SizableText size="$bodyLg" color="$textSubdued">
-              Diagnostics not started yet.
+              {intl.formatMessage({
+                id: ETranslations.global_network_doctor_not_started,
+              })}
             </SizableText>
             <Button variant="secondary" onPress={handleClose}>
-              Close
+              {intl.formatMessage({
+                id: ETranslations.global_close,
+              })}
             </Button>
           </YStack>
         ) : null}
