@@ -26,8 +26,8 @@ import { appApiClient } from '@onekeyhq/shared/src/appApiClient/appApiClient';
 import { ONEKEY_HEALTH_CHECK_URL } from '@onekeyhq/shared/src/config/appConfig';
 import { getEndpointByServiceName } from '@onekeyhq/shared/src/config/endpointsMap';
 import { OneKeyError } from '@onekeyhq/shared/src/errors';
-import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EServiceEndpointEnum } from '@onekeyhq/shared/types/endpoint';
 
@@ -215,7 +215,9 @@ export class NetworkDoctor {
       !this.healthCheckUrl ||
       !this.targetDomain
     ) {
-      throw new OneKeyError('Failed to initialize NetworkDoctor');
+      throw new OneKeyError(
+        this.t(ETranslations.global_network_doctor_failed_to_initialize),
+      );
     }
 
     // Initialize network logging
@@ -239,6 +241,7 @@ export class NetworkDoctor {
       defaultLogger.networkDoctor.log.info({
         info: '[DR] Phase 1: Basic Network Info',
       });
+
       const netInfo = await this.testNetInfo();
       const networkEnv = await this.testNetworkEnv();
 
@@ -530,7 +533,9 @@ export class NetworkDoctor {
 
     if (!targetHost) {
       throw new OneKeyError(
-        'No target host specified for TCP connectivity test',
+        this.t(
+          ETranslations.global_no_target_host_specified_for_tcp_connectivity_test,
+        ),
       );
     }
 

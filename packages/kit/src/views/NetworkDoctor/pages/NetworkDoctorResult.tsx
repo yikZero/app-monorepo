@@ -1,19 +1,15 @@
 import { useCallback, useMemo } from 'react';
 
-import { StyleSheet } from 'react-native';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
-  Badge,
   Button,
   Empty,
   Heading,
   Icon,
   Page,
-  Progress,
   SizableText,
-  Stack,
-  XStack,
   YStack,
 } from '@onekeyhq/components';
 import { useNetworkDoctorStateAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
@@ -68,61 +64,35 @@ function NetworkDoctorResult() {
   const renderProgress = useMemo(() => {
     if (!progress) {
       return (
-        <YStack gap="$4" alignItems="center" justifyContent="center" flex={1}>
-          <Icon name="LoaderSolid" size="$12" color="$iconActive" />
-          <SizableText size="$bodyLg" color="$textSubdued">
-            {intl.formatMessage({
-              id: ETranslations.global_network_doctor_initializing,
-            })}
-          </SizableText>
-        </YStack>
+        <Empty
+          flex={1}
+          icon="WifiOutline"
+          iconProps={{ color: '$iconActive' }}
+          title={intl.formatMessage({
+            id: ETranslations.global_network_doctor_initializing,
+          })}
+        />
       );
     }
 
     return (
-      <YStack gap="$4" p="$5">
-        <XStack justifyContent="space-between" alignItems="center">
-          <Heading size="$headingLg">
-            {intl.formatMessage({
-              id: ETranslations.global_network_doctor_running_title,
-            })}
-          </Heading>
-          <Badge badgeType="default" badgeSize="sm">
-            <Badge.Text>{progress.percentage}%</Badge.Text>
-          </Badge>
-        </XStack>
+      <YStack flex={1} alignItems="center" p="$5">
+        <YStack gap="$6" alignItems="center" mt="$12" maxWidth="$96" w="100%">
+          {/* Icon */}
+          <Icon name="WifiOutline" size="$16" color="$iconActive" />
 
-        <YStack gap="$2">
-          <XStack justifyContent="space-between">
-            <SizableText size="$bodySm" fontWeight="600">
-              {progress.phase.replace(/_/g, ' ')}
+          {/* Title with percentage */}
+          <YStack gap="$2" alignItems="center">
+            <Heading size="$headingXl" textAlign="center">
+              {intl.formatMessage({
+                id: ETranslations.global_network_doctor_running_title,
+              })}{' '}
+              ({progress.percentage}%)
+            </Heading>
+            <SizableText size="$bodyLg" color="$textSubdued" textAlign="center">
+              {progress.message}
             </SizableText>
-            <SizableText size="$bodySm" color="$textSubdued">
-              {progress.phaseIndex} / {progress.totalPhases}
-            </SizableText>
-          </XStack>
-
-          <YStack position="relative">
-            <Progress value={progress.percentage} w="100%" />
-            <XStack
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              justifyContent="center"
-              alignItems="center"
-              pointerEvents="none"
-            >
-              <SizableText size="$bodyXs" fontWeight="700" color="$text">
-                {progress.percentage}%
-              </SizableText>
-            </XStack>
           </YStack>
-
-          <SizableText size="$bodyMd" color="$textSubdued" mt="$2">
-            {progress.message}
-          </SizableText>
         </YStack>
       </YStack>
     );
@@ -172,7 +142,7 @@ function NetworkDoctorResult() {
               <SizableText size="$bodyMdMedium" color="$text">
                 {connectivityLevelMap[conclusion.connectivityLevel]}
               </SizableText>
-              <YStack gap="$1" mt="$1">
+              <YStack gap="$1">
                 {conclusion.suggestedActions.map((action, idx) => (
                   <SizableText key={idx} size="$bodyMd" color="$textSubdued">
                     {idx + 1}. {action}
@@ -201,7 +171,7 @@ function NetworkDoctorResult() {
         ) : null}
       </YStack>
     );
-  }, [result, intl]);
+  }, [result, intl, connectivityLevelMap]);
 
   // Render error view
   const renderError = useMemo(() => {
