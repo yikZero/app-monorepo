@@ -121,7 +121,10 @@ function Upgrade() {
       content={renderContent()}
       contentContainerProps={{
         px: '$4',
-        py: '$4',
+        py: '$2',
+        $gtMd: {
+          py: '$4',
+        },
         bg: '$bgSubdued',
       }}
     />

@@ -62,7 +62,6 @@ function RichBlockHeader(
   return (
     <XStack
       py="$3"
-      $md={{ py: '$2' }}
       justifyContent="space-between"
       alignItems="center"
       gap="$2"
