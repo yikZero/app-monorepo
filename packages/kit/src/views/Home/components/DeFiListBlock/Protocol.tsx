@@ -65,7 +65,9 @@ function Protocol({
         ),
       },
       {
-        title: 'Type',
+        title: intl.formatMessage({
+          id: ETranslations.wallet_defi_portfolio_column_type,
+        }),
         dataIndex: 'category',
         render: (
           category: string,
@@ -95,7 +97,9 @@ function Protocol({
         },
       },
       {
-        title: 'Amount',
+        title: intl.formatMessage({
+          id: ETranslations.wallet_defi_portfolio_column_amount,
+        }),
         dataIndex: 'amount',
         render: (amount: string) => (
           <NumberSizeableText size="$bodyMdMedium" formatter="balance">
