@@ -85,7 +85,7 @@ function Upgrade() {
             <SizableText size="$headingMd">
               {intl.formatMessage({ id: ETranslations.global_prime })}
             </SizableText>
-            <SizableText size="$bodyMd" numberOfLines={2}>
+            <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={2}>
               {intl.formatMessage({
                 id: ETranslations.settings_cloud_sync_bulk_tools_and_more,
               })}

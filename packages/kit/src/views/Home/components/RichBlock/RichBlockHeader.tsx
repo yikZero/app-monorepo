@@ -31,7 +31,7 @@ function RichBlockHeader(
       return (
         <XStack alignItems="center" gap="$1">
           {typeof title === 'string' ? (
-            <SizableText size="$headingLg" {...titleProps}>
+            <SizableText size="$headingLg" color="$text" {...titleProps}>
               {title}
             </SizableText>
           ) : (
