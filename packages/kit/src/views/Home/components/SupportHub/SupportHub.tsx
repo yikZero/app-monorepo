@@ -107,7 +107,7 @@ function SupportHub() {
                 source={require('@onekeyhq/kit/assets/sifu_bg.jpg')}
                 resizeMode="cover"
                 zIndex={0}
-                opacity={themeVariant === 'dark' ? 0.85 : 1}
+                opacity={themeVariant === 'dark' ? 0.9 : 1}
               />
               <Theme name="light">
                 <YStack width="60%" zIndex={99} position="absolute" left="$4">
