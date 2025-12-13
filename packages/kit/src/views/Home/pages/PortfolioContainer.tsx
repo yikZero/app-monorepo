@@ -17,7 +17,8 @@ import { PORTFOLIO_CONTAINER_RIGHT_SIDE_FIXED_WIDTH } from '../types';
 function PortfolioContainer() {
   const media = useMedia();
 
-  const tableLayout = media.gtXl;
+  const tableLayout = media.gtMd;
+  const showRecentHistory = media.gtXl;
 
   if (tableLayout) {
     return (
@@ -30,12 +31,14 @@ function PortfolioContainer() {
           <Upgrade />
           <SupportHub />
         </YStack>
-        <YStack
-          width={PORTFOLIO_CONTAINER_RIGHT_SIDE_FIXED_WIDTH}
-          flexShrink={0}
-        >
-          <RecentHistory />
-        </YStack>
+        {showRecentHistory ? (
+          <YStack
+            width={PORTFOLIO_CONTAINER_RIGHT_SIDE_FIXED_WIDTH}
+            flexShrink={0}
+          >
+            <RecentHistory />
+          </YStack>
+        ) : null}
       </XStack>
     );
   }
