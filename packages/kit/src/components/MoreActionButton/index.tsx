@@ -18,6 +18,7 @@ import {
   IconButton,
   LottieView,
   NavBackButton,
+  Popover,
   ScrollView,
   SizableText,
   Stack,
@@ -27,7 +28,7 @@ import {
   rootNavigationRef,
   useIsDesktopModeUIInTabPages,
   useIsWebHorizontalLayout,
-  useTooltipContext,
+  usePopoverContext,
 } from '@onekeyhq/components';
 import GiftExpandOnDark from '@onekeyhq/kit/assets/animations/gift-expand-on-dark.json';
 import GiftExpandOnLight from '@onekeyhq/kit/assets/animations/gift-expand-on-light.json';
@@ -104,15 +105,22 @@ function MoreActionProvider({ children }: PropsWithChildren) {
 }
 
 function MoreActionContentHeaderItem({ onPress, ...props }: IIconButtonProps) {
-  const { closeTooltip } = useTooltipContext();
+  const { closePopover } = usePopoverContext();
   const handlePress = useCallback(
     async (event: GestureResponderEvent) => {
-      await closeTooltip?.();
+      await closePopover?.();
       onPress?.(event);
     },
-    [closeTooltip, onPress],
+    [closePopover, onPress],
   );
-  return <IconButton {...props} variant="tertiary" onPress={handlePress} />;
+  return (
+    <IconButton
+      {...props}
+      variant="tertiary"
+      size="medium"
+      onPress={handlePress}
+    />
+  );
 }
 
 function MoreActionContentHeader({
@@ -205,15 +213,29 @@ function MoreActionContentHeader({
   }, []);
 
   return (
-    <XStack px="$5" pt="$3" my={1} ai="center" jc="space-between">
+    <XStack
+      px="$5"
+      pt="$4"
+      pb="$2"
+      ai="center"
+      jc="space-between"
+      bg="$bg"
+      zIndex={10}
+      borderTopLeftRadius="$3"
+      borderTopRightRadius="$3"
+      $platform-web={{
+        position: 'sticky',
+        top: 0,
+      }}
+    >
       {showBackButton ? (
         <NavBackButton onPress={handleBack} />
       ) : (
-        <SizableText size="$headingXl">
+        <SizableText size="$headingXl" color="$text" userSelect="none">
           {intl.formatMessage({ id: ETranslations.address_book_menu_title })}
         </SizableText>
       )}
-      <XStack jc="flex-end" gap="$6">
+      <XStack jc="flex-end" gap="$5">
         {items.map((item) => (
           <MoreActionContentHeaderItem
             key={item.title}
@@ -230,7 +252,7 @@ function MoreActionContentHeader({
 function MoreActionContentFooter() {
   const intl = useIntl();
   const navigation = useAppNavigation();
-  const { closeTooltip } = useTooltipContext();
+  const { closePopover } = usePopoverContext();
   const version = useMemo(() => {
     return `${platformEnv.version ?? ''} ${platformEnv.buildNumber ?? ''}`;
   }, []);
@@ -244,25 +266,41 @@ function MoreActionContentFooter() {
   );
 
   const handleAbout = useCallback(async () => {
-    await closeTooltip();
+    await closePopover?.();
     navigation.pushModal(EModalRoutes.SettingModal, {
       screen: EModalSettingRoutes.SettingListSubModal,
       params: {
         name: ESettingsTabNames.About,
       },
     });
-  }, [closeTooltip, navigation]);
+  }, [closePopover, navigation]);
   return (
-    <XStack px="$5" py="$2" jc="space-between" onPress={handleAbout}>
+    <XStack
+      px="$5"
+      pt="$2"
+      pb="$3"
+      jc="space-between"
+      onPress={handleAbout}
+      bg="$bg"
+      borderBottomLeftRadius="$3"
+      borderBottomRightRadius="$3"
+      $platform-web={{
+        position: 'sticky',
+        bottom: 0,
+      }}
+      userSelect="none"
+    >
       <XStack gap="$2" ai="center" jc="center">
-        <Icon name="InfoCircleOutline" size="$4" />
-        <SizableText size="$bodySm">
+        <Icon name="InfoCircleOutline" color="$icon" size="$4" />
+        <SizableText size="$bodyMd" color="$text">
           {`${intl.formatMessage({ id: ETranslations.global_about })} OneKey`}
         </SizableText>
       </XStack>
-      <XStack gap="$2" ai="center" jc="center">
-        <SizableText size="$bodySm">{versionString}</SizableText>
-        <Icon name="ChevronRightSmallOutline" size="$4" />
+      <XStack gap="$1" ai="center" jc="center">
+        <SizableText size="$bodyMd" color="$textDisabled">
+          {versionString}
+        </SizableText>
+        <Icon name="ChevronRightSmallOutline" color="$iconSubdued" size="$4" />
       </XStack>
     </XStack>
   );
@@ -293,11 +331,11 @@ function MoreActionContentGridItem({
   lottieSrc,
   isPrimeFeature,
 }: IMoreActionContentGridItemProps) {
-  const { closeTooltip } = useTooltipContext();
+  const { closePopover } = usePopoverContext();
   const { isPrimeAvailable } = usePrimeAvailable();
 
   const handlePress = useCallback(async () => {
-    await closeTooltip?.();
+    await closePopover?.();
     setTimeout(() => {
       if (trackID) {
         defaultLogger.ui.button.click({
@@ -306,10 +344,11 @@ function MoreActionContentGridItem({
       }
     });
     onPress();
-  }, [closeTooltip, onPress, trackID]);
+  }, [closePopover, onPress, trackID]);
 
   const { user } = useOneKeyAuth();
   const isPrimeUser = user?.primeSubscription?.isActive && user?.onekeyUserId;
+  const themeVariant = useThemeVariant();
 
   if (isPrimeFeature && !isPrimeAvailable) {
     return null;
@@ -321,20 +360,25 @@ function MoreActionContentGridItem({
       onPress={handlePress}
       group
       flexBasis="25%"
+      py="$2.5"
       ai="center"
-      jc="center"
-      gap="$2"
-      h={64}
+      jc="flex-start"
+      gap="$1"
       borderRadius="$2"
       hoverStyle={{
         bg: '$bgHover',
       }}
+      pressStyle={{
+        bg: '$bgActive',
+      }}
       userSelect="none"
     >
-      <YStack m="$1">
-        {icon ? <Icon name={icon} /> : null}
+      <YStack>
+        {icon ? <Icon size="$6" name={icon} /> : null}
         {lottieSrc ? (
-          <LottieView width={24} height={24} source={lottieSrc} />
+          <Stack w="$6" h="$6" ai="center" jc="center">
+            <LottieView width={32} height={32} source={lottieSrc} />
+          </Stack>
         ) : null}
         {showRedDot ? (
           <Stack
@@ -380,24 +424,23 @@ function MoreActionContentGridItem({
         {isPrimeFeature && !isPrimeUser ? (
           <Stack
             position="absolute"
-            left={-1}
-            top={-1}
-            backgroundColor="$bgStrong"
-            paddingLeft={5}
-            paddingRight={4}
-            py={1.5}
-            borderBottomRightRadius="$2"
+            right={-10}
+            backgroundColor={themeVariant === 'light' ? '#F1F1F1' : '#3A3A3A'}
+            px="$1"
+            borderRadius="$full"
+            borderWidth="$px"
+            borderColor="$bgApp"
           >
-            <Icon
-              color="$iconDisabled"
-              width={10}
-              height={10}
-              name="PrimeOutline"
-            />
+            <Icon color="$iconSubdued" size="$3" name="PrimeOutline" />
           </Stack>
         ) : null}
       </YStack>
-      <SizableText size="$bodySm" textAlign="center">
+      <SizableText
+        size="$bodySmMedium"
+        color="$textSubdued"
+        numberOfLines={2}
+        textAlign="center"
+      >
         {title}
       </SizableText>
     </YStack>
@@ -407,7 +450,7 @@ function MoreActionContentGridItem({
 function MoreActionDivider() {
   return (
     <XStack py="$2">
-      <Divider />
+      <Divider borderColor="$neutral3" />
     </XStack>
   );
 }
@@ -420,28 +463,71 @@ function MoreActionOneKeyId() {
     activeAccount: { network },
   } = useActiveAccount({ num: 0 });
 
-  const { closeTooltip } = useTooltipContext();
-
-  const displayName = useMemo(() => {
-    if (!isLoggedIn) {
-      return intl.formatMessage({ id: ETranslations.prime_signup_login });
-    }
-    return user?.displayEmail || 'OneKey ID';
-  }, [isLoggedIn, user?.displayEmail, intl]);
+  const { closePopover } = usePopoverContext();
 
   const handlePress = useCallback(async () => {
-    await closeTooltip();
+    await closePopover?.();
     // Trigger login flow directly
     void loginOneKeyId();
     await loginOneKeyId({
       toOneKeyIdPageOnLoginSuccess: true,
     });
-  }, [closeTooltip, loginOneKeyId]);
+  }, [closePopover, loginOneKeyId]);
 
   const { icon, onPrimeButtonPressed } = useOnPrimeButtonPressed({
-    onPress: closeTooltip,
+    onPress: closePopover,
     networkId: network?.id,
   });
+
+  // Get display name - extract username from email
+  const displayName = useMemo((): string => {
+    if (user?.displayEmail) {
+      const emailParts = user.displayEmail.split('@');
+      return emailParts[0] || 'OneKey ID';
+    }
+    return 'OneKey ID';
+  }, [user?.displayEmail]);
+
+  if (!isLoggedIn) {
+    return (
+      <XStack
+        alignItems="center"
+        py="$4"
+        px="$5"
+        userSelect="none"
+        justifyContent="space-between"
+        onPress={handlePress}
+      >
+        <XStack alignItems="center" gap="$3" flex={1}>
+          <OneKeyIdAvatar size="$8" />
+          <SizableText
+            size="$headingXl"
+            color="$text"
+            numberOfLines={1}
+            userSelect="none"
+          >
+            OneKey ID
+          </SizableText>
+        </XStack>
+        <XStack
+          alignItems="center"
+          gap="$0.5"
+          pl="$2.5"
+          pr="$1"
+          py="$1"
+          borderRadius="$full"
+          borderWidth={StyleSheet.hairlineWidth}
+          borderColor="$border"
+          hoverStyle={{ borderColor: '$borderHover' }}
+        >
+          <SizableText size="$bodyMdMedium" color="$text" userSelect="none">
+            {intl.formatMessage({ id: ETranslations.prime_signup_login })}
+          </SizableText>
+          <Icon name="ChevronRightSmallOutline" size="$4" color="$icon" />
+        </XStack>
+      </XStack>
+    );
+  }
 
   return (
     <XStack
@@ -453,19 +539,18 @@ function MoreActionOneKeyId() {
       onPress={handlePress}
     >
       <XStack alignItems="center" gap="$3" flex={1}>
-        {/* Avatar */}
-        <OneKeyIdAvatar size="$16" />
+        <OneKeyIdAvatar size="$14" />
 
-        {/* Username and Label */}
         <YStack flex={1} gap="$0.5">
-          <XStack alignItems="center" gap="$2.5">
+          <XStack alignItems="center" gap="$2">
             <SizableText
               size="$headingXl"
               color="$text"
               numberOfLines={1}
               ellipsizeMode="tail"
+              userSelect="none"
             >
-              OneKey ID
+              {displayName}
             </SizableText>
             {isPrimeAvailable ? (
               <XStack
@@ -485,14 +570,17 @@ function MoreActionOneKeyId() {
               </XStack>
             ) : null}
           </XStack>
-          <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
-            {displayName}
+          <SizableText
+            size="$bodyMd"
+            color="$textSubdued"
+            numberOfLines={1}
+            userSelect="none"
+          >
+            {user?.displayEmail || ''}
           </SizableText>
         </YStack>
       </XStack>
-      {isLoggedIn ? (
-        <Icon name="ChevronRightSmallOutline" size="$5" color="$iconSubdued" />
-      ) : null}
+      <Icon name="ChevronRightSmallOutline" size="$5" color="$iconSubdued" />
     </XStack>
   );
 }
@@ -618,6 +706,8 @@ function BaseMoreActionGrid({
         numberOfLines={1}
         ellipsizeMode="middle"
         px="$5"
+        pb="$1"
+        userSelect="none"
       >
         {title}
       </SizableText>
@@ -986,13 +1076,7 @@ function MoreActionDevice() {
 function BaseMoreActionContent() {
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   return (
-    <ScrollView
-      overflow="scroll"
-      h={462}
-      contentContainerStyle={{
-        py: '$2',
-      }}
-    >
+    <ScrollView overflow="scroll" flex={1}>
       <UpdateReminders />
       <MoreActionOneKeyId />
       {isDesktopMode ? null : <MoreActionDevice />}
@@ -1016,11 +1100,21 @@ export function MoreActionContentPage() {
 }
 
 function MoreActionContent() {
+  const isDesktopMode = useIsDesktopModeUIInTabPages();
   return (
     <MoreActionProvider>
-      <YStack>
+      <YStack minHeight={560}>
         <MoreActionContentHeader />
-        <BaseMoreActionContent />
+        <UpdateReminders />
+        <MoreActionOneKeyId />
+        {isDesktopMode ? null : <MoreActionDevice />}
+        <MoreActionDivider />
+        <MoreActionGeneralGrid />
+        <MoreActionDivider />
+        <MoreActionWalletGrid />
+        <MoreActionDivider />
+        <MoreActionMoreGrid />
+        <YStack flex={1} />
         <MoreActionDivider />
         <MoreActionContentFooter />
       </YStack>
@@ -1127,18 +1221,29 @@ function MoreButtonWithDot({ onPress }: { onPress?: IButtonProps['onPress'] }) {
 }
 
 function MoreActionButtonCmp() {
+  const intl = useIntl();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   return isDesktopMode ? (
-    <Tooltip
-      hovering
-      contentProps={{
+    <Popover
+      title={intl.formatMessage({ id: ETranslations.address_book_menu_title })}
+      showHeader={false}
+      floatingPanelProps={{
         maxWidth: 384,
         width: 384,
         height: 560,
         p: 0,
+        overflow: 'hidden',
       }}
       placement="right-end"
-      renderTrigger={<MoreButtonWithDot />}
+      renderTrigger={
+        <Tooltip
+          placement="right"
+          renderTrigger={<MoreButtonWithDot />}
+          renderContent={intl.formatMessage({
+            id: ETranslations.address_book_menu_title,
+          })}
+        />
+      }
       renderContent={<MoreActionContent />}
     />
   ) : (
