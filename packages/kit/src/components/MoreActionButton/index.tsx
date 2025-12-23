@@ -16,6 +16,7 @@ import {
   HeaderIconButton,
   Icon,
   IconButton,
+  Image,
   LottieView,
   NavBackButton,
   Popover,
@@ -1126,20 +1127,27 @@ function MoreActionDevice() {
           </XStack>
         </>
       ) : (
-        <XStack jc="space-between" ai="center" py="$4">
-          <XStack ai="center" gap="$3" flex={1}>
-            <Icon name="WalletCryptoOutline" size="$7" color="$iconSubdued" />
-            <YStack gap="$1" flex={1}>
-              {/* TODO: 替换为正式翻译 key */}
-              <SizableText size="$headingSm" color="$text">
-                Connect your hardware wallet
-              </SizableText>
-              <SizableText size="$bodyMd" color="$textSubdued">
-                Tap to add a device
-              </SizableText>
-            </YStack>
+        <XStack jc="space-between" ai="center" gap="$6" py="$3">
+          <XStack ai="center" gap="$2" flex={1}>
+            <Image
+              w="$11"
+              h="$11"
+              source={require('@onekeyhq/kit/assets/hardwallet_together_logo.png')}
+            />
+            <SizableText
+              size="$headingSm"
+              numberOfLines={1}
+              color="$text"
+              flex={1}
+            >
+              {intl.formatMessage({
+                id: ETranslations.wallet_connect_hardware_wallet,
+              })}
+            </SizableText>
           </XStack>
-          <Icon name="PlusCircleOutline" size="$6" color="$iconSubdued" />
+          <SizableText size="$bodyMdMedium" color="$textSubdued">
+            {intl.formatMessage({ id: ETranslations.global_add })}
+          </SizableText>
         </XStack>
       )}
     </YStack>
