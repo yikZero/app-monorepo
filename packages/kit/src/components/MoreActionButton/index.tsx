@@ -1201,12 +1201,32 @@ function MoreButtonWithDot({ onPress }: { onPress?: IButtonProps['onPress'] }) {
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   const isShowRedDot = useIsShowRedDot();
   const isShowUpgradeDot = useIsShowAppUpdateDot();
+
+  // Large dot for mobile
   const dot = useMemo(() => {
     if (isShowUpgradeDot) {
       return <Dot color="$blue8" top={isDesktopMode ? 0 : '$-2'} />;
     }
     return isShowRedDot ? <Dot color="$bgCriticalStrong" /> : null;
   }, [isDesktopMode, isShowRedDot, isShowUpgradeDot]);
+
+  // Small dot for desktop (similar to DesktopTabItem)
+  const desktopDot = useMemo(() => {
+    if (!isShowUpgradeDot && !isShowRedDot) return null;
+    return (
+      <Stack
+        width="$3"
+        height="$3"
+        bg={isShowUpgradeDot ? '$iconInfo' : '$bgCriticalStrong'}
+        borderRadius="$full"
+        position="absolute"
+        right={-4}
+        top={-3}
+        borderWidth="$0.5"
+        borderColor="$bgSidebar"
+      />
+    );
+  }, [isShowUpgradeDot, isShowRedDot]);
 
   const handleMoreActionPage = useCallback(() => {
     rootNavigationRef.current?.navigate(ERootRoutes.Onboarding, {
@@ -1216,30 +1236,50 @@ function MoreButtonWithDot({ onPress }: { onPress?: IButtonProps['onPress'] }) {
       },
     });
   }, []);
-  return isDesktopMode ? (
-    <XStack userSelect="none" py="$1.5">
-      <XStack gap="$0.5">
+
+  if (isDesktopMode) {
+    // Collapsed: icon only (no text below)
+    if (isCollapsed) {
+      return (
         <YStack p="$2" borderRadius="$2" hoverStyle={{ bg: '$bgHover' }}>
-          <Icon name="DotGridOutline" size="$5" />
+          <Stack position="relative">
+            <Icon name="DotGridOutline" size="$5" />
+            {desktopDot}
+          </Stack>
         </YStack>
-        {isCollapsed ? null : (
-          <SizableText
-            flex={1}
-            numberOfLines={1}
-            cursor="default"
-            color="$text"
-            textAlign="center"
-            size="$bodyXsMedium"
-          >
-            {intl.formatMessage({
-              id: ETranslations.global_more,
-            })}
-          </SizableText>
-        )}
-      </XStack>
-      {dot}
-    </XStack>
-  ) : (
+      );
+    }
+
+    // Expanded: horizontal layout (icon + text)
+    return (
+      <YStack
+        userSelect="none"
+        flexDirection="row"
+        alignItems="center"
+        px="$2"
+        py="$2"
+        borderRadius="$2"
+        hoverStyle={{ bg: '$bgHover' }}
+      >
+        <Stack position="relative">
+          <Icon name="DotGridOutline" size="$5" />
+          {desktopDot}
+        </Stack>
+        <SizableText
+          flex={1}
+          numberOfLines={1}
+          mx="$2"
+          cursor="default"
+          color="$text"
+          size="$bodyMd"
+        >
+          {intl.formatMessage({ id: ETranslations.address_book_menu_title })}
+        </SizableText>
+      </YStack>
+    );
+  }
+
+  return (
     <XStack>
       <HeaderIconButton
         testID="moreActions"
@@ -1255,7 +1295,26 @@ function MoreButtonWithDot({ onPress }: { onPress?: IButtonProps['onPress'] }) {
 function MoreActionButtonCmp() {
   const intl = useIntl();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
-  return isDesktopMode ? (
+  const [{ isCollapsed }] = useAppSideBarStatusAtom();
+
+  if (!isDesktopMode) {
+    return <MoreButtonWithDot />;
+  }
+
+  // Collapsed: show tooltip; Expanded: no tooltip (text is visible)
+  const trigger = isCollapsed ? (
+    <Tooltip
+      placement="right"
+      renderTrigger={<MoreButtonWithDot />}
+      renderContent={intl.formatMessage({
+        id: ETranslations.address_book_menu_title,
+      })}
+    />
+  ) : (
+    <MoreButtonWithDot />
+  );
+
+  return (
     <Popover
       title={intl.formatMessage({ id: ETranslations.address_book_menu_title })}
       showHeader={false}
@@ -1268,19 +1327,9 @@ function MoreActionButtonCmp() {
         style: { transformOrigin: 'bottom left' },
       }}
       placement="right-end"
-      renderTrigger={
-        <Tooltip
-          placement="right"
-          renderTrigger={<MoreButtonWithDot />}
-          renderContent={intl.formatMessage({
-            id: ETranslations.address_book_menu_title,
-          })}
-        />
-      }
+      renderTrigger={trigger}
       renderContent={<MoreActionContent />}
     />
-  ) : (
-    <MoreButtonWithDot />
   );
 }
 
