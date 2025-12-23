@@ -46,7 +46,6 @@ import {
   useFirmwareUpdatesDetectStatusPersistAtom,
   useHardwareWalletXfpStatusAtom,
   useNotificationsAtom,
-  usePrimePersistAtom,
 } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -221,7 +220,7 @@ function MoreActionContentHeader({
       pb="$2"
       ai="center"
       jc="space-between"
-      bg="$bg"
+      bg="$bgApp"
       zIndex={10}
       borderTopLeftRadius="$3"
       borderTopRightRadius="$3"
@@ -276,6 +275,7 @@ function MoreActionContentFooter() {
       },
     });
   }, [closePopover, navigation]);
+
   return (
     <XStack
       px="$5"
@@ -283,7 +283,7 @@ function MoreActionContentFooter() {
       pb="$3"
       jc="space-between"
       onPress={handleAbout}
-      bg="$bg"
+      bg="$bgApp"
       borderBottomLeftRadius="$3"
       borderBottomRightRadius="$3"
       $platform-web={{
@@ -294,12 +294,12 @@ function MoreActionContentFooter() {
     >
       <XStack gap="$1" ai="center" jc="center">
         <Icon name="InfoCircleOutline" color="$icon" size="$4" />
-        <SizableText size="$bodySmMedium" color="$textSubdued">
+        <SizableText size="$bodyMdMedium" color="$textSubdued">
           {`${intl.formatMessage({ id: ETranslations.global_about })} OneKey`}
         </SizableText>
       </XStack>
       <XStack gap="$1" ai="center" jc="center">
-        <SizableText size="$bodySmMedium" color="$textDisabled">
+        <SizableText size="$bodyMdMedium" color="$textDisabled">
           {versionString}
         </SizableText>
         <Icon name="ChevronRightSmallOutline" color="$iconSubdued" size="$4" />
@@ -376,7 +376,7 @@ function MoreActionContentGridItem({
       userSelect="none"
     >
       <YStack>
-        {icon ? <Icon size="$6" name={icon} /> : null}
+        {icon ? <Icon size="$6" color="$icon" name={icon} /> : null}
         {lottieSrc ? (
           <Stack w="$6" h="$6" ai="center" jc="center">
             <LottieView width={32} height={32} source={lottieSrc} />
@@ -427,6 +427,7 @@ function MoreActionContentGridItem({
           <Stack
             position="absolute"
             right={-10}
+            top={-4}
             backgroundColor={themeVariant === 'light' ? '#F1F1F1' : '#3A3A3A'}
             px="$1"
             borderRadius="$full"
@@ -450,9 +451,10 @@ function MoreActionContentGridItem({
 }
 
 function MoreActionDivider() {
+  const isDesktopMode = useIsDesktopModeUIInTabPages();
   return (
     <XStack py="$2">
-      <Divider borderColor="$neutral3" />
+      <Divider borderColor={isDesktopMode ? '$neutral3' : '$borderSubdued'} />
     </XStack>
   );
 }
@@ -525,10 +527,10 @@ function MoreActionOneKeyId() {
         onPress={handlePress}
       >
         <XStack alignItems="center" gap="$3" flex={1}>
-          <OneKeyIdAvatar size="$8" />
+          <OneKeyIdAvatar size="$10" />
           <SizableText
             size="$headingLg"
-            color="$textSubdued"
+            color="$text"
             numberOfLines={1}
             userSelect="none"
           >
@@ -538,9 +540,9 @@ function MoreActionOneKeyId() {
         <XStack
           alignItems="center"
           gap="$0.5"
-          pl="$2.5"
-          pr="$1"
-          py="$1"
+          pl="$3"
+          pr="$1.5"
+          py="$1.5"
           borderRadius="$full"
           borderWidth={StyleSheet.hairlineWidth}
           borderColor="$border"
@@ -1061,72 +1063,117 @@ function MoreActionDevice() {
       checkIsFocused: false,
     },
   );
+
+  const displayList = hwQrWalletList;
   const handleDevice = useCallback(() => {
     navigation.pushModal(EModalRoutes.DeviceManagementModal, {
       screen: EModalDeviceManagementRoutes.DeviceListModal,
     });
   }, [navigation]);
-  return hwQrWalletList.length > 0 ? (
-    <XStack
-      jc="space-between"
-      ai="center"
+  // TODO: 调试用，改回 hwQrWalletList.length > 0
+  return (
+    <YStack
       bg="$bgSubdued"
-      mx="$5"
-      my="41"
-      px="$3"
-      py="$5"
       borderRadius="$4"
       borderWidth={StyleSheet.hairlineWidth}
       borderColor="$neutral3"
+      mx="$5"
+      mt="$1"
+      mb="$2"
+      px="$4"
       onPress={handleDevice}
     >
-      <YStack gap="$3">
-        <SizableText
-          size="$headingMd"
-          color="$text"
-          numberOfLines={1}
-          ellipsizeMode="middle"
-        >
-          {`${intl.formatMessage({ id: ETranslations.global_device })} (3)`}
-        </SizableText>
-        <XStack>
-          {hwQrWalletList.map((item) => (
-            <WalletAvatar size={44} key={item.wallet.id} wallet={item.wallet} />
-          ))}
+      {displayList.length > 0 ? (
+        <>
+          {/* Header */}
+          <XStack jc="space-between" ai="center" py="$3">
+            <XStack ai="center" gap="$1">
+              <SizableText size="$headingSm" color="$text">
+                {intl.formatMessage({ id: ETranslations.global_device })}
+              </SizableText>
+              <SizableText size="$headingSm" color="$textSubdued">
+                ({displayList.length})
+              </SizableText>
+            </XStack>
+            <SizableText size="$bodyMdMedium" color="$textSubdued">
+              {intl.formatMessage({ id: ETranslations.global_manage })}
+            </SizableText>
+          </XStack>
+          {/* Avatars */}
+          <XStack gap="$1" pb="$4" pt="$0.5" ai="center">
+            {displayList.slice(0, 5).map((item) => (
+              <WalletAvatar
+                size={44}
+                key={item.wallet.id}
+                wallet={item.wallet}
+              />
+            ))}
+            {displayList.length > 5 ? (
+              <Stack
+                w={32}
+                h={44}
+                bg="$bgStrong"
+                borderRadius="$2"
+                ai="center"
+                jc="center"
+                ml="$2"
+              >
+                <SizableText size="$bodyMdMedium" color="$textDisabled">
+                  +{displayList.length - 5}
+                </SizableText>
+              </Stack>
+            ) : null}
+          </XStack>
+        </>
+      ) : (
+        <XStack jc="space-between" ai="center" py="$4">
+          <XStack ai="center" gap="$3" flex={1}>
+            <Icon name="WalletCryptoOutline" size="$7" color="$iconSubdued" />
+            <YStack gap="$1" flex={1}>
+              {/* TODO: 替换为正式翻译 key */}
+              <SizableText size="$headingSm" color="$text">
+                Connect your hardware wallet
+              </SizableText>
+              <SizableText size="$bodyMd" color="$textSubdued">
+                Tap to add a device
+              </SizableText>
+            </YStack>
+          </XStack>
+          <Icon name="PlusCircleOutline" size="$6" color="$iconSubdued" />
         </XStack>
-      </YStack>
-      <IconButton
-        variant="tertiary"
-        icon="ChevronRightSmallOutline"
-        size="small"
-        onPress={handleDevice}
-      />
-    </XStack>
-  ) : null;
+      )}
+    </YStack>
+  );
 }
 
 function BaseMoreActionContent() {
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   return (
-    <ScrollView overflow="scroll" flex={1}>
-      <UpdateReminders />
-      <MoreActionOneKeyId />
-      {isDesktopMode ? null : <MoreActionDevice />}
+    <YStack flex={1}>
+      <ScrollView overflow="scroll" flex={1}>
+        <UpdateReminders />
+        <MoreActionOneKeyId />
+        {isDesktopMode ? null : <MoreActionDevice />}
+        <MoreActionDivider />
+        <MoreActionGeneralGrid />
+        <MoreActionDivider />
+        <MoreActionWalletGrid />
+        <MoreActionDivider />
+        <MoreActionMoreGrid />
+      </ScrollView>
       <MoreActionDivider />
-      <MoreActionGeneralGrid />
-      <MoreActionDivider />
-      <MoreActionWalletGrid />
-      <MoreActionDivider />
-      <MoreActionMoreGrid />
-    </ScrollView>
+      <MoreActionContentFooter />
+    </YStack>
   );
 }
 
 export function MoreActionContentPage() {
   return (
     <MoreActionProvider>
-      <MoreActionContentHeader showBackButton />
-      <BaseMoreActionContent />
+      <YStack flex={1}>
+        <MoreActionContentHeader showBackButton />
+        <BaseMoreActionContent />
+      </YStack>
     </MoreActionProvider>
   );
 }
