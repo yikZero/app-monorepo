@@ -279,7 +279,7 @@ function MoreActionContentFooter() {
   return (
     <XStack
       px="$5"
-      pt="$2"
+      pt="$1"
       pb="$3"
       jc="space-between"
       onPress={handleAbout}
@@ -292,14 +292,14 @@ function MoreActionContentFooter() {
       }}
       userSelect="none"
     >
-      <XStack gap="$2" ai="center" jc="center">
+      <XStack gap="$1" ai="center" jc="center">
         <Icon name="InfoCircleOutline" color="$icon" size="$4" />
-        <SizableText size="$bodyMd" color="$text">
+        <SizableText size="$bodySmMedium" color="$textSubdued">
           {`${intl.formatMessage({ id: ETranslations.global_about })} OneKey`}
         </SizableText>
       </XStack>
       <XStack gap="$1" ai="center" jc="center">
-        <SizableText size="$bodyMd" color="$textDisabled">
+        <SizableText size="$bodySmMedium" color="$textDisabled">
           {versionString}
         </SizableText>
         <Icon name="ChevronRightSmallOutline" color="$iconSubdued" size="$4" />
@@ -471,7 +471,7 @@ function MoreActionOneKeyId() {
     if (!isLoggedIn) {
       return intl.formatMessage({ id: ETranslations.prime_signup_login });
     }
-    return user?.nickname || 'OneKey ID';
+    return user?.nickname ?? ('OneKey ID' as string);
   }, [isLoggedIn, user?.nickname, intl]);
   const email = useMemo(() => {
     if (!isLoggedIn) {
@@ -480,17 +480,34 @@ function MoreActionOneKeyId() {
     return user?.displayEmail || 'OneKey ID';
   }, [isLoggedIn, user?.displayEmail, intl]);
 
+  const navigation = useAppNavigation();
   const showPrimeProfileDialog = useEditPrimeProfileDialog();
-  const handlePress = useCallback(async () => {
-    if (isLoggedIn) {
+
+  const handleAvatarPress = useCallback(
+    async (e: GestureResponderEvent) => {
+      e.stopPropagation();
       await closePopover?.();
       await showPrimeProfileDialog();
+    },
+    [closePopover, showPrimeProfileDialog],
+  );
+
+  const handleNavigateToOneKeyId = useCallback(async () => {
+    await closePopover?.();
+    navigation.pushModal(EModalRoutes.PrimeModal, {
+      screen: EPrimePages.OneKeyId,
+    });
+  }, [closePopover, navigation]);
+
+  const handlePress = useCallback(async () => {
+    if (isLoggedIn) {
+      await handleNavigateToOneKeyId();
     } else {
       await loginOneKeyId({
         toOneKeyIdPageOnLoginSuccess: false,
       });
     }
-  }, [isLoggedIn, closePopover, showPrimeProfileDialog, loginOneKeyId]);
+  }, [isLoggedIn, handleNavigateToOneKeyId, loginOneKeyId]);
 
   const { icon, onPrimeButtonPressed } = useOnPrimeButtonPressed({
     onPress: closePopover,
@@ -510,8 +527,8 @@ function MoreActionOneKeyId() {
         <XStack alignItems="center" gap="$3" flex={1}>
           <OneKeyIdAvatar size="$8" />
           <SizableText
-            size="$headingXl"
-            color="$text"
+            size="$headingLg"
+            color="$textSubdued"
             numberOfLines={1}
             userSelect="none"
           >
@@ -543,17 +560,20 @@ function MoreActionOneKeyId() {
       alignItems="center"
       py="$4"
       px="$5"
+      gap="$6"
       userSelect="none"
       justifyContent="space-between"
-      onPress={handlePress}
+      onPress={handleNavigateToOneKeyId}
     >
       <XStack alignItems="center" gap="$3" flex={1}>
-        <OneKeyIdAvatar size="$14" />
+        <Stack onPress={handleAvatarPress}>
+          <OneKeyIdAvatar size="$14" />
+        </Stack>
 
-        <YStack flex={1} gap="$0.5">
+        <YStack flex={1} gap="$1">
           <XStack alignItems="center" gap="$2">
             <SizableText
-              size="$headingXl"
+              size="$headingLg"
               color="$text"
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -568,14 +588,16 @@ function MoreActionOneKeyId() {
                 gap="$1"
                 px="$2"
                 h={22}
-                bg="rgba(1, 239, 13, 0.06)"
+                bg="$brand2"
                 borderRadius="$full"
                 borderWidth={StyleSheet.hairlineWidth}
-                borderColor="rgba(22, 67, 30, 0.09)"
+                borderColor="$brand4"
                 onPress={onPrimeButtonPressed}
               >
                 <Icon name={icon} size="$4" />
-                <SizableText size="$bodyMdMedium">Prime</SizableText>
+                <SizableText size="$bodyMdMedium" color="$brand12">
+                  Prime
+                </SizableText>
               </XStack>
             ) : null}
           </XStack>
@@ -1243,6 +1265,7 @@ function MoreActionButtonCmp() {
         height: 560,
         p: 0,
         overflow: 'hidden',
+        style: { transformOrigin: 'bottom left' },
       }}
       placement="right-end"
       renderTrigger={
