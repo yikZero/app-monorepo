@@ -46,6 +46,7 @@ import {
   useFirmwareUpdatesDetectStatusPersistAtom,
   useHardwareWalletXfpStatusAtom,
   useNotificationsAtom,
+  usePrimePersistAtom,
 } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -80,15 +81,16 @@ import useScanQrCode from '../../views/ScanQrCode/hooks/useScanQrCode';
 import { OneKeyIdAvatar } from '../../views/Setting/pages/OneKeyId';
 import { ESettingsTabNames } from '../../views/Setting/pages/Tab/config';
 import { AccountSelectorProviderMirror } from '../AccountSelector';
+import { useEditPrimeProfileDialog } from '../RenameDialog';
 import { UpdateReminder } from '../UpdateReminder';
 import {
   isShowAppUpdateUIWhenUpdating,
   useAppUpdateInfo,
 } from '../UpdateReminder/hooks';
+import { WalletAvatar } from '../WalletAvatar';
 
 import type { IDeviceManagementListModalItem } from '../../views/DeviceManagement/pages/DeviceManagementListModal';
 import type { GestureResponderEvent } from 'react-native';
-import { WalletAvatar } from '../WalletAvatar';
 
 function MoreActionProvider({ children }: PropsWithChildren) {
   return (
@@ -465,14 +467,24 @@ function MoreActionOneKeyId() {
 
   const { closePopover } = usePopoverContext();
 
+  const email = useMemo(() => {
+    if (!isLoggedIn) {
+      return intl.formatMessage({ id: ETranslations.prime_signup_login });
+    }
+    return user?.displayEmail || 'OneKey ID';
+  }, [isLoggedIn, user?.displayEmail, intl]);
+
+  const showPrimeProfileDialog = useEditPrimeProfileDialog();
   const handlePress = useCallback(async () => {
-    await closePopover?.();
-    // Trigger login flow directly
-    void loginOneKeyId();
-    await loginOneKeyId({
-      toOneKeyIdPageOnLoginSuccess: true,
-    });
-  }, [closePopover, loginOneKeyId]);
+    if (isLoggedIn) {
+      await closePopover?.();
+      await showPrimeProfileDialog();
+    } else {
+      await loginOneKeyId({
+        toOneKeyIdPageOnLoginSuccess: false,
+      });
+    }
+  }, [isLoggedIn, closePopover, showPrimeProfileDialog, loginOneKeyId]);
 
   const { icon, onPrimeButtonPressed } = useOnPrimeButtonPressed({
     onPress: closePopover,
@@ -576,7 +588,7 @@ function MoreActionOneKeyId() {
             numberOfLines={1}
             userSelect="none"
           >
-            {user?.displayEmail || ''}
+            {email}
           </SizableText>
         </YStack>
       </XStack>
@@ -1036,40 +1048,41 @@ function MoreActionDevice() {
     });
   }, [navigation]);
   return hwQrWalletList.length > 0 ? (
-    <YStack
+    <XStack
+      jc="space-between"
+      ai="center"
       bg="$bgSubdued"
       mx="$5"
       my="41"
       px="$3"
       py="$5"
-      gap="$3"
       borderRadius="$4"
       borderWidth={StyleSheet.hairlineWidth}
       borderColor="$neutral3"
       onPress={handleDevice}
     >
-      <SizableText
-        size="$headingMd"
-        color="$text"
-        numberOfLines={1}
-        ellipsizeMode="middle"
-      >
-        {`${intl.formatMessage({ id: ETranslations.global_device })} (3)`}
-      </SizableText>
-      <XStack>
+      <YStack gap="$3">
+        <SizableText
+          size="$headingMd"
+          color="$text"
+          numberOfLines={1}
+          ellipsizeMode="middle"
+        >
+          {`${intl.formatMessage({ id: ETranslations.global_device })} (3)`}
+        </SizableText>
         <XStack>
           {hwQrWalletList.map((item) => (
-            <WalletAvatar key={item.wallet.id} wallet={item.wallet} />
+            <WalletAvatar size={44} key={item.wallet.id} wallet={item.wallet} />
           ))}
         </XStack>
-        <IconButton
-          variant="tertiary"
-          icon="ChevronRightOutline"
-          size="small"
-          onPress={handleDevice}
-        />
-      </XStack>
-    </YStack>
+      </YStack>
+      <IconButton
+        variant="tertiary"
+        icon="ChevronRightSmallOutline"
+        size="small"
+        onPress={handleDevice}
+      />
+    </XStack>
   ) : null;
 }
 
