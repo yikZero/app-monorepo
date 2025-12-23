@@ -467,6 +467,12 @@ function MoreActionOneKeyId() {
 
   const { closePopover } = usePopoverContext();
 
+  const displayName = useMemo(() => {
+    if (!isLoggedIn) {
+      return intl.formatMessage({ id: ETranslations.prime_signup_login });
+    }
+    return user?.nickname || 'OneKey ID';
+  }, [isLoggedIn, user?.nickname, intl]);
   const email = useMemo(() => {
     if (!isLoggedIn) {
       return intl.formatMessage({ id: ETranslations.prime_signup_login });
@@ -490,15 +496,6 @@ function MoreActionOneKeyId() {
     onPress: closePopover,
     networkId: network?.id,
   });
-
-  // Get display name - extract username from email
-  const displayName = useMemo((): string => {
-    if (user?.displayEmail) {
-      const emailParts = user.displayEmail.split('@');
-      return emailParts[0] || 'OneKey ID';
-    }
-    return 'OneKey ID';
-  }, [user?.displayEmail]);
 
   if (!isLoggedIn) {
     return (
