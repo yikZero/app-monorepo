@@ -29,6 +29,7 @@ import {
   rootNavigationRef,
   useIsDesktopModeUIInTabPages,
   useIsWebHorizontalLayout,
+  useMedia,
   usePopoverContext,
 } from '@onekeyhq/components';
 import GiftExpandOnDark from '@onekeyhq/kit/assets/animations/gift-expand-on-dark.json';
@@ -131,7 +132,9 @@ function MoreActionContentHeader({
   showBackButton?: boolean;
 }) {
   const intl = useIntl();
+  const media = useMedia();
   const onLock = useOnLock();
+
   const handleLock = useCallback(async () => {
     await onLock();
   }, [onLock]);
@@ -139,6 +142,37 @@ function MoreActionContentHeader({
   const handleCustomerSupport = useCallback(() => {
     void showIntercom();
   }, []);
+
+  const {
+    activeAccount: { account, network },
+  } = useActiveAccount({ num: 0 });
+  const [allTokens] = useAllTokenListAtom();
+  const [map] = useAllTokenListMapAtom();
+  const scanQrCode = useScanQrCode();
+  const { closePopover } = usePopoverContext();
+
+  const handleScan = useCallback(async () => {
+    await closePopover?.();
+    await scanQrCode.start({
+      handlers: scanQrCode.PARSE_HANDLER_NAMES.all,
+      autoHandleResult: true,
+      account,
+      network,
+      tokens: {
+        data: allTokens.tokens,
+        keys: allTokens.keys,
+        map,
+      },
+    });
+  }, [
+    closePopover,
+    scanQrCode,
+    account,
+    network,
+    allTokens.tokens,
+    allTokens.keys,
+    map,
+  ]);
 
   const popupMenu = useMemo(() => {
     if (platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel) {
@@ -188,6 +222,25 @@ function MoreActionContentHeader({
     }
     return [];
   }, [intl]);
+
+  // Desktop (>= gtMd): show lock; Mobile (< gtMd): show scan
+  const firstActionItem = useMemo(() => {
+    if (media.gtMd) {
+      return {
+        title: intl.formatMessage({ id: ETranslations.settings_lock_now }),
+        icon: 'LockOutline' as const,
+        onPress: handleLock,
+        trackID: 'wallet-lock-now',
+      };
+    }
+    return {
+      title: intl.formatMessage({ id: ETranslations.scan_scan_qr_code }),
+      icon: 'ScanOutline' as const,
+      onPress: handleScan,
+      trackID: 'wallet-scan',
+    };
+  }, [media.gtMd, intl, handleLock, handleScan]);
+
   const items = useMemo(() => {
     return [
       ...popupMenu,
@@ -199,14 +252,9 @@ function MoreActionContentHeader({
         onPress: handleCustomerSupport,
         trackID: 'wallet-customer-support',
       },
-      {
-        title: intl.formatMessage({ id: ETranslations.settings_lock_now }),
-        icon: 'LockOutline' as const,
-        onPress: handleLock,
-        trackID: 'wallet-lock-now',
-      },
+      firstActionItem,
     ];
-  }, [handleCustomerSupport, handleLock, intl, popupMenu]);
+  }, [handleCustomerSupport, intl, popupMenu, firstActionItem]);
 
   const handleBack = useCallback(() => {
     if (rootNavigationRef.current?.canGoBack?.()) {
@@ -474,7 +522,7 @@ function MoreActionOneKeyId() {
     if (!isLoggedIn) {
       return intl.formatMessage({ id: ETranslations.prime_signup_login });
     }
-    return user?.nickname ?? ('OneKey ID' as string);
+    return (user?.nickname as string | undefined) ?? 'OneKey ID';
   }, [isLoggedIn, user?.nickname, intl]);
   const email = useMemo(() => {
     if (!isLoggedIn) {
