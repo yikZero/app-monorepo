@@ -531,12 +531,17 @@ function MoreActionDivider() {
 function MoreActionOneKeyId() {
   const intl = useIntl();
   const { user, isLoggedIn, loginOneKeyId } = useOneKeyAuth();
-  const { isPrimeAvailable } = usePrimeAvailable();
   const {
     activeAccount: { network },
   } = useActiveAccount({ num: 0 });
 
   const { closePopover } = usePopoverContext();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      void backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo();
+    }
+  }, [isLoggedIn]);
 
   const displayName = useMemo(() => {
     if (!isLoggedIn) {
