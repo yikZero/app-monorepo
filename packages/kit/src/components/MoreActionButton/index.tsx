@@ -327,11 +327,8 @@ function MoreActionContentFooter() {
 
   return (
     <XStack
-      px="$5"
-      pt="$1"
-      pb="$3"
-      jc="space-between"
-      onPress={handleAbout}
+      px="$1"
+      pb="$1"
       bg="$bgApp"
       borderBottomLeftRadius="$3"
       borderBottomRightRadius="$3"
@@ -339,19 +336,38 @@ function MoreActionContentFooter() {
         position: 'sticky',
         bottom: 0,
       }}
-      userSelect="none"
     >
-      <XStack gap="$1" ai="center" jc="center">
-        <Icon name="InfoCircleOutline" color="$icon" size="$4" />
-        <SizableText size="$bodyMdMedium" color="$textSubdued">
-          {`${intl.formatMessage({ id: ETranslations.global_about })} OneKey`}
-        </SizableText>
-      </XStack>
-      <XStack gap="$1" ai="center" jc="center">
-        <SizableText size="$bodyMdMedium" color="$textDisabled">
-          {versionString}
-        </SizableText>
-        <Icon name="ChevronRightSmallOutline" color="$iconSubdued" size="$4" />
+      <XStack
+        flex={1}
+        px="$4"
+        py="$2"
+        jc="space-between"
+        onPress={handleAbout}
+        borderRadius="$2"
+        userSelect="none"
+        hoverStyle={{
+          bg: '$bgHover',
+        }}
+        pressStyle={{
+          bg: '$bgActive',
+        }}
+      >
+        <XStack gap="$1" ai="center" jc="center">
+          <Icon name="InfoCircleOutline" color="$icon" size="$4" />
+          <SizableText size="$bodyMdMedium" color="$textSubdued">
+            {`${intl.formatMessage({ id: ETranslations.global_about })} OneKey`}
+          </SizableText>
+        </XStack>
+        <XStack gap="$1" ai="center" jc="center">
+          <SizableText size="$bodyMdMedium" color="$textDisabled">
+            {versionString}
+          </SizableText>
+          <Icon
+            name="ChevronRightSmallOutline"
+            color="$iconSubdued"
+            size="$4"
+          />
+        </XStack>
       </XStack>
     </XStack>
   );
@@ -571,15 +587,25 @@ function MoreActionOneKeyId() {
     await onPrimeButtonPressed();
   }, [closePopover, onPrimeButtonPressed]);
 
+  const isPrimeUser = user?.primeSubscription?.isActive && user?.onekeyUserId;
+
   if (!isLoggedIn) {
     return (
       <XStack
         alignItems="center"
         py="$4"
-        px="$5"
+        px="$4"
+        mx="$1"
         userSelect="none"
         justifyContent="space-between"
         onPress={handlePress}
+        borderRadius="$2"
+        hoverStyle={{
+          bg: '$bgHover',
+        }}
+        pressStyle={{
+          bg: '$bgActive',
+        }}
       >
         <XStack alignItems="center" gap="$3" flex={1}>
           <OneKeyIdAvatar size="$10" />
@@ -616,11 +642,19 @@ function MoreActionOneKeyId() {
     <XStack
       alignItems="center"
       py="$4"
-      px="$5"
+      px="$4"
+      mx="$1"
       gap="$6"
       userSelect="none"
       justifyContent="space-between"
       onPress={handleNavigateToOneKeyId}
+      borderRadius="$2"
+      hoverStyle={{
+        bg: '$bgHover',
+      }}
+      pressStyle={{
+        bg: '$bgActive',
+      }}
     >
       <XStack alignItems="center" gap="$3" flex={1}>
         <Stack onPress={handleAvatarPress}>
@@ -638,7 +672,7 @@ function MoreActionOneKeyId() {
             >
               {displayName}
             </SizableText>
-            {isPrimeAvailable ? (
+            {isPrimeUser ? (
               <XStack
                 ai="center"
                 jc="center"
@@ -984,21 +1018,29 @@ const MoreActionWalletGrid = () => {
 
   const items = useMemo(() => {
     return [
-      {
-        title: intl.formatMessage({ id: ETranslations.global_backup }),
-        icon: 'CloudUploadOutline' as const,
-        onPress: handleBackup,
-      },
-      {
-        title: intl.formatMessage({ id: ETranslations.settings_address_book }),
-        icon: 'ContactsOutline' as const,
-        onPress: handleAddressBook,
-      },
-      {
-        title: intl.formatMessage({ id: ETranslations.global_network }),
-        icon: 'GlobusOutline' as const,
-        onPress: handleNetwork,
-      },
+      platformEnv.isWeb
+        ? undefined
+        : {
+            title: intl.formatMessage({ id: ETranslations.global_backup }),
+            icon: 'CloudUploadOutline' as const,
+            onPress: handleBackup,
+          },
+      platformEnv.isWeb
+        ? undefined
+        : {
+            title: intl.formatMessage({
+              id: ETranslations.settings_address_book,
+            }),
+            icon: 'ContactsOutline' as const,
+            onPress: handleAddressBook,
+          },
+      platformEnv.isWeb
+        ? undefined
+        : {
+            title: intl.formatMessage({ id: ETranslations.global_network }),
+            icon: 'GlobusOutline' as const,
+            onPress: handleNetwork,
+          },
       {
         title: intl.formatMessage({ id: ETranslations.global_preferences }),
         icon: 'SliderThreeOutline' as const,
@@ -1009,24 +1051,26 @@ const MoreActionWalletGrid = () => {
         icon: 'Shield2CheckOutline' as const,
         onPress: handleSecurity,
       },
-      {
-        title: intl.formatMessage({
-          id: ETranslations.global_bulk_copy_addresses,
-        }),
-        icon: 'Copy3Outline' as const,
-        onPress: () => {
-          if (!isPrimeUser) {
-            defaultLogger.prime.subscription.primeEntryClick({
-              featureName: EPrimeFeatures.BulkCopyAddresses,
-              entryPoint: 'moreActions',
-            });
-          }
-          void openBulkCopyAddressesModal();
-        },
-        trackID: 'bulk-copy-addresses-in-more-action',
-        isPrimeFeature: true,
-      },
-    ];
+      platformEnv.isWeb
+        ? undefined
+        : {
+            title: intl.formatMessage({
+              id: ETranslations.global_bulk_copy_addresses,
+            }),
+            icon: 'Copy3Outline' as const,
+            onPress: () => {
+              if (!isPrimeUser) {
+                defaultLogger.prime.subscription.primeEntryClick({
+                  featureName: EPrimeFeatures.BulkCopyAddresses,
+                  entryPoint: 'moreActions',
+                });
+              }
+              void openBulkCopyAddressesModal();
+            },
+            trackID: 'bulk-copy-addresses-in-more-action',
+            isPrimeFeature: true,
+          },
+    ].filter(Boolean);
   }, [
     handleAddressBook,
     handleBackup,
