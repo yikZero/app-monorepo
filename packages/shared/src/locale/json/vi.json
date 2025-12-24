@@ -1676,6 +1676,7 @@
   "global.search_asset": "Tìm kiếm tài sản",
   "global.search_no_results_desc": "Thử thay đổi từ khóa tìm kiếm",
   "global.search_no_results_title": "Không có kết quả",
+  "global.search_placeholder_web": "Tìm kiếm",
   "global.search_tokens": "Tìm kiếm token",
   "global.secure_install": "Cài đặt an toàn",
   "global.security": "Bảo vệ",

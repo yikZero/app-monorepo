@@ -1681,6 +1681,7 @@
   global_search_asset = 'global.search_asset',
   global_search_no_results_desc = 'global.search_no_results_desc',
   global_search_no_results_title = 'global.search_no_results_title',
+  global_search_placeholder_web = 'global.search_placeholder_web',
   global_search_tokens = 'global.search_tokens',
   global_secure_install = 'global.secure_install',
   global_security = 'global.security',

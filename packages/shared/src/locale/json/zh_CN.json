@@ -1676,6 +1676,7 @@
   "global.search_asset": "搜索资产",
   "global.search_no_results_desc": "尝试更换搜索关键词",
   "global.search_no_results_title": "无结果",
+  "global.search_placeholder_web": "搜索",
   "global.search_tokens": "搜索代币",
   "global.secure_install": "安全安装",
   "global.security": "安全",
