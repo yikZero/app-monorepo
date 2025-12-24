@@ -675,7 +675,7 @@ function MoreActionOneKeyId() {
         </Stack>
 
         <YStack flex={1} gap="$1">
-          <XStack alignItems="center" gap="$2" flex={1}>
+          <XStack alignItems="center" gap="$1.5" flex={1}>
             <SizableText
               size="$headingLg"
               color="$text"
@@ -694,11 +694,16 @@ function MoreActionOneKeyId() {
                 gap="$1"
                 px="$2"
                 h={22}
-                bg={isPrimeDeviceLimitExceeded ? '$bgCaution' : '$brand2'}
+                opacity={isPrimeDeviceLimitExceeded ? 0.7 : 1}
+                bg={
+                  isPrimeDeviceLimitExceeded ? '$bgCautionSubdued' : '$brand2'
+                }
                 borderRadius="$full"
                 borderWidth={StyleSheet.hairlineWidth}
                 borderColor={
-                  isPrimeDeviceLimitExceeded ? '$bgCaution' : '$brand4'
+                  isPrimeDeviceLimitExceeded
+                    ? '$borderCautionSubdued'
+                    : '$brand4'
                 }
                 flexShrink={0}
                 onPress={handlePrimeButtonPressed}
@@ -706,11 +711,15 @@ function MoreActionOneKeyId() {
                 <Icon
                   name={isPrimeDeviceLimitExceeded ? 'PrimeSolid' : icon}
                   size="$4"
-                  color={isPrimeDeviceLimitExceeded ? '$caution6' : undefined}
+                  color={
+                    isPrimeDeviceLimitExceeded ? '$iconCaution' : undefined
+                  }
                 />
                 <SizableText
                   size="$bodyMdMedium"
-                  color={isPrimeDeviceLimitExceeded ? '$caution8' : '$brand12'}
+                  color={
+                    isPrimeDeviceLimitExceeded ? '$textCaution' : '$brand12'
+                  }
                 >
                   Prime
                 </SizableText>
