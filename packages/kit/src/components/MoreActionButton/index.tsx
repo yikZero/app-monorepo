@@ -597,6 +597,7 @@ function MoreActionOneKeyId() {
   }, [closePopover, onPrimeButtonPressed]);
 
   const isPrimeUser = user?.primeSubscription?.isActive && user?.onekeyUserId;
+  const isPrimeDeviceLimitExceeded = user?.isPrimeDeviceLimitExceeded === true;
 
   if (!isLoggedIn) {
     return (
@@ -690,14 +691,23 @@ function MoreActionOneKeyId() {
                 gap="$1"
                 px="$2"
                 h={22}
-                bg="$brand2"
+                bg={isPrimeDeviceLimitExceeded ? '$bgCaution' : '$brand2'}
                 borderRadius="$full"
                 borderWidth={StyleSheet.hairlineWidth}
-                borderColor="$brand4"
+                borderColor={
+                  isPrimeDeviceLimitExceeded ? '$bgCaution' : '$brand4'
+                }
                 onPress={handlePrimeButtonPressed}
               >
-                <Icon name={icon} size="$4" />
-                <SizableText size="$bodyMdMedium" color="$brand12">
+                <Icon
+                  name={isPrimeDeviceLimitExceeded ? 'PrimeSolid' : icon}
+                  size="$4"
+                  color={isPrimeDeviceLimitExceeded ? '$caution6' : undefined}
+                />
+                <SizableText
+                  size="$bodyMdMedium"
+                  color={isPrimeDeviceLimitExceeded ? '$caution8' : '$brand12'}
+                >
                   Prime
                 </SizableText>
               </XStack>
