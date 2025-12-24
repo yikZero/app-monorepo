@@ -522,7 +522,7 @@ function MoreActionOneKeyId() {
     if (!isLoggedIn) {
       return intl.formatMessage({ id: ETranslations.prime_signup_login });
     }
-    return (user?.nickname as string | undefined) ?? 'OneKey ID';
+    return user?.nickname ?? 'OneKey ID';
   }, [isLoggedIn, user?.nickname, intl]);
   const email = useMemo(() => {
     if (!isLoggedIn) {
@@ -554,11 +554,12 @@ function MoreActionOneKeyId() {
     if (isLoggedIn) {
       await handleNavigateToOneKeyId();
     } else {
+      await closePopover?.();
       await loginOneKeyId({
         toOneKeyIdPageOnLoginSuccess: false,
       });
     }
-  }, [isLoggedIn, handleNavigateToOneKeyId, loginOneKeyId]);
+  }, [isLoggedIn, handleNavigateToOneKeyId, closePopover, loginOneKeyId]);
 
   const { icon, onPrimeButtonPressed } = useOnPrimeButtonPressed({
     onPress: closePopover,
@@ -1113,13 +1114,11 @@ function MoreActionDevice() {
     },
   );
 
-  const displayList = hwQrWalletList;
   const handleDevice = useCallback(() => {
     navigation.pushModal(EModalRoutes.DeviceManagementModal, {
       screen: EModalDeviceManagementRoutes.DeviceListModal,
     });
   }, [navigation]);
-  // TODO: 调试用，改回 hwQrWalletList.length > 0
   return (
     <YStack
       bg="$bgSubdued"
@@ -1132,7 +1131,7 @@ function MoreActionDevice() {
       px="$4"
       onPress={handleDevice}
     >
-      {displayList.length > 0 ? (
+      {hwQrWalletList.length > 0 ? (
         <>
           {/* Header */}
           <XStack jc="space-between" ai="center" py="$3">
@@ -1141,7 +1140,7 @@ function MoreActionDevice() {
                 {intl.formatMessage({ id: ETranslations.global_device })}
               </SizableText>
               <SizableText size="$headingSm" color="$textSubdued">
-                ({displayList.length})
+                ({hwQrWalletList.length})
               </SizableText>
             </XStack>
             <SizableText size="$bodyMdMedium" color="$textSubdued">
@@ -1150,14 +1149,14 @@ function MoreActionDevice() {
           </XStack>
           {/* Avatars */}
           <XStack gap="$1" pb="$4" pt="$0.5" ai="center">
-            {displayList.slice(0, 5).map((item) => (
+            {hwQrWalletList.slice(0, 5).map((item) => (
               <WalletAvatar
                 size={44}
                 key={item.wallet.id}
                 wallet={item.wallet}
               />
             ))}
-            {displayList.length > 5 ? (
+            {hwQrWalletList.length > 5 ? (
               <Stack
                 w={32}
                 h={44}
@@ -1168,7 +1167,7 @@ function MoreActionDevice() {
                 ml="$2"
               >
                 <SizableText size="$bodyMdMedium" color="$textDisabled">
-                  +{displayList.length - 5}
+                  +{hwQrWalletList.length - 5}
                 </SizableText>
               </Stack>
             ) : null}
@@ -1303,6 +1302,7 @@ function MoreButtonWithDot({ onPress }: { onPress?: IButtonProps['onPress'] }) {
   const [{ isCollapsed }] = useAppSideBarStatusAtom();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   const isShowUpgradeDot = useIsShowAppUpdateDot();
+  const isShowRedDot = useIsShowRedDot();
 
   // Large dot for mobile
   const dot = useMemo(() => {
