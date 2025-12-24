@@ -1674,6 +1674,7 @@
   "global.search_account_selector": "搜索账户名称",
   "global.search_address": "搜索地址",
   "global.search_asset": "搜索资产",
+  "global.search_everything": "搜索全部",
   "global.search_no_results_desc": "尝试更换搜索关键词",
   "global.search_no_results_title": "无结果",
   "global.search_placeholder_web": "搜索",

@@ -1679,6 +1679,7 @@
   global_search_account_selector = 'global.search_account_selector',
   global_search_address = 'global.search_address',
   global_search_asset = 'global.search_asset',
+  global_search_everything = 'global.search_everything',
   global_search_no_results_desc = 'global.search_no_results_desc',
   global_search_no_results_title = 'global.search_no_results_title',
   global_search_placeholder_web = 'global.search_placeholder_web',

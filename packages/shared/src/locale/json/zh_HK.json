@@ -1674,6 +1674,7 @@
   "global.search_account_selector": "搜尋帳戶名稱",
   "global.search_address": "搜尋地址",
   "global.search_asset": "搜尋資產",
+  "global.search_everything": "搜尋全部",
   "global.search_no_results_desc": "嘗試更換搜索關鍵詞",
   "global.search_no_results_title": "無結果",
   "global.search_placeholder_web": "搜尋",

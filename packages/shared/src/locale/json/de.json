@@ -1674,6 +1674,7 @@
   "global.search_account_selector": "Kontoname suchen",
   "global.search_address": "Adresse suchen",
   "global.search_asset": "Vermögenswert suchen",
+  "global.search_everything": "Alles durchsuchen",
   "global.search_no_results_desc": "Versuchen Sie, das Suchschlüsselwort zu ändern",
   "global.search_no_results_title": "Keine Ergebnisse",
   "global.search_placeholder_web": "Suche",

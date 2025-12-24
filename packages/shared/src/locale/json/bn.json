@@ -1674,6 +1674,7 @@
   "global.search_account_selector": "অ্যাকাউন্টের নাম অনুসন্ধান করুন",
   "global.search_address": "ঠিকানা অনুসন্ধান করুন",
   "global.search_asset": "সম্পদ অনুসন্ধান করুন",
+  "global.search_everything": "সব কিছু খুঁজুন",
   "global.search_no_results_desc": "অনুসন্ধানের কীওয়ার্ডটি পরিবর্তন করার চেষ্টা করুন",
   "global.search_no_results_title": "কোন ফলাফল নেই",
   "global.search_placeholder_web": "অনুসন্ধান",

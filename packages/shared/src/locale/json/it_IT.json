@@ -1674,6 +1674,7 @@
   "global.search_account_selector": "Cerca nome account",
   "global.search_address": "Cerca indirizzo",
   "global.search_asset": "Cerca asset",
+  "global.search_everything": "Cerca tutto",
   "global.search_no_results_desc": "Prova a cambiare la parola chiave di ricerca",
   "global.search_no_results_title": "Nessun risultato",
   "global.search_placeholder_web": "Cerca",
