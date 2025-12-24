@@ -303,6 +303,7 @@ function MoreActionContentFooter() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const { closePopover } = usePopoverContext();
+  const isDesktopMode = useIsDesktopModeUIInTabPages();
   const version = useMemo(() => {
     return `${platformEnv.version ?? ''} ${platformEnv.buildNumber ?? ''}`;
   }, []);
@@ -340,6 +341,8 @@ function MoreActionContentFooter() {
         bottom: 0,
       }}
       userSelect="none"
+      borderTopWidth={StyleSheet.hairlineWidth}
+      borderTopColor={isDesktopMode ? '$neutral3' : '$borderSubdued'}
     >
       <XStack gap="$1" ai="center" jc="center">
         <Icon name="InfoCircleOutline" color="$icon" size="$4" />
@@ -511,7 +514,6 @@ function MoreActionDivider() {
 function MoreActionOneKeyId() {
   const intl = useIntl();
   const { user, isLoggedIn, loginOneKeyId } = useOneKeyAuth();
-  const { isPrimeAvailable } = usePrimeAvailable();
   const {
     activeAccount: { network },
   } = useActiveAccount({ num: 0 });
@@ -570,6 +572,8 @@ function MoreActionOneKeyId() {
     await closePopover?.();
     await onPrimeButtonPressed();
   }, [closePopover, onPrimeButtonPressed]);
+
+  const isPrimeUser = user?.primeSubscription?.isActive && user?.onekeyUserId;
 
   if (!isLoggedIn) {
     return (
@@ -638,7 +642,7 @@ function MoreActionOneKeyId() {
             >
               {displayName}
             </SizableText>
-            {isPrimeAvailable ? (
+            {isPrimeUser ? (
               <XStack
                 ai="center"
                 jc="center"
@@ -1221,7 +1225,6 @@ function BaseMoreActionContent() {
         <MoreActionDivider />
         <MoreActionMoreGrid />
       </ScrollView>
-      <MoreActionDivider />
       <MoreActionContentFooter />
     </YStack>
   );
@@ -1254,7 +1257,6 @@ function MoreActionContent() {
         <MoreActionDivider />
         <MoreActionMoreGrid />
         <YStack flex={1} />
-        <MoreActionDivider />
         <MoreActionContentFooter />
       </YStack>
     </MoreActionProvider>
