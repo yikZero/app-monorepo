@@ -319,7 +319,7 @@
   "count_hidden_assets": "{count} 个隐藏的资产",
   "count_words": "{length} 个单词",
   "create_a_pin": "创建 PIN 码",
-  "create_a_pin_desc": "用于在所有设备上保护你的钱包。<highlight>此 PIN 无法找回</highlight>。",
+  "create_a_pin_desc": "这用于在您的所有设备上保护您的钱包。<highlight>此信息无法恢复</highlight>。",
   "create_new_wallet_badge_consists": "助记词由 12 个单词组成",
   "create_new_wallet_badge_handwritten": "手写备份",
   "create_new_wallet_badge_keep": "需要自己妥善保管",

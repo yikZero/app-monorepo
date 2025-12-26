@@ -319,7 +319,7 @@
   "count_hidden_assets": "{count} 個隱藏的資產",
   "count_words": "{length} 個單詞",
   "create_a_pin": "建立 PIN 碼",
-  "create_a_pin_desc": "用於在所有裝置上保護你的錢包。<highlight>此 PIN 無法找回</highlight>。",
+  "create_a_pin_desc": "這用於在您所有裝置上保護您的錢包。<highlight>這無法復原</highlight>。",
   "create_new_wallet_badge_consists": "助記詞由 12 個單詞組成",
   "create_new_wallet_badge_handwritten": "手寫備份",
   "create_new_wallet_badge_keep": "需要自己妥善保管",
