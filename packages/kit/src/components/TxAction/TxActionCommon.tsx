@@ -154,6 +154,11 @@ function TxActionCommonTitle({
           {intl.formatMessage({ id: ETranslations.global_failed })}
         </Badge>
       ) : null}
+      {riskyLevel && riskyLevel === TX_RISKY_LEVEL_SPAM ? (
+        <Badge badgeSize="sm" badgeType="warning" ml="$2">
+          {intl.formatMessage({ id: ETranslations.global_spam })}
+        </Badge>
+      ) : null}
       {riskyLevel && riskyLevel > TX_RISKY_LEVEL_SPAM ? (
         <Badge badgeSize="sm" badgeType="critical" ml="$2">
           {intl.formatMessage({ id: ETranslations.global_risk })}
