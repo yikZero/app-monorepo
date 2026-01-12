@@ -442,7 +442,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       setFavoriteTokens(displayTokens);
       initializedRef.current = true;
     },
-    [],
+    [hasUserFavorites],
     {
       watchLoading: true,
       pollingInterval: timerUtils.getTimeDurationMs({ seconds: 30 }),
