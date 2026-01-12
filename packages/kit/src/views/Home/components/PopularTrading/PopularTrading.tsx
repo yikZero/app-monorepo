@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import BigNumber from 'bignumber.js';
 import { isEmpty } from 'lodash';
@@ -16,40 +16,45 @@ import { ListLoading } from '@onekeyhq/kit/src/components/Loading';
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
-import { useRunAfterTokensDone } from '@onekeyhq/kit/src/hooks/useRunAfterTokensDone';
-import { useUserWalletProfile } from '@onekeyhq/kit/src/hooks/useUserWalletProfile';
-import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
-import { POLLING_DEBOUNCE_INTERVAL } from '@onekeyhq/shared/src/consts/walletConsts';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
-import { EModalSwapRoutes } from '@onekeyhq/shared/src/routes/swap';
+import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
+import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import { getTokenPriceChangeStyle } from '@onekeyhq/shared/src/utils/tokenUtils';
-import { getImportFromToken } from '@onekeyhq/shared/types/earn/earnProvider.constants';
-import type { IPopularTrading } from '@onekeyhq/shared/types/swap/types';
-import { ESwapSource } from '@onekeyhq/shared/types/swap/types';
+import type { IMarketTokenListItem } from '@onekeyhq/shared/types/marketV2';
 
+import { EModalMarketRoutes } from '../../../Market/router';
 import { RichBlock } from '../RichBlock/RichBlock';
 import { RichTable } from '../RichTable';
+
+// Default tokens to show when user has no favorites (BTC, ETH, BNB)
+const DEFAULT_FAVORITE_TOKENS = [
+  { chainId: 'btc--0', contractAddress: '', isNative: true },
+  { chainId: 'evm--1', contractAddress: '', isNative: true },
+  { chainId: 'evm--56', contractAddress: '', isNative: true },
+];
+
+interface IFavoriteTokenDisplay {
+  chainId: string;
+  contractAddress: string;
+  isNative: boolean;
+  symbol: string;
+  name: string;
+  logoUrl: string;
+  price: number;
+  priceChange24h: number;
+  marketCap: number;
+}
 
 function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
   const intl = useIntl();
   const currencyInfo = useCurrency();
-  const {
-    activeAccount: { wallet },
-  } = useActiveAccount({ num: 0 });
-  const { isSoftwareWalletOnlyUser } = useUserWalletProfile();
   const navigation = useAppNavigation();
-  const [popularTrading, setPopularTrading] = useState<IPopularTrading[]>([]);
-  const [fetchEnabled, setFetchEnabled] = useState(false);
+  const [favoriteTokens, setFavoriteTokens] = useState<IFavoriteTokenDisplay[]>(
+    [],
+  );
 
   const initializedRef = useRef(false);
-
-  useRunAfterTokensDone({
-    run: () => {
-      setFetchEnabled(true);
-    },
-  });
 
   const columns = useMemo(() => {
     if (tableLayout) {
@@ -57,7 +62,11 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         {
           dataIndex: 'symbol',
           title: intl.formatMessage({ id: ETranslations.global_name }),
-          render: (_: unknown, record: IPopularTrading, index: number) => (
+          render: (
+            _: unknown,
+            record: IFavoriteTokenDisplay,
+            index: number,
+          ) => (
             <XStack alignItems="center" gap="$2">
               <SizableText size="$bodyLgMedium" color="$textSubdued">
                 {index + 1}
@@ -65,8 +74,8 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
               <XStack alignItems="center" gap="$2">
                 <Token
                   size="md"
-                  tokenImageUri={record.tokenDetail?.info?.logoURI ?? ''}
-                  networkId={record.networkId}
+                  tokenImageUri={record.logoUrl}
+                  networkId={record.chainId}
                   showNetworkIcon
                 />
                 <YStack>
@@ -74,7 +83,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
                     {record.symbol}
                   </SizableText>
                   <SizableText size="$bodyMd" color="$textSubdued">
-                    {record.tokenDetail?.info?.name ?? '-'}
+                    {record.name}
                   </SizableText>
                 </YStack>
               </XStack>
@@ -84,23 +93,23 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         {
           dataIndex: 'price',
           title: intl.formatMessage({ id: ETranslations.global_price }),
-          render: (_: unknown, record: IPopularTrading) => (
+          render: (_: unknown, record: IFavoriteTokenDisplay) => (
             <NumberSizeableText
               size="$bodyMdMedium"
               formatter="price"
               formatterOptions={{ currency: currencyInfo?.symbol }}
             >
-              {record.tokenDetail?.price ?? '-'}
+              {record.price ?? '-'}
             </NumberSizeableText>
           ),
         },
         {
           dataIndex: 'priceChange24h',
           title: intl.formatMessage({ id: ETranslations.market_change_24h }),
-          render: (_: unknown, record: IPopularTrading) => {
+          render: (_: unknown, record: IFavoriteTokenDisplay) => {
             const { changeColor, showPlusMinusSigns } =
               getTokenPriceChangeStyle({
-                priceChange: record.tokenDetail?.price24h ?? 0,
+                priceChange: record.priceChange24h ?? 0,
               });
             return (
               <NumberSizeableText
@@ -109,7 +118,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
                 color={changeColor}
                 size="$bodyMdMedium"
               >
-                {record.tokenDetail?.price24h ?? '-'}
+                {record.priceChange24h ?? '-'}
               </NumberSizeableText>
             );
           },
@@ -117,13 +126,13 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         {
           dataIndex: 'marketCap',
           title: intl.formatMessage({ id: ETranslations.global_market_cap }),
-          render: (marketCap: number) => (
+          render: (_: unknown, record: IFavoriteTokenDisplay) => (
             <NumberSizeableText
               size="$bodyMdMedium"
               formatter="marketCap"
               formatterOptions={{ currency: currencyInfo?.symbol }}
             >
-              {new BigNumber(marketCap).isNaN() ? '-' : marketCap}
+              {new BigNumber(record.marketCap).isNaN() ? '-' : record.marketCap}
             </NumberSizeableText>
           ),
         },
@@ -134,7 +143,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       {
         dataIndex: 'symbol',
         title: intl.formatMessage({ id: ETranslations.global_name }),
-        render: (_: unknown, record: IPopularTrading, index: number) => (
+        render: (_: unknown, record: IFavoriteTokenDisplay, index: number) => (
           <XStack alignItems="center" gap="$2" justifyContent="flex-end">
             <SizableText size="$bodyLgMedium" color="$textSubdued">
               {index + 1}
@@ -142,8 +151,8 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
             <XStack alignItems="center" gap="$2">
               <Token
                 size="lg"
-                tokenImageUri={record.tokenDetail?.info?.logoURI ?? ''}
-                networkId={record.networkId}
+                tokenImageUri={record.logoUrl}
+                networkId={record.chainId}
                 showNetworkIcon
               />
               <YStack>
@@ -165,9 +174,9 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       {
         dataIndex: 'price',
         title: intl.formatMessage({ id: ETranslations.global_price }),
-        render: (_: unknown, record: IPopularTrading) => {
+        render: (_: unknown, record: IFavoriteTokenDisplay) => {
           const { changeColor, showPlusMinusSigns } = getTokenPriceChangeStyle({
-            priceChange: record.tokenDetail?.price24h ?? 0,
+            priceChange: record.priceChange24h ?? 0,
           });
           return (
             <YStack alignItems="flex-end">
@@ -176,7 +185,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
                 formatter="price"
                 formatterOptions={{ currency: currencyInfo?.symbol }}
               >
-                {record.tokenDetail?.price ?? '-'}
+                {record.price ?? '-'}
               </NumberSizeableText>
               <NumberSizeableText
                 formatter="priceChange"
@@ -184,7 +193,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
                 color={changeColor}
                 size="$bodyMd"
               >
-                {record.tokenDetail?.price24h ?? '-'}
+                {record.priceChange24h ?? '-'}
               </NumberSizeableText>
             </YStack>
           );
@@ -195,27 +204,92 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
 
   const { isLoading } = usePromiseResult(
     async () => {
-      if (!fetchEnabled) {
+      // Get user's favorites from local storage (synced via Prime Cloud Sync)
+      const watchList =
+        await backgroundApiProxy.serviceMarketV2.getMarketWatchListV2();
+
+      // Use user's favorites if available, otherwise use default tokens
+      const targetList =
+        watchList.data.length > 0
+          ? watchList.data.slice(0, 3).map((item) => ({
+              chainId: item.chainId,
+              contractAddress: item.contractAddress,
+              isNative: item.isNative ?? false,
+            }))
+          : DEFAULT_FAVORITE_TOKENS;
+
+      const tokenAddressList = targetList.map((item) => ({
+        chainId: item.chainId,
+        contractAddress: item.contractAddress,
+        isNative: item.isNative,
+      }));
+
+      const response =
+        await backgroundApiProxy.serviceMarketV2.fetchMarketTokenListBatch({
+          tokenAddressList,
+        });
+
+      // Empty data protection
+      if (response.list.length === 0) {
         return;
       }
 
-      const result = await backgroundApiProxy.serviceSwap.fetchPopularTrading({
-        limit: 3,
-        saveToLocal: true,
+      // Build a map for quick lookup by chainId + contractAddress
+      const tokenMap = new Map<string, IMarketTokenListItem>();
+      response.list.forEach((item: IMarketTokenListItem) => {
+        const networkId = item.networkId ?? item.chainId ?? '';
+        let address = item.address ?? '';
+
+        // Special handling for native tokens (short addresses)
+        // API returns short address for native tokens, normalize to empty string
+        if (address.length < 30) {
+          address = '';
+        }
+
+        const key = `${networkId}:${address.toLowerCase()}`;
+        tokenMap.set(key, item);
       });
-      setPopularTrading(result);
+
+      // Map tokens in the same order as targetList
+      const displayTokens: IFavoriteTokenDisplay[] = targetList
+        .map((targetItem) => {
+          const key = `${
+            targetItem.chainId
+          }:${targetItem.contractAddress.toLowerCase()}`;
+          const item = tokenMap.get(key);
+
+          if (!item) {
+            return null;
+          }
+
+          return {
+            chainId: targetItem.chainId,
+            contractAddress: targetItem.contractAddress,
+            isNative: targetItem.isNative,
+            symbol: item.symbol,
+            name: item.name,
+            logoUrl: item.logoUrl ?? '',
+            price: parseFloat(item.price ?? '0'),
+            priceChange24h: parseFloat(item.priceChange24hPercent ?? '0'),
+            marketCap: parseFloat(item.marketCap ?? '0'),
+          };
+        })
+        .filter((item): item is IFavoriteTokenDisplay => item !== null);
+
+      setFavoriteTokens(displayTokens);
       initializedRef.current = true;
     },
-    [fetchEnabled],
+    [],
     {
       watchLoading: true,
-      debounced: POLLING_DEBOUNCE_INTERVAL,
-      overrideIsFocused: (focused) => focused && fetchEnabled,
+      pollingInterval: timerUtils.getTimeDurationMs({ seconds: 30 }),
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
     },
   );
 
   const renderContent = useCallback(() => {
-    if (!initializedRef.current && (isLoading || !fetchEnabled)) {
+    if (!initializedRef.current && isLoading) {
       return (
         <ListLoading
           listCount={3}
@@ -227,11 +301,11 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
     }
 
     return (
-      <RichTable<IPopularTrading>
+      <RichTable<IFavoriteTokenDisplay>
         showHeader={!!tableLayout}
-        dataSource={popularTrading}
+        dataSource={favoriteTokens}
         columns={columns}
-        keyExtractor={(item) => `${item.networkId}-${item.address}`}
+        keyExtractor={(item) => `${item.chainId}-${item.contractAddress}`}
         estimatedItemSize={56}
         rowProps={
           tableLayout
@@ -242,74 +316,32 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
               }
         }
         onRow={(record) => ({
-          onPress: async () => {
-            const { importFromToken, swapTabSwitchType } = getImportFromToken({
-              networkId: record.networkId,
-              tokenAddress: record.address,
-              isSupportSwap: true,
+          onPress: () => {
+            const shortCode = networkUtils.getNetworkShortCode({
+              networkId: record.chainId,
             });
 
-            defaultLogger.wallet.walletActions.actionTrade({
-              walletType: wallet?.type ?? '',
-              networkId: record.networkId,
-              source: 'homePopularTrading',
-              tradeType: swapTabSwitchType,
-              isSoftwareWalletOnlyUser,
-            });
-            navigation.pushModal(EModalRoutes.SwapModal, {
-              screen: EModalSwapRoutes.SwapMainLand,
+            navigation.pushModal(EModalRoutes.MarketModal, {
+              screen: EModalMarketRoutes.MarketDetailV2,
               params: {
-                importNetworkId: record.networkId,
-                importFromToken,
-                importToToken: {
-                  contractAddress: record.address,
-                  symbol: record.symbol,
-                  networkId: record.networkId,
-                  isNative: record.tokenDetail?.info?.isNative ?? false,
-                  decimals: record.tokenDetail?.info?.decimals ?? 0,
-                  name: record.tokenDetail?.info?.name ?? '-',
-                  logoURI: record.tokenDetail?.info?.logoURI ?? '',
-                },
-                swapTabSwitchType,
-                swapSource: ESwapSource.WALLET_HOME_POPULAR_TRADING,
+                tokenAddress: record.contractAddress,
+                network: shortCode || record.chainId,
+                isNative: record.isNative,
               },
             });
           },
         })}
       />
     );
-  }, [
-    columns,
-    popularTrading,
-    isLoading,
-    fetchEnabled,
-    isSoftwareWalletOnlyUser,
-    navigation,
-    wallet?.type,
-    tableLayout,
-  ]);
+  }, [columns, favoriteTokens, isLoading, navigation, tableLayout]);
 
-  const initPopularTrading = useCallback(async () => {
-    const result =
-      await backgroundApiProxy.serviceSwap.getLocalPopularTrading();
-
-    if (result && result.length > 0) {
-      setPopularTrading(result);
-      initializedRef.current = true;
-    }
-  }, []);
-
-  useEffect(() => {
-    void initPopularTrading();
-  }, [initPopularTrading]);
-
-  if (initializedRef.current && isEmpty(popularTrading)) {
+  if (initializedRef.current && isEmpty(favoriteTokens)) {
     return null;
   }
 
   return (
     <RichBlock
-      title={intl.formatMessage({ id: ETranslations.global_popular_trading })}
+      title={intl.formatMessage({ id: ETranslations.global_favorites })}
       content={renderContent()}
       contentContainerProps={{
         px: tableLayout ? '$2' : '$0',
