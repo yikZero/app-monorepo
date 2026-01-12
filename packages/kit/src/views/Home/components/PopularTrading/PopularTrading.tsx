@@ -56,7 +56,6 @@ interface IFavoriteTokenDisplay {
   marketCap: number;
 }
 
-// Card item component for empty state (with checkbox like MarketRecommendList)
 function RecommendCardItem({
   token,
   checked,
@@ -161,6 +160,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
     [],
   );
   const [hasUserFavorites, setHasUserFavorites] = useState(false);
+  const [totalFavoritesCount, setTotalFavoritesCount] = useState(0);
   const [selectedTokens, setSelectedTokens] = useState<IFavoriteTokenDisplay[]>(
     [],
   );
@@ -172,6 +172,11 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
 
   // Always show 4 tokens in empty state
   const displayCount = 4;
+
+  // Market tab differs by platform
+  const marketTab = platformEnv.isNative
+    ? ETabRoutes.Discovery
+    : ETabRoutes.Market;
 
   // Columns for table layout (only used when user has favorites)
   const columns = useMemo(() => {
@@ -279,10 +284,8 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
                 id: ETranslations.market_remove_from_favorites,
               })}
               onPress={() => handleRemoveFromWatchlistRef.current(record)}
-              $sm={{
-                hoverStyle: { bg: 'transparent' },
-                pressStyle: { bg: 'transparent' },
-              }}
+              hoverStyle={{ bg: 'transparent' }}
+              pressStyle={{ bg: 'transparent' }}
             />
             <XStack alignItems="center" gap="$2">
               <Token
@@ -354,6 +357,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       }
 
       setHasUserFavorites(userHasFavorites);
+      setTotalFavoritesCount(watchList.data.length);
 
       let targetList: {
         chainId: string;
@@ -388,15 +392,9 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         }));
       }
 
-      const tokenAddressList = targetList.map((item) => ({
-        chainId: item.chainId,
-        contractAddress: item.contractAddress,
-        isNative: item.isNative,
-      }));
-
       const response =
         await backgroundApiProxy.serviceMarketV2.fetchMarketTokenListBatch({
-          tokenAddressList,
+          tokenAddressList: targetList,
         });
 
       if (response.list.length === 0) {
@@ -560,54 +558,48 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         networkId: record.chainId,
       });
 
-      const params = {
-        tokenAddress: record.contractAddress,
-        network: shortCode || record.chainId,
-        isNative: record.isNative,
-      };
-
-      const targetTab = platformEnv.isNative
-        ? ETabRoutes.Discovery
-        : ETabRoutes.Market;
-      navigation.switchTab(targetTab);
+      navigation.switchTab(marketTab);
 
       setTimeout(() => {
         rootNavigationRef.current?.navigate(ERootRoutes.Main, {
-          screen: targetTab,
+          screen: marketTab,
           params: {
             screen: ETabMarketRoutes.MarketDetailV2,
-            params,
+            params: {
+              tokenAddress: record.contractAddress,
+              network: shortCode || record.chainId,
+              isNative: record.isNative,
+            },
           },
         });
       }, 300);
     },
-    [navigation],
+    [navigation, marketTab],
   );
 
   // Render card layout for empty state (no user favorites)
   const renderEmptyStateCards = useCallback(() => {
-    // Desktop: 4 items in one row (use XStack)
-    // Mobile: 2 items per row, 2 rows (use YStack with nested XStack)
+    const isTokenSelected = (token: IFavoriteTokenDisplay) =>
+      selectedTokens.some((t) => t.contractAddress === token.contractAddress);
+
+    const renderCardItem = (token: IFavoriteTokenDisplay) => (
+      <RecommendCardItem
+        key={`${token.chainId}-${token.contractAddress}`}
+        token={token}
+        checked={isTokenSelected(token)}
+        onChange={handleRecommendItemChange}
+      />
+    );
+
+    // Mobile: 2 rows x 2 items each
     if (platformEnv.isNative) {
-      // Mobile: 2 rows × 2 items each
       return (
         <YStack gap="$2.5" width="100%">
           {[0, 1].map((rowIndex) => (
             <XStack gap="$2.5" key={rowIndex}>
-              {[0, 1].map((colIndex) => {
-                const token = favoriteTokens[rowIndex * 2 + colIndex];
-                if (!token) return null;
-                return (
-                  <RecommendCardItem
-                    key={`${token.chainId}-${token.contractAddress}`}
-                    token={token}
-                    checked={selectedTokens.some(
-                      (t) => t.contractAddress === token.contractAddress,
-                    )}
-                    onChange={handleRecommendItemChange}
-                  />
-                );
-              })}
+              {favoriteTokens
+                .slice(rowIndex * 2, rowIndex * 2 + 2)
+                .map(renderCardItem)}
             </XStack>
           ))}
         </YStack>
@@ -617,74 +609,85 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
     // Desktop: 4 items in one row
     return (
       <XStack gap="$3" width="100%">
-        {favoriteTokens.map((token) => (
-          <RecommendCardItem
-            key={`${token.chainId}-${token.contractAddress}`}
-            token={token}
-            checked={selectedTokens.some(
-              (t) => t.contractAddress === token.contractAddress,
-            )}
-            onChange={handleRecommendItemChange}
-          />
-        ))}
+        {favoriteTokens.map(renderCardItem)}
       </XStack>
     );
   }, [favoriteTokens, selectedTokens, handleRecommendItemChange]);
 
-  // Render table/list layout for user favorites
-  const renderUserFavoritesList = useCallback(() => {
-    return (
-      <RichTable<IFavoriteTokenDisplay>
-        showHeader={!!tableLayout}
-        dataSource={favoriteTokens}
-        columns={columns}
-        keyExtractor={(item) => `${item.chainId}-${item.contractAddress}`}
-        estimatedItemSize={56}
-        rowProps={
-          tableLayout
-            ? undefined
-            : {
-                py: '$0',
-                px: '$0',
-              }
-        }
-        onRow={(record) => ({
-          onPress: () => handleTokenPress(record),
-        })}
-      />
-    );
-  }, [columns, favoriteTokens, handleTokenPress, tableLayout]);
-
   // Navigate to Market favorites tab
   const handleViewMore = useCallback(() => {
-    const targetTab = platformEnv.isNative
-      ? ETabRoutes.Discovery
-      : ETabRoutes.Market;
-
-    // Use rootNavigationRef to explicitly navigate to Market home, not just switch tab
-    // This ensures we go to the Market home page even if previously on a detail page
     rootNavigationRef.current?.navigate(ERootRoutes.Main, {
-      screen: targetTab,
+      screen: marketTab,
       params: {
         screen: ETabMarketRoutes.TabMarket,
       },
     });
-  }, []);
+  }, [marketTab]);
 
-  // Header action button
+  // Render table/list layout for user favorites
+  const renderUserFavoritesList = useCallback(() => {
+    // Only show "View more" button when there are more than 3 favorites
+    const showViewMoreButton = totalFavoritesCount > 3;
+
+    return (
+      <YStack>
+        <RichTable<IFavoriteTokenDisplay>
+          showHeader={!!tableLayout}
+          dataSource={favoriteTokens}
+          columns={columns}
+          keyExtractor={(item) => `${item.chainId}-${item.contractAddress}`}
+          estimatedItemSize={56}
+          rowProps={
+            tableLayout
+              ? undefined
+              : {
+                  py: '$0',
+                  px: '$0',
+                }
+          }
+          onRow={(record) => ({
+            onPress: () => handleTokenPress(record),
+          })}
+        />
+        {showViewMoreButton ? (
+          <XStack py="$3" jc="center" ai="center">
+            <Button
+              size="small"
+              variant="secondary"
+              iconAfter="ChevronRightSmallOutline"
+              onPress={handleViewMore}
+              $md={
+                {
+                  flexGrow: 1,
+                  flexBasis: 0,
+                  size: 'medium',
+                  borderRadius: '$full',
+                  hoverStyle: { bg: 'transparent' },
+                  pressStyle: { bg: 'transparent' },
+                } as any
+              }
+            >
+              {intl.formatMessage({ id: ETranslations.global_view_more })}
+            </Button>
+          </XStack>
+        ) : null}
+      </YStack>
+    );
+  }, [
+    columns,
+    favoriteTokens,
+    handleTokenPress,
+    handleViewMore,
+    intl,
+    tableLayout,
+    totalFavoritesCount,
+  ]);
+
+  // Header action button (only show "Add tokens" button in empty state)
   const headerActions = useMemo(() => {
+    // No header action when user has favorites (View more is shown in footer)
     if (hasUserFavorites) {
-      // Show "View more" button when user has favorites
-      return (
-        <Button
-          size="small"
-          variant="tertiary"
-          iconAfter="ChevronRightSmallOutline"
-          onPress={handleViewMore}
-        >
-          {intl.formatMessage({ id: ETranslations.global_view_more })}
-        </Button>
-      );
+      return null;
     }
 
     // Show "Add tokens" button in empty state
@@ -702,13 +705,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
         )}
       </Button>
     );
-  }, [
-    hasUserFavorites,
-    selectedTokens.length,
-    handleAddTokens,
-    handleViewMore,
-    intl,
-  ]);
+  }, [hasUserFavorites, selectedTokens.length, handleAddTokens, intl]);
 
   const renderContent = useCallback(() => {
     if (!initializedRef.current && isLoading) {
