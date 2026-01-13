@@ -18,15 +18,15 @@ function SectionHeader() {
   const appNavigation = useAppNavigation();
   const { gtMd } = useMedia();
 
-  if (!gtMd) {
-    return null;
-  }
-
   const onAddDevice = useCallback(async () => {
     appNavigation.pushModal(EModalRoutes.OnboardingModal, {
       screen: EOnboardingPages.ConnectYourDevice,
     });
   }, [appNavigation]);
+
+  if (!gtMd) {
+    return null;
+  }
 
   return (
     <XStack ai="center" jc="space-between" gap="$5">

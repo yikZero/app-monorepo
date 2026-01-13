@@ -25,10 +25,13 @@ import { ONEKEY_BUY_HARDWARE_URL } from '@onekeyhq/shared/src/config/appConfig';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes, EOnboardingPages } from '@onekeyhq/shared/src/routes';
 
+import type { ImageSourcePropType } from 'react-native';
 import type { ReactVideoSource } from 'react-native-video';
 
-const LightPosterImage = require('./assets/mydevice_hero_poster_light.jpg');
-const DarkPosterImage = require('./assets/mydevice_hero_poster_dark.jpg');
+const LightPosterImage =
+  require('./assets/mydevice_hero_poster_light.jpg') as ImageSourcePropType;
+const DarkPosterImage =
+  require('./assets/mydevice_hero_poster_dark.jpg') as ImageSourcePropType;
 
 const LightVideoSource: ReactVideoSource = {
   uri: 'https://asset.onekey-asset.com/app-monorepo/bb7a4e71aba56b405faf9278776d57d73b829708/static/media/mydevice_hero_light.mp4',
@@ -91,7 +94,7 @@ function VideoContainer() {
         $platform-web={maskStyle}
       >
         {/* Show poster image as fallback while video is loading */}
-        {!isVideoLoaded && (
+        {!isVideoLoaded ? (
           <Image
             position="absolute"
             width="100%"
@@ -99,7 +102,7 @@ function VideoContainer() {
             resizeMode="cover"
             source={posterSource}
           />
-        )}
+        ) : null}
         <Video
           muted
           autoPlay

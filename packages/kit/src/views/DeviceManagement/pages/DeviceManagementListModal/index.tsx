@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 
 import { useNavigation } from '@react-navigation/core';
-
 import { useIntl } from 'react-intl';
 
 import {
@@ -30,11 +29,7 @@ import {
   appEventBus,
 } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import {
-  EModalRoutes,
-  EOnboardingPages,
-  ETabRoutes,
-} from '@onekeyhq/shared/src/routes';
+import { EModalRoutes, EOnboardingPages } from '@onekeyhq/shared/src/routes';
 import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 import type { IHwQrWalletWithDevice } from '@onekeyhq/shared/types/account';
