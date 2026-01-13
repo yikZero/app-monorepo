@@ -19,8 +19,8 @@ function SectionHeader() {
 
   return (
     <XStack ai="center" jc="space-between" gap="$5">
-      <YStack flex={1}>
-        <SizableText size="$heading2xl" color="$textSubdued">
+      <YStack flex={1} gap="$1">
+        <SizableText size="$heading2xl" color="$text">
           {intl.formatMessage({
             id: ETranslations.global_my_device,
           })}
@@ -31,16 +31,18 @@ function SectionHeader() {
           })}
         </SizableText>
       </YStack>
-      <YStack ai="center" jc="center" gap="$2" onPress={onAddDevice}>
+      <YStack ai="center" jc="center" gap="$0.5" onPress={onAddDevice}>
         <IconButton
           icon="PlusLargeOutline"
           size="small"
+          variant="primary"
           onPress={onAddDevice}
-          title={intl.formatMessage({
-            id: ETranslations.global_add,
-          })}
         />
-        <SizableText size="$bodyMd" color="$textSubdued">
+        <SizableText
+          size="$bodySmMedium"
+          color="$textSubdued"
+          userSelect="none"
+        >
           {intl.formatMessage({
             id: ETranslations.global_add,
           })}

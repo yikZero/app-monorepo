@@ -41,7 +41,7 @@ function DeviceWalletRenameButton() {
   const [walletWithDevice] = useWalletWithDeviceAtom();
   const { wallet } = walletWithDevice ?? {};
   if (!wallet) return null;
-  return <WalletRenameButton wallet={wallet} editable />;
+  return <WalletRenameButton wallet={wallet} editable textSize="$heading2xl" />;
 }
 
 function DeviceBasicInfo() {
@@ -59,12 +59,14 @@ function DeviceBasicInfo() {
         type: 'success' as const,
         icon: 'BadgeVerifiedSolid' as const,
         color: '$iconSuccess' as const,
+        textColor: '$textSuccessStrong' as const,
         textId: ETranslations.global_verified,
       },
       critical: {
         type: 'critical' as const,
         icon: 'ErrorSolid' as const,
         color: '$iconCritical' as const,
+        textColor: '$textCriticalStrong' as const,
         textId: ETranslations.global_unverified,
       },
     }),
@@ -80,7 +82,7 @@ function DeviceBasicInfo() {
     verifiedBadgeIconName: status.icon,
     verifiedBadgeIconColor: status.color,
     verifiedBadgeText: intl.formatMessage({ id: status.textId }),
-    verifiedBadgeTextColor: status.color,
+    verifiedBadgeTextColor: status.textColor,
   };
 
   return (
@@ -109,6 +111,7 @@ function DeviceBasicInfo() {
               <Badge
                 badgeSize="sm"
                 badgeType={deviceVerifiedBadge.verifiedBadgeType}
+                userSelect="none"
               >
                 <XStack ai="center" gap="$1.5">
                   <Icon

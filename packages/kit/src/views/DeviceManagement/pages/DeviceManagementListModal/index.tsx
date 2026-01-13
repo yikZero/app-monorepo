@@ -124,7 +124,7 @@ function DeviceListItem({
           borderRadius="$3"
           bg="$bgStrong"
         >
-          <WalletAvatar {...walletAvatarProps} size={48} />
+          <WalletAvatar {...walletAvatarProps} size={44} />
         </Stack>
       )}
       renderItemText={() => (
@@ -134,7 +134,13 @@ function DeviceListItem({
               {item.wallet.name}
             </SizableText>
             {bleName ? (
-              <Badge badgeSize="sm" badgeType="default">
+              <Badge
+                badgeSize="sm"
+                badgeType="default"
+                px="$2"
+                py="$0.5"
+                size="$bodySmMedium"
+              >
                 {bleName}
               </Badge>
             ) : null}
@@ -150,7 +156,7 @@ function DeviceListItem({
   );
 }
 
-const ItemSeparatorComponent = () => <Divider borderColor="$borderSubdued" />;
+const ItemSeparatorComponent = () => <Divider borderColor="$neutral4" />;
 
 const ListEmptyComponent = () => (
   <Stack p="$16">
@@ -205,7 +211,72 @@ function DeviceManagementV2ListWeb() {
         item.shouldUpdate = shouldUpdate;
         item.updateVersionDisplay = `v${updateVersionDisplay ?? '-'}`;
       }
-      return devices;
+
+      // TODO: Remove mock data after testing
+      const mockDevices: Array<IDeviceManagementListItem> = [
+        {
+          wallet: {
+            id: 'mock-wallet-1',
+            name: 'OneKey Pro',
+            walletNo: 100,
+            walletOrder: 100,
+            deprecated: false,
+            avatarInfo: { img: undefined },
+          },
+          device: {
+            id: 'mock-device-1',
+            connectId: 'mock-connect-1',
+            featuresInfo: { ble_name: 'K1234' },
+            verifiedAtVersion: '1.0.0',
+          },
+          firmwareTypeBadge: undefined,
+          firmwareVersionDisplay: 'v4.8.0',
+          shouldUpdate: false,
+          updateVersionDisplay: undefined,
+        } as unknown as IDeviceManagementListItem,
+        {
+          wallet: {
+            id: 'mock-wallet-2',
+            name: 'OneKey Classic',
+            walletNo: 101,
+            walletOrder: 101,
+            deprecated: false,
+            avatarInfo: { img: undefined },
+          },
+          device: {
+            id: 'mock-device-2',
+            connectId: 'mock-connect-2',
+            featuresInfo: { ble_name: 'K5678' },
+            verifiedAtVersion: undefined,
+          },
+          firmwareTypeBadge: undefined,
+          firmwareVersionDisplay: 'v3.5.2',
+          shouldUpdate: true,
+          updateVersionDisplay: 'v3.6.0',
+        } as unknown as IDeviceManagementListItem,
+        {
+          wallet: {
+            id: 'mock-wallet-3',
+            name: 'OneKey Touch',
+            walletNo: 102,
+            walletOrder: 102,
+            deprecated: false,
+            avatarInfo: { img: undefined },
+          },
+          device: {
+            id: 'mock-device-3',
+            connectId: 'mock-connect-3',
+            featuresInfo: { ble_name: 'K9012' },
+            verifiedAtVersion: '2.1.0',
+          },
+          firmwareTypeBadge: undefined,
+          firmwareVersionDisplay: 'v2.3.1',
+          shouldUpdate: false,
+          updateVersionDisplay: undefined,
+        } as unknown as IDeviceManagementListItem,
+      ];
+
+      return [...devices, ...mockDevices];
     },
     [detectStatus],
     {
@@ -251,15 +322,19 @@ function DeviceManagementV2ListWeb() {
     return hwQrWalletList.length > 0;
   }, [hwQrWalletList]);
 
+  const showHeader = existingDevices || isLoading;
+
   return (
     <Page fullPage>
-      <DeviceCommonHeader
-        title={intl.formatMessage({
-          id: ETranslations.global_device_management,
-        })}
-      />
+      {showHeader ? (
+        <DeviceCommonHeader
+          title={intl.formatMessage({
+            id: ETranslations.global_device_management,
+          })}
+        />
+      ) : null}
       <Page.Body alignItems="stretch" h="100%">
-        {existingDevices || isLoading ? (
+        {showHeader ? (
           <YStack
             w="100%"
             h="100%"

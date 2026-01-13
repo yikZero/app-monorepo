@@ -1,54 +1,74 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { useIsFocused } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 import { Linking } from 'react-native';
 
 import {
   Anchor,
   Button,
+  EVideoResizeMode,
   Image,
   SizableText,
   Stack,
+  Video,
   XStack,
   YStack,
   useMedia,
 } from '@onekeyhq/components';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useIsFirstFocused } from '@onekeyhq/kit/src/hooks/useIsFirstFocused';
 import { useThemeVariant } from '@onekeyhq/kit/src/hooks/useThemeVariant';
 import { ONEKEY_BUY_HARDWARE_URL } from '@onekeyhq/shared/src/config/appConfig';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes, EOnboardingPages } from '@onekeyhq/shared/src/routes';
 
-const MobileLightImageUri =
-  'https://tk5fwf4sqe0lektj.public.blob.vercel-storage.com/NNFC5F4XNCJREFJBVU7AJYC9/mobile_w.png';
-const DesktopLightImageUri =
-  'https://tk5fwf4sqe0lektj.public.blob.vercel-storage.com/NNFC5F4XNCJREFJBVU7AJYC9/web_w.png';
+import type { ReactVideoSource } from 'react-native-video';
 
-const MobileDarkImageUri =
-  'https://tk5fwf4sqe0lektj.public.blob.vercel-storage.com/NNFC5F4XNCJREFJBVU7AJYC9/mobile_b.png';
-const DesktopDarkImageUri =
-  'https://tk5fwf4sqe0lektj.public.blob.vercel-storage.com/NNFC5F4XNCJREFJBVU7AJYC9/web_b.png';
+const LightPosterImage = require('./assets/mydevice_hero_poster_light.jpg');
+const DarkPosterImage = require('./assets/mydevice_hero_poster_dark.jpg');
 
-function ImageContainer() {
-  const { gtMd } = useMedia();
+const LightVideoSource: ReactVideoSource = {
+  uri: 'https://asset.onekey-asset.com/app-monorepo/bb7a4e71aba56b405faf9278776d57d73b829708/static/media/mydevice_hero_light.mp4',
+};
+const DarkVideoSource: ReactVideoSource = {
+  uri: 'https://asset.onekey-asset.com/app-monorepo/bb7a4e71aba56b405faf9278776d57d73b829708/static/media/mydevice_hero_dark.mp4',
+};
+
+function VideoContainer() {
   const themeVariant = useThemeVariant();
+  const { gtMd } = useMedia();
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
-  let imageUrl;
-  if (themeVariant === 'dark') {
-    imageUrl = gtMd ? DesktopDarkImageUri : MobileDarkImageUri;
-  } else {
-    imageUrl = gtMd ? DesktopLightImageUri : MobileLightImageUri;
-  }
+  const videoSource = useMemo(() => {
+    return themeVariant === 'dark' ? DarkVideoSource : LightVideoSource;
+  }, [themeVariant]);
+
+  const posterSource = useMemo(() => {
+    return themeVariant === 'dark' ? DarkPosterImage : LightPosterImage;
+  }, [themeVariant]);
+
+  const maskStyle = useMemo(() => {
+    const gradient = gtMd
+      ? 'linear-gradient(90deg, transparent 0%, black 70%)'
+      : 'linear-gradient(180deg, transparent 15%, black 70%)';
+
+    return {
+      maskImage: gradient,
+      WebkitMaskImage: gradient,
+    };
+  }, [gtMd]);
 
   return (
     <Stack
-      testID="blank-page-image"
+      testID="blank-page-video"
       flex={1}
       w="100%"
       h="100%"
       bg="$bgApp"
       overflow="hidden"
       position="absolute"
+      zIndex={0}
       top={0}
       left={0}
       right={0}
@@ -59,20 +79,38 @@ function ImageContainer() {
         top: 0,
         right: 0,
       }}
-      $gt2Md={{
-        left: '8%',
-      }}
-      $gtLg={{
-        left: '15%',
-      }}
     >
-      <Image
-        // key={imageKey}
+      {/* Container with gradient mask */}
+      <Stack
+        position="absolute"
         width="100%"
         height="100%"
-        resizeMode="cover"
-        source={{ uri: imageUrl }}
-      />
+        $platform-web={maskStyle}
+      >
+        {/* Show poster image as fallback while video is loading */}
+        {!isVideoLoaded && (
+          <Image
+            position="absolute"
+            width="100%"
+            height="100%"
+            resizeMode="cover"
+            source={posterSource}
+          />
+        )}
+        <Video
+          muted
+          autoPlay
+          repeat
+          position="absolute"
+          width="100%"
+          height="100%"
+          controls={false}
+          playInBackground={false}
+          resizeMode={EVideoResizeMode.COVER}
+          source={videoSource}
+          onLoad={() => setIsVideoLoaded(true)}
+        />
+      </Stack>
     </Stack>
   );
 }
@@ -81,7 +119,7 @@ function DescriptionInfo() {
   const intl = useIntl();
   return (
     <YStack
-      gap="$4"
+      gap="$2"
       mb="$16"
       $gtMd={{
         mb: '$0',
@@ -163,14 +201,20 @@ function ButtonContainer() {
           size="medium"
           borderRadius="$full"
           variant="secondary"
-          minWidth={160}
           borderWidth="$px"
           borderColor="$borderSubdued"
-          bg="$transparent"
+          bg="$neutral2"
           iconAfter="ArrowTopRightOutline"
           onPress={handleBuyButtonPress}
+          $platform-web={{
+            style: {
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+            },
+          }}
         >
           {intl.formatMessage({ id: ETranslations.global_buy_one })}
+          OneKey
         </Button>
       </XStack>
     );
@@ -207,10 +251,10 @@ function ButtonContainer() {
   );
 }
 
-export function DeviceGuideView() {
+function DeviceGuideViewContent() {
   return (
     <YStack w="100%" h="100%" gap="$8" bg="$bgApp" testID="blank-page">
-      <ImageContainer />
+      <VideoContainer />
 
       <XStack
         h="100%"
@@ -219,6 +263,8 @@ export function DeviceGuideView() {
         alignItems={undefined}
         flexDirection="column-reverse"
         px="0px"
+        position="relative"
+        zIndex={1}
         $gtMd={{
           alignItems: 'center',
           flexDirection: 'row',
@@ -241,4 +287,10 @@ export function DeviceGuideView() {
       </XStack>
     </YStack>
   );
+}
+
+export function DeviceGuideView() {
+  const isFocused = useIsFocused();
+  const isFirstFocused = useIsFirstFocused(isFocused);
+  return isFirstFocused ? <DeviceGuideViewContent /> : null;
 }
