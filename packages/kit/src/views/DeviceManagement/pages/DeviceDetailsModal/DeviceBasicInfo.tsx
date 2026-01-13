@@ -46,7 +46,11 @@ function DeviceWalletAvatar({
   );
 }
 
-function DeviceWalletRenameButton({ textSize }: { textSize: string }) {
+function DeviceWalletRenameButton({
+  textSize,
+}: {
+  textSize: '$headingXl' | '$heading2xl';
+}) {
   const [walletWithDevice] = useWalletWithDeviceAtom();
   const { wallet } = walletWithDevice ?? {};
   if (!wallet) return null;
@@ -64,7 +68,9 @@ function DeviceBasicInfo() {
   const isQrWallet = accountUtils.isQrWallet({ walletId: currentWalletId });
 
   const avatarSize = gtMd ? 100 : 88;
-  const titleTextSize = gtMd ? '$heading2xl' : '$headingXl';
+  const titleTextSize: '$headingXl' | '$heading2xl' = gtMd
+    ? '$heading2xl'
+    : '$headingXl';
 
   const verificationStatus = useMemo(
     () => ({
