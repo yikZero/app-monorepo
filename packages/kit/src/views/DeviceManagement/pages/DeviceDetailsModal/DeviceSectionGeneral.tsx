@@ -76,7 +76,9 @@ export function LanguageListItem() {
         <ListItem
           mx="$0"
           px="$5"
+          py="$3"
           borderRadius="$0"
+          $gtMd={{ py: '$0' }}
           title={intl.formatMessage({
             id: ETranslations.global_language,
           })}
@@ -175,7 +177,9 @@ export function AutoLockListItem() {
         <ListItem
           mx="$0"
           px="$5"
+          py="$3"
           borderRadius="$0"
+          $gtMd={{ py: '$0' }}
           title={intl.formatMessage({
             id: ETranslations.global_auto_lock,
           })}
@@ -275,7 +279,9 @@ export function AutoShutDownListItem() {
         <ListItem
           mx="$0"
           px="$5"
+          py="$3"
           borderRadius="$0"
+          $gtMd={{ py: '$0' }}
           title={intl.formatMessage({
             id: ETranslations.global_auto_shutdown,
           })}
@@ -359,7 +365,7 @@ function DeviceSectionGeneral() {
   return (
     <ListItemGroup
       withSeparator
-      itemProps={{ h: '$12' }}
+      itemProps={{ minHeight: '$12' }}
       title={intl.formatMessage({
         id: ETranslations.global_general,
       })}

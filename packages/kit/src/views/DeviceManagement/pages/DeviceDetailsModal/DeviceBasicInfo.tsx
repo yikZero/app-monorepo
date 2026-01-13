@@ -2,7 +2,14 @@ import { useMemo } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { Badge, Icon, SizableText, XStack, YStack } from '@onekeyhq/components';
+import {
+  Badge,
+  Icon,
+  SizableText,
+  XStack,
+  YStack,
+  useMedia,
+} from '@onekeyhq/components';
 import { WalletAvatar } from '@onekeyhq/kit/src/components/WalletAvatar';
 import {
   useCurrentWalletIdAtom,
@@ -19,15 +26,17 @@ import type { EFirmwareType } from '@onekeyfe/hd-shared';
 function DeviceWalletAvatar({
   badge,
   firmwareTypeBadge,
+  size,
 }: {
   badge: number | string | undefined;
   firmwareTypeBadge: EFirmwareType | undefined;
+  size: number;
 }) {
   const [walletWithDevice] = useWalletWithDeviceAtom();
   const { wallet } = walletWithDevice ?? {};
   return (
     <WalletAvatar
-      size={100}
+      size={size}
       wallet={wallet}
       status="default"
       badge={badge}
@@ -37,21 +46,25 @@ function DeviceWalletAvatar({
   );
 }
 
-function DeviceWalletRenameButton() {
+function DeviceWalletRenameButton({ textSize }: { textSize: string }) {
   const [walletWithDevice] = useWalletWithDeviceAtom();
   const { wallet } = walletWithDevice ?? {};
   if (!wallet) return null;
-  return <WalletRenameButton wallet={wallet} editable textSize="$heading2xl" />;
+  return <WalletRenameButton wallet={wallet} editable textSize={textSize} />;
 }
 
 function DeviceBasicInfo() {
   const intl = useIntl();
+  const { gtMd } = useMedia();
 
   const [currentWalletId] = useCurrentWalletIdAtom();
   const [deviceMetaStatic] = useDeviceMetaStaticAtom();
   const [deviceMetaState] = useDeviceMetaStateAtom();
 
   const isQrWallet = accountUtils.isQrWallet({ walletId: currentWalletId });
+
+  const avatarSize = gtMd ? 100 : 88;
+  const titleTextSize = gtMd ? '$heading2xl' : '$headingXl';
 
   const verificationStatus = useMemo(
     () => ({
@@ -92,11 +105,12 @@ function DeviceBasicInfo() {
           <DeviceWalletAvatar
             badge={undefined}
             firmwareTypeBadge={deviceMetaStatic.firmwareType}
+            size={avatarSize}
           />
         </XStack>
         <YStack h="100%" pb="$1.5" justifyContent="space-between">
           <XStack ml={-5} pr="$5">
-            <DeviceWalletRenameButton />
+            <DeviceWalletRenameButton textSize={titleTextSize} />
           </XStack>
           {deviceMetaStatic.deviceName ? (
             <SizableText size="$bodyMd" color="$textSubdued" pl="$0.5">

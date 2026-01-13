@@ -2,7 +2,13 @@ import { useCallback } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { IconButton, SizableText, XStack, YStack } from '@onekeyhq/components';
+import {
+  IconButton,
+  SizableText,
+  XStack,
+  YStack,
+  useMedia,
+} from '@onekeyhq/components';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes, EOnboardingPages } from '@onekeyhq/shared/src/routes';
@@ -10,6 +16,11 @@ import { EModalRoutes, EOnboardingPages } from '@onekeyhq/shared/src/routes';
 function SectionHeader() {
   const intl = useIntl();
   const appNavigation = useAppNavigation();
+  const { gtMd } = useMedia();
+
+  if (!gtMd) {
+    return null;
+  }
 
   const onAddDevice = useCallback(async () => {
     appNavigation.pushModal(EModalRoutes.OnboardingModal, {

@@ -49,7 +49,9 @@ function DeviceSectionAdvancePassphrase() {
     <ListItem.StatefulItem
       mx="$0"
       px="$5"
+      py="$3"
       borderRadius="$0"
+      $gtMd={{ py: '$0' }}
       title={intl.formatMessage({
         id: ETranslations.global_passphrase,
       })}
@@ -85,7 +87,9 @@ function DeviceSectionAdvanceInputPinOnSoftware() {
     <ListItem.StatefulItem
       mx="$0"
       px="$5"
+      py="$3"
       borderRadius="$0"
+      $gtMd={{ py: '$0' }}
       title={intl.formatMessage({
         id: ETranslations.enter_pin_on_app,
       })}
@@ -111,7 +115,7 @@ function DeviceSectionAdvance() {
   return (
     <ListItemGroup
       withSeparator
-      itemProps={{ h: '$12' }}
+      itemProps={{ minHeight: '$12' }}
       title={intl.formatMessage({
         id: ETranslations.global_advance,
       })}

@@ -9,12 +9,14 @@ import {
   Button,
   EVideoResizeMode,
   Image,
+  LinearGradient,
   SizableText,
   Stack,
   Video,
   XStack,
   YStack,
   useMedia,
+  useSafeAreaInsets,
 } from '@onekeyhq/components';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useIsFirstFocused } from '@onekeyhq/kit/src/hooks/useIsFirstFocused';
@@ -38,6 +40,7 @@ const DarkVideoSource: ReactVideoSource = {
 function VideoContainer() {
   const themeVariant = useThemeVariant();
   const { gtMd } = useMedia();
+  const { top: safeAreaTop } = useSafeAreaInsets();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   const videoSource = useMemo(() => {
@@ -69,7 +72,7 @@ function VideoContainer() {
       overflow="hidden"
       position="absolute"
       zIndex={0}
-      top={0}
+      top={-safeAreaTop}
       left={0}
       right={0}
       bottom="20%"
@@ -109,6 +112,25 @@ function VideoContainer() {
           resizeMode={EVideoResizeMode.COVER}
           source={videoSource}
           onLoad={() => setIsVideoLoaded(true)}
+        />
+        {/* Native gradient overlay - fades video to background */}
+        <LinearGradient
+          colors={[
+            'transparent',
+            themeVariant === 'dark'
+              ? 'rgba(15, 15, 15, 1)'
+              : 'rgba(255, 255, 255, 1)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          height="70%"
+          $platform-web={{
+            display: 'none',
+          }}
         />
       </Stack>
     </Stack>
@@ -252,8 +274,16 @@ function ButtonContainer() {
 }
 
 function DeviceGuideViewContent() {
+  const { bottom } = useSafeAreaInsets();
   return (
-    <YStack w="100%" h="100%" gap="$8" bg="$bgApp" testID="blank-page">
+    <YStack
+      w="100%"
+      h="100%"
+      gap="$8"
+      bg="$bgApp"
+      testID="blank-page"
+      pb={bottom}
+    >
       <VideoContainer />
 
       <XStack
