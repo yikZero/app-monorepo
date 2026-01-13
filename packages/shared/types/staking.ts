@@ -160,7 +160,9 @@ export type IStakeBaseParams = {
   message?: string;
 
   inviteCode?: string;
+  // eslint-disable-next-line spellcheck/spell-checker
   bindedAccountAddress?: string;
+  // eslint-disable-next-line spellcheck/spell-checker
   bindedNetworkId?: string;
 
   // Stakefish ETH validator
@@ -275,6 +277,7 @@ export type IStakeTx =
 // Stakefish validator exit broadcast response (no on-chain tx needed)
 export type IStakeTxStakefishExitBroadcast = {
   exitBroadcasted: boolean;
+  // eslint-disable-next-line spellcheck/spell-checker
   validators: {
     pubkey: string;
     validatorIndex: string;
@@ -1894,10 +1897,17 @@ export interface IBorrowCheckAmount {
   riskOfLiquidationAlert?: boolean;
 }
 
+export interface IBorrowAlertButton {
+  type: 'receive' | 'bridge' | string;
+  text: IEarnText;
+  disabled?: boolean;
+}
+
 export interface IBorrowAlert {
   title: IEarnText;
   description?: IEarnText;
   badge: IBadgeType;
+  buttons?: IBorrowAlertButton[];
 }
 
 export interface IBorrowReserveItem {
@@ -2044,6 +2054,7 @@ export interface IBorrowHistory {
 
 export interface IBorrowReserveDetailDailyInfo {
   borrowCapacity: IEarnText;
+  // eslint-disable-next-line spellcheck/spell-checker
   borrowable: IEarnText;
   borrowCapResetRemainingTime: IEarnText;
   withdrawCapacity: IEarnText;

@@ -20,7 +20,6 @@ import {
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
-import { TabPageHeader } from '@onekeyhq/kit/src/components/TabPageHeader';
 import type { IWalletAvatarProps } from '@onekeyhq/kit/src/components/WalletAvatar';
 import { WalletAvatar } from '@onekeyhq/kit/src/components/WalletAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
