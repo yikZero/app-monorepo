@@ -36,6 +36,7 @@ function DeviceSectionSecurity() {
         title={intl.formatMessage({
           id: ETranslations.global_change_pin,
         })}
+        titleProps={{ size: '$bodyMdMedium', color: '$text' }}
         drillIn
         onPress={onPressChangePin}
       />

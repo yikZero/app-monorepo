@@ -53,6 +53,7 @@ function DeviceSectionAdvancePassphrase() {
       title={intl.formatMessage({
         id: ETranslations.global_passphrase,
       })}
+      titleProps={{ size: '$bodyMdMedium', color: '$text' }}
       justifyContent="center"
       value={passphraseEnabled}
       onAction={onPressPassphrase}
@@ -88,6 +89,7 @@ function DeviceSectionAdvanceInputPinOnSoftware() {
       title={intl.formatMessage({
         id: ETranslations.enter_pin_on_app,
       })}
+      titleProps={{ size: '$bodyMdMedium', color: '$text' }}
       justifyContent="center"
       value={inputPinOnSoftwareEnabled}
       onAction={actions.updateInputPinOnSoftware}
