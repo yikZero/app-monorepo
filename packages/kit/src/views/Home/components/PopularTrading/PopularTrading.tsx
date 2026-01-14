@@ -91,7 +91,7 @@ function RecommendCardItem({
       ai="center"
       $sm={{
         px: '$2.5',
-        py: '$1.5',
+        py: '$2.5',
       }}
     >
       <XStack gap="$3" ai="center" flexShrink={1}>
