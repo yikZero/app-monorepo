@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 
 import { useNavigation } from '@react-navigation/core';
+import { isEmpty } from 'lodash';
 import { useIntl } from 'react-intl';
 
 import {
@@ -83,9 +84,11 @@ function DeviceListItem({
           <Badge badgeSize="sm" badgeType="info">
             <XStack ai="center" gap="$1.5">
               <Icon name="DownloadCircleOutline" color="$iconInfo" size="$4" />
-              <SizableText size="$bodySmMedium" color="$textInfo">
-                {item.updateVersionDisplay}
-              </SizableText>
+              {item.updateVersionDisplay ? (
+                <SizableText size="$bodySmMedium" color="$textInfo">
+                  {item.updateVersionDisplay}
+                </SizableText>
+              ) : null}
             </XStack>
           </Badge>
         );
@@ -223,7 +226,10 @@ function DeviceManagementV2ListWeb() {
           deviceVersion.firmwareVersion ?? '-'
         }`;
         item.shouldUpdate = shouldUpdate;
-        item.updateVersionDisplay = `v${updateVersionDisplay ?? '-'}`;
+        item.updateVersionDisplay =
+          updateVersionDisplay && !isEmpty(updateVersionDisplay)
+            ? `v${updateVersionDisplay}`
+            : undefined;
       }
 
       return devices;
