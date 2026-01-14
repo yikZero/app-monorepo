@@ -591,8 +591,7 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       />
     );
 
-    // Mobile: 2 rows x 2 items each
-    if (platformEnv.isNative) {
+    if (!tableLayout) {
       return (
         <YStack gap="$2.5" width="100%">
           {[0, 1].map((rowIndex) => (
@@ -606,13 +605,12 @@ function PopularTrading({ tableLayout }: { tableLayout?: boolean }) {
       );
     }
 
-    // Desktop: 4 items in one row
     return (
       <XStack gap="$3" width="100%">
         {favoriteTokens.map(renderCardItem)}
       </XStack>
     );
-  }, [favoriteTokens, selectedTokens, handleRecommendItemChange]);
+  }, [favoriteTokens, selectedTokens, handleRecommendItemChange, tableLayout]);
 
   // Navigate to Market favorites tab
   const handleViewMore = useCallback(() => {
