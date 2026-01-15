@@ -65,6 +65,10 @@ function VideoContainer() {
     };
   }, [gtMd]);
 
+  const handleVideoLoad = useCallback(() => {
+    setIsVideoLoaded(true);
+  }, []);
+
   return (
     <Stack
       testID="blank-page-video"
@@ -91,9 +95,11 @@ function VideoContainer() {
         position="absolute"
         width="100%"
         height="100%"
-        $platform-web={maskStyle}
+        $platform-web={{
+          ...maskStyle,
+          filter: 'blur(2px)',
+        }}
       >
-        {/* Show poster image as fallback while video is loading */}
         {!isVideoLoaded ? (
           <Image
             position="absolute"
@@ -107,6 +113,7 @@ function VideoContainer() {
           muted
           autoPlay
           repeat
+          rate={0.8}
           position="absolute"
           width="100%"
           height="100%"
@@ -114,7 +121,7 @@ function VideoContainer() {
           playInBackground={false}
           resizeMode={EVideoResizeMode.COVER}
           source={videoSource}
-          onLoad={() => setIsVideoLoaded(true)}
+          onLoad={handleVideoLoad}
         />
         <LinearGradient
           colors={[
@@ -209,8 +216,8 @@ function ButtonContainer() {
           size="medium"
           borderRadius="$full"
           variant="primary"
-          minWidth={160}
           onPress={onAddDevice}
+          px="$4"
         >
           {intl.formatMessage({
             id: ETranslations.global_connect_hardware_wallet,
@@ -225,6 +232,7 @@ function ButtonContainer() {
           bg="$neutral2"
           iconAfter="ArrowTopRightOutline"
           onPress={handleBuyButtonPress}
+          px="$4"
           $platform-web={{
             style: {
               backdropFilter: 'blur(16px)',
