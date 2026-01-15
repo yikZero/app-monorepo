@@ -56,7 +56,7 @@ function VideoContainer() {
 
   const maskStyle = useMemo(() => {
     const gradient = gtMd
-      ? 'linear-gradient(90deg, transparent 0%, black 70%)'
+      ? 'linear-gradient(90deg, transparent 0%, black 80%)'
       : 'linear-gradient(180deg, transparent 15%, black 70%)';
 
     return {
@@ -81,7 +81,7 @@ function VideoContainer() {
       bottom="20%"
       $gtMd={{
         bottom: 0,
-        left: 0,
+        left: '25%',
         top: 0,
         right: 0,
       }}
@@ -116,7 +116,6 @@ function VideoContainer() {
           source={videoSource}
           onLoad={() => setIsVideoLoaded(true)}
         />
-        {/* Native gradient overlay - fades video to background */}
         <LinearGradient
           colors={[
             'transparent',
@@ -205,12 +204,7 @@ function ButtonContainer() {
 
   if (gtMd) {
     return (
-      <XStack
-        gap="$3"
-        flexWrap="wrap"
-        flexDirection="row"
-        justifyContent="flex-start"
-      >
+      <XStack gap="$3" flexDirection="row" justifyContent="flex-start">
         <Button
           size="medium"
           borderRadius="$full"
@@ -238,8 +232,7 @@ function ButtonContainer() {
             },
           }}
         >
-          {intl.formatMessage({ id: ETranslations.global_buy_one })}
-          OneKey
+          {intl.formatMessage({ id: ETranslations.global_buy })} OneKey
         </Button>
       </XStack>
     );
@@ -310,8 +303,9 @@ function DeviceGuideViewContent() {
           alignItems={undefined}
           $gtMd={{
             gap: '$10',
-            maxWidth: 400,
+            maxWidth: 480,
             alignItems: 'flex-start',
+            marginTop: -48,
           }}
         >
           <DescriptionInfo />
