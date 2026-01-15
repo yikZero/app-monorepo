@@ -79,6 +79,7 @@ import { HomeFirmwareUpdateReminder } from '../../views/FirmwareUpdate/component
 import { WalletXfpStatusReminder } from '../../views/Home/components/WalletXfpStatusReminder/WalletXfpStatusReminder';
 import { useOnPrimeButtonPressed } from '../../views/Prime/components/PrimeHeaderIconButton/PrimeHeaderIconButton';
 import { usePrimeAvailable } from '../../views/Prime/hooks/usePrimeAvailable';
+import { showRedemptionCenterDialog } from '../../views/Redemption/components/RedemptionCenterDialog';
 import useScanQrCode from '../../views/ScanQrCode/hooks/useScanQrCode';
 import { OneKeyIdAvatar } from '../../views/Setting/pages/OneKeyId';
 import { ESettingsTabNames } from '../../views/Setting/pages/Tab/config';
@@ -1136,6 +1137,8 @@ const MoreActionWalletGrid = () => {
 
 const MoreActionMoreGrid = () => {
   const intl = useIntl();
+  const { closePopover } = usePopoverContext();
+  const { loginOneKeyId } = useOneKeyAuth();
   const handleHelpAndSupport = useCallback(() => {
     void showIntercom();
   }, []);
@@ -1144,6 +1147,17 @@ const MoreActionMoreGrid = () => {
   const handleReferFriends = useCallback(() => {
     void toReferFriendsPage();
   }, [toReferFriendsPage]);
+
+  const handleRedeem = useCallback(async () => {
+    await closePopover?.();
+    try {
+      await loginOneKeyId();
+      showRedemptionCenterDialog();
+    } catch {
+      // User cancelled login, do nothing
+    }
+  }, [closePopover, loginOneKeyId]);
+
   const items = useMemo(() => {
     return [
       {
@@ -1160,8 +1174,20 @@ const MoreActionMoreGrid = () => {
         testID: 'referral' as const,
         onPress: handleReferFriends,
       },
+      {
+        title: intl.formatMessage({ id: ETranslations.global_redeem }),
+        icon: 'TicketOutline' as const,
+        onPress: handleRedeem,
+        trackID: 'wallet-redeem',
+      },
     ];
-  }, [handleHelpAndSupport, intl, themeVariant, handleReferFriends]);
+  }, [
+    handleHelpAndSupport,
+    handleRedeem,
+    intl,
+    themeVariant,
+    handleReferFriends,
+  ]);
   return (
     <BaseMoreActionGrid
       title={intl.formatMessage({ id: ETranslations.global_more })}
