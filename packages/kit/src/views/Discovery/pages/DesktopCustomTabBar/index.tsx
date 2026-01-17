@@ -54,12 +54,15 @@ import { withBrowserProvider } from '../Browser/WithBrowserProvider';
 
 const TIMESTAMP_DIFF_MULTIPLIER = 2;
 
-function DesktopCustomTabBar() {
+function DesktopCustomTabBar({
+  isCollapsedOverride,
+}: {
+  isCollapsedOverride?: boolean;
+}) {
   const intl = useIntl();
-  const [{ isCollapsed }] = useAppSideBarStatusAtom();
-  // register desktop shortcuts for browser tab
+  const [{ isCollapsed: sidebarCollapsed }] = useAppSideBarStatusAtom();
+  const isCollapsed = isCollapsedOverride ?? sidebarCollapsed;
   useDiscoveryShortcuts();
-  // register desktop new window event
   useDesktopNewWindow();
 
   const navigation =
@@ -215,26 +218,41 @@ function DesktopCustomTabBar() {
 
   useShortcuts(undefined, handleShortcuts);
 
-  const ITEM_HEIGHT = useMemo(() => (isCollapsed ? 36 : 32), [isCollapsed]);
+  const ITEM_HEIGHT = 36;
+
+  // Shared styles for collapsed mode action buttons (New Tab, Home)
+  const collapsedStyles = useMemo(
+    () =>
+      isCollapsed
+        ? {
+            tabBarStyle: {
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+            },
+            // tabBarItemStyle: { height: 36 },
+          }
+        : { tabBarStyle: undefined, tabBarItemStyle: undefined },
+    [isCollapsed],
+  );
 
   const layoutList = useMemo(() => {
+    const DIVIDER_HEIGHT = 17;
     let offset = 0;
     const layouts: { offset: number; length: number; index: number }[] = [];
-    layouts.push({ offset, length: 0, index: layouts.length });
-    sections?.[0]?.data?.forEach(() => {
-      layouts.push({ offset, length: ITEM_HEIGHT, index: layouts.length });
-      offset += ITEM_HEIGHT;
-    });
-    layouts.push({ offset, length: 0, index: layouts.length });
-    layouts.push({ offset, length: 0, index: layouts.length });
-    layouts.push({ offset, length: 17 + ITEM_HEIGHT, index: layouts.length });
-    offset += 17 + ITEM_HEIGHT;
-    sections?.[1]?.data?.forEach(() => {
-      layouts.push({ offset, length: ITEM_HEIGHT, index: layouts.length });
-      offset += ITEM_HEIGHT;
-    });
-    layouts.push({ offset, length: 0, index: layouts.length });
-    offset += 0;
+
+    const addLayout = (length: number) => {
+      layouts.push({ offset, length, index: layouts.length });
+      offset += length;
+    };
+
+    addLayout(ITEM_HEIGHT * 2);
+    sections?.[0]?.data?.forEach(() => addLayout(ITEM_HEIGHT));
+    addLayout(0);
+    addLayout(0);
+    addLayout(DIVIDER_HEIGHT);
+    sections?.[1]?.data?.forEach(() => addLayout(ITEM_HEIGHT));
+    addLayout(0);
+
     return layouts;
   }, [ITEM_HEIGHT, sections]);
   const onDragEnd = useCallback(
@@ -312,14 +330,19 @@ function DesktopCustomTabBar() {
 
   return (
     <Stack
-      testID="sideabr-browser-section"
+      testID="sidebar-browser-section"
       flex={1}
-      width={isCollapsed ? MIN_SIDEBAR_WIDTH / 2 : undefined}
+      // Only set width when not in submenu and collapsed
+      // In submenu, let the outer container control the width
+      width={
+        isCollapsedOverride !== undefined || !isCollapsed
+          ? undefined
+          : MIN_SIDEBAR_WIDTH / 2
+      }
     >
       <HandleRebuildBrowserData />
       <SortableSectionList
         mx="$-3"
-        px="$3"
         ref={scrollViewRef}
         sections={sections}
         renderItem={({
@@ -350,94 +373,121 @@ function DesktopCustomTabBar() {
         SectionSeparatorComponent={null}
         onDragEnd={onDragEnd}
         allowCrossSection
-        getItemDragDisabled={(layoutItem) => {
-          // Disable dragging for section headers (which includes the new tab button)
-          return (
-            (layoutItem as ISectionLayoutItem).type ===
-            ESectionLayoutType.Header
-          );
-        }}
-        renderSectionHeader={({ index }) =>
-          index === 1 ? (
-            <>
-              <XStack
-                group="sidebarBrowserDivider"
-                alignItems="center"
-                p="$2"
-                px={isCollapsed ? '$0' : '$2'}
-              >
-                <Divider testID="pin-tab-divider" />
-                {tabs.filter((x) => !x.isPinned).length > 0 ? (
-                  <XStack
-                    position="absolute"
-                    px="1"
-                    group="sidebarClearButton"
-                    alignItems="center"
-                    userSelect="none"
-                    right="$0"
-                    top="50%"
-                    bg="$bgSidebar"
-                    opacity={0}
-                    $group-sidebarBrowserDivider-hover={{
-                      opacity: 1,
+        getItemDragDisabled={(layoutItem) =>
+          (layoutItem as ISectionLayoutItem).type === ESectionLayoutType.Header
+        }
+        renderSectionHeader={({ index }) => {
+          switch (index) {
+            case 0:
+              return (
+                <>
+                  <DesktopTabItem
+                    size="small"
+                    key="AddTabButton"
+                    label={
+                      isCollapsed
+                        ? ''
+                        : intl.formatMessage({
+                            id: ETranslations.explore_new_tab,
+                          })
+                    }
+                    shortcutKey={EShortcutEvents.NewTab2}
+                    icon="PlusSmallOutline"
+                    testID="browser-bar-add"
+                    tabBarStyle={collapsedStyles.tabBarStyle}
+                    tabBarItemStyle={collapsedStyles.tabBarItemStyle}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (platformEnv.isDesktop) {
+                        addBrowserHomeTab();
+                        navigation.switchTab(ETabRoutes.MultiTabBrowser);
+                      } else {
+                        navigation.pushModal(EModalRoutes.DiscoveryModal, {
+                          screen: EDiscoveryModalRoutes.SearchModal,
+                        });
+                      }
                     }}
-                    style={{
-                      containerType: 'normal',
-                      transform: platformEnv.isNative ? '' : 'translateY(-50%)',
+                  />
+                  <DesktopTabItem
+                    size="small"
+                    key="HomeButton"
+                    label={
+                      isCollapsed
+                        ? ''
+                        : intl.formatMessage({
+                            id: ETranslations.explore_back_to_home,
+                          })
+                    }
+                    icon="HomeOpenOutline"
+                    testID="browser-bar-home"
+                    tabBarStyle={collapsedStyles.tabBarStyle}
+                    tabBarItemStyle={collapsedStyles.tabBarItemStyle}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      navigation.switchTab(ETabRoutes.Discovery);
                     }}
-                    onPress={() => {
-                      void closeAllWebTabs({ navigation });
-                    }}
-                  >
-                    <Icon
-                      flexShrink={0}
-                      color="$iconSubdued"
-                      name="ArrowBottomOutline"
-                      size="$3"
-                    />
-                    <SizableText
-                      pl="$1"
-                      color="$textSubdued"
-                      size="$bodySmMedium"
-                      numberOfLines={1}
-                      $group-sidebarClearButton-hover={{
-                        color: '$text',
+                  />
+                </>
+              );
+            case 1:
+              return (
+                <XStack
+                  group="sidebarBrowserDivider"
+                  alignItems="center"
+                  p="$2"
+                  px={isCollapsed ? '$0' : '$2'}
+                  width="100%"
+                >
+                  <Divider testID="pin-tab-divider" width="$5" />
+                  {isCollapsed && tabs.filter((x) => !x.isPinned).length > 0 ? (
+                    <XStack
+                      position="absolute"
+                      px="1"
+                      group="sidebarClearButton"
+                      alignItems="center"
+                      userSelect="none"
+                      right="$0"
+                      top="50%"
+                      bg="$bgSidebar"
+                      opacity={0}
+                      $group-sidebarBrowserDivider-hover={{
+                        opacity: 1,
+                      }}
+                      style={{
+                        containerType: 'normal',
+                        transform: platformEnv.isNative
+                          ? ''
+                          : 'translateY(-50%)',
+                      }}
+                      onPress={() => {
+                        void closeAllWebTabs({ navigation });
                       }}
                     >
-                      {intl.formatMessage({ id: ETranslations.global_clear })}
-                    </SizableText>
-                  </XStack>
-                ) : null}
-              </XStack>
-              <DesktopTabItem
-                size="small"
-                key="AddTabButton"
-                label={
-                  isCollapsed
-                    ? ''
-                    : intl.formatMessage({
-                        id: ETranslations.explore_new_tab,
-                      })
-                }
-                shortcutKey={EShortcutEvents.NewTab2}
-                icon="PlusSmallOutline"
-                testID="browser-bar-add"
-                onPress={(e) => {
-                  e.stopPropagation();
-
-                  if (platformEnv.isDesktop) {
-                    addBrowserHomeTab();
-                    navigation.switchTab(ETabRoutes.MultiTabBrowser);
-                  } else {
-                    navigation.pushModal(EModalRoutes.DiscoveryModal, {
-                      screen: EDiscoveryModalRoutes.SearchModal,
-                    });
-                  }
-                }}
-              />
-            </>
-          ) : null
-        }
+                      <Icon
+                        flexShrink={0}
+                        color="$iconSubdued"
+                        name="ArrowBottomOutline"
+                        size="$3"
+                      />
+                      <SizableText
+                        pl="$1"
+                        color="$textSubdued"
+                        size="$bodySmMedium"
+                        numberOfLines={1}
+                        $group-sidebarClearButton-hover={{
+                          color: '$text',
+                        }}
+                      >
+                        {intl.formatMessage({ id: ETranslations.global_clear })}
+                      </SizableText>
+                    </XStack>
+                  ) : null}
+                </XStack>
+              );
+            default:
+              return null;
+          }
+        }}
       />
     </Stack>
   );

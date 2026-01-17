@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { CommonActions } from '@react-navigation/native';
 
 import {
-  getTokenValue,
   rootNavigationRef,
   useMedia,
 } from '@onekeyhq/components';
@@ -233,11 +232,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
             trackId: 'global-dev',
           }
         : undefined,
-      isShowDesktopDiscover
-        ? getDiscoverRouterConfig(params, {
-            marginTop: getTokenValue('$4', 'size'),
-          })
-        : undefined,
+      isShowDesktopDiscover ? getDiscoverRouterConfig(params) : undefined,
     ].filter((i) => !!i);
 
     if (isWebDappMode && tabs.length >= 2) {

@@ -2,12 +2,14 @@ import { useMedia } from '@onekeyhq/components';
 
 import DesktopCustomTabBar from '../../../views/Discovery/pages/DesktopCustomTabBar';
 
-const useShowWebBars = () => {
+export function WebPageTabBar({
+  isCollapsedOverride,
+}: {
+  isCollapsedOverride?: boolean;
+}) {
   const { gtMd } = useMedia();
-  return gtMd;
-};
-
-export const WebPageTabBar = () => {
-  const isShowWebBars = useShowWebBars();
-  return isShowWebBars ? <DesktopCustomTabBar /> : null;
-};
+  if (!gtMd) {
+    return null;
+  }
+  return <DesktopCustomTabBar isCollapsedOverride={isCollapsedOverride} />;
+}

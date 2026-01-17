@@ -1,5 +1,5 @@
-import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 
 import { MotiView } from 'moti';
 import { useIntl } from 'react-intl';
@@ -39,6 +39,7 @@ import { ESwapSource } from '@onekeyhq/shared/types/swap/types';
 
 import { switchTab } from '../../Navigator/NavigationContainer';
 
+import { BrowserSubmenuColumn } from './BrowserSubmenuColumn';
 import { DesktopTabItem } from './DesktopTabItem';
 
 import type { ITabNavigatorExtraConfig } from '../../Navigator/types';
@@ -297,18 +298,30 @@ export function DesktopLeftSideBar({
   const [isHovering, setIsHovering] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isShowWebTabBar = platformEnv.isDesktop || platformEnv.isNativeIOS;
+  // Current focused route for browser submenu
+  const focusedRouteName = state.routes[state.index]?.name;
 
   const routesNotHidden = useMemo(() => {
+    // Browser submenu only shows on desktop and iOS (iPad)
+    const shouldShowBrowserSubmenu =
+      platformEnv.isDesktop || platformEnv.isNativeIOS;
     return routes.filter((route) => {
       const { options } = descriptors[route.key] as {
         options: {
           hiddenIcon?: boolean;
         };
       };
-      return !options.hiddenIcon;
+      // Hide the route if hiddenIcon is true
+      if (options.hiddenIcon) {
+        return false;
+      }
+      // Hide MultiTabBrowser from the primary menu (it's shown via Browser submenu)
+      if (shouldShowBrowserSubmenu && route.name === extraConfig?.name) {
+        return false;
+      }
+      return true;
     });
-  }, [routes, descriptors]);
+  }, [routes, descriptors, extraConfig?.name]);
 
   const tabs = useMemo(() => {
     const inMoreActionRoutes: NavigationRoute<ParamListBase, string>[] = [];
@@ -356,14 +369,6 @@ export function DesktopLeftSideBar({
         }
       };
 
-      if (isShowWebTabBar && route.name === extraConfig?.name) {
-        return (
-          <YStack flex={1} key={route.key}>
-            {webPageTabBar}
-          </YStack>
-        );
-      }
-
       return (
         <TabItemView
           key={route.key}
@@ -395,28 +400,27 @@ export function DesktopLeftSideBar({
     routesNotHidden,
     descriptors,
     state,
-    isShowWebTabBar,
-    extraConfig?.name,
     navigation,
-    webPageTabBar,
   ]);
 
-  const handleHoverIn = useCallback(() => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-    }
-    hoverTimerRef.current = setTimeout(() => {
-      setIsHovering(true);
-    }, 200); // 200ms delay to prevent quick hover triggers
-  }, []);
-
-  const handleHoverOut = useCallback(() => {
+  const clearHoverTimer = useCallback(() => {
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
     }
-    setIsHovering(false);
   }, []);
+
+  const handleHoverIn = useCallback(() => {
+    clearHoverTimer();
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovering(true);
+    }, 200);
+  }, [clearHoverTimer]);
+
+  const handleHoverOut = useCallback(() => {
+    clearHoverTimer();
+    setIsHovering(false);
+  }, [clearHoverTimer]);
 
   const handleToggleCollapse = useCallback(() => {
     defaultLogger.app.page.navigationToggle();
@@ -425,191 +429,195 @@ export function DesktopLeftSideBar({
       isCollapsed: !prev.isCollapsed,
     }));
     setIsHovering(false);
-  }, [setAppSideBarStatus, setIsHovering]);
+  }, [setAppSideBarStatus]);
 
   useShortcuts(EShortcutEvents.SideBar, handleToggleCollapse);
 
-  // Cleanup timer on unmount to prevent memory leak
-  useEffect(
-    () => () => {
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-      }
-    },
-    [],
-  );
+  useEffect(() => clearHoverTimer, [clearHoverTimer]);
+
+  const primaryMenuWidth = isCollapse ? MIN_SIDEBAR_WIDTH : MAX_SIDEBAR_WIDTH;
 
   return (
-    <MotiView
+    <XStack
       testID="Desktop-AppSideBar-Container"
-      animate={{ width: isCollapse ? MIN_SIDEBAR_WIDTH : MAX_SIDEBAR_WIDTH }}
-      transition={
-        {
-          duration: 200,
-          type: 'timing',
-        } as MotiTransition
-      }
       style={{
         backgroundColor: theme.bgSidebar.val,
         paddingTop: top,
         zIndex: 2,
       }}
     >
-      {platformEnv.isDesktopMac ? (
-        // @ts-expect-error https://www.electronjs.org/docs/latest/tutorial/custom-window-interactions
-        <XStack
-          $platform-web={{
-            'app-region': 'drag',
-          }}
-          h={52}
-          ai="center"
-          jc="flex-end"
-          px="$4"
-        />
-      ) : null}
-      <YStack
-        position="relative"
-        flex={1}
-        testID="Desktop-AppSideBar-Content-Container"
+      <MotiView
+        testID="Desktop-AppSideBar-PrimaryMenu"
+        animate={{ width: primaryMenuWidth }}
+        transition={
+          {
+            duration: 200,
+            type: 'timing',
+          } as MotiTransition
+        }
       >
-        <MotiView
-          animate={{
-            width: isCollapse ? MIN_SIDEBAR_WIDTH : MAX_SIDEBAR_WIDTH,
-          }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-          }}
-          transition={
-            {
-              duration: 120,
-              type: 'timing',
-            } as MotiTransition
-          }
+        {platformEnv.isDesktopMac ? (
+          // @ts-expect-error https://www.electronjs.org/docs/latest/tutorial/custom-window-interactions
+          <XStack
+            $platform-web={{
+              'app-region': 'drag',
+            }}
+            h={52}
+            ai="center"
+            jc="flex-end"
+            px="$4"
+          />
+        ) : null}
+        <YStack
+          position="relative"
+          flex={1}
+          testID="Desktop-AppSideBar-Content-Container"
         >
-          <YStack flex={1}>
-            {!platformEnv.isDesktopMac && !platformEnv.isNativeIOSPad ? (
-              <XStack
-                ai="center"
-                jc={isCollapse ? 'center' : 'flex-start'}
-                px="$4"
-                py="$3"
-              >
-                <Icon
-                  name="OnekeyLogoIllus"
-                  width={28}
-                  height={28}
-                  color="$text"
-                />
-                <MotiView
-                  animate={{
-                    opacity: isCollapse ? 0 : 1,
-                    width: isCollapse ? 0 : 62,
-                    marginLeft: isCollapse ? 0 : 12,
-                  }}
-                  transition={{
-                    opacity: {
-                      duration: isCollapse ? 0 : 200,
-                      type: 'timing',
-                      delay: isCollapse ? 0 : 100,
-                    },
-                    width: {
-                      duration: isCollapse ? 0 : 200,
-                      type: 'timing',
-                    },
-                    marginLeft: {
-                      duration: isCollapse ? 0 : 200,
-                      type: 'timing',
-                    },
-                  }}
-                  style={{
-                    overflow: 'hidden',
-                  }}
+          <MotiView
+            animate={{
+              width: isCollapse ? MIN_SIDEBAR_WIDTH : MAX_SIDEBAR_WIDTH,
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+            }}
+            transition={
+              {
+                duration: 120,
+                type: 'timing',
+              } as MotiTransition
+            }
+          >
+            <YStack flex={1}>
+              {!platformEnv.isDesktopMac && !platformEnv.isNativeIOSPad ? (
+                <XStack
+                  ai="center"
+                  jc={isCollapse ? 'center' : 'flex-start'}
+                  px="$4"
+                  py="$3"
                 >
                   <Icon
-                    name="OnekeyTextOnlyIllus"
-                    width={62}
+                    name="OnekeyLogoIllus"
+                    width={28}
                     height={28}
                     color="$text"
                   />
-                </MotiView>
-              </XStack>
-            ) : null}
-            <YStack
-              flex={1}
-              pt={isCollapse ? 0 : '$3'}
-              px="$3"
-              alignItems={isCollapse ? 'center' : undefined}
-            >
-              {tabs}
+                  <MotiView
+                    animate={{
+                      opacity: isCollapse ? 0 : 1,
+                      width: isCollapse ? 0 : 62,
+                      marginLeft: isCollapse ? 0 : 12,
+                    }}
+                    transition={{
+                      opacity: {
+                        duration: isCollapse ? 0 : 200,
+                        type: 'timing',
+                        delay: isCollapse ? 0 : 100,
+                      },
+                      width: {
+                        duration: isCollapse ? 0 : 200,
+                        type: 'timing',
+                      },
+                      marginLeft: {
+                        duration: isCollapse ? 0 : 200,
+                        type: 'timing',
+                      },
+                    }}
+                    style={{
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Icon
+                      name="OnekeyTextOnlyIllus"
+                      width={62}
+                      height={28}
+                      color="$text"
+                    />
+                  </MotiView>
+                </XStack>
+              ) : null}
+              <YStack
+                flex={1}
+                pt={isCollapse ? 0 : '$3'}
+                px="$3"
+                alignItems={isCollapse ? 'center' : undefined}
+              >
+                {tabs}
+              </YStack>
+              {bottomMenu}
             </YStack>
-            {bottomMenu}
-          </YStack>
-        </MotiView>
-      </YStack>
-      <YStack
-        testID="Desktop-AppSideBar-Separator"
-        position="absolute"
-        onHoverIn={handleHoverIn}
-        onHoverOut={handleHoverOut}
-        onPress={handleToggleCollapse}
-        cursor="pointer"
-        zIndex={1000}
-        right={-8}
-        top={0}
-        bottom={0}
-        width={16}
-      >
-        {isHovering ? (
-          <>
-            <YStack
-              position="absolute"
-              left={8}
-              top={64}
-              bottom={20}
-              width={1.5}
-              bg="$borderStrong"
-              pointerEvents="none"
-              animation="quick"
-              enterStyle={{
-                opacity: 0,
-              }}
-              opacity={1}
-            />
-            <YStack ai="center" jc="center" width="100%" mt="$24">
-              <Tooltip
-                open
-                placement="right"
-                renderTrigger={
-                  <IconButton
-                    aria-label="Toggle sidebar"
-                    icon={
-                      isCollapse
-                        ? 'ChevronRightSmallOutline'
-                        : 'ChevronLeftSmallOutline'
-                    }
-                    cursor="pointer"
-                    size="small"
-                    bg="$bgApp"
-                    elevation={5}
-                  />
-                }
-                renderContent={
-                  <Tooltip.Text shortcutKey={EShortcutEvents.SideBar}>
-                    {intl.formatMessage({
-                      id: isCollapse
-                        ? ETranslations.shortcut_expand_sidebar
-                        : ETranslations.shortcut_collapse_sidebar,
-                    })}
-                  </Tooltip.Text>
-                }
+          </MotiView>
+        </YStack>
+        <YStack
+          testID="Desktop-AppSideBar-Separator"
+          position="absolute"
+          onHoverIn={handleHoverIn}
+          onHoverOut={handleHoverOut}
+          onPress={handleToggleCollapse}
+          cursor="pointer"
+          zIndex={1000}
+          right={-8}
+          top={0}
+          bottom={0}
+          width={16}
+        >
+          {isHovering ? (
+            <>
+              <YStack
+                position="absolute"
+                left={8}
+                top={64}
+                bottom={20}
+                width={1.5}
+                bg="$borderStrong"
+                pointerEvents="none"
+                animation="quick"
+                enterStyle={{
+                  opacity: 0,
+                }}
+                opacity={1}
               />
-            </YStack>
-          </>
-        ) : null}
-      </YStack>
-    </MotiView>
+              <YStack ai="center" jc="center" width="100%" mt="$24">
+                <Tooltip
+                  open
+                  placement="right"
+                  renderTrigger={
+                    <IconButton
+                      aria-label="Toggle sidebar"
+                      icon={
+                        isCollapse
+                          ? 'ChevronRightSmallOutline'
+                          : 'ChevronLeftSmallOutline'
+                      }
+                      cursor="pointer"
+                      size="small"
+                      bg="$bgApp"
+                      elevation={5}
+                    />
+                  }
+                  renderContent={
+                    <Tooltip.Text shortcutKey={EShortcutEvents.SideBar}>
+                      {intl.formatMessage({
+                        id: isCollapse
+                          ? ETranslations.shortcut_expand_sidebar
+                          : ETranslations.shortcut_collapse_sidebar,
+                      })}
+                    </Tooltip.Text>
+                  }
+                />
+              </YStack>
+            </>
+          ) : null}
+        </YStack>
+      </MotiView>
+
+      <BrowserSubmenuColumn
+        webPageTabBar={webPageTabBar}
+        focusedRouteName={focusedRouteName}
+        multiTabBrowserRouteName={extraConfig?.name}
+      />
+    </XStack>
   );
 }
