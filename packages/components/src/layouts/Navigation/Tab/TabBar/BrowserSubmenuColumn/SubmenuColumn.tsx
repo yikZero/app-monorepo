@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { YStack } from '@onekeyhq/components/src/primitives';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
-import { MIN_SIDEBAR_WIDTH } from '../../../../../utils/sidebar';
+import { MIN_SIDEBAR_WIDTH } from '@onekeyhq/components/src/utils/sidebar';
 
 // Height to align with primary menu header (Mac drag area or logo area)
 const HEADER_ALIGNMENT_HEIGHT = 52;
