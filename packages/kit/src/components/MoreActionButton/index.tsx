@@ -525,13 +525,16 @@ function MoreActionOneKeyId() {
     activeAccount: { network },
   } = useActiveAccount({ num: 0 });
 
-  const { closePopover } = usePopoverContext();
+  const { closePopover, open } = usePopoverContext();
 
   useEffect(() => {
-    if (isLoggedIn) {
+    // open !== false:
+    //   - Desktop: open is true when Popover opens, refresh data
+    //   - Mobile: open is undefined (no Popover context), refresh on mount
+    if (open !== false && isLoggedIn) {
       void backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo();
     }
-  }, [isLoggedIn]);
+  }, [open, isLoggedIn]);
 
   const displayName = useMemo(() => {
     if (!isLoggedIn) {
