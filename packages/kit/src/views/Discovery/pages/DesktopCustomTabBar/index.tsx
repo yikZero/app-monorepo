@@ -194,16 +194,6 @@ function DesktopCustomTabBar({
   const handleShortcuts = useCallback(
     (eventName: EShortcutEvents) => {
       switch (eventName) {
-        case EShortcutEvents.TabPin8:
-          if (result?.pinnedTabs?.length) {
-            const id =
-              result?.pinnedTabs?.[Number(eventName.match(/\d+/)?.[0]) - 6]?.id;
-            if (id) {
-              navigation.switchTab(ETabRoutes.MultiTabBrowser);
-              setCurrentWebTab(id);
-            }
-          }
-          break;
         case EShortcutEvents.ReOpenLastClosedTab:
           if (reOpenLastClosedTab()) {
             navigation.switchTab(ETabRoutes.MultiTabBrowser);
@@ -213,7 +203,7 @@ function DesktopCustomTabBar({
           break;
       }
     },
-    [navigation, reOpenLastClosedTab, result?.pinnedTabs, setCurrentWebTab],
+    [navigation, reOpenLastClosedTab],
   );
 
   useShortcuts(undefined, handleShortcuts);
@@ -229,7 +219,6 @@ function DesktopCustomTabBar({
               alignItems: 'center' as const,
               justifyContent: 'center' as const,
             },
-            // tabBarItemStyle: { height: 36 },
           }
         : { tabBarStyle: undefined, tabBarItemStyle: undefined },
     [isCollapsed],
@@ -254,7 +243,7 @@ function DesktopCustomTabBar({
     addLayout(0);
 
     return layouts;
-  }, [ITEM_HEIGHT, sections]);
+  }, [sections]);
   const onDragEnd = useCallback(
     (dragResult: {
       sections: {

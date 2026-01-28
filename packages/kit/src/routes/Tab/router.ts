@@ -10,7 +10,6 @@ import type {
   ITabNavigatorConfig,
   ITabNavigatorExtraConfig,
 } from '@onekeyhq/components/src/layouts/Navigation/Navigator/types';
-import { useIsGtMdNonNative } from '@onekeyhq/kit/src/views/DeviceManagement/hooks/useToMyOneKeyModal';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabMarketRoutes, ETabRoutes } from '@onekeyhq/shared/src/routes';
@@ -34,9 +33,7 @@ type IGetTabRouterParams = {
   freezeOnBlur?: boolean;
 };
 
-const useIsShowDesktopDiscover = () => {
-  return useMemo(() => platformEnv.isDesktop, []);
-};
+const useIsShowDesktopDiscover = () => platformEnv.isDesktop;
 
 const getDiscoverRouterConfig = (
   params?: IGetTabRouterParams,
@@ -74,7 +71,6 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
     [isShowDesktopDiscover, md],
   );
 
-  const isGtMdNonNative = useIsGtMdNonNative();
   const shouldShowMarketTab = !(
     platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel
   );
@@ -189,23 +185,13 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
           focused ? 'CoinsSolid' : 'CoinsOutline',
         translationId: ETranslations.global_earn,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
-        inMoreAction: true,
         rewrite: '/defi',
         exact: true,
         children: earnRouters,
         trackId: 'global-earn',
         hideOnTabBar: platformEnv.isNative,
       },
-      !platformEnv.isNative && isWebDappMode
-        ? referFriendsTabConfig
-        : undefined,
-      // In non-DAPP mode, show ReferFriends in more actions
-      !platformEnv.isNative &&
-        !isWebDappMode && {
-          ...referFriendsTabConfig,
-          inMoreAction: true,
-          hideOnTabBar: !isGtMdNonNative,
-        },
+      !platformEnv.isNative ? referFriendsTabConfig : undefined,
       platformEnv.isNative
         ? undefined
         : {
@@ -219,6 +205,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
             hideOnTabBar: isModalStack,
           },
       isShowMDDiscover ? getDiscoverRouterConfig(params) : undefined,
+      isShowDesktopDiscover ? getDiscoverRouterConfig(params) : undefined,
       platformEnv.isDev
         ? {
             name: ETabRoutes.Developer,
@@ -232,7 +219,6 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
             trackId: 'global-dev',
           }
         : undefined,
-      isShowDesktopDiscover ? getDiscoverRouterConfig(params) : undefined,
     ].filter((i) => !!i);
 
     if (isWebDappMode && tabs.length >= 2) {
@@ -255,7 +241,6 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
     perpTabShowWeb,
     perpDisabled,
     referFriendsTabConfig,
-    isGtMdNonNative,
     isModalStack,
     isShowMDDiscover,
     isShowDesktopDiscover,
