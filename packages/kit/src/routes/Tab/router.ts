@@ -115,16 +115,20 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
     }
   }, []);
 
-  const referFriendsTabConfig = {
-    name: ETabRoutes.ReferFriends,
-    tabBarIcon: (focused?: boolean) => (focused ? 'GiftSolid' : 'GiftOutline'),
-    translationId: ETranslations.sidebar_refer_a_friend,
-    rewrite: '/refer-friends',
-    exact: true,
-    children: referFriendsRouters,
-    trackId: 'global-referral',
-    freezeOnBlur: Boolean(params?.freezeOnBlur),
-  };
+  const referFriendsTabConfig = useMemo(
+    () => ({
+      name: ETabRoutes.ReferFriends,
+      tabBarIcon: (focused?: boolean) =>
+        focused ? 'GiftSolid' : 'GiftOutline',
+      translationId: ETranslations.sidebar_refer_a_friend,
+      rewrite: '/refer-friends',
+      exact: true,
+      children: referFriendsRouters,
+      trackId: 'global-referral',
+      freezeOnBlur: Boolean(params?.freezeOnBlur),
+    }),
+    [params?.freezeOnBlur],
+  );
 
   return useMemo(() => {
     const tabs = [

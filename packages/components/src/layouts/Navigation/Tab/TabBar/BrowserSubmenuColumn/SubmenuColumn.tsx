@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { Stack, YStack } from '@onekeyhq/components/src/primitives';
+import { Stack, XStack, YStack } from '@onekeyhq/components/src/primitives';
 import { MIN_SIDEBAR_WIDTH } from '@onekeyhq/components/src/utils/sidebar';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
@@ -18,16 +18,27 @@ export function SubmenuColumn({
   webPageTabBar,
   isExpanded = false,
 }: ISubmenuColumnProps) {
-  // Desktop platforms have header space (Mac: drag area, Windows/Linux: logo)
-  // iPad has no header space
-  const shouldAddTopSpace = platformEnv.isDesktop;
-
   return (
     <Stack width={COLLAPSED_SUBMENU_WIDTH} flex={1}>
-      {/* Overlay that expands on hover */}
+      {/* Mac drag area - always bgSidebar, not affected by expand */}
+      {platformEnv.isDesktopMac ? (
+        <XStack
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          h={HEADER_ALIGNMENT_HEIGHT}
+          zIndex={11}
+          style={{
+            // @ts-expect-error - Electron drag region
+            WebkitAppRegion: 'drag',
+          }}
+        />
+      ) : null}
+      {/* Content area that expands on hover */}
       <YStack
         position="absolute"
-        top={shouldAddTopSpace ? HEADER_ALIGNMENT_HEIGHT : 0}
+        top={platformEnv.isDesktop ? HEADER_ALIGNMENT_HEIGHT : 0}
         left={0}
         bottom={0}
         width={isExpanded ? EXPANDED_SUBMENU_WIDTH : COLLAPSED_SUBMENU_WIDTH}
