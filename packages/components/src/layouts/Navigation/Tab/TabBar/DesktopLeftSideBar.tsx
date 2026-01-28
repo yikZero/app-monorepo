@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
-import type {
-  IActionListSection,
-} from '@onekeyhq/components/src/actions';
-import {
-  useSafeAreaInsets,
-} from '@onekeyhq/components/src/hooks';
+import type { IActionListSection } from '@onekeyhq/components/src/actions';
+import { useSafeAreaInsets } from '@onekeyhq/components/src/hooks';
 import type { IKeyOfIcons } from '@onekeyhq/components/src/primitives';
 import {
   Icon,
@@ -15,9 +11,7 @@ import {
   YStack,
 } from '@onekeyhq/components/src/primitives';
 import { useTheme } from '@onekeyhq/components/src/shared/tamagui';
-import {
-  MIN_SIDEBAR_WIDTH,
-} from '@onekeyhq/components/src/utils/sidebar';
+import { MIN_SIDEBAR_WIDTH } from '@onekeyhq/components/src/utils/sidebar';
 import { appEventBus } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { EAppEventBusNames } from '@onekeyhq/shared/src/eventBus/appEventBusNames';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -37,9 +31,7 @@ import type {
   BottomTabBarProps,
   BottomTabNavigationOptions,
 } from '@react-navigation/bottom-tabs';
-import type {
-  NavigationState,
-} from '@react-navigation/routers';
+import type { NavigationState } from '@react-navigation/routers';
 import type { GestureResponderEvent } from 'react-native';
 
 function TabItemView({
@@ -84,60 +76,49 @@ function TabItemView({
     [onPress, onPressOut, options],
   );
 
-  const contentMemo = useMemo(
-    () =>
-      options.hideOnTabBar ? null : (
-        <YStack
-          ai="center"
-          gap="$0.5"
-          pt={6}
-          pb={6}
-          onPress={handlePress}
-          onHoverIn={() => {
-            setIsContainerHovered(true);
-          }}
-          onHoverOut={() => {
-            setIsContainerHovered(false);
-          }}
-        >
-          <DesktopTabItem
-            isContainerHovered={isContainerHovered}
-            onPress={handlePress}
-            onPressWhenSelected={options.onPressWhenSelected}
-            trackId={options.trackId}
-            aria-current={isActive ? 'page' : undefined}
-            selected={isActive}
-            shortcutKey={options.shortcutKey}
-            tabBarStyle={[
-              options.tabBarStyle,
-              { width: 36 },
-            ]}
-            // @ts-expect-error
-            icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
-            label=""
-            actionList={options.actionList}
-            testID={route.name.toLowerCase()}
-          />
-          <SizableText
-            size="$bodyXsMedium"
-            cursor="default"
-            color="$text"
-            textAlign="center"
-          >
-            {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
-          </SizableText>
-        </YStack>
-      ),
-    [
-      handlePress,
-      isActive,
-      isContainerHovered,
-      options,
-      route.name,
-    ],
-  );
+  if (options.hideOnTabBar) {
+    return null;
+  }
 
-  return contentMemo;
+  return (
+    <YStack
+      ai="center"
+      gap="$0.5"
+      pt={6}
+      pb={6}
+      onPress={handlePress}
+      onHoverIn={() => {
+        setIsContainerHovered(true);
+      }}
+      onHoverOut={() => {
+        setIsContainerHovered(false);
+      }}
+    >
+      <DesktopTabItem
+        isContainerHovered={isContainerHovered}
+        onPress={handlePress}
+        onPressWhenSelected={options.onPressWhenSelected}
+        trackId={options.trackId}
+        aria-current={isActive ? 'page' : undefined}
+        selected={isActive}
+        shortcutKey={options.shortcutKey}
+        tabBarStyle={[options.tabBarStyle, { width: 36 }]}
+        // @ts-expect-error
+        icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
+        label=""
+        actionList={options.actionList}
+        testID={route.name.toLowerCase()}
+      />
+      <SizableText
+        size="$bodyXsMedium"
+        cursor="default"
+        color="$text"
+        textAlign="center"
+      >
+        {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
+      </SizableText>
+    </YStack>
+  );
 }
 
 export function DesktopLeftSideBar({
@@ -181,7 +162,10 @@ export function DesktopLeftSideBar({
   const tabs = useMemo(() => {
     return routesNotHidden.map((route) => {
       const focusRoute = state.routes[state.index];
-      const focus = focusRoute.name === route.name;
+      const focus =
+        focusRoute.name === route.name ||
+        (route.name === ETabRoutes.Discovery &&
+          focusRoute.name === extraConfig?.name);
       const { options } = descriptors[route.key];
       const onPress = () => {
         const event = navigation.emit({
@@ -214,12 +198,7 @@ export function DesktopLeftSideBar({
         />
       );
     });
-  }, [
-    routesNotHidden,
-    descriptors,
-    state,
-    navigation,
-  ]);
+  }, [routesNotHidden, descriptors, state, navigation, extraConfig]);
 
   return (
     <XStack
@@ -230,10 +209,7 @@ export function DesktopLeftSideBar({
         zIndex: 2,
       }}
     >
-      <YStack
-        testID="Desktop-AppSideBar-PrimaryMenu"
-        width={MIN_SIDEBAR_WIDTH}
-      >
+      <YStack testID="Desktop-AppSideBar-PrimaryMenu" width={MIN_SIDEBAR_WIDTH}>
         {platformEnv.isDesktopMac ? (
           // @ts-expect-error https://www.electronjs.org/docs/latest/tutorial/custom-window-interactions
           <XStack
@@ -246,18 +222,10 @@ export function DesktopLeftSideBar({
             px="$4"
           />
         ) : null}
-        <YStack
-          flex={1}
-          testID="Desktop-AppSideBar-Content-Container"
-        >
+        <YStack flex={1} testID="Desktop-AppSideBar-Content-Container">
           <YStack flex={1}>
             {!platformEnv.isDesktopMac && !platformEnv.isNativeIOSPad ? (
-              <XStack
-                ai="center"
-                jc="center"
-                px="$4"
-                py="$3"
-              >
+              <XStack ai="center" jc="center" px="$4" py="$3">
                 <Icon
                   name="OnekeyLogoIllus"
                   width={28}
@@ -266,11 +234,7 @@ export function DesktopLeftSideBar({
                 />
               </XStack>
             ) : null}
-            <YStack
-              flex={1}
-              px="$3"
-              alignItems="center"
-            >
+            <YStack flex={1} px="$3" alignItems="center">
               {tabs}
             </YStack>
             {bottomMenu}

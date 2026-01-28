@@ -1,11 +1,8 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { CommonActions } from '@react-navigation/native';
 
-import {
-  rootNavigationRef,
-  useMedia,
-} from '@onekeyhq/components';
+import { rootNavigationRef, useMedia } from '@onekeyhq/components';
 import type {
   ITabNavigatorConfig,
   ITabNavigatorExtraConfig,
@@ -33,82 +30,66 @@ type IGetTabRouterParams = {
   freezeOnBlur?: boolean;
 };
 
-const useIsShowDesktopDiscover = () => platformEnv.isDesktop;
-
 const getDiscoverRouterConfig = (
   params?: IGetTabRouterParams,
   tabBarStyle?: ITabNavigatorConfig<ETabRoutes>['tabBarStyle'],
-) => {
-  const discoverRouterConfig: ITabNavigatorConfig<ETabRoutes> = {
-    name: ETabRoutes.Discovery,
-    rewrite: '/discovery',
-    exact: true,
-    tabBarIcon: (focused?: boolean) =>
-      focused ? 'CompassCircleSolid' : 'CompassCircleOutline',
-    translationId: platformEnv.isNative
-      ? ETranslations.global_discover
-      : ETranslations.global_browser,
-    freezeOnBlur: Boolean(params?.freezeOnBlur),
-    children: discoveryRouters,
-    tabBarStyle,
-    trackId: 'global-browser',
-  };
-  return discoverRouterConfig;
-};
+): ITabNavigatorConfig<ETabRoutes> => ({
+  name: ETabRoutes.Discovery,
+  rewrite: '/discovery',
+  exact: true,
+  tabBarIcon: (focused?: boolean) =>
+    focused ? 'CompassCircleSolid' : 'CompassCircleOutline',
+  translationId: platformEnv.isNative
+    ? ETranslations.global_discover
+    : ETranslations.global_browser,
+  freezeOnBlur: Boolean(params?.freezeOnBlur),
+  children: discoveryRouters,
+  tabBarStyle,
+  trackId: 'global-browser',
+});
 
 export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
   const { md } = useMedia();
 
   const { isModalStack } = useDeviceManagerModalStyle();
-  const isShowDesktopDiscover = useIsShowDesktopDiscover();
+  const isShowDesktopDiscover = platformEnv.isDesktop;
   const isWebDappMode = platformEnv.isWebDappMode;
-  const isShowMDDiscover = useMemo(
-    () =>
-      !isShowDesktopDiscover &&
-      !platformEnv.isWebDappMode &&
-      !platformEnv.isExtensionUiPopup &&
-      !(platformEnv.isExtensionUiSidePanel && md),
-    [isShowDesktopDiscover, md],
-  );
+  const isShowMDDiscover =
+    !isShowDesktopDiscover &&
+    !platformEnv.isWebDappMode &&
+    !platformEnv.isExtensionUiPopup &&
+    !(platformEnv.isExtensionUiSidePanel && md);
 
   const shouldShowMarketTab = !(
     platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel
   );
 
   const { perpDisabled, perpTabShowWeb } = usePerpTabConfig();
-  // Custom Market tab press handler - only for non-mobile platforms
-  const handleMarketTabPress = useMemo(() => {
-    return () => {
-      const navigation = rootNavigationRef.current;
-      if (navigation) {
-        // Always navigate to Market home when this handler is called
-        // Since this is only called when Market tab is already selected,
-        // we can assume user wants to go to Market home
-        navigation.dispatch(
-          CommonActions.navigate({
-            name: ETabRoutes.Market,
-            params: {
-              screen: ETabMarketRoutes.TabMarket,
-            },
-            pop: true,
-          }),
-        );
-      }
-    };
+  const handleMarketTabPress = useCallback(() => {
+    const nav = rootNavigationRef.current;
+    if (nav) {
+      nav.dispatch(
+        CommonActions.navigate({
+          name: ETabRoutes.Market,
+          params: {
+            screen: ETabMarketRoutes.TabMarket,
+          },
+          pop: true,
+        }),
+      );
+    }
   }, []);
 
-  const referFriendsTabConfig = useMemo(() => {
-    return {
-      name: ETabRoutes.ReferFriends,
-      tabBarIcon: () => 'GiftOutline',
-      translationId: ETranslations.sidebar_refer_a_friend,
-      rewrite: '/refer-friends',
-      exact: true,
-      children: referFriendsRouters,
-      trackId: 'global-referral',
-      freezeOnBlur: Boolean(params?.freezeOnBlur),
-    };
-  }, [params?.freezeOnBlur]);
+  const referFriendsTabConfig = {
+    name: ETabRoutes.ReferFriends,
+    tabBarIcon: (focused?: boolean) => (focused ? 'GiftSolid' : 'GiftOutline'),
+    translationId: ETranslations.sidebar_refer_a_friend,
+    rewrite: '/refer-friends',
+    exact: true,
+    children: referFriendsRouters,
+    trackId: 'global-referral',
+    freezeOnBlur: Boolean(params?.freezeOnBlur),
+  };
 
   return useMemo(() => {
     const tabs = [
@@ -240,10 +221,10 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
     handleMarketTabPress,
     perpTabShowWeb,
     perpDisabled,
-    referFriendsTabConfig,
     isModalStack,
     isShowMDDiscover,
     isShowDesktopDiscover,
+    referFriendsTabConfig,
   ]) as ITabNavigatorConfig<ETabRoutes>[];
 };
 

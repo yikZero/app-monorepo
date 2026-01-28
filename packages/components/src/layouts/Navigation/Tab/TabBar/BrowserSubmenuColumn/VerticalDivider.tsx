@@ -8,7 +8,7 @@ export function VerticalDivider() {
   return (
     <LinearGradient
       width={1}
-      height={'100%'}
+      height="100%"
       colors={[
         'rgba(0, 0, 0, 0)',
         'rgba(0, 0, 0, 0)',

@@ -60,14 +60,13 @@ export function BrowserSubmenuColumn({
     focusedRouteName === ETabRoutes.Discovery ||
     focusedRouteName === multiTabBrowserRouteName;
 
-  type ITabBarProps = { inSubmenu?: boolean; isCollapsedOverride?: boolean };
+  type ITabBarProps = { inSubmenu?: boolean; isExpanded?: boolean };
 
-  // Single webPageTabBar with isCollapsedOverride following isHovered
   const webPageTabBarWithProps = useMemo(
     () =>
       cloneElement(webPageTabBar as ReactElement<ITabBarProps>, {
         inSubmenu: true,
-        isCollapsedOverride: !isHovered,
+        isExpanded: isHovered,
       }),
     [webPageTabBar, isHovered],
   );
