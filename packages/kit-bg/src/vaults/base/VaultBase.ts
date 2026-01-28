@@ -147,7 +147,6 @@ export type IVaultInitConfig = {
 export type IKeyringMapKey = IDBWalletType;
 
 if (platformEnv.isExtensionUi) {
-  debugger;
   throw new OneKeyLocalError(
     'engine/VaultBase is not allowed imported from ui',
   );
@@ -679,7 +678,7 @@ export abstract class VaultBase extends VaultBaseChainOnly {
       );
     }
 
-    const key = `${accountId}`;
+    const key = accountId;
     let dbAccount: IDBAccount | undefined;
     if (dbAccountCache) {
       await this.mutexBuildOnChainHistoryTxGetDBAccount.runExclusive(

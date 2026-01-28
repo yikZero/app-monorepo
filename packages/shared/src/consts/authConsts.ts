@@ -164,10 +164,10 @@ const GOOGLE_OAUTH_CLIENT_IOS =
 
 // test
 // const GOOGLE_OAUTH_CLIENT_WEB =
-// eslint-disable-next-line @cspell/spellchecker
+// oxlint-disable-next-line @cspell/spellchecker
 //   '244450898872-vmpg9dgocpqtqhm5pk42u4s6hvprogp6.apps.googleusercontent.com';
 // const GOOGLE_OAUTH_CLIENT_IOS =
-// eslint-disable-next-line @cspell/spellchecker
+// oxlint-disable-next-line @cspell/spellchecker
 //   '244450898872-5uo9r8ekdc82huckjcr4br67edvf3vlg.apps.googleusercontent.com';
 
 // ================================================
@@ -193,21 +193,24 @@ export const SUPABASE_PUBLIC_API_KEY =
 
 // --- onekey prod
 export const KEYLESS_SUPABASE_PROJECT_URL = 'https://auth.onekey.so'; // onekeytest
+// export const KEYLESS_SUPABASE_PUBLIC_API_KEY =
+// oxlint-disable-next-line @cspell/spellchecker
+//   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY3NzU4MzUwLCJleHAiOjE5MjU0MzgzNTB9.n-g7Amu-dMVpBgQ8i8gSYFjBvbDPC55ZqYIttPh8CYk';
 export const KEYLESS_SUPABASE_PUBLIC_API_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY3NzU4MzUwLCJleHAiOjE5MjU0MzgzNTB9.n-g7Amu-dMVpBgQ8i8gSYFjBvbDPC55ZqYIttPh8CYk';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5MTc1MzMxLCJleHAiOjE5MjY4NTUzMzF9.d0Zd8eBV8L_EcKDXiJRNTEYGw-dX6IdyDCr0nvOiLqg';
 
 // --- onekeytest
 // export const KEYLESS_SUPABASE_PROJECT_URL =
 //   'https://supabase.onekey-internal.com'; // onekeytest
 // export const KEYLESS_SUPABASE_PUBLIC_API_KEY =
-// eslint-disable-next-line @cspell/spellchecker
+// oxlint-disable-next-line @cspell/spellchecker
 //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY3NTg3OTE4LCJleHAiOjE5MjUyNjc5MTh9.F69Rgt30To2V0Rij1nbTpjkHyAv6VpWGz3a81rkpM0U';
 
 // --- local test
 // export const KEYLESS_SUPABASE_PROJECT_URL =
 //   'https://wtspqckturkzhstyjabx.supabase.co';
 // export const KEYLESS_SUPABASE_PUBLIC_API_KEY =
-// eslint-disable-next-line @cspell/spellchecker
+// oxlint-disable-next-line @cspell/spellchecker
 //   'sb_publishable_So24RIupCcXUHaKo1gM4VA_uOBbgjoN';
 
 // ================================================
@@ -254,6 +257,9 @@ export const KEYLESS_BACKEND_SHARE_PAYLOAD_ENCRYPTION_KEY =
 export const KEYLESS_BACKEND_SHARE_PAYLOAD_ENCRYPTION_PREFIX =
   'backend_share_enc_v1:';
 
+// Keyless encryption iterations (PBKDF2 iterations for key derivation)
+export const KEYLESS_ENCRYPTION_ITERATIONS = 600_000;
+
 // Keyless AES-GCM AAD (Additional Authenticated Data)
 // Bind ciphertext to its intended usage context to prevent cross-purpose substitution.
 
@@ -288,7 +294,7 @@ export const KEYLESS_BACKEND_SHARE_PAYLOAD_GCM_AAD =
 // Helper function to get AAD by version
 export function getKeylessAadByVersion(
   type: keyof typeof KEYLESS_AAD_VERSIONS,
-  version?: keyof (typeof KEYLESS_AAD_VERSIONS)[typeof type],
+  version?: keyof typeof KEYLESS_AAD_VERSIONS[typeof type],
 ): string {
   const targetVersion = version || KEYLESS_AAD_CURRENT_VERSION[type];
   return KEYLESS_AAD_VERSIONS[type][targetVersion];

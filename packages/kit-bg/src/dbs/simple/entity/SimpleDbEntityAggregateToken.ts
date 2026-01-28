@@ -109,7 +109,7 @@ export class SimpleDbEntityAggregateToken extends SimpleDbEntityBase<ISimpleDBAg
       return {
         ...rawData,
         aggregateTokenMapV2: {
-          ...(rawData?.aggregateTokenMapV2 ?? {}),
+          ...rawData?.aggregateTokenMapV2,
           [key]: aggregateTokenMap,
         },
       };
@@ -153,9 +153,9 @@ export class SimpleDbEntityAggregateToken extends SimpleDbEntityBase<ISimpleDBAg
     await this.setRawData((rawData) => ({
       ...rawData,
       aggregateTokenListMap: {
-        ...(rawData?.aggregateTokenListMap ?? {}),
+        ...rawData?.aggregateTokenListMap,
         [key]: {
-          ...(rawData?.aggregateTokenListMap?.[key] ?? {}),
+          ...rawData?.aggregateTokenListMap?.[key],
           ...aggregateTokenListMap,
         },
       },
@@ -203,7 +203,12 @@ export class SimpleDbEntityAggregateToken extends SimpleDbEntityBase<ISimpleDBAg
         ? { ...rawData?.allAggregateTokenMap, ...allAggregateTokenMap }
         : allAggregateTokenMap,
       allAggregateTokens: merge
-        ? { ...rawData?.allAggregateTokens, ...allAggregateTokens }
+        ? [
+            ...(Array.isArray(rawData?.allAggregateTokens)
+              ? rawData.allAggregateTokens
+              : []),
+            ...(Array.isArray(allAggregateTokens) ? allAggregateTokens : []),
+          ]
         : allAggregateTokens,
       aggregateTokenConfigMap: merge
         ? { ...rawData?.aggregateTokenConfigMap, ...aggregateTokenConfigMap }

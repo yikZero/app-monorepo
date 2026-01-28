@@ -12,6 +12,7 @@ import type {
   IEarnWalletHistory,
   IExportInviteDataParams,
   IHardwareCumulativeRewards,
+  IHardwareRecordItem,
   IHardwareRecordsResponse,
   IHardwareSalesRecord,
   IInviteCodeItem,
@@ -528,6 +529,16 @@ class ServiceReferralCode extends ServiceBase {
   }
 
   @backgroundMethod()
+  async getCachedInviteCode() {
+    return this.backgroundApi.simpleDb.referralCode.getCachedInviteCode();
+  }
+
+  @backgroundMethod()
+  async setCachedInviteCode(code: string) {
+    return this.backgroundApi.simpleDb.referralCode.setCachedInviteCode(code);
+  }
+
+  @backgroundMethod()
   async autoSignBoundReferralCodeMessageByHDWallet({
     unsignedMessage,
     networkId,
@@ -581,6 +592,15 @@ class ServiceReferralCode extends ServiceBase {
     const response = await client.get<{
       data: IHardwareRecordsResponse;
     }>('/rebate/v1/invite/hardware-records', { params });
+    return response.data.data;
+  }
+
+  @backgroundMethod()
+  async getHardwareRecordDetail(id: string): Promise<IHardwareRecordItem> {
+    const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Rebate);
+    const response = await client.get<{
+      data: IHardwareRecordItem;
+    }>(`/rebate/v1/invite/hardware-records/${id}`);
     return response.data.data;
   }
 

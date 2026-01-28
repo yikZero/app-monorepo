@@ -177,7 +177,7 @@ export default function PickYourDevice() {
           >
             <SizableText size="$bodySm" color="$textSubdued">
               {intl.formatMessage({
-                // eslint-disable-next-line @cspell/spellchecker
+                // oxlint-disable-next-line @cspell/spellchecker
                 id: ETranslations.global_onekey_prompt_dont_have_yet,
               })}
             </SizableText>
@@ -195,9 +195,6 @@ export default function PickYourDevice() {
                 left: 8,
                 right: 8,
                 bottom: 8,
-              }}
-              style={{
-                textDecoration: 'none',
               }}
             >
               {intl.formatMessage({ id: ETranslations.global_buy_one })}

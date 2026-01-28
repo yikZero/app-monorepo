@@ -35,6 +35,8 @@ import {
   showCloudBackupPasswordDialog,
 } from '../components/CloudBackupDialogs';
 
+let isBackupErrorDialogShowing = false;
+
 export function useCloudBackup() {
   const intl = useIntl();
   const navigation = useAppNavigation();
@@ -177,6 +179,9 @@ export function useCloudBackup() {
     async ({ hideRestoreButton }: { hideRestoreButton?: boolean } = {}) => {
       const isAvailable = await checkIsAvailable();
       if (isAvailable) {
+        if (platformEnv.isNativeAndroid) {
+          await backgroundApiProxy.serviceCloudBackupV2.loginCloudIfNeed();
+        }
         navigation.navigate(ERootRoutes.Onboarding, {
           screen: EOnboardingV2Routes.OnboardingV2,
           params: {
@@ -250,6 +255,12 @@ export function useCloudBackup() {
         ) {
           // skip
         } else {
+          if (isBackupErrorDialogShowing) {
+            throw error;
+          }
+
+          isBackupErrorDialogShowing = true;
+
           Dialog.show({
             title: intl.formatMessage({
               id: ETranslations.cloud_backup_failed,
@@ -265,11 +276,15 @@ export function useCloudBackup() {
               id: ETranslations.global_manage_backups,
             }),
             onCancel: () => {
+              isBackupErrorDialogShowing = false;
               void goToPageBackupList({ hideRestoreButton: true });
             },
             onConfirmText: intl.formatMessage({
               id: ETranslations.global_close,
             }),
+            onClose: () => {
+              isBackupErrorDialogShowing = false;
+            },
           });
         }
         throw error;
@@ -447,6 +462,10 @@ export function useCloudBackup() {
               },
             );
             await verifyPasswordDialog?.close?.();
+            // Delay to ensure the dialog is closed before proceeding
+            if (platformEnv.isNative) {
+              await timerUtils.wait(350);
+            }
             importProcessingDialog = showPrimeTransferImportProcessingDialog({
               navigation,
             });
@@ -501,6 +520,10 @@ export function useCloudBackup() {
       const isAvailable = await checkIsAvailable();
       let loadingDialog: IDialogInstance | null = null;
       if (isAvailable) {
+        if (platformEnv.isNativeAndroid) {
+          await backgroundApiProxy.serviceCloudBackupV2.loginCloudIfNeed();
+        }
+
         if (platformEnv.isNativeAndroid || alwaysGoToBackupDetail) {
           await goToPageBackupDetail({
             actionType: 'backup',

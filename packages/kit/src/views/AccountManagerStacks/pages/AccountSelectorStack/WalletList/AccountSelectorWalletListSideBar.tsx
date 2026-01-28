@@ -177,11 +177,15 @@ export function AccountSelectorWalletListSideBar({
       const hwWalletCount = wallets.filter(
         (wallet) => wallet.type === 'hw',
       ).length;
+      const keylessWalletCount = wallets.filter(
+        (wallet) => wallet.isKeyless,
+      ).length;
       const appWalletCount = walletCount - hwWalletCount;
       analytics.updateUserProfile({
         walletCount,
         hwWalletCount,
         appWalletCount,
+        keylessWalletCount,
       });
     }
   }, [wallets]);
@@ -400,7 +404,7 @@ export function AccountSelectorWalletListSideBar({
             borderCurve="continuous"
           />
         )}
-        keyExtractor={(item) => `${item.id}`}
+        keyExtractor={(item) => item.id}
         data={wallets as IAccountSelectorWalletInfo[]}
         onDragEnd={async (result) => {
           if (!walletsResult) {

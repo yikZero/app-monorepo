@@ -34,7 +34,6 @@ import { EarnActionIcon } from '../../Staking/components/ProtocolDetails/EarnAct
 import { EarnText } from '../../Staking/components/ProtocolDetails/EarnText';
 import { EarnTooltip } from '../../Staking/components/ProtocolDetails/EarnTooltip';
 import { PendingIndicator } from '../../Staking/components/StakingActivityIndicator';
-import { useEarnAccount } from '../../Staking/hooks/useEarnAccount';
 import {
   buildBorrowTag,
   isBorrowTag,
@@ -103,18 +102,8 @@ export const Overview = ({
   isActive?: boolean;
   onHealthFactorAlertsChange?: (alerts?: IBorrowAlert[]) => void;
 }) => {
-  const {
-    reserves,
-    market,
-    reservesLoading,
-    pendingTxs,
-    refreshRewardsRef,
-    refreshReservesRef,
-    refreshBorrowDataRef,
-  } = useBorrowContext();
-  const { earnAccount } = useEarnAccount({
-    networkId: market?.networkId,
-  });
+  const { reserves, market, earnAccount, pendingTxs, setRefreshAllBorrowData } =
+    useBorrowContext();
   const intl = useIntl();
   const [settings] = useSettingsPersistAtom();
   const navigation = useAppNavigation();
@@ -126,7 +115,9 @@ export const Overview = ({
   const provider = market?.provider;
   const networkId = market?.networkId;
   const marketAddress = market?.marketAddress;
-  const earnAccountId = earnAccount?.accountId ?? earnAccount?.account?.id;
+  const earnAccountData = earnAccount.data;
+  const earnAccountId =
+    earnAccountData?.accountId ?? earnAccountData?.account?.id;
 
   const historyLabel = useMemo(
     () => intl.formatMessage({ id: ETranslations.global_history }),
@@ -193,8 +184,7 @@ export const Overview = ({
     provider,
     marketAddress,
     accountId: earnAccountId,
-    enabled:
-      isActive && !!(networkId && provider && marketAddress && earnAccountId),
+    enabled: !!(networkId && provider && marketAddress && earnAccountId),
   });
 
   const handleBorrowClaim = useUniversalBorrowClaim({
@@ -202,18 +192,13 @@ export const Overview = ({
     accountId: earnAccountId ?? '',
   });
 
+  const refreshReserves = reserves.refresh;
   const refreshBorrowData = useCallback(async () => {
     const tasks: Array<Promise<void>> = [];
-    if (refreshReservesRef.current) {
-      tasks.push(refreshReservesRef.current());
-    }
+    tasks.push(refreshReserves());
     tasks.push(refreshBorrowRewards(), refreshHealthFactor());
     await Promise.all(tasks);
-  }, [refreshBorrowRewards, refreshHealthFactor, refreshReservesRef]);
-
-  useEffect(() => {
-    refreshRewardsRef.current = refreshBorrowRewards;
-  }, [refreshBorrowRewards, refreshRewardsRef]);
+  }, [refreshBorrowRewards, refreshHealthFactor, refreshReserves]);
 
   const requestRefresh = useCallback(
     async (_reason: 'manual' | 'txSuccess') => {
@@ -233,13 +218,11 @@ export const Overview = ({
   );
 
   useEffect(() => {
-    refreshBorrowDataRef.current = refreshBorrowDataForPending;
+    setRefreshAllBorrowData(refreshBorrowDataForPending);
     return () => {
-      if (refreshBorrowDataRef.current === refreshBorrowDataForPending) {
-        refreshBorrowDataRef.current = null;
-      }
+      setRefreshAllBorrowData(() => Promise.resolve());
     };
-  }, [refreshBorrowDataForPending, refreshBorrowDataRef]);
+  }, [refreshBorrowDataForPending, setRefreshAllBorrowData]);
 
   const handleHistoryPress = useCallback(() => {
     if (!provider || !networkId || !marketAddress || !earnAccountId) return;
@@ -291,6 +274,7 @@ export const Overview = ({
           protocol: earnUtils.getEarnProviderName({ providerName: provider }),
           protocolLogoURI: market?.logoURI,
           tags: [
+            EEarnLabels.Borrow,
             buildBorrowTag({
               provider,
               action: 'claim',
@@ -316,6 +300,7 @@ export const Overview = ({
           protocol: earnUtils.getEarnProviderName({ providerName: provider }),
           protocolLogoURI: market?.logoURI,
           tags: [
+            EEarnLabels.Borrow,
             buildBorrowTag({
               provider,
               action: 'claim',
@@ -359,7 +344,7 @@ export const Overview = ({
             <XStack ai="center" gap="$3" mb="$1.5">
               <EarnText
                 text={
-                  reserves?.overview?.netWorth ?? {
+                  reserves.data?.overview?.netWorth ?? {
                     text: amountPlaceholder,
                     color: '$textDisabled',
                   }
@@ -372,14 +357,14 @@ export const Overview = ({
                 iconSize="$6"
                 variant="tertiary"
                 size="small"
-                loading={reservesLoading || isManualRefreshing}
+                loading={reserves.loading || isManualRefreshing}
                 onPress={() => requestRefresh('manual')}
               />
             </XStack>
-            {reserves?.overview?.netApy ? (
+            {reserves.data?.overview?.netApy ? (
               <XStack ai="center" gap="$1">
                 <EarnText
-                  text={reserves.overview.netApy}
+                  text={reserves.data.overview.netApy}
                   size="$bodyMdMedium"
                   color="$textText"
                 />
@@ -400,7 +385,8 @@ export const Overview = ({
                 onPress={handleHistoryPress}
               />
             ) : null}
-            {!reserves?.overview?.history?.disabled && pendingCount === 0 ? (
+            {!reserves.data?.overview?.history?.disabled &&
+            pendingCount === 0 ? (
               <XStack
                 ai="center"
                 gap="$1"
@@ -463,7 +449,7 @@ export const Overview = ({
               <XStack ai="center" gap="$1">
                 <EarnText
                   text={
-                    reserves?.overview?.platformBonus?.totalReceived
+                    reserves.data?.overview?.platformBonus?.totalReceived
                       .description ?? {
                       text: amountPlaceholder,
                       color: '$textDisabled',
@@ -474,7 +460,7 @@ export const Overview = ({
                 />
                 <XStack mt="$1">
                   <BorrowBonusTooltip
-                    data={reserves?.overview?.platformBonus}
+                    data={reserves.data?.overview?.platformBonus}
                     accountId={earnAccountId}
                     networkId={networkId}
                     provider={provider}
@@ -542,7 +528,7 @@ export const Overview = ({
         needDivider
         title={{ text: labels.netWorth }}
         text={
-          reserves?.overview?.netWorth ?? {
+          reserves.data?.overview?.netWorth ?? {
             text: amountPlaceholder,
             color: '$textDisabled',
           }
@@ -552,7 +538,7 @@ export const Overview = ({
             icon="RefreshCcwOutline"
             variant="tertiary"
             size="small"
-            loading={reservesLoading || isManualRefreshing}
+            loading={reserves.loading || isManualRefreshing}
             onPress={() => requestRefresh('manual')}
           />
         }
@@ -562,7 +548,10 @@ export const Overview = ({
         needDivider
         title={{ text: labels.netApy }}
         text={
-          reserves?.overview?.netApy ?? { text: '-', color: '$textDisabled' }
+          reserves.data?.overview?.netApy ?? {
+            text: '-',
+            color: '$textDisabled',
+          }
         }
       />
       <OverviewItem
@@ -590,19 +579,19 @@ export const Overview = ({
       <OverviewItem
         needDivider
         title={
-          reserves?.overview?.platformBonus?.data?.title ?? {
+          reserves.data?.overview?.platformBonus?.data?.title ?? {
             text: labels.platformBonus,
           }
         }
         text={
-          reserves?.overview?.platformBonus?.totalReceived.description ?? {
+          reserves.data?.overview?.platformBonus?.totalReceived.description ?? {
             text: amountPlaceholder,
             color: '$textDisabled',
           }
         }
         tooltip={
           <BorrowBonusTooltip
-            data={reserves?.overview?.platformBonus}
+            data={reserves.data?.overview?.platformBonus}
             accountId={earnAccountId}
             networkId={networkId}
             provider={provider}
@@ -650,9 +639,9 @@ export const Overview = ({
         {pendingCount > 0 ? (
           <PendingIndicator num={pendingCount} onPress={handleHistoryPress} />
         ) : null}
-        {!reserves?.overview?.history?.disabled && pendingCount === 0 ? (
+        {!reserves.data?.overview?.history?.disabled && pendingCount === 0 ? (
           <EarnActionIcon
-            actionIcon={reserves?.overview?.history}
+            actionIcon={reserves.data?.overview?.history}
             onHistory={handleHistoryPress}
           />
         ) : null}

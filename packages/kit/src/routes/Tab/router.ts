@@ -4,12 +4,46 @@ import { CommonActions } from '@react-navigation/native';
 
 import { rootNavigationRef, useMedia } from '@onekeyhq/components';
 import type {
+  INativeTabBarIcon,
   ITabNavigatorConfig,
   ITabNavigatorExtraConfig,
 } from '@onekeyhq/components/src/layouts/Navigation/Navigator/types';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabMarketRoutes, ETabRoutes } from '@onekeyhq/shared/src/routes';
+
+// Native tab icons using SVG files from @onekeyhq/components/svg
+// The native tab bar will tint icons using tabBarActiveTintColor/tabBarInactiveTintColor
+const nativeTabIcons = {
+  wallet: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/wallet.svg')
+      : require('@onekeyhq/components/svg/outline/wallet.svg'),
+  swap: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/swap-hor.svg')
+      : require('@onekeyhq/components/svg/outline/swap-hor.svg'),
+  discover: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/compass-circle.svg')
+      : require('@onekeyhq/components/svg/outline/compass-circle.svg'),
+  market: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/chart-trending-up2.svg')
+      : require('@onekeyhq/components/svg/outline/chart-trending-up2.svg'),
+  perp: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/trading-view-candles.svg')
+      : require('@onekeyhq/components/svg/outline/trading-view-candles.svg'),
+  earn: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/coins.svg')
+      : require('@onekeyhq/components/svg/outline/coins.svg'),
+  developer: ({ focused }: { focused: boolean }): INativeTabBarIcon =>
+    focused
+      ? require('@onekeyhq/components/svg/solid/code-brackets.svg')
+      : require('@onekeyhq/components/svg/outline/code-brackets.svg'),
+};
 
 import { usePerpTabConfig } from '../../hooks/usePerpTabConfig';
 import { developerRouters } from '../../views/Developer/router';
@@ -39,6 +73,7 @@ const getDiscoverRouterConfig = (
   exact: true,
   tabBarIcon: (focused?: boolean) =>
     focused ? 'CompassCircleSolid' : 'CompassCircleOutline',
+  nativeTabBarIcon: nativeTabIcons.discover,
   translationId: platformEnv.isNative
     ? ETranslations.global_discover
     : ETranslations.global_browser,
@@ -97,6 +132,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
         name: ETabRoutes.Home,
         tabBarIcon: (focused?: boolean) =>
           focused ? 'WalletSolid' : 'WalletOutline',
+        nativeTabBarIcon: nativeTabIcons.wallet,
         translationId: ETranslations.global_wallet,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: '/',
@@ -130,6 +166,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
         name: ETabRoutes.Swap,
         tabBarIcon: (focused?: boolean) =>
           focused ? 'SwapHorSolid' : 'SwapHorOutline',
+        nativeTabBarIcon: nativeTabIcons.swap,
         translationId: ETranslations.global_trade,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: '/swap',
@@ -142,6 +179,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
         tabBarIcon: (focused?: boolean) =>
           focused ? 'TradingViewCandlesSolid' : 'TradingViewCandlesOutline',
         translationId: ETranslations.global_perp,
+        nativeTabBarIcon: nativeTabIcons.perp,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: perpTabShowWeb ? '/perps' : undefined,
         exact: true,
@@ -154,6 +192,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
         tabBarIcon: (focused?: boolean) =>
           focused ? 'TradingViewCandlesSolid' : 'TradingViewCandlesOutline',
         translationId: ETranslations.global_perp,
+        nativeTabBarIcon: nativeTabIcons.perp,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         children: perpRouters,
         rewrite: perpTabShowWeb ? undefined : '/perps',
@@ -193,6 +232,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
             tabBarIcon: (focused?: boolean) =>
               focused ? 'CodeBracketsSolid' : 'CodeBracketsOutline',
             translationId: ETranslations.global_dev_mode,
+            nativeTabBarIcon: nativeTabIcons.developer,
             freezeOnBlur: Boolean(params?.freezeOnBlur),
             rewrite: '/dev',
             exact: true,

@@ -484,7 +484,7 @@ class ProviderApiPrivate extends ProviderApiBase {
     console.log('ProviderApiPrivate.chainWebEmbedResponse', payload);
     void this.backgroundApi.servicePromise.resolveCallback({
       id: payload?.data?.promiseId,
-      data: { ...(payload?.data?.data ?? {}) },
+      data: { ...payload?.data?.data },
     });
   }
 
@@ -533,7 +533,7 @@ class ProviderApiPrivate extends ProviderApiBase {
       throw new OneKeyLocalError('webembed webview bridge not ready.');
     }
 
-    const webviewOrigin = `${bg?.webEmbedBridge?.remoteInfo?.origin || ''}`;
+    const webviewOrigin = bg?.webEmbedBridge?.remoteInfo?.origin || '';
     if (!isWebEmbedApiAllowedOrigin(webviewOrigin)) {
       throw new OneKeyLocalError(
         `callWebEmbedApiProxy not allowed origin: ${

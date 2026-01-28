@@ -161,7 +161,10 @@ const FILTERED_ERROR_TYPES = new Set([
   EOneKeyErrorClassNames.FirmwareUpdateTasksClear,
 ]);
 
-const FILTER_ERROR_VALUES = ['AbortError: AbortError', 'cancel timeout'];
+const FILTER_ERROR_VALUES = new Set([
+  'AbortError: AbortError',
+  'cancel timeout',
+]);
 
 const isFilterErrorAndSkipSentry = (error?: {
   type?: string | undefined;
@@ -197,7 +200,7 @@ const isFilterErrorAndSkipSentry = (error?: {
   if (
     error.type === 'Error' &&
     error.value &&
-    FILTER_ERROR_VALUES.includes(error.value)
+    FILTER_ERROR_VALUES.has(error.value)
   ) {
     return true;
   }
@@ -219,6 +222,7 @@ export const buildBasicOptions = ({
       if (Array.isArray(event.exception?.values)) {
         for (let index = 0; index < event.exception.values.length; index += 1) {
           const exceptionValue = event.exception.values[index];
+          const { type: originalType, value: originalValue } = exceptionValue;
           try {
             // Sanitize error message
             if (exceptionValue.value) {
@@ -227,15 +231,18 @@ export const buildBasicOptions = ({
               onError(newErrorText, exceptionValue.stacktrace);
               exceptionValue.value = newErrorText;
             }
-
-            // Sanitize stacktrace (local variables, context lines)
-            sanitizeStacktrace(exceptionValue.stacktrace);
-
             // In webEmbed environment, network requests cannot be sent, so abort subsequent operations
             if (platformEnv.isWebEmbed) {
               return;
             }
-            if (isFilterErrorAndSkipSentry(exceptionValue)) {
+            // Sanitize stacktrace (local variables, context lines)
+            sanitizeStacktrace(exceptionValue.stacktrace);
+            if (
+              isFilterErrorAndSkipSentry({
+                type: originalType,
+                value: originalValue,
+              })
+            ) {
               return null;
             }
           } catch {

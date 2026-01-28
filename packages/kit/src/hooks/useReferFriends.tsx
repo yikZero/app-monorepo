@@ -31,7 +31,10 @@ import {
   ETabRoutes,
 } from '@onekeyhq/shared/src/routes';
 import { ESpotlightTour } from '@onekeyhq/shared/src/spotlight';
-import { openUrlExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
+import {
+  openUrlExternal,
+  openUrlInDiscovery,
+} from '@onekeyhq/shared/src/utils/openUrlUtils';
 import type { IEndpointEnv } from '@onekeyhq/shared/types/endpoint';
 
 import { useOneKeyAuth } from '../components/OneKeyAuth/useOneKeyAuth';
@@ -97,7 +100,12 @@ export function useReplaceToReferFriends() {
         const screen = isLogin
           ? ETabReferFriendsRoutes.TabInviteReward
           : ETabReferFriendsRoutes.TabReferAFriend;
-        navigation.replace(screen, navParams);
+        // Use reset instead of replace to clear the navigation stack
+        // This prevents the back button from appearing on the root screen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: screen, params: navParams }],
+        });
       }
     },
     [navigation],
@@ -116,22 +124,61 @@ export const useReferFriends = () => {
     return useTestEnv ? 'test' : 'prod';
   }, [devSettings.enabled, devSettings.settings?.enableTestEndpoint]);
 
-  const toInviteRewardPage = useCallback(async () => {
-    const isLogin = await backgroundApiProxy.servicePrime.isLoggedIn();
-    if (isLogin) {
-      if (platformEnv.isNative) {
-        navigation.pushModal(EModalRoutes.ReferFriendsModal, {
-          screen: EModalReferFriendsRoutes.InviteReward,
-        });
+  const toInviteRewardPage = useCallback(
+    async (params?: { showRewardDistributionHistory?: boolean }) => {
+      const isLogin = await backgroundApiProxy.servicePrime.isLoggedIn();
+      if (isLogin) {
+        if (platformEnv.isNative) {
+          navigation.pushModal(EModalRoutes.ReferFriendsModal, {
+            screen: EModalReferFriendsRoutes.InviteReward,
+            params,
+          });
+        } else {
+          navigation.switchTab<ETabRoutes.ReferFriends>(
+            ETabRoutes.ReferFriends,
+            {
+              screen: ETabReferFriendsRoutes.TabInviteReward,
+              params,
+            },
+          );
+        }
       } else {
-        navigation.switchTab<ETabRoutes.ReferFriends>(ETabRoutes.ReferFriends, {
-          screen: ETabReferFriendsRoutes.TabInviteReward,
-        });
+        void loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
       }
-    } else {
-      void loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
-    }
-  }, [loginOneKeyId, navigation]);
+    },
+    [loginOneKeyId, navigation],
+  );
+
+  const toHardwareSalesRewardPage = useCallback(
+    async (params?: { showOrderDetail?: boolean; orderId?: string }) => {
+      const isLogin = await backgroundApiProxy.servicePrime.isLoggedIn();
+      if (isLogin) {
+        if (platformEnv.isNative) {
+          navigation.pushModal(EModalRoutes.ReferFriendsModal, {
+            screen: EModalReferFriendsRoutes.HardwareSalesReward,
+            params,
+          });
+        } else {
+          navigation.switchTab<ETabRoutes.ReferFriends>(
+            ETabRoutes.ReferFriends,
+            {
+              screen: ETabReferFriendsRoutes.TabHardwareSalesReward,
+              params,
+            },
+          );
+        }
+      } else {
+        void loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
+      }
+    },
+    [loginOneKeyId, navigation],
+  );
+
+  const openHardwareSalesOrderDetail = useCallback(
+    (orderId: string) =>
+      toHardwareSalesRewardPage({ showOrderDetail: true, orderId }),
+    [toHardwareSalesRewardPage],
+  );
 
   const toReferFriendsPage = useCallback(async () => {
     const isLogin = await backgroundApiProxy.servicePrime.isLoggedIn();
@@ -333,10 +380,11 @@ export const useReferFriends = () => {
           id: ETranslations.referral_intro_learn_more,
         }),
         onCancel: () => {
-          openUrlExternal(REFERRAL_HELP_LINK);
-        },
-        cancelButtonProps: {
-          iconAfter: 'OpenOutline',
+          if (platformEnv.isDesktop || platformEnv.isNative) {
+            openUrlInDiscovery({ url: REFERRAL_HELP_LINK });
+          } else {
+            openUrlExternal(REFERRAL_HELP_LINK);
+          }
         },
         onConfirmText: intl.formatMessage({
           id: isLogin
@@ -354,7 +402,15 @@ export const useReferFriends = () => {
       toReferFriendsPage,
       shareReferRewards,
       toInviteRewardPage,
+      toHardwareSalesRewardPage,
+      openHardwareSalesOrderDetail,
     }),
-    [toReferFriendsPage, shareReferRewards, toInviteRewardPage],
+    [
+      toReferFriendsPage,
+      shareReferRewards,
+      toInviteRewardPage,
+      toHardwareSalesRewardPage,
+      openHardwareSalesOrderDetail,
+    ],
   );
 };

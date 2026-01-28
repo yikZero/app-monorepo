@@ -142,7 +142,7 @@ export class HardwareConnectionManager {
       const devices = response.data as unknown[];
       const isAvailable = Array.isArray(devices) && devices.length > 0;
       return isAvailable;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -382,7 +382,7 @@ export class HardwareConnectionManager {
       promise: true,
       maxAge: timerUtils.getTimeDurationMs({ seconds: 2 }),
       max: 1,
-      normalizer: (args) => `${args[0].hardwareCallContext || 'default'}`,
+      normalizer: (args) => args[0].hardwareCallContext || 'default',
     },
   );
 

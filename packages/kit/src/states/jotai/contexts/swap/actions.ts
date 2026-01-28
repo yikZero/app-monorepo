@@ -195,7 +195,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       } else {
         // no catch
         swapTokenMap.tokenCatch = {
-          ...(swapTokenMap.tokenCatch ?? {}),
+          ...swapTokenMap.tokenCatch,
           [key]: { data: newTokens, updatedAt: dateNow },
         };
         catchCount = Object.keys(swapTokenMap.tokenCatch).length;
@@ -626,6 +626,18 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                   );
                   if (newUpdateQuoteRes) {
                     return newUpdateQuoteRes;
+                  }
+                  // OK-49700: 如果旧报价的 fromAmount 与当前询价的 fromTokenAmount 相同，
+                  // 则更新旧报价的 eventId 为当前的 eventId，这样它就不会被 eventId 过滤掉，
+                  // 实现再次询价时保留旧报价、只更新部分渠道商报价的效果
+                  if (
+                    oldQuoteRes.fromAmount === event.params.fromTokenAmount &&
+                    quoteEventTotalCount.eventId
+                  ) {
+                    return {
+                      ...oldQuoteRes,
+                      eventId: quoteEventTotalCount.eventId,
+                    };
                   }
                   return oldQuoteRes;
                 });
@@ -1149,7 +1161,9 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         });
         return;
       }
-
+      const notSupportSwapMessage = appLocale.intl.formatMessage({
+        id: ETranslations.swap_page_alert_account_does_not_support_swap,
+      });
       if (
         fromToken &&
         !swapFromAddressInfo.address &&
@@ -1166,15 +1180,17 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         alertsRes = [
           ...alertsRes,
           {
-            message: appLocale.intl.formatMessage({
-              id: ETranslations.swap_page_alert_account_does_not_support_swap,
-            }),
+            message: notSupportSwapMessage,
             alertLevel: ESwapAlertLevel.ERROR,
           },
         ];
       }
 
-      if (fromToken && swapFromAddressInfo.accountInfo?.wallet?.id) {
+      if (
+        fromToken &&
+        swapFromAddressInfo.accountInfo?.wallet?.id &&
+        alertsRes.every((item) => item.message !== notSupportSwapMessage)
+      ) {
         const needCheck =
           !swapFromAddressInfo.address ||
           accountUtils.isHwWallet({
@@ -1200,7 +1216,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       if (
         toToken &&
         !swapToAddressInfo.address &&
-        swapToAddressInfo.accountInfo?.wallet?.id
+        swapToAddressInfo.accountInfo?.wallet?.id &&
+        alertsRes.every((item) => item.message !== notSupportSwapMessage)
       ) {
         const accountNetworkNotSupportedAlert =
           await this.checkAccountNetworkNotSupportedAlert({
@@ -1422,8 +1439,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                 },
                 {
                   percentage: `${showTax.dividedBy(100).toNumber()}%`,
-                  token: `${toToken?.symbol ?? ''}`,
-                  action: `${actionLabel}`,
+                  token: toToken?.symbol ?? '',
+                  action: actionLabel,
                 },
               ),
               message: appLocale.intl.formatMessage({
@@ -1453,8 +1470,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                 },
                 {
                   percentage: `${showTax.dividedBy(100).toNumber()}%`,
-                  token: `${fromToken?.symbol ?? ''}`,
-                  action: `${actionLabel}`,
+                  token: fromToken?.symbol ?? '',
+                  action: actionLabel,
                 },
               ),
               message: appLocale.intl.formatMessage({
@@ -1861,7 +1878,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         const sortedResult = result
           .filter(Boolean)
           .flat()
-          .sort((a, b) => {
+          .toSorted((a, b) => {
             return new BigNumber(b.fiatValue ?? '0').comparedTo(
               new BigNumber(a.fiatValue ?? '0'),
             );

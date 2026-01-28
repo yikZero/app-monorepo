@@ -14,9 +14,13 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { IModalReceiveParamList } from '@onekeyhq/shared/src/routes';
 import { EModalReceiveRoutes } from '@onekeyhq/shared/src/routes';
-import { openUrlExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
+import {
+  openUrlExternal,
+  openUrlInDiscovery,
+} from '@onekeyhq/shared/src/utils/openUrlUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
@@ -65,7 +69,7 @@ function ReceiveOptions({
 
 function ReceiveSelectorContent() {
   const intl = useIntl();
-  // eslint-disable-next-line @cspell/spellchecker
+  // oxlint-disable-next-line @cspell/spellchecker
   const binanceHelpLink = useHelpLink({
     path: 'articles/12553421',
   });
@@ -102,7 +106,7 @@ function ReceiveSelectorContent() {
           isSupported: url && build,
           url,
         };
-      } catch (error) {
+      } catch (_error) {
         return {
           isSupported: false,
         };
@@ -391,8 +395,12 @@ function ReceiveSelectorContent() {
                         variant="tertiary"
                         childrenAsText={false}
                         onPress={() => {
-                          // eslint-disable-next-line @cspell/spellchecker
-                          openUrlExternal(binanceHelpLink);
+                          // oxlint-disable-next-line @cspell/spellchecker
+                          if (platformEnv.isDesktop || platformEnv.isNative) {
+                            openUrlInDiscovery({ url: binanceHelpLink });
+                          } else {
+                            openUrlExternal(binanceHelpLink);
+                          }
                         }}
                       >
                         <XStack alignItems="center" gap="$2">
@@ -408,7 +416,7 @@ function ReceiveSelectorContent() {
                               color="$yellow11"
                             />
                           </YStack>
-                          <SizableText>Binance ↗</SizableText>
+                          <SizableText>Binance</SizableText>
                         </XStack>
                       </Button>
                       <Button
@@ -416,7 +424,11 @@ function ReceiveSelectorContent() {
                         variant="tertiary"
                         childrenAsText={false}
                         onPress={() => {
-                          openUrlExternal(okxHelpLink);
+                          if (platformEnv.isDesktop || platformEnv.isNative) {
+                            openUrlInDiscovery({ url: okxHelpLink });
+                          } else {
+                            openUrlExternal(okxHelpLink);
+                          }
                         }}
                       >
                         <XStack alignItems="center" gap="$2">
@@ -432,7 +444,7 @@ function ReceiveSelectorContent() {
                               color="$neutral11"
                             />
                           </YStack>
-                          <SizableText>OKX ↗</SizableText>
+                          <SizableText>OKX</SizableText>
                         </XStack>
                       </Button>
                       <Button
@@ -440,7 +452,11 @@ function ReceiveSelectorContent() {
                         variant="tertiary"
                         childrenAsText={false}
                         onPress={() => {
-                          openUrlExternal(coinbaseHelpLink);
+                          if (platformEnv.isDesktop || platformEnv.isNative) {
+                            openUrlInDiscovery({ url: coinbaseHelpLink });
+                          } else {
+                            openUrlExternal(coinbaseHelpLink);
+                          }
                         }}
                       >
                         <XStack alignItems="center" gap="$2">
@@ -456,7 +472,7 @@ function ReceiveSelectorContent() {
                               color="$blue11"
                             />
                           </YStack>
-                          <SizableText>Coinbase ↗</SizableText>
+                          <SizableText>Coinbase</SizableText>
                         </XStack>
                       </Button>
                     </XStack>

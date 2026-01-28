@@ -24,6 +24,8 @@ import type {
 } from '@onekeyhq/shared/src/routes';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '../../../components/AccountSelector/AccountSelectorProvider';
 import { useKeylessWallet } from '../../../components/KeylessWallet/useKeylessWallet';
@@ -152,6 +154,19 @@ function OneKeyIDLoginPage() {
             });
             setIsResetMode(false);
           } else {
+            // Track wallet creation started after OAuth login succeeds
+            if (!isVerifyMode) {
+              defaultLogger.account.wallet.addWalletStarted({
+                addMethod: 'CreateKeylessWallet',
+                isSoftwareWalletOnlyUser: true,
+                details: {
+                  provider:
+                    provider === EOAuthSocialLoginProvider.Google
+                      ? 'google'
+                      : 'apple',
+                },
+              });
+            }
             await checkKeylessWalletCreatedOnServer({
               token: result.session.accessToken,
               refreshToken: result.session.refreshToken,
@@ -166,6 +181,7 @@ function OneKeyIDLoginPage() {
     [
       checkKeylessWalletCreatedOnServer,
       isResetMode,
+      isVerifyMode,
       mode,
       signInWithSocialLogin,
     ],
@@ -257,8 +273,7 @@ function OneKeyIDLoginPage() {
             >
               {intl.formatMessage({
                 id: ETranslations.keyless_wallet_help_center_link_label,
-              })}{' '}
-              ↗
+              })}
             </Anchor>
           </OnboardingLayout.Footer>
         )}

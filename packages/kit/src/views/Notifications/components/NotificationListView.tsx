@@ -12,7 +12,6 @@ import type {
 } from '@onekeyhq/components';
 import {
   Alert,
-  Dialog,
   Divider,
   Empty,
   HeaderButtonGroup,
@@ -89,23 +88,11 @@ function HeaderRight({
   }, [closePopover, navigation]);
 
   const handleMarkAllReadPress = useCallback(async () => {
-    await closePopover?.();
-    Dialog.show({
-      icon: 'CheckRadioOutline',
-      title: intl.formatMessage({
-        id: ETranslations.global_mark_all_as_confirmation_title,
-      }),
-      description: intl.formatMessage({
-        id: ETranslations.global_mark_all_as_confirmation_desc,
-      }),
-      onConfirm: async () => {
-        await backgroundApiProxy.serviceNotification.markNotificationReadAll();
-        setTimeout(() => {
-          onClearUnread();
-        }, 100);
-      },
-    });
-  }, [closePopover, intl, onClearUnread]);
+    await backgroundApiProxy.serviceNotification.markNotificationReadAll();
+    setTimeout(() => {
+      onClearUnread();
+    }, 100);
+  }, [onClearUnread]);
 
   return (
     <HeaderButtonGroup {...style}>
@@ -326,8 +313,10 @@ export function NotificationListView({
   const intl = useIntl();
   const { bottom } = useSafeAreaInsets();
   const navigation = useAppNavigation();
-  const [{ lastReceivedTime, firstTimeGuideOpened }, setNotificationsData] =
-    useNotificationsAtom();
+  const [
+    { lastReceivedTime, firstTimeGuideOpened, badge },
+    setNotificationsData,
+  ] = useNotificationsAtom();
 
   const isFirstTimeGuideOpened = useRef(false);
   const listRef = useRef<ISectionListRef<unknown>>(null);
@@ -390,6 +379,17 @@ export function NotificationListView({
     [ENotificationPushTopicTypes.accountActivity]: 0,
     [ENotificationPushTopicTypes.system]: 0,
   });
+
+  // Clear tab unread badges when global badge becomes 0
+  useEffect(() => {
+    if (badge === 0) {
+      setUnreadMap({
+        [ENotificationPushTopicTypes.accountActivity]: 0,
+        [ENotificationPushTopicTypes.system]: 0,
+      });
+    }
+  }, [badge]);
+
   const [result, setResult] = useState<INotificationPushMessageListItem[]>([]);
   const cacheListRef = useRef<
     Record<ENotificationPushTopicTypes, INotificationPushMessageListItem[]>
