@@ -354,7 +354,7 @@ function DesktopCustomTabBar({ isExpanded }: { isExpanded?: boolean }) {
             />
           </Stack>
         )}
-        keyExtractor={(item) => `${item.id}`}
+        keyExtractor={(item) => item.id}
         getItemLayout={(__, index) => ({
           length: ITEM_HEIGHT,
           offset: ITEM_HEIGHT * index,
