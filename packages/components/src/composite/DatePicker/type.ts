@@ -1,7 +1,7 @@
 import type {
   PopoverContentProps as PopoverContentTypeProps,
   SheetProps,
-} from '@onekeyhq/components/src/shared/tamagui';
+} from '../../shared/tamagui';
 
 export type DatePickerMode = 'date' | 'range' | 'month' | 'year' | 'multiple';
 

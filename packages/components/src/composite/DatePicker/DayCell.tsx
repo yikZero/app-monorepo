@@ -28,25 +28,26 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
         borderBottomRightRadius: 0,
       }
     : isRangeEnd
-      ? {
-          borderTopRightRadius: '$2' as const,
-          borderBottomRightRadius: '$2' as const,
-          borderTopLeftRadius: 0,
-          borderBottomLeftRadius: 0,
-        }
-      : {};
+    ? {
+        borderTopRightRadius: '$2' as const,
+        borderBottomRightRadius: '$2' as const,
+        borderTopLeftRadius: 0,
+        borderBottomLeftRadius: 0,
+      }
+    : {};
 
   const isSelected = day.selected && day.inCurrentMonth;
 
   const innerBg = day.disabled
     ? '$bgDisabled'
     : isSelected
-      ? '$bgPrimary'
-      : 'transparent';
+    ? '$bgPrimary'
+    : 'transparent';
 
-  const textColor = day.disabled || !day.inCurrentMonth
-    ? '$textDisabled'
-    : isSelected
+  const textColor =
+    day.disabled || !day.inCurrentMonth
+      ? '$textDisabled'
+      : isSelected
       ? '$textInverse'
       : '$text';
 

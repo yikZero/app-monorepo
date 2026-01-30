@@ -1,5 +1,5 @@
 import { DatePickerProvider } from '@rehookify/datepicker';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { withStaticProperties } from '@onekeyhq/components/src/shared/tamagui';
 
@@ -74,7 +74,6 @@ function BasicDatePicker({
           mode="date"
           placeholder={placeholder}
           disabled={disabled}
-
           onClear={() => onChange?.(null)}
         />
       }
@@ -148,6 +147,14 @@ function RangePicker({
   const [offsetDate, setOffsetDate] = useState<Date | undefined>(() =>
     calcOffsetDate(value),
   );
+  const shouldClearOffset = useRef(false);
+
+  useEffect(() => {
+    if (shouldClearOffset.current) {
+      shouldClearOffset.current = false;
+      setOffsetDate(undefined);
+    }
+  }, [offsetDate]);
 
   const config = useMemo(
     () => ({
@@ -171,8 +178,7 @@ function RangePicker({
       if (disabled && open) return;
       if (open) {
         setOffsetDate(calcOffsetDate(value));
-        // Clear after calendar renders so navigation works freely
-        requestAnimationFrame(() => setOffsetDate(undefined));
+        shouldClearOffset.current = true;
       }
       setIsOpen(open);
       onOpenChange?.(open);
@@ -191,7 +197,6 @@ function RangePicker({
           mode="range"
           placeholder={placeholder}
           disabled={disabled}
-
           onClear={() => onChange?.({ start: null, end: null })}
         />
       }
@@ -272,7 +277,6 @@ function YearPicker({
           mode="year"
           placeholder={placeholder}
           disabled={disabled}
-
           onClear={() => onChange?.(null)}
         />
       }
@@ -360,7 +364,6 @@ function MonthPicker({
           mode="month"
           placeholder={placeholder}
           disabled={disabled}
-
           onClear={() => onChange?.(null)}
         />
       }
@@ -442,7 +445,6 @@ function MultiSelectPicker({
           mode="multiple"
           placeholder={placeholder}
           disabled={disabled}
-
           onClear={() => onChange?.([])}
         />
       }

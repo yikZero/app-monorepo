@@ -95,7 +95,6 @@ export const DatePickerTrigger = memo(
                 }
               : {
                   iconName: 'CalendarOutline' as const,
-                  onPress: () => {},
                 },
           ]}
         />

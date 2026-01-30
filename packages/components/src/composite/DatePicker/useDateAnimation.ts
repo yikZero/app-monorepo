@@ -64,18 +64,14 @@ export function useDateAnimation({
         return slideAnimation(-1);
       }
 
-      const newDate = new Date(
-        `${calendars[0].month} 1, ${calendars[0].year}`,
-      );
+      const newDate = new Date(`${calendars[0].month} 1, ${calendars[0].year}`);
       const currentDate = new Date(`${currentMonth} 1, ${calendars[0].year}`);
       return slideAnimation(newDate < currentDate ? -1 : 1);
     }
 
     if (listenTo === 'year') {
       if (currentYear === null) return INITIAL_ANIMATION;
-      const newDate = new Date(
-        `${calendars[0].month} 1, ${calendars[0].year}`,
-      );
+      const newDate = new Date(`${calendars[0].month} 1, ${calendars[0].year}`);
       const currentDate = new Date(`${calendars[0].month} 1, ${currentYear}`);
       return slideAnimation(newDate < currentDate ? -1 : 1);
     }

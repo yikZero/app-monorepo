@@ -39,8 +39,18 @@ function DayGrid({ calendarIndex }: { calendarIndex: number }) {
       <YStack animation="quick" {...prevNextAnimation()}>
         <Stack flexDirection="row" flexWrap="wrap" marginBottom="$1">
           {weekDays.map((day) => (
-            <Stack key={day} flexBasis="14.28%" height="$6" alignItems="center" justifyContent="center">
-              <SizableText size="$bodySm" color="$textSubdued" userSelect="none">
+            <Stack
+              key={day}
+              flexBasis="14.28%"
+              height="$6"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <SizableText
+                size="$bodySm"
+                color="$textSubdued"
+                userSelect="none"
+              >
                 {day}
               </SizableText>
             </Stack>
@@ -101,7 +111,7 @@ function MonthGrid({
             key={m.$date.toString()}
             flexBasis="31%"
             flexGrow={1}
-            height={36}
+            height="$9"
             alignItems="center"
             justifyContent="center"
             borderRadius="$2"
@@ -162,7 +172,7 @@ function YearGrid({
               key={y.$date.toString()}
               flexBasis="31%"
               flexGrow={1}
-              height={36}
+              height="$9"
               alignItems="center"
               justifyContent="center"
               borderRadius="$2"
@@ -216,10 +226,14 @@ function CalendarPanel({
   calendarIndex,
   showNav,
   mode,
+  onYearSelect,
+  onMonthSelect,
 }: {
   calendarIndex: number;
   showNav: 'both' | 'prev' | 'next' | 'none';
   mode: DatePickerMode;
+  onYearSelect?: (year: number) => void;
+  onMonthSelect?: (monthIndex: number) => void;
 }) {
   const { data, propGetters } = useDatePickerContext();
   const { calendars } = data;
@@ -274,61 +288,85 @@ function CalendarPanel({
 
       {viewMode === 'day' && <DayGrid calendarIndex={calendarIndex} />}
       {viewMode === 'month' && (
-        <MonthGrid onSelect={() => setViewMode('day')} />
+        <MonthGrid
+          onSelect={() => setViewMode('day')}
+          onMonthSelect={onMonthSelect}
+        />
       )}
       {viewMode === 'year' && (
-        <YearGrid onSelect={() => setViewMode('month')} />
+        <YearGrid
+          onSelect={() => setViewMode('month')}
+          onYearSelect={onYearSelect}
+        />
       )}
     </YStack>
   );
 }
 
-export const Calendar = memo(({
-  mode = 'date',
-  onYearSelect,
-  onMonthSelect,
-}: ICalendarProps) => {
-  const { data, propGetters } = useDatePickerContext();
-  const { calendars } = data;
-  const { addOffset, subtractOffset } = propGetters;
-  const media = useMedia();
+export const Calendar = memo(
+  ({ mode = 'date', onYearSelect, onMonthSelect }: ICalendarProps) => {
+    const { data, propGetters } = useDatePickerContext();
+    const { calendars } = data;
+    const { addOffset, subtractOffset } = propGetters;
+    const media = useMedia();
 
-  const { month, year } = calendars[0];
+    const { month, year } = calendars[0];
 
-  if (mode === 'month') {
+    if (mode === 'month') {
+      return (
+        <YStack>
+          <CalendarHeader
+            month={month}
+            year={year}
+            onPrevMonth={() => callOnClick(subtractOffset({ years: 1 }))}
+            onNextMonth={() => callOnClick(addOffset({ years: 1 }))}
+            mode={mode}
+          />
+          <MonthGrid onMonthSelect={onMonthSelect} />
+        </YStack>
+      );
+    }
+
+    if (mode === 'year') {
+      return (
+        <YStack>
+          <YearRangeHeader />
+          <YearGrid onYearSelect={onYearSelect} />
+        </YStack>
+      );
+    }
+
+    if (mode === 'range' && calendars.length > 1 && media.gtMd) {
+      return (
+        <Stack flexDirection="row" gap="$6">
+          <CalendarPanel
+            calendarIndex={0}
+            showNav="prev"
+            mode={mode}
+            onYearSelect={onYearSelect}
+            onMonthSelect={onMonthSelect}
+          />
+          <CalendarPanel
+            calendarIndex={1}
+            showNav="next"
+            mode={mode}
+            onYearSelect={onYearSelect}
+            onMonthSelect={onMonthSelect}
+          />
+        </Stack>
+      );
+    }
+
     return (
-      <YStack>
-        <CalendarHeader
-          month={month}
-          year={year}
-          onPrevMonth={() => callOnClick(subtractOffset({ years: 1 }))}
-          onNextMonth={() => callOnClick(addOffset({ years: 1 }))}
-          mode={mode}
-        />
-        <MonthGrid onMonthSelect={onMonthSelect} />
-      </YStack>
+      <CalendarPanel
+        calendarIndex={0}
+        showNav="both"
+        mode={mode}
+        onYearSelect={onYearSelect}
+        onMonthSelect={onMonthSelect}
+      />
     );
-  }
-
-  if (mode === 'year') {
-    return (
-      <YStack>
-        <YearRangeHeader />
-        <YearGrid onYearSelect={onYearSelect} />
-      </YStack>
-    );
-  }
-
-  if (mode === 'range' && calendars.length > 1 && media.gtMd) {
-    return (
-      <Stack flexDirection="row" gap="$6">
-        <CalendarPanel calendarIndex={0} showNav="prev" mode={mode} />
-        <CalendarPanel calendarIndex={1} showNav="next" mode={mode} />
-      </Stack>
-    );
-  }
-
-  return <CalendarPanel calendarIndex={0} showNav="both" mode={mode} />;
-});
+  },
+);
 
 Calendar.displayName = 'Calendar';
