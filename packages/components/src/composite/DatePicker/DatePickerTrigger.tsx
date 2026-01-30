@@ -1,12 +1,9 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 
-import { useMedia } from '../../hooks/useStyle';
-import { Icon } from '../../primitives/Icon';
-import { Stack } from '../../primitives';
 import { Input } from '../../forms/Input';
-import { Trigger } from '../../actions/Trigger';
+import { Stack } from '../../primitives';
 
 import type { IDatePickerTriggerProps, IDateRange } from './type';
 
@@ -51,7 +48,6 @@ const formatTriggerValue = (
     });
   }
 
-  // default date mode
   const date = value as Date;
   return formatDate(date, { hideYear: false, hideTimeForever: true });
 };
@@ -62,32 +58,48 @@ export const DatePickerTrigger = memo(
     mode,
     placeholder,
     disabled,
-    onPress,
+    onClear,
   }: IDatePickerTriggerProps) => {
-    const media = useMedia();
     const displayValue = formatTriggerValue(value, mode, placeholder);
-    const hasValue =
-      !!value && (Array.isArray(value) ? value.length > 0 : true);
+    const hasValue = (() => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (mode === 'range') {
+        const range = value as IDateRange;
+        return !!(range.start || range.end);
+      }
+      return true;
+    })();
+
+    const handleClearPress = useCallback(
+      (e: any) => {
+        e?.stopPropagation();
+        onClear?.();
+      },
+      [onClear],
+    );
 
     return (
-      <Trigger onPress={onPress} disabled={disabled}>
-        <Stack position="relative" flex={1}>
-          <Input
-            value={hasValue ? displayValue : ''}
-            disabled={disabled}
-            placeholder={placeholder || displayValue}
-            readonly
-            flex={1}
-          />
-          <Icon
-            name="CalendarOutline"
-            color="$iconSubdued"
-            position="absolute"
-            right="$3"
-            top={media.gtMd ? '$2' : '$3'}
-          />
-        </Stack>
-      </Trigger>
+      <Stack position="relative" flex={1}>
+        <Input
+          value={hasValue ? displayValue : ''}
+          disabled={disabled}
+          placeholder={placeholder || displayValue}
+          readonly
+          size="medium"
+          addOns={[
+            hasValue && onClear
+              ? {
+                  iconName: 'XCircleOutline' as const,
+                  onPress: handleClearPress,
+                }
+              : {
+                  iconName: 'CalendarOutline' as const,
+                  onPress: () => {},
+                },
+          ]}
+        />
+      </Stack>
     );
   },
 );

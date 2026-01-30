@@ -18,7 +18,6 @@ import type {
   IYearPickerProps,
 } from './type';
 
-// Basic DatePicker for single date selection
 function BasicDatePicker({
   value,
   onChange,
@@ -32,9 +31,7 @@ function BasicDatePicker({
 }: IDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedDates = useMemo(() => {
-    return value ? [value] : [];
-  }, [value]);
+  const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
@@ -59,10 +56,11 @@ function BasicDatePicker({
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      if (disabled && open) return;
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [onOpenChange],
+    [disabled, onOpenChange],
   );
 
   return (
@@ -76,27 +74,27 @@ function BasicDatePicker({
           mode="date"
           placeholder={placeholder}
           disabled={disabled}
-          onPress={() => !disabled && setIsOpen(true)}
+
+          onClear={() => onChange?.(null)}
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={320}>
+        <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
             <Calendar mode="date" />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
+        w: 300,
+        minWidth: 300,
         ...floatingPanelProps,
       }}
-      sheetProps={{
-        ...sheetProps,
-      }}
+      sheetProps={sheetProps}
     />
   );
 }
 
-// RangePicker for date range selection
 function RangePicker({
   value,
   onChange,
@@ -110,13 +108,11 @@ function RangePicker({
 }: IRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedDates = useMemo(() => {
-    if (!value) return [];
-    const dates: Date[] = [];
-    if (value.start) dates.push(value.start);
-    if (value.end) dates.push(value.end);
-    return dates;
-  }, [value]);
+  const selectedDates = useMemo(
+    () =>
+      [value?.start, value?.end].filter((d): d is Date => d instanceof Date),
+    [value],
+  );
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
@@ -133,6 +129,26 @@ function RangePicker({
     [onChange],
   );
 
+  const calcOffsetDate = useCallback((v?: IDateRange | null) => {
+    if (!v?.end) return undefined;
+    const endMonth = v.end.getMonth();
+    const startMonth = v.start?.getMonth();
+    const endYear = v.end.getFullYear();
+    const startYear = v.start?.getFullYear();
+    // Same month — left panel shows that month
+    if (startMonth === endMonth && startYear === endYear) {
+      return new Date(endYear, endMonth, 1);
+    }
+    // Different months — left panel shows end month - 1, right panel shows end month
+    const d = new Date(v.end);
+    d.setMonth(d.getMonth() - 1);
+    return d;
+  }, []);
+
+  const [offsetDate, setOffsetDate] = useState<Date | undefined>(() =>
+    calcOffsetDate(value),
+  );
+
   const config = useMemo(
     () => ({
       selectedDates,
@@ -145,16 +161,23 @@ function RangePicker({
       calendar: {
         offsets: [1],
       },
+      ...(offsetDate && { offsetDate }),
     }),
-    [selectedDates, handleDatesChange, minDate, maxDate],
+    [selectedDates, handleDatesChange, minDate, maxDate, offsetDate],
   );
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      if (disabled && open) return;
+      if (open) {
+        setOffsetDate(calcOffsetDate(value));
+        // Clear after calendar renders so navigation works freely
+        requestAnimationFrame(() => setOffsetDate(undefined));
+      }
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [onOpenChange],
+    [disabled, onOpenChange, value, calcOffsetDate],
   );
 
   return (
@@ -168,27 +191,27 @@ function RangePicker({
           mode="range"
           placeholder={placeholder}
           disabled={disabled}
-          onPress={() => !disabled && setIsOpen(true)}
+
+          onClear={() => onChange?.({ start: null, end: null })}
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={640}>
+        <YStack padding="$3">
           <DatePickerProvider config={config}>
             <Calendar mode="range" />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
+        w: 560,
+        maxWidth: 560,
         ...floatingPanelProps,
       }}
-      sheetProps={{
-        ...sheetProps,
-      }}
+      sheetProps={sheetProps}
     />
   );
 }
 
-// YearPicker for year selection
 function YearPicker({
   value,
   onChange,
@@ -202,9 +225,7 @@ function YearPicker({
 }: IYearPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedDates = useMemo(() => {
-    return value ? [value] : [];
-  }, [value]);
+  const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
@@ -233,10 +254,11 @@ function YearPicker({
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      if (disabled && open) return;
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [onOpenChange],
+    [disabled, onOpenChange],
   );
 
   return (
@@ -250,27 +272,34 @@ function YearPicker({
           mode="year"
           placeholder={placeholder}
           disabled={disabled}
-          onPress={() => !disabled && setIsOpen(true)}
+
+          onClear={() => onChange?.(null)}
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={320}>
+        <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
-            <Calendar mode="year" />
+            <Calendar
+              mode="year"
+              onYearSelect={(year) => {
+                const date = new Date(year, 0, 1);
+                onChange?.(date);
+                setIsOpen(false);
+              }}
+            />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
+        w: 300,
+        minWidth: 300,
         ...floatingPanelProps,
       }}
-      sheetProps={{
-        ...sheetProps,
-      }}
+      sheetProps={sheetProps}
     />
   );
 }
 
-// MonthPicker for month selection
 function MonthPicker({
   value,
   onChange,
@@ -284,9 +313,7 @@ function MonthPicker({
 }: IMonthPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedDates = useMemo(() => {
-    return value ? [value] : [];
-  }, [value]);
+  const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
@@ -315,10 +342,11 @@ function MonthPicker({
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      if (disabled && open) return;
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [onOpenChange],
+    [disabled, onOpenChange],
   );
 
   return (
@@ -332,27 +360,37 @@ function MonthPicker({
           mode="month"
           placeholder={placeholder}
           disabled={disabled}
-          onPress={() => !disabled && setIsOpen(true)}
+
+          onClear={() => onChange?.(null)}
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={320}>
+        <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
-            <Calendar mode="month" />
+            <Calendar
+              mode="month"
+              onMonthSelect={(monthIndex) => {
+                const currentYear = value
+                  ? value.getFullYear()
+                  : new Date().getFullYear();
+                const date = new Date(currentYear, monthIndex, 1);
+                onChange?.(date);
+                setIsOpen(false);
+              }}
+            />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
+        w: 300,
+        minWidth: 300,
         ...floatingPanelProps,
       }}
-      sheetProps={{
-        ...sheetProps,
-      }}
+      sheetProps={sheetProps}
     />
   );
 }
 
-// MultiSelectPicker for multiple date selection
 function MultiSelectPicker({
   value = [],
   onChange,
@@ -367,9 +405,7 @@ function MultiSelectPicker({
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDatesChange = useCallback(
-    (dates: Date[]) => {
-      onChange?.(dates);
-    },
+    (dates: Date[]) => onChange?.(dates),
     [onChange],
   );
 
@@ -388,10 +424,11 @@ function MultiSelectPicker({
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
+      if (disabled && open) return;
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [onOpenChange],
+    [disabled, onOpenChange],
   );
 
   return (
@@ -405,22 +442,23 @@ function MultiSelectPicker({
           mode="multiple"
           placeholder={placeholder}
           disabled={disabled}
-          onPress={() => !disabled && setIsOpen(true)}
+
+          onClear={() => onChange?.([])}
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={320}>
+        <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
             <Calendar mode="multiple" />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
+        w: 300,
+        minWidth: 300,
         ...floatingPanelProps,
       }}
-      sheetProps={{
-        ...sheetProps,
-      }}
+      sheetProps={sheetProps}
     />
   );
 }
@@ -430,7 +468,6 @@ export const DatePicker = withStaticProperties(BasicDatePicker, {
   Year: YearPicker,
   Month: MonthPicker,
   MultiSelect: MultiSelectPicker,
-  // Export internal components for advanced usage
   Calendar,
   Trigger: DatePickerTrigger,
 });

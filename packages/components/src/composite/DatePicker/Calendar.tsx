@@ -1,12 +1,16 @@
 import { useDatePickerContext } from '@rehookify/datepicker';
-import { memo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
-import { SizableText, Stack, YStack } from '../../primitives';
+import { useMedia } from '../../hooks';
+import { AnimatePresence, SizableText, Stack, YStack } from '../../primitives';
 
 import { CalendarHeader } from './CalendarHeader';
 import { DayCell } from './DayCell';
+import { useDateAnimation } from './useDateAnimation';
 
 import type { DatePickerMode } from './type';
+
+type ViewMode = 'day' | 'month' | 'year';
 
 function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
   d.onClick?.();
@@ -14,132 +18,37 @@ function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
 
 interface ICalendarProps {
   mode?: DatePickerMode;
+  onYearSelect?: (year: number) => void;
+  onMonthSelect?: (monthIndex: number) => void;
 }
 
-export const Calendar = memo(({ mode = 'date' }: ICalendarProps) => {
+function DayGrid({ calendarIndex }: { calendarIndex: number }) {
   const { data, propGetters } = useDatePickerContext();
-  const { calendars, weekDays, months, years } = data;
-  const { addOffset, subtractOffset, dayButton, monthButton, yearButton } =
-    propGetters;
+  const { calendars, weekDays } = data;
+  const { dayButton } = propGetters;
+  const cal = calendars[calendarIndex];
 
-  const { month, year } = calendars[0];
+  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
+    listenTo: 'month',
+  });
 
-  const handlePrevMonth = () => {
-    callOnClick(subtractOffset({ months: 1 }));
-  };
+  if (!cal) return null;
 
-  const handleNextMonth = () => {
-    callOnClick(addOffset({ months: 1 }));
-  };
-
-  // Render month grid for month picker
-  if (mode === 'month') {
-    return (
-      <YStack>
-        <CalendarHeader
-          month={month}
-          year={year}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          mode={mode}
-        />
-        <Stack flexWrap="wrap" flexDirection="row" gap="$2" padding="$2">
-          {months.map((m) => (
-            <Stack
-              key={m.$date.toString()}
-              flexBasis="31%"
-              flexGrow={1}
-              height={48}
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="$2"
-              bg={m.active ? '$bgPrimary' : 'transparent'}
-              hoverStyle={{
-                bg: m.active ? '$bgPrimary' : '$bgHover',
-              }}
-              onPress={() => callOnClick(monthButton(m))}
-            >
-              <SizableText
-                size="$bodyMd"
-                color={m.active ? '$textInverse' : '$text'}
-              >
-                {m.month}
-              </SizableText>
-            </Stack>
-          ))}
-        </Stack>
-      </YStack>
-    );
-  }
-
-  // Render year grid for year picker
-  if (mode === 'year') {
-    return (
-      <YStack>
-        <CalendarHeader
-          month={month}
-          year={year}
-          onPrevMonth={() => callOnClick(subtractOffset({ years: 12 }))}
-          onNextMonth={() => callOnClick(addOffset({ years: 12 }))}
-          mode={mode}
-        />
-        <Stack flexWrap="wrap" flexDirection="row" gap="$2" padding="$2">
-          {years.map((y) => (
-            <Stack
-              key={y.$date.toString()}
-              flexBasis="31%"
-              flexGrow={1}
-              height={48}
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="$2"
-              bg={y.active ? '$bgPrimary' : 'transparent'}
-              hoverStyle={{
-                bg: y.active ? '$bgPrimary' : '$bgHover',
-              }}
-              onPress={() => callOnClick(yearButton(y))}
-            >
-              <SizableText
-                size="$bodyMd"
-                color={y.active ? '$textInverse' : '$text'}
-              >
-                {y.year}
-              </SizableText>
-            </Stack>
-          ))}
-        </Stack>
-      </YStack>
-    );
-  }
-
-  const renderCalendarPanel = (calendarIndex: number, showNav: 'both' | 'prev' | 'next' | 'none') => {
-    const cal = calendars[calendarIndex];
-    if (!cal) return null;
-
-    return (
-      <YStack flex={1}>
-        <CalendarHeader
-          month={cal.month}
-          year={cal.year}
-          onPrevMonth={showNav === 'both' || showNav === 'prev' ? handlePrevMonth : undefined}
-          onNextMonth={showNav === 'both' || showNav === 'next' ? handleNextMonth : undefined}
-          mode={mode}
-        />
-        {/* Week days header */}
-        <Stack flexDirection="row" flexWrap="wrap" marginBottom="$2">
+  return (
+    <AnimatePresence key={prevNextAnimationKey}>
+      <YStack animation="quick" {...prevNextAnimation()}>
+        <Stack flexDirection="row" flexWrap="wrap" marginBottom="$1">
           {weekDays.map((day) => (
-            <Stack key={day} flexBasis="14.28%" alignItems="center">
-              <SizableText size="$bodySm" color="$textSubdued">
+            <Stack key={day} flexBasis="14.28%" height="$6" alignItems="center" justifyContent="center">
+              <SizableText size="$bodySm" color="$textSubdued" userSelect="none">
                 {day}
               </SizableText>
             </Stack>
           ))}
         </Stack>
-        {/* Days grid */}
         <Stack flexWrap="wrap" flexDirection="row" overflow="hidden">
           {cal.days.map((day) => {
             const dateStr = day.$date.toString();
-
             return (
               <DayCell
                 key={dateStr}
@@ -158,21 +67,268 @@ export const Calendar = memo(({ mode = 'date' }: ICalendarProps) => {
           })}
         </Stack>
       </YStack>
-    );
-  };
+    </AnimatePresence>
+  );
+}
 
-  // Render dual calendar for range mode
-  if (mode === 'range' && calendars.length > 1) {
+function MonthGrid({
+  onSelect,
+  onMonthSelect,
+}: {
+  onSelect?: () => void;
+  onMonthSelect?: (monthIndex: number) => void;
+}) {
+  const { data, propGetters } = useDatePickerContext();
+  const { months } = data;
+  const { monthButton } = propGetters;
+
+  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
+    listenTo: 'year',
+  });
+
+  return (
+    <AnimatePresence key={prevNextAnimationKey}>
+      <Stack
+        flexWrap="wrap"
+        flexDirection="row"
+        gap="$2"
+        padding="$2"
+        animation="quick"
+        {...prevNextAnimation()}
+      >
+        {months.map((m) => (
+          <Stack
+            key={m.$date.toString()}
+            flexBasis="31%"
+            flexGrow={1}
+            height={36}
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="$2"
+            bg={m.active ? '$bgPrimary' : 'transparent'}
+            hoverStyle={{
+              bg: m.active ? '$bgPrimary' : '$bgHover',
+            }}
+            onPress={() => {
+              callOnClick(monthButton(m));
+              onMonthSelect?.(m.$date.getMonth());
+              onSelect?.();
+            }}
+          >
+            <SizableText
+              size="$bodyMd"
+              color={m.active ? '$textInverse' : '$text'}
+              userSelect="none"
+            >
+              {m.month}
+            </SizableText>
+          </Stack>
+        ))}
+      </Stack>
+    </AnimatePresence>
+  );
+}
+
+function YearGrid({
+  onSelect,
+  onYearSelect,
+}: {
+  onSelect?: () => void;
+  onYearSelect?: (year: number) => void;
+}) {
+  const { data, propGetters } = useDatePickerContext();
+  const { years, calendars } = data;
+  const { yearButton } = propGetters;
+  const selectedYear = calendars[0].year;
+
+  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
+    listenTo: 'years',
+  });
+
+  return (
+    <AnimatePresence key={prevNextAnimationKey}>
+      <Stack
+        flexWrap="wrap"
+        flexDirection="row"
+        gap="$2"
+        padding="$2"
+        animation="quick"
+        {...prevNextAnimation()}
+      >
+        {years.map((y) => {
+          const isActive = y.year === Number(selectedYear);
+          return (
+            <Stack
+              key={y.$date.toString()}
+              flexBasis="31%"
+              flexGrow={1}
+              height={36}
+              alignItems="center"
+              justifyContent="center"
+              borderRadius="$2"
+              bg={isActive ? '$bgPrimary' : 'transparent'}
+              hoverStyle={{
+                bg: isActive ? '$bgPrimary' : '$bgHover',
+              }}
+              onPress={() => {
+                callOnClick(yearButton(y));
+                onYearSelect?.(y.year);
+                onSelect?.();
+              }}
+            >
+              <SizableText
+                size="$bodyMd"
+                color={isActive ? '$textInverse' : '$text'}
+                userSelect="none"
+              >
+                {y.year}
+              </SizableText>
+            </Stack>
+          );
+        })}
+      </Stack>
+    </AnimatePresence>
+  );
+}
+
+function YearRangeHeader() {
+  const { data, propGetters } = useDatePickerContext();
+  const { years } = data;
+  const { previousYearsButton, nextYearsButton } = propGetters;
+
+  const yearRange = useMemo(
+    () => `${years[0].year} - ${years[years.length - 1].year}`,
+    [years],
+  );
+
+  return (
+    <CalendarHeader
+      month=""
+      year={yearRange}
+      onPrevMonth={() => callOnClick(previousYearsButton())}
+      onNextMonth={() => callOnClick(nextYearsButton())}
+      mode="year"
+    />
+  );
+}
+
+function CalendarPanel({
+  calendarIndex,
+  showNav,
+  mode,
+}: {
+  calendarIndex: number;
+  showNav: 'both' | 'prev' | 'next' | 'none';
+  mode: DatePickerMode;
+}) {
+  const { data, propGetters } = useDatePickerContext();
+  const { calendars } = data;
+  const { addOffset, subtractOffset } = propGetters;
+  const cal = calendars[calendarIndex];
+
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
+
+  const handlePrevMonth = useCallback(() => {
+    if (viewMode === 'day') {
+      callOnClick(subtractOffset({ months: 1 }));
+    } else if (viewMode === 'month') {
+      callOnClick(subtractOffset({ years: 1 }));
+    }
+  }, [viewMode, subtractOffset]);
+
+  const handleNextMonth = useCallback(() => {
+    if (viewMode === 'day') {
+      callOnClick(addOffset({ months: 1 }));
+    } else if (viewMode === 'month') {
+      callOnClick(addOffset({ years: 1 }));
+    }
+  }, [viewMode, addOffset]);
+
+  if (!cal) return null;
+
+  return (
+    <YStack flex={1}>
+      {viewMode === 'year' ? (
+        <YearRangeHeader />
+      ) : (
+        <CalendarHeader
+          month={viewMode === 'day' ? cal.month : ''}
+          year={cal.year}
+          onPrevMonth={
+            showNav === 'both' || showNav === 'prev'
+              ? handlePrevMonth
+              : undefined
+          }
+          onNextMonth={
+            showNav === 'both' || showNav === 'next'
+              ? handleNextMonth
+              : undefined
+          }
+          onMonthClick={
+            viewMode === 'day' ? () => setViewMode('month') : undefined
+          }
+          onYearClick={() => setViewMode('year')}
+          mode={mode}
+        />
+      )}
+
+      {viewMode === 'day' && <DayGrid calendarIndex={calendarIndex} />}
+      {viewMode === 'month' && (
+        <MonthGrid onSelect={() => setViewMode('day')} />
+      )}
+      {viewMode === 'year' && (
+        <YearGrid onSelect={() => setViewMode('month')} />
+      )}
+    </YStack>
+  );
+}
+
+export const Calendar = memo(({
+  mode = 'date',
+  onYearSelect,
+  onMonthSelect,
+}: ICalendarProps) => {
+  const { data, propGetters } = useDatePickerContext();
+  const { calendars } = data;
+  const { addOffset, subtractOffset } = propGetters;
+  const media = useMedia();
+
+  const { month, year } = calendars[0];
+
+  if (mode === 'month') {
     return (
-      <Stack flexDirection="row" gap="$4">
-        {renderCalendarPanel(0, 'prev')}
-        {renderCalendarPanel(1, 'next')}
+      <YStack>
+        <CalendarHeader
+          month={month}
+          year={year}
+          onPrevMonth={() => callOnClick(subtractOffset({ years: 1 }))}
+          onNextMonth={() => callOnClick(addOffset({ years: 1 }))}
+          mode={mode}
+        />
+        <MonthGrid onMonthSelect={onMonthSelect} />
+      </YStack>
+    );
+  }
+
+  if (mode === 'year') {
+    return (
+      <YStack>
+        <YearRangeHeader />
+        <YearGrid onYearSelect={onYearSelect} />
+      </YStack>
+    );
+  }
+
+  if (mode === 'range' && calendars.length > 1 && media.gtMd) {
+    return (
+      <Stack flexDirection="row" gap="$6">
+        <CalendarPanel calendarIndex={0} showNav="prev" mode={mode} />
+        <CalendarPanel calendarIndex={1} showNav="next" mode={mode} />
       </Stack>
     );
   }
 
-  // Render single calendar for date/multiple picker
-  return renderCalendarPanel(0, 'both') as JSX.Element;
+  return <CalendarPanel calendarIndex={0} showNav="both" mode={mode} />;
 });
 
 Calendar.displayName = 'Calendar';

@@ -4,7 +4,7 @@ import { SizableText, Stack } from '../../primitives';
 
 import type { IDayCellProps } from './type';
 
-const CELL_SIZE = '$10'; // 40px
+const CELL_SIZE = '$8'; // 32px
 
 export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
   const handlePress = () => {
@@ -14,50 +14,41 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
   };
 
   const isInRange =
-    day.range === 'in-range' || day.range === 'will-be-in-range';
-  const isRangeStart = day.range === 'range-start';
-  const isRangeEnd = day.range === 'range-end';
-  // Outer container background — fills entire cell width for continuous range
-  const getOuterBg = () => {
-    if (isInRange) return '$bgStrong';
-    if (isRangeStart) return '$bgStrong';
-    if (isRangeEnd) return '$bgStrong';
-    return 'transparent';
-  };
+    day.inCurrentMonth &&
+    (day.range === 'in-range' || day.range === 'will-be-in-range');
+  const isRangeStart = day.inCurrentMonth && day.range === 'range-start';
+  const isRangeEnd = day.inCurrentMonth && day.range === 'range-end';
+  const hasRangeHighlight = isInRange || isRangeStart || isRangeEnd;
 
-  const getOuterBorderRadius = () => {
-    if (isRangeStart) {
-      return {
+  const outerBorderRadius = isRangeStart
+    ? {
         borderTopLeftRadius: '$2' as const,
         borderBottomLeftRadius: '$2' as const,
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
-      };
-    }
-    if (isRangeEnd) {
-      return {
-        borderTopRightRadius: '$2' as const,
-        borderBottomRightRadius: '$2' as const,
-        borderTopLeftRadius: 0,
-        borderBottomLeftRadius: 0,
-      };
-    }
-    return {};
-  };
+      }
+    : isRangeEnd
+      ? {
+          borderTopRightRadius: '$2' as const,
+          borderBottomRightRadius: '$2' as const,
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0,
+        }
+      : {};
 
-  // Inner circle background — only for selected dates
-  const getInnerBg = () => {
-    if (day.disabled) return 'transparent';
-    if (day.selected) return '$bgPrimary';
-    return 'transparent';
-  };
+  const isSelected = day.selected && day.inCurrentMonth;
 
-  const getTextColor = () => {
-    if (day.disabled) return '$textDisabled';
-    if (day.selected) return '$textInverse';
-    if (!day.inCurrentMonth) return '$textSubdued';
-    return '$text';
-  };
+  const innerBg = day.disabled
+    ? '$bgDisabled'
+    : isSelected
+      ? '$bgPrimary'
+      : 'transparent';
+
+  const textColor = day.disabled || !day.inCurrentMonth
+    ? '$textDisabled'
+    : isSelected
+      ? '$textInverse'
+      : '$text';
 
   return (
     <Stack
@@ -65,8 +56,8 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
       alignItems="center"
       justifyContent="center"
       height={CELL_SIZE}
-      bg={getOuterBg()}
-      {...getOuterBorderRadius()}
+      bg={hasRangeHighlight ? '$bgStrong' : 'transparent'}
+      {...outerBorderRadius}
     >
       <Stack
         width={CELL_SIZE}
@@ -74,20 +65,32 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
         alignItems="center"
         justifyContent="center"
         borderRadius="$2"
-        bg={getInnerBg()}
+        {...(isRangeStart
+          ? {
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
+            }
+          : {})}
+        {...(isRangeEnd
+          ? {
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+            }
+          : {})}
+        bg={innerBg}
         opacity={day.disabled ? 0.4 : 1}
         hoverStyle={
           day.disabled
             ? {}
             : {
-                bg: day.selected ? getInnerBg() : '$bgHover',
+                bg: isSelected ? innerBg : '$bgHover',
               }
         }
         onPress={handlePress}
       >
         <SizableText
           size="$bodyMd"
-          color={getTextColor()}
+          color={textColor}
           fontWeight={day.active ? '600' : '400'}
           userSelect="none"
         >

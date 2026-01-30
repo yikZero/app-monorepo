@@ -38,26 +38,39 @@ export const CalendarHeader = memo(
         <XStack gap="$1">
           {showMonthYear ? (
             <>
+              {month ? (
+                <SizableText
+                  size="$bodyLgMedium"
+                  color="$text"
+                  cursor="default"
+                  userSelect="none"
+                  onPress={onMonthClick}
+                  hoverStyle={
+                    onMonthClick ? { color: '$textSubdued' } : undefined
+                  }
+                >
+                  {month}
+                </SizableText>
+              ) : null}
               <SizableText
                 size="$bodyLgMedium"
                 color="$text"
-                onPress={onMonthClick}
-                hoverStyle={{ color: '$textSubdued' }}
-              >
-                {month}
-              </SizableText>
-              <SizableText
-                size="$bodyLgMedium"
-                color="$text"
+                cursor="default"
+                userSelect="none"
                 onPress={onYearClick}
-                hoverStyle={{ color: '$textSubdued' }}
+                hoverStyle={onYearClick ? { color: '$textSubdued' } : undefined}
               >
                 {year}
               </SizableText>
             </>
           ) : (
-            <SizableText size="$bodyLgMedium" color="$text">
-              {mode === 'year' ? `${year}s` : year}
+            <SizableText
+              size="$bodyLgMedium"
+              color="$text"
+              cursor="default"
+              userSelect="none"
+            >
+              {year}
             </SizableText>
           )}
         </XStack>

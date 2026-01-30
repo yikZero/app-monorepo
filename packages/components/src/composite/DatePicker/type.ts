@@ -61,6 +61,7 @@ export interface IDatePickerTriggerProps {
   placeholder?: string;
   disabled?: boolean;
   onPress?: () => void;
+  onClear?: () => void;
 }
 
 export interface IDayCellProps {
