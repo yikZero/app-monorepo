@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { SizableText, XStack } from '../../primitives';
+import { SizableText, Stack, XStack } from '../../primitives';
 import { IconButton } from '../../actions/IconButton';
 
 import type { ICalendarHeaderProps } from './type';
@@ -25,12 +25,16 @@ export const CalendarHeader = memo(
         paddingHorizontal="$2"
         marginBottom="$3"
       >
-        <IconButton
-          icon="ChevronLeftSmallOutline"
-          variant="tertiary"
-          size="small"
-          onPress={onPrevMonth}
-        />
+        {onPrevMonth ? (
+          <IconButton
+            icon="ChevronLeftSmallOutline"
+            variant="tertiary"
+            size="small"
+            onPress={onPrevMonth}
+          />
+        ) : (
+          <Stack width="$8" />
+        )}
         <XStack gap="$1">
           {showMonthYear ? (
             <>
@@ -38,8 +42,7 @@ export const CalendarHeader = memo(
                 size="$bodyLgMedium"
                 color="$text"
                 onPress={onMonthClick}
-                cursor="pointer"
-                hoverStyle={{ color: '$textHover' }}
+                hoverStyle={{ color: '$textSubdued' }}
               >
                 {month}
               </SizableText>
@@ -47,8 +50,7 @@ export const CalendarHeader = memo(
                 size="$bodyLgMedium"
                 color="$text"
                 onPress={onYearClick}
-                cursor="pointer"
-                hoverStyle={{ color: '$textHover' }}
+                hoverStyle={{ color: '$textSubdued' }}
               >
                 {year}
               </SizableText>
@@ -59,12 +61,16 @@ export const CalendarHeader = memo(
             </SizableText>
           )}
         </XStack>
-        <IconButton
-          icon="ChevronRightSmallOutline"
-          variant="tertiary"
-          size="small"
-          onPress={onNextMonth}
-        />
+        {onNextMonth ? (
+          <IconButton
+            icon="ChevronRightSmallOutline"
+            variant="tertiary"
+            size="small"
+            onPress={onNextMonth}
+          />
+        ) : (
+          <Stack width="$8" />
+        )}
       </XStack>
     );
   },

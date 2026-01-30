@@ -142,6 +142,9 @@ function RangePicker({
         minDate,
         maxDate,
       },
+      calendar: {
+        offsets: [1],
+      },
     }),
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
@@ -169,7 +172,7 @@ function RangePicker({
         />
       }
       renderContent={
-        <YStack padding="$4" minWidth={320}>
+        <YStack padding="$4" minWidth={640}>
           <DatePickerProvider config={config}>
             <Calendar mode="range" />
           </DatePickerProvider>

@@ -2,8 +2,10 @@ import { memo } from 'react';
 
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 
+import { useMedia } from '../../hooks/useStyle';
 import { Icon } from '../../primitives/Icon';
-import { SizableText, XStack } from '../../primitives';
+import { Stack } from '../../primitives';
+import { Input } from '../../forms/Input';
 import { Trigger } from '../../actions/Trigger';
 
 import type { IDatePickerTriggerProps, IDateRange } from './type';
@@ -62,38 +64,29 @@ export const DatePickerTrigger = memo(
     disabled,
     onPress,
   }: IDatePickerTriggerProps) => {
+    const media = useMedia();
     const displayValue = formatTriggerValue(value, mode, placeholder);
+    const hasValue =
+      !!value && (Array.isArray(value) ? value.length > 0 : true);
 
     return (
       <Trigger onPress={onPress} disabled={disabled}>
-        <XStack
-          alignItems="center"
-          justifyContent="space-between"
-          paddingHorizontal="$3"
-          paddingVertical="$2.5"
-          borderRadius="$2"
-          borderWidth={1}
-          borderColor="$borderColor"
-          bg="$bg"
-          minWidth={200}
-          hoverStyle={
-            disabled
-              ? {}
-              : {
-                  borderColor: '$borderColorHover',
-                }
-          }
-          opacity={disabled ? 0.4 : 1}
-          cursor={disabled ? 'not-allowed' : 'pointer'}
-        >
-          <SizableText
-            size="$bodyMd"
-            color={value ? '$text' : '$textPlaceholder'}
-          >
-            {displayValue}
-          </SizableText>
-          <Icon name="Calendar3Outline" size="$5" color="$iconSubdued" />
-        </XStack>
+        <Stack position="relative" flex={1}>
+          <Input
+            value={hasValue ? displayValue : ''}
+            disabled={disabled}
+            placeholder={placeholder || displayValue}
+            readonly
+            flex={1}
+          />
+          <Icon
+            name="CalendarOutline"
+            color="$iconSubdued"
+            position="absolute"
+            right="$3"
+            top={media.gtMd ? '$2' : '$3'}
+          />
+        </Stack>
       </Trigger>
     );
   },

@@ -86,8 +86,8 @@ export interface IDayCellProps {
 export interface ICalendarHeaderProps {
   month: string;
   year: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
   onMonthClick?: () => void;
   onYearClick?: () => void;
   mode?: DatePickerMode;
