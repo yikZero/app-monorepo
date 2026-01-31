@@ -1,5 +1,5 @@
 import { DatePickerProvider } from '@rehookify/datepicker';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { withStaticProperties } from '@onekeyhq/components/src/shared/tamagui';
 
@@ -24,6 +24,8 @@ function BasicDatePicker({
   onOpenChange,
   disabled,
   placeholder = 'Select date',
+  title = 'Select Date',
+  renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
@@ -65,17 +67,27 @@ function BasicDatePicker({
 
   return (
     <Popover
-      title="Select Date"
+      title={title}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
-        <DatePickerTrigger
-          value={value}
-          mode="date"
-          placeholder={placeholder}
-          disabled={disabled}
-          onClear={() => onChange?.(null)}
-        />
+        renderTrigger ? (
+          renderTrigger({
+            value,
+            mode: 'date',
+            placeholder,
+            disabled,
+            onClear: () => onChange?.(null),
+          })
+        ) : (
+          <DatePickerTrigger
+            value={value}
+            mode="date"
+            placeholder={placeholder}
+            disabled={disabled}
+            onClear={() => onChange?.(null)}
+          />
+        )
       }
       renderContent={
         <YStack padding="$3" minWidth={280}>
@@ -100,6 +112,8 @@ function RangePicker({
   onOpenChange,
   disabled,
   placeholder = 'Select date range',
+  title = 'Select Date Range',
+  renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
@@ -128,34 +142,6 @@ function RangePicker({
     [onChange],
   );
 
-  const calcOffsetDate = useCallback((v?: IDateRange | null) => {
-    if (!v?.end) return undefined;
-    const endMonth = v.end.getMonth();
-    const startMonth = v.start?.getMonth();
-    const endYear = v.end.getFullYear();
-    const startYear = v.start?.getFullYear();
-    // Same month — left panel shows that month
-    if (startMonth === endMonth && startYear === endYear) {
-      return new Date(endYear, endMonth, 1);
-    }
-    // Different months — left panel shows end month - 1, right panel shows end month
-    const d = new Date(v.end);
-    d.setMonth(d.getMonth() - 1);
-    return d;
-  }, []);
-
-  const [offsetDate, setOffsetDate] = useState<Date | undefined>(() =>
-    calcOffsetDate(value),
-  );
-  const shouldClearOffset = useRef(false);
-
-  useEffect(() => {
-    if (shouldClearOffset.current) {
-      shouldClearOffset.current = false;
-      setOffsetDate(undefined);
-    }
-  }, [offsetDate]);
-
   const config = useMemo(
     () => ({
       selectedDates,
@@ -168,42 +154,47 @@ function RangePicker({
       calendar: {
         offsets: [1],
       },
-      ...(offsetDate && { offsetDate }),
     }),
-    [selectedDates, handleDatesChange, minDate, maxDate, offsetDate],
+    [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (disabled && open) return;
-      if (open) {
-        setOffsetDate(calcOffsetDate(value));
-        shouldClearOffset.current = true;
-      }
       setIsOpen(open);
       onOpenChange?.(open);
     },
-    [disabled, onOpenChange, value, calcOffsetDate],
+    [disabled, onOpenChange],
   );
 
   return (
     <Popover
-      title="Select Date Range"
+      title={title}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
-        <DatePickerTrigger
-          value={value}
-          mode="range"
-          placeholder={placeholder}
-          disabled={disabled}
-          onClear={() => onChange?.({ start: null, end: null })}
-        />
+        renderTrigger ? (
+          renderTrigger({
+            value,
+            mode: 'range',
+            placeholder,
+            disabled,
+            onClear: () => onChange?.({ start: null, end: null }),
+          })
+        ) : (
+          <DatePickerTrigger
+            value={value}
+            mode="range"
+            placeholder={placeholder}
+            disabled={disabled}
+            onClear={() => onChange?.({ start: null, end: null })}
+          />
+        )
       }
       renderContent={
         <YStack padding="$3">
           <DatePickerProvider config={config}>
-            <Calendar mode="range" />
+            <Calendar mode="range" minDate={minDate} maxDate={maxDate} />
           </DatePickerProvider>
         </YStack>
       }
@@ -223,6 +214,8 @@ function YearPicker({
   onOpenChange,
   disabled,
   placeholder = 'Select year',
+  title = 'Select Year',
+  renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
@@ -268,17 +261,27 @@ function YearPicker({
 
   return (
     <Popover
-      title="Select Year"
+      title={title}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
-        <DatePickerTrigger
-          value={value}
-          mode="year"
-          placeholder={placeholder}
-          disabled={disabled}
-          onClear={() => onChange?.(null)}
-        />
+        renderTrigger ? (
+          renderTrigger({
+            value,
+            mode: 'year',
+            placeholder,
+            disabled,
+            onClear: () => onChange?.(null),
+          })
+        ) : (
+          <DatePickerTrigger
+            value={value}
+            mode="year"
+            placeholder={placeholder}
+            disabled={disabled}
+            onClear={() => onChange?.(null)}
+          />
+        )
       }
       renderContent={
         <YStack padding="$3" minWidth={280}>
@@ -310,6 +313,8 @@ function MonthPicker({
   onOpenChange,
   disabled,
   placeholder = 'Select month',
+  title = 'Select Month',
+  renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
@@ -355,17 +360,27 @@ function MonthPicker({
 
   return (
     <Popover
-      title="Select Month"
+      title={title}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
-        <DatePickerTrigger
-          value={value}
-          mode="month"
-          placeholder={placeholder}
-          disabled={disabled}
-          onClear={() => onChange?.(null)}
-        />
+        renderTrigger ? (
+          renderTrigger({
+            value,
+            mode: 'month',
+            placeholder,
+            disabled,
+            onClear: () => onChange?.(null),
+          })
+        ) : (
+          <DatePickerTrigger
+            value={value}
+            mode="month"
+            placeholder={placeholder}
+            disabled={disabled}
+            onClear={() => onChange?.(null)}
+          />
+        )
       }
       renderContent={
         <YStack padding="$3" minWidth={280}>
@@ -400,6 +415,8 @@ function MultiSelectPicker({
   onOpenChange,
   disabled,
   placeholder = 'Select dates',
+  title = 'Select Dates',
+  renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
@@ -436,17 +453,27 @@ function MultiSelectPicker({
 
   return (
     <Popover
-      title="Select Dates"
+      title={title}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
-        <DatePickerTrigger
-          value={value}
-          mode="multiple"
-          placeholder={placeholder}
-          disabled={disabled}
-          onClear={() => onChange?.([])}
-        />
+        renderTrigger ? (
+          renderTrigger({
+            value,
+            mode: 'multiple',
+            placeholder,
+            disabled,
+            onClear: () => onChange?.([]),
+          })
+        ) : (
+          <DatePickerTrigger
+            value={value}
+            mode="multiple"
+            placeholder={placeholder}
+            disabled={disabled}
+            onClear={() => onChange?.([])}
+          />
+        )
       }
       renderContent={
         <YStack padding="$3" minWidth={280}>
@@ -474,11 +501,4 @@ export const DatePicker = withStaticProperties(BasicDatePicker, {
   Trigger: DatePickerTrigger,
 });
 
-export type {
-  IDatePickerProps,
-  IRangePickerProps,
-  IYearPickerProps,
-  IMonthPickerProps,
-  IMultiSelectPickerProps,
-  IDateRange,
-};
+export * from './type';

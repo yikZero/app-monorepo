@@ -14,6 +14,8 @@ export const CalendarHeader = memo(
     onMonthClick,
     onYearClick,
     mode,
+    isPrevDisabled,
+    isNextDisabled,
   }: ICalendarHeaderProps) => {
     const showMonthYear =
       mode === 'date' || mode === 'range' || mode === 'multiple';
@@ -30,6 +32,7 @@ export const CalendarHeader = memo(
             icon="ChevronLeftSmallOutline"
             variant="tertiary"
             size="small"
+            disabled={isPrevDisabled}
             onPress={onPrevMonth}
           />
         ) : (
@@ -79,6 +82,7 @@ export const CalendarHeader = memo(
             icon="ChevronRightSmallOutline"
             variant="tertiary"
             size="small"
+            disabled={isNextDisabled}
             onPress={onNextMonth}
           />
         ) : (

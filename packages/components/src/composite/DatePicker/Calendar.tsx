@@ -20,6 +20,8 @@ interface ICalendarProps {
   mode?: DatePickerMode;
   onYearSelect?: (year: number) => void;
   onMonthSelect?: (monthIndex: number) => void;
+  minDate?: Date;
+  maxDate?: Date;
 }
 
 function DayGrid({ calendarIndex }: { calendarIndex: number }) {
@@ -222,25 +224,73 @@ function YearRangeHeader() {
   );
 }
 
+function useNavDisabled(calendarIndex: number, minDate?: Date, maxDate?: Date) {
+  const { data } = useDatePickerContext();
+  const { calendars } = data;
+  const cal = calendars[calendarIndex];
+
+  return useMemo(() => {
+    if (!cal) return { isPrevDisabled: false, isNextDisabled: false };
+
+    const calYear = Number(cal.year);
+    const calMonthDate = new Date(`${cal.month} 1, ${cal.year}`);
+    const calMonth = calMonthDate.getMonth();
+
+    let isPrevDisabled = false;
+    let isNextDisabled = false;
+
+    if (minDate) {
+      const minYear = minDate.getFullYear();
+      const minMonth = minDate.getMonth();
+      if (calYear < minYear || (calYear === minYear && calMonth <= minMonth)) {
+        isPrevDisabled = true;
+      }
+    }
+
+    if (maxDate) {
+      const maxYear = maxDate.getFullYear();
+      const maxMonth = maxDate.getMonth();
+      if (calYear > maxYear || (calYear === maxYear && calMonth >= maxMonth)) {
+        isNextDisabled = true;
+      }
+    }
+
+    return { isPrevDisabled, isNextDisabled };
+  }, [cal, minDate, maxDate]);
+}
+
 function CalendarPanel({
   calendarIndex,
   showNav,
   mode,
   onYearSelect,
   onMonthSelect,
+  minDate,
+  maxDate,
 }: {
   calendarIndex: number;
   showNav: 'both' | 'prev' | 'next' | 'none';
   mode: DatePickerMode;
   onYearSelect?: (year: number) => void;
   onMonthSelect?: (monthIndex: number) => void;
+  minDate?: Date;
+  maxDate?: Date;
 }) {
   const { data, propGetters } = useDatePickerContext();
   const { calendars } = data;
   const { addOffset, subtractOffset } = propGetters;
   const cal = calendars[calendarIndex];
 
+  // In range dual-panel mode, disable drill-down to keep UX simple
+  const isRangeDualPanel = mode === 'range';
+
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+
+  const { isPrevDisabled, isNextDisabled } = useNavDisabled(
+    calendarIndex,
+    minDate,
+    maxDate,
+  );
 
   const handlePrevMonth = useCallback(() => {
     if (viewMode === 'day') {
@@ -278,10 +328,20 @@ function CalendarPanel({
               ? handleNextMonth
               : undefined
           }
-          onMonthClick={
-            viewMode === 'day' ? () => setViewMode('month') : undefined
+          isPrevDisabled={
+            (showNav === 'both' || showNav === 'prev') && isPrevDisabled
           }
-          onYearClick={() => setViewMode('year')}
+          isNextDisabled={
+            (showNav === 'both' || showNav === 'next') && isNextDisabled
+          }
+          onMonthClick={
+            viewMode === 'day' && !isRangeDualPanel
+              ? () => setViewMode('month')
+              : undefined
+          }
+          onYearClick={
+            !isRangeDualPanel ? () => setViewMode('year') : undefined
+          }
           mode={mode}
         />
       )}
@@ -304,7 +364,13 @@ function CalendarPanel({
 }
 
 export const Calendar = memo(
-  ({ mode = 'date', onYearSelect, onMonthSelect }: ICalendarProps) => {
+  ({
+    mode = 'date',
+    onYearSelect,
+    onMonthSelect,
+    minDate,
+    maxDate,
+  }: ICalendarProps) => {
     const { data, propGetters } = useDatePickerContext();
     const { calendars } = data;
     const { addOffset, subtractOffset } = propGetters;
@@ -345,6 +411,8 @@ export const Calendar = memo(
             mode={mode}
             onYearSelect={onYearSelect}
             onMonthSelect={onMonthSelect}
+            minDate={minDate}
+            maxDate={maxDate}
           />
           <CalendarPanel
             calendarIndex={1}
@@ -352,6 +420,8 @@ export const Calendar = memo(
             mode={mode}
             onYearSelect={onYearSelect}
             onMonthSelect={onMonthSelect}
+            minDate={minDate}
+            maxDate={maxDate}
           />
         </Stack>
       );
@@ -364,6 +434,8 @@ export const Calendar = memo(
         mode={mode}
         onYearSelect={onYearSelect}
         onMonthSelect={onMonthSelect}
+        minDate={minDate}
+        maxDate={maxDate}
       />
     );
   },

@@ -7,8 +7,9 @@ import { Layout } from './utils/Layout';
 
 import type { IDateRange } from '@onekeyhq/components';
 
-const formatDisplayDate = (date: Date) =>
-  formatDate(date, { hideTimeForever: true });
+function formatDisplayDate(date: Date): string {
+  return formatDate(date, { hideTimeForever: true });
+}
 
 function DatePickerBasicDemo() {
   const [date, setDate] = useState<Date | null>(new Date());
@@ -120,6 +121,30 @@ function RangePickerEmptyDemo() {
   );
 }
 
+function RangePickerConstrainedDemo() {
+  const today = new Date();
+  const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+  const [range, setRange] = useState<IDateRange>({
+    start: null,
+    end: null,
+  });
+
+  return (
+    <YStack gap="$4">
+      <DatePicker.Range
+        value={range}
+        onChange={setRange}
+        minDate={minDate}
+        maxDate={maxDate}
+      />
+      <SizableText size="$bodySm" color="$textSubdued">
+        Min: {formatDisplayDate(minDate)} | Max: {formatDisplayDate(maxDate)}
+      </SizableText>
+    </YStack>
+  );
+}
+
 function YearPickerDemo() {
   const [year, setYear] = useState<Date | null>(new Date());
 
@@ -213,7 +238,8 @@ function AllVariantsDemo() {
   );
 }
 
-const DatePickerGallery = () => (
+function DatePickerGallery() {
+  return (
   <Layout
     componentName="DatePicker"
     description="Date picker component supporting single date selection, date range selection, year selection, month selection, and multi-select mode. Built on @rehookify/datepicker, uses OneKey's Popover component for Web/Desktop floating panels, and automatically switches to bottom Sheet on Native."
@@ -260,6 +286,10 @@ const DatePickerGallery = () => (
         element: <RangePickerEmptyDemo />,
       },
       {
+        title: 'Range Picker (Constrained)',
+        element: <RangePickerConstrainedDemo />,
+      },
+      {
         title: 'Year Picker',
         element: <YearPickerDemo />,
       },
@@ -277,6 +307,7 @@ const DatePickerGallery = () => (
       },
     ]}
   />
-);
+  );
+}
 
 export default DatePickerGallery;

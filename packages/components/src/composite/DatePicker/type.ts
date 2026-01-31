@@ -1,7 +1,7 @@
-import type {
-  PopoverContentProps as PopoverContentTypeProps,
-  SheetProps,
-} from '../../shared/tamagui';
+import type { ReactElement } from 'react';
+
+import type { IPopoverProps } from '../../actions';
+import type { SheetProps } from '../../shared/tamagui';
 
 export type DatePickerMode = 'date' | 'range' | 'month' | 'year' | 'multiple';
 
@@ -11,48 +11,54 @@ export interface IDateRange {
 }
 
 export interface IDatePickerBaseProps {
+  title?: string;
   disabled?: boolean;
   placeholder?: string;
   minDate?: Date;
   maxDate?: Date;
   testID?: string;
-  floatingPanelProps?: PopoverContentTypeProps;
+  renderTrigger?: (props: IDatePickerRenderTriggerProps) => ReactElement;
+  floatingPanelProps?: IPopoverProps['floatingPanelProps'];
   sheetProps?: SheetProps;
+  onOpenChange?: (isOpen: boolean) => void;
+}
+
+export interface IDatePickerRenderTriggerProps {
+  value?: Date | Date[] | IDateRange | null;
+  mode: DatePickerMode;
+  placeholder?: string;
+  disabled?: boolean;
+  onClear?: () => void;
 }
 
 export interface IDatePickerProps extends IDatePickerBaseProps {
   mode?: 'date';
   value?: Date | null;
   onChange?: (date: Date | null) => void;
-  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export interface IRangePickerProps extends IDatePickerBaseProps {
   mode?: 'range';
   value?: IDateRange;
   onChange?: (range: IDateRange) => void;
-  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export interface IYearPickerProps extends IDatePickerBaseProps {
   mode?: 'year';
   value?: Date | null;
   onChange?: (date: Date | null) => void;
-  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export interface IMonthPickerProps extends IDatePickerBaseProps {
   mode?: 'month';
   value?: Date | null;
   onChange?: (date: Date | null) => void;
-  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export interface IMultiSelectPickerProps extends IDatePickerBaseProps {
   mode?: 'multiple';
   value?: Date[];
   onChange?: (dates: Date[]) => void;
-  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export interface IDatePickerTriggerProps {
@@ -92,4 +98,6 @@ export interface ICalendarHeaderProps {
   onMonthClick?: () => void;
   onYearClick?: () => void;
   mode?: DatePickerMode;
+  isPrevDisabled?: boolean;
+  isNextDisabled?: boolean;
 }

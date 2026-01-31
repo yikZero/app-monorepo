@@ -13,43 +13,51 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
     }
   };
 
+  const isSameDayRange =
+    day.inCurrentMonth && day.range === 'range-start range-end';
   const isInRange =
     day.inCurrentMonth &&
+    !isSameDayRange &&
     (day.range === 'in-range' || day.range === 'will-be-in-range');
-  const isRangeStart = day.inCurrentMonth && day.range === 'range-start';
-  const isRangeEnd = day.inCurrentMonth && day.range === 'range-end';
+  const isRangeStart =
+    day.inCurrentMonth && !isSameDayRange && day.range === 'range-start';
+  const isRangeEnd =
+    day.inCurrentMonth && !isSameDayRange && day.range === 'range-end';
   const hasRangeHighlight = isInRange || isRangeStart || isRangeEnd;
 
-  const outerBorderRadius = isRangeStart
-    ? {
+  const outerBorderRadius = (() => {
+    if (isRangeStart) {
+      return {
         borderTopLeftRadius: '$2' as const,
         borderBottomLeftRadius: '$2' as const,
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
-      }
-    : isRangeEnd
-    ? {
+      };
+    }
+    if (isRangeEnd) {
+      return {
         borderTopRightRadius: '$2' as const,
         borderBottomRightRadius: '$2' as const,
         borderTopLeftRadius: 0,
         borderBottomLeftRadius: 0,
-      }
-    : {};
+      };
+    }
+    return {};
+  })();
 
-  const isSelected = day.selected && day.inCurrentMonth;
+  const isSelected = (day.selected && day.inCurrentMonth) || isSameDayRange;
 
-  const innerBg = day.disabled
-    ? '$bgDisabled'
-    : isSelected
-    ? '$bgPrimary'
-    : 'transparent';
+  const innerBg = !day.disabled && isSelected ? '$bgPrimary' : 'transparent';
 
   const textColor =
     day.disabled || !day.inCurrentMonth
       ? '$textDisabled'
       : isSelected
-      ? '$textInverse'
-      : '$text';
+        ? '$textInverse'
+        : '$text';
+
+  const outerBg =
+    hasRangeHighlight || day.disabled ? '$bgStrong' : 'transparent';
 
   return (
     <Stack
@@ -57,8 +65,8 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
       alignItems="center"
       justifyContent="center"
       height={CELL_SIZE}
-      bg={hasRangeHighlight ? '$bgStrong' : 'transparent'}
-      {...outerBorderRadius}
+      bg={outerBg}
+      {...(day.disabled ? {} : outerBorderRadius)}
     >
       <Stack
         width={CELL_SIZE}
@@ -66,20 +74,15 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
         alignItems="center"
         justifyContent="center"
         borderRadius="$2"
-        {...(isRangeStart
-          ? {
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-            }
-          : {})}
-        {...(isRangeEnd
-          ? {
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-            }
-          : {})}
+        {...(isRangeStart && {
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+        })}
+        {...(isRangeEnd && {
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0,
+        })}
         bg={innerBg}
-        opacity={day.disabled ? 0.4 : 1}
         hoverStyle={
           day.disabled
             ? {}
@@ -97,6 +100,17 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
         >
           {day.day}
         </SizableText>
+        {/* Today dot indicator */}
+        {day.active && !isSelected ? (
+          <Stack
+            position="absolute"
+            bottom="$0.5"
+            width="$1"
+            height="$1"
+            borderRadius="$full"
+            bg="$bgPrimary"
+          />
+        ) : null}
       </Stack>
     </Stack>
   );
