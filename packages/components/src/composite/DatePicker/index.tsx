@@ -68,7 +68,10 @@ function usePickerState({
     [disabled, onOpenChange],
   );
 
-  const close = useCallback(() => setIsOpen(false), []);
+  const close = useCallback(() => {
+    setIsOpen(false);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
 
   return { isOpen, handleOpenChange, close };
 }
