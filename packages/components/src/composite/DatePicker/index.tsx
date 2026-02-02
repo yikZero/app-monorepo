@@ -1,6 +1,8 @@
 import { DatePickerProvider } from '@rehookify/datepicker';
 import { useCallback, useMemo, useState } from 'react';
+import { useIntl } from 'react-intl';
 
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { withStaticProperties } from '@onekeyhq/components/src/shared/tamagui';
 
 import { Popover } from '../../actions/Popover';
@@ -48,14 +50,20 @@ function BasicDatePicker({
   onChange,
   onOpenChange,
   disabled,
-  placeholder = 'Select date',
-  title = 'Select Date',
+  placeholder: placeholderProp,
+  title: titleProp,
   renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
   sheetProps,
 }: IDatePickerProps) {
+  const intl = useIntl();
+  const placeholder =
+    placeholderProp ??
+    intl.formatMessage({ id: ETranslations.global_select_date });
+  const title =
+    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_date });
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
@@ -130,14 +138,21 @@ function RangePicker({
   onChange,
   onOpenChange,
   disabled,
-  placeholder = 'Select date range',
-  title = 'Select Date Range',
+  placeholder: placeholderProp,
+  title: titleProp,
   renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
   sheetProps,
 }: IRangePickerProps) {
+  const intl = useIntl();
+  const placeholder =
+    placeholderProp ??
+    intl.formatMessage({ id: ETranslations.global_select_date_range });
+  const title =
+    titleProp ??
+    intl.formatMessage({ id: ETranslations.global_select_date_range });
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedDates = useMemo(
@@ -229,14 +244,20 @@ function YearPicker({
   onChange,
   onOpenChange,
   disabled,
-  placeholder = 'Select year',
-  title = 'Select Year',
+  placeholder: placeholderProp,
+  title: titleProp,
   renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
   sheetProps,
 }: IYearPickerProps) {
+  const intl = useIntl();
+  const placeholder =
+    placeholderProp ??
+    intl.formatMessage({ id: ETranslations.global_select_year });
+  const title =
+    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_year });
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
@@ -325,14 +346,20 @@ function MonthPicker({
   onChange,
   onOpenChange,
   disabled,
-  placeholder = 'Select month',
-  title = 'Select Month',
+  placeholder: placeholderProp,
+  title: titleProp,
   renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
   sheetProps,
 }: IMonthPickerProps) {
+  const intl = useIntl();
+  const placeholder =
+    placeholderProp ??
+    intl.formatMessage({ id: ETranslations.global_select_month });
+  const title =
+    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_month });
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
@@ -424,14 +451,20 @@ function MultiSelectPicker({
   onChange,
   onOpenChange,
   disabled,
-  placeholder = 'Select dates',
-  title = 'Select Dates',
+  placeholder: placeholderProp,
+  title: titleProp,
   renderTrigger,
   minDate,
   maxDate,
   floatingPanelProps,
   sheetProps,
 }: IMultiSelectPickerProps) {
+  const intl = useIntl();
+  const placeholder =
+    placeholderProp ??
+    intl.formatMessage({ id: ETranslations.global_select_dates });
+  const title =
+    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_dates });
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDatesChange = useCallback(
