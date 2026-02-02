@@ -12,13 +12,17 @@ import { Calendar } from './Calendar';
 import { DatePickerTrigger } from './DatePickerTrigger';
 
 import type {
+  DatePickerMode,
+  IDatePickerBaseProps,
   IDatePickerProps,
+  IDatePickerRenderTriggerProps,
   IDateRange,
   IMonthPickerProps,
   IMultiSelectPickerProps,
   IRangePickerProps,
   IYearPickerProps,
 } from './type';
+import type { ReactElement } from 'react';
 
 const WEEK_START_MONDAY = 1 as const;
 
@@ -45,6 +49,101 @@ const createPickerConfig = (
   },
 });
 
+function usePickerState({
+  disabled,
+  onOpenChange,
+}: Pick<IDatePickerBaseProps, 'disabled' | 'onOpenChange'>) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (disabled && open) return;
+      setIsOpen(open);
+      onOpenChange?.(open);
+    },
+    [disabled, onOpenChange],
+  );
+
+  const close = useCallback(() => setIsOpen(false), []);
+
+  return { isOpen, handleOpenChange, close };
+}
+
+function usePickerI18n(
+  placeholderProp: string | undefined,
+  titleProp: string | undefined,
+  translationKey: ETranslations,
+) {
+  const intl = useIntl();
+  const fallback = intl.formatMessage({ id: translationKey });
+  return {
+    placeholder: placeholderProp ?? fallback,
+    title: titleProp ?? fallback,
+  };
+}
+
+function PickerPopover({
+  title,
+  isOpen,
+  onOpenChange,
+  renderTrigger,
+  renderContent,
+  floatingPanelProps,
+  sheetProps,
+}: {
+  title: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  renderTrigger: ReactElement;
+  renderContent: ReactElement;
+  floatingPanelProps?: IDatePickerBaseProps['floatingPanelProps'];
+  sheetProps?: IDatePickerBaseProps['sheetProps'];
+}) {
+  return (
+    <Popover
+      title={title}
+      showHeader={false}
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      renderTrigger={renderTrigger}
+      renderContent={renderContent}
+      floatingPanelProps={floatingPanelProps}
+      sheetProps={sheetProps}
+    />
+  );
+}
+
+function renderPickerTrigger({
+  renderTrigger,
+  value,
+  mode,
+  placeholder,
+  disabled,
+  onClear,
+}: {
+  renderTrigger?: (props: IDatePickerRenderTriggerProps) => ReactElement;
+  value: IDatePickerRenderTriggerProps['value'];
+  mode: DatePickerMode;
+  placeholder: string;
+  disabled?: boolean;
+  onClear: () => void;
+}) {
+  if (renderTrigger) {
+    return renderTrigger({ value, mode, placeholder, disabled, onClear });
+  }
+  return (
+    <DatePickerTrigger
+      value={value}
+      mode={mode}
+      placeholder={placeholder}
+      disabled={disabled}
+      onClear={onClear}
+    />
+  );
+}
+
+const SINGLE_PANEL_PROPS = { w: 300, minWidth: 300 } as const;
+
 function BasicDatePicker({
   value,
   onChange,
@@ -58,22 +157,24 @@ function BasicDatePicker({
   floatingPanelProps,
   sheetProps,
 }: IDatePickerProps) {
-  const intl = useIntl();
-  const placeholder =
-    placeholderProp ??
-    intl.formatMessage({ id: ETranslations.global_select_date });
-  const title =
-    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_date });
-  const [isOpen, setIsOpen] = useState(false);
+  const { placeholder, title } = usePickerI18n(
+    placeholderProp,
+    titleProp,
+    ETranslations.global_select_date,
+  );
+  const { isOpen, handleOpenChange, close } = usePickerState({
+    disabled,
+    onOpenChange,
+  });
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
       onChange?.(dates[0] || null);
-      setIsOpen(false);
+      close();
     },
-    [onChange],
+    [onChange, close],
   );
 
   const config = useMemo(
@@ -82,40 +183,21 @@ function BasicDatePicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (disabled && open) return;
-      setIsOpen(open);
-      onOpenChange?.(open);
-    },
-    [disabled, onOpenChange],
-  );
-
   return (
-    <Popover
+    <PickerPopover
       title={title}
-      showHeader={false}
-      open={isOpen}
+      isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      renderTrigger={
-        renderTrigger ? (
-          renderTrigger({
-            value,
-            mode: 'date',
-            placeholder,
-            disabled,
-            onClear: () => onChange?.(null),
-          })
-        ) : (
-          <DatePickerTrigger
-            value={value}
-            mode="date"
-            placeholder={placeholder}
-            disabled={disabled}
-            onClear={() => onChange?.(null)}
-          />
-        )
-      }
+      floatingPanelProps={{ ...SINGLE_PANEL_PROPS, ...floatingPanelProps }}
+      sheetProps={sheetProps}
+      renderTrigger={renderPickerTrigger({
+        renderTrigger,
+        value,
+        mode: 'date',
+        placeholder,
+        disabled,
+        onClear: () => onChange?.(null),
+      })}
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
@@ -123,12 +205,6 @@ function BasicDatePicker({
           </DatePickerProvider>
         </YStack>
       }
-      floatingPanelProps={{
-        w: 300,
-        minWidth: 300,
-        ...floatingPanelProps,
-      }}
-      sheetProps={sheetProps}
     />
   );
 }
@@ -146,14 +222,15 @@ function RangePicker({
   floatingPanelProps,
   sheetProps,
 }: IRangePickerProps) {
-  const intl = useIntl();
-  const placeholder =
-    placeholderProp ??
-    intl.formatMessage({ id: ETranslations.global_select_date_range });
-  const title =
-    titleProp ??
-    intl.formatMessage({ id: ETranslations.global_select_date_range });
-  const [isOpen, setIsOpen] = useState(false);
+  const { placeholder, title } = usePickerI18n(
+    placeholderProp,
+    titleProp,
+    ETranslations.global_select_date_range,
+  );
+  const { isOpen, handleOpenChange, close } = usePickerState({
+    disabled,
+    onOpenChange,
+  });
 
   const selectedDates = useMemo(
     () =>
@@ -168,12 +245,11 @@ function RangePicker({
         end: dates[1] || null,
       };
       onChange?.(range);
-      // Auto-close after selecting end date
       if (dates.length === 2) {
-        setIsOpen(false);
+        close();
       }
     },
-    [onChange],
+    [onChange, close],
   );
 
   const config = useMemo(
@@ -188,40 +264,25 @@ function RangePicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (disabled && open) return;
-      setIsOpen(open);
-      onOpenChange?.(open);
-    },
-    [disabled, onOpenChange],
-  );
-
   return (
-    <Popover
+    <PickerPopover
       title={title}
-      showHeader={false}
-      open={isOpen}
+      isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      renderTrigger={
-        renderTrigger ? (
-          renderTrigger({
-            value,
-            mode: 'range',
-            placeholder,
-            disabled,
-            onClear: () => onChange?.({ start: null, end: null }),
-          })
-        ) : (
-          <DatePickerTrigger
-            value={value}
-            mode="range"
-            placeholder={placeholder}
-            disabled={disabled}
-            onClear={() => onChange?.({ start: null, end: null })}
-          />
-        )
-      }
+      floatingPanelProps={{
+        w: 624,
+        maxWidth: 624,
+        ...floatingPanelProps,
+      }}
+      sheetProps={sheetProps}
+      renderTrigger={renderPickerTrigger({
+        renderTrigger,
+        value,
+        mode: 'range',
+        placeholder,
+        disabled,
+        onClear: () => onChange?.({ start: null, end: null }),
+      })}
       renderContent={
         <YStack padding="$3" minWidth={280} $gtMd={{ padding: '$4' }}>
           <DatePickerProvider config={config}>
@@ -229,12 +290,6 @@ function RangePicker({
           </DatePickerProvider>
         </YStack>
       }
-      floatingPanelProps={{
-        w: 624,
-        maxWidth: 624,
-        ...floatingPanelProps,
-      }}
-      sheetProps={sheetProps}
     />
   );
 }
@@ -252,22 +307,24 @@ function YearPicker({
   floatingPanelProps,
   sheetProps,
 }: IYearPickerProps) {
-  const intl = useIntl();
-  const placeholder =
-    placeholderProp ??
-    intl.formatMessage({ id: ETranslations.global_select_year });
-  const title =
-    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_year });
-  const [isOpen, setIsOpen] = useState(false);
+  const { placeholder, title } = usePickerI18n(
+    placeholderProp,
+    titleProp,
+    ETranslations.global_select_year,
+  );
+  const { isOpen, handleOpenChange, close } = usePickerState({
+    disabled,
+    onOpenChange,
+  });
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
       onChange?.(dates[0] || null);
-      setIsOpen(false);
+      close();
     },
-    [onChange],
+    [onChange, close],
   );
 
   const config = useMemo(
@@ -283,40 +340,21 @@ function YearPicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (disabled && open) return;
-      setIsOpen(open);
-      onOpenChange?.(open);
-    },
-    [disabled, onOpenChange],
-  );
-
   return (
-    <Popover
+    <PickerPopover
       title={title}
-      showHeader={false}
-      open={isOpen}
+      isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      renderTrigger={
-        renderTrigger ? (
-          renderTrigger({
-            value,
-            mode: 'year',
-            placeholder,
-            disabled,
-            onClear: () => onChange?.(null),
-          })
-        ) : (
-          <DatePickerTrigger
-            value={value}
-            mode="year"
-            placeholder={placeholder}
-            disabled={disabled}
-            onClear={() => onChange?.(null)}
-          />
-        )
-      }
+      floatingPanelProps={{ ...SINGLE_PANEL_PROPS, ...floatingPanelProps }}
+      sheetProps={sheetProps}
+      renderTrigger={renderPickerTrigger({
+        renderTrigger,
+        value,
+        mode: 'year',
+        placeholder,
+        disabled,
+        onClear: () => onChange?.(null),
+      })}
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
@@ -325,18 +363,12 @@ function YearPicker({
               onYearSelect={(year) => {
                 const date = new Date(year, 0, 1);
                 onChange?.(date);
-                setIsOpen(false);
+                close();
               }}
             />
           </DatePickerProvider>
         </YStack>
       }
-      floatingPanelProps={{
-        w: 300,
-        minWidth: 300,
-        ...floatingPanelProps,
-      }}
-      sheetProps={sheetProps}
     />
   );
 }
@@ -354,22 +386,24 @@ function MonthPicker({
   floatingPanelProps,
   sheetProps,
 }: IMonthPickerProps) {
-  const intl = useIntl();
-  const placeholder =
-    placeholderProp ??
-    intl.formatMessage({ id: ETranslations.global_select_month });
-  const title =
-    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_month });
-  const [isOpen, setIsOpen] = useState(false);
+  const { placeholder, title } = usePickerI18n(
+    placeholderProp,
+    titleProp,
+    ETranslations.global_select_month,
+  );
+  const { isOpen, handleOpenChange, close } = usePickerState({
+    disabled,
+    onOpenChange,
+  });
 
   const selectedDates = useMemo(() => (value ? [value] : []), [value]);
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => {
       onChange?.(dates[0] || null);
-      setIsOpen(false);
+      close();
     },
-    [onChange],
+    [onChange, close],
   );
 
   const config = useMemo(
@@ -385,40 +419,21 @@ function MonthPicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (disabled && open) return;
-      setIsOpen(open);
-      onOpenChange?.(open);
-    },
-    [disabled, onOpenChange],
-  );
-
   return (
-    <Popover
+    <PickerPopover
       title={title}
-      showHeader={false}
-      open={isOpen}
+      isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      renderTrigger={
-        renderTrigger ? (
-          renderTrigger({
-            value,
-            mode: 'month',
-            placeholder,
-            disabled,
-            onClear: () => onChange?.(null),
-          })
-        ) : (
-          <DatePickerTrigger
-            value={value}
-            mode="month"
-            placeholder={placeholder}
-            disabled={disabled}
-            onClear={() => onChange?.(null)}
-          />
-        )
-      }
+      floatingPanelProps={{ ...SINGLE_PANEL_PROPS, ...floatingPanelProps }}
+      sheetProps={sheetProps}
+      renderTrigger={renderPickerTrigger({
+        renderTrigger,
+        value,
+        mode: 'month',
+        placeholder,
+        disabled,
+        onClear: () => onChange?.(null),
+      })}
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
@@ -430,18 +445,12 @@ function MonthPicker({
                   : new Date().getFullYear();
                 const date = new Date(currentYear, monthIndex, 1);
                 onChange?.(date);
-                setIsOpen(false);
+                close();
               }}
             />
           </DatePickerProvider>
         </YStack>
       }
-      floatingPanelProps={{
-        w: 300,
-        minWidth: 300,
-        ...floatingPanelProps,
-      }}
-      sheetProps={sheetProps}
     />
   );
 }
@@ -459,13 +468,15 @@ function MultiSelectPicker({
   floatingPanelProps,
   sheetProps,
 }: IMultiSelectPickerProps) {
-  const intl = useIntl();
-  const placeholder =
-    placeholderProp ??
-    intl.formatMessage({ id: ETranslations.global_select_dates });
-  const title =
-    titleProp ?? intl.formatMessage({ id: ETranslations.global_select_dates });
-  const [isOpen, setIsOpen] = useState(false);
+  const { placeholder, title } = usePickerI18n(
+    placeholderProp,
+    titleProp,
+    ETranslations.global_select_dates,
+  );
+  const { isOpen, handleOpenChange } = usePickerState({
+    disabled,
+    onOpenChange,
+  });
 
   const handleDatesChange = useCallback(
     (dates: Date[]) => onChange?.(dates),
@@ -484,40 +495,21 @@ function MultiSelectPicker({
     [value, handleDatesChange, minDate, maxDate],
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (disabled && open) return;
-      setIsOpen(open);
-      onOpenChange?.(open);
-    },
-    [disabled, onOpenChange],
-  );
-
   return (
-    <Popover
+    <PickerPopover
       title={title}
-      showHeader={false}
-      open={isOpen}
+      isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      renderTrigger={
-        renderTrigger ? (
-          renderTrigger({
-            value,
-            mode: 'multiple',
-            placeholder,
-            disabled,
-            onClear: () => onChange?.([]),
-          })
-        ) : (
-          <DatePickerTrigger
-            value={value}
-            mode="multiple"
-            placeholder={placeholder}
-            disabled={disabled}
-            onClear={() => onChange?.([])}
-          />
-        )
-      }
+      floatingPanelProps={{ ...SINGLE_PANEL_PROPS, ...floatingPanelProps }}
+      sheetProps={sheetProps}
+      renderTrigger={renderPickerTrigger({
+        renderTrigger,
+        value,
+        mode: 'multiple',
+        placeholder,
+        disabled,
+        onClear: () => onChange?.([]),
+      })}
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
@@ -525,12 +517,6 @@ function MultiSelectPicker({
           </DatePickerProvider>
         </YStack>
       }
-      floatingPanelProps={{
-        w: 300,
-        minWidth: 300,
-        ...floatingPanelProps,
-      }}
-      sheetProps={sheetProps}
     />
   );
 }
