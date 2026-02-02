@@ -8,12 +8,9 @@ import { CalendarHeader } from './CalendarHeader';
 import { CalendarPanel } from './CalendarPanel';
 import { MonthGrid } from './MonthGrid';
 import { YearGrid, YearRangeHeader } from './YearGrid';
+import { callOnClick } from './utils';
 
 import type { DatePickerMode } from './type';
-
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
-  d.onClick?.();
-}
 
 interface ICalendarProps {
   mode?: DatePickerMode;
@@ -35,7 +32,6 @@ export const Calendar = memo(
     const { calendars } = data;
     const { addOffset, subtractOffset } = propGetters;
     const media = useMedia();
-
     const { month, year } = calendars[0];
 
     if (mode === 'month') {

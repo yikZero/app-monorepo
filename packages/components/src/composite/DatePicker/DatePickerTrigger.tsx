@@ -89,13 +89,16 @@ export const DatePickerTrigger = memo(
       () => formatTriggerValue(value, mode, placeholder, intl),
       [value, mode, placeholder, intl],
     );
-    const hasValue =
-      value &&
-      (Array.isArray(value)
-        ? value.length > 0
-        : mode === 'range'
-        ? !!(value as IDateRange).start || (value as IDateRange).end
-        : true);
+
+    const hasValue = useMemo(() => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (mode === 'range') {
+        const range = value as IDateRange;
+        return !!range.start || !!range.end;
+      }
+      return true;
+    }, [value, mode]);
 
     const handleClearPress = useCallback(
       (e: any) => {

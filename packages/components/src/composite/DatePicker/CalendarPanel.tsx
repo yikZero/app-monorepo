@@ -7,14 +7,11 @@ import { CalendarHeader } from './CalendarHeader';
 import { DayGrid } from './DayGrid';
 import { MonthGrid } from './MonthGrid';
 import { YearGrid, YearRangeHeader } from './YearGrid';
+import { callOnClick } from './utils';
 
 import type { DatePickerMode } from './type';
 
 type ViewMode = 'day' | 'month' | 'year';
-
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
-  d.onClick?.();
-}
 
 function useNavDisabled(calendarIndex: number, minDate?: Date, maxDate?: Date) {
   const { data } = useDatePickerContext();
@@ -78,17 +75,23 @@ export function CalendarPanel({
     maxDate,
   );
 
+  const getOffset = useCallback(
+    () => (viewMode === 'day' ? { months: 1 } : { years: 1 }),
+    [viewMode],
+  );
+
   const handlePrevMonth = useCallback(() => {
-    const offset = viewMode === 'day' ? { months: 1 } : { years: 1 };
-    callOnClick(subtractOffset(offset));
-  }, [viewMode, subtractOffset]);
+    callOnClick(subtractOffset(getOffset()));
+  }, [getOffset, subtractOffset]);
 
   const handleNextMonth = useCallback(() => {
-    const offset = viewMode === 'day' ? { months: 1 } : { years: 1 };
-    callOnClick(addOffset(offset));
-  }, [viewMode, addOffset]);
+    callOnClick(addOffset(getOffset()));
+  }, [getOffset, addOffset]);
 
   if (!cal) return null;
+
+  const showPrevNav = showNav === 'both' || showNav === 'prev';
+  const showNextNav = showNav === 'both' || showNav === 'next';
 
   return (
     <YStack {...(isDualPanel ? { flex: 1, flexBasis: 0 } : {})}>
@@ -98,22 +101,10 @@ export function CalendarPanel({
         <CalendarHeader
           month={viewMode === 'day' ? cal.month : ''}
           year={cal.year}
-          onPrevMonth={
-            showNav === 'both' || showNav === 'prev'
-              ? handlePrevMonth
-              : undefined
-          }
-          onNextMonth={
-            showNav === 'both' || showNav === 'next'
-              ? handleNextMonth
-              : undefined
-          }
-          isPrevDisabled={
-            (showNav === 'both' || showNav === 'prev') && isPrevDisabled
-          }
-          isNextDisabled={
-            (showNav === 'both' || showNav === 'next') && isNextDisabled
-          }
+          onPrevMonth={showPrevNav ? handlePrevMonth : undefined}
+          onNextMonth={showNextNav ? handleNextMonth : undefined}
+          isPrevDisabled={showPrevNav && isPrevDisabled}
+          isNextDisabled={showNextNav && isNextDisabled}
           onMonthClick={
             viewMode === 'day' && !isRangeDualPanel
               ? () => setViewMode('month')

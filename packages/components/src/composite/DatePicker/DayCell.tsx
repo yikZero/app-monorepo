@@ -35,6 +35,7 @@ export const DayCell = memo(
       day.inCurrentMonth && !isSameDayRange && day.range === 'range-start';
     const isRangeEnd =
       day.inCurrentMonth && !isSameDayRange && day.range === 'range-end';
+    const isSelected = (day.selected && day.inCurrentMonth) || isSameDayRange;
 
     const outerBorderRadius = isRangeStart
       ? {
@@ -52,21 +53,17 @@ export const DayCell = memo(
         }
       : {};
 
-    const isSelected = (day.selected && day.inCurrentMonth) || isSameDayRange;
-
     const innerBg = !day.disabled && isSelected ? '$bgPrimary' : 'transparent';
-
+    const outerBg =
+      isInRange || isRangeStart || isRangeEnd || day.disabled
+        ? '$bgStrong'
+        : 'transparent';
     const textColor =
       day.disabled || !day.inCurrentMonth
         ? '$textDisabled'
         : isSelected
         ? '$textInverse'
         : '$text';
-
-    const outerBg =
-      isInRange || isRangeStart || isRangeEnd || day.disabled
-        ? '$bgStrong'
-        : 'transparent';
 
     return (
       <Stack

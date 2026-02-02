@@ -32,22 +32,33 @@ const createPickerConfig = (
   minDate?: Date,
   maxDate?: Date,
   mode: 'single' | 'range' | 'multiple' = 'single',
-  calendarMode?: 'static' | undefined,
-) => ({
-  selectedDates,
-  onDatesChange: handleDatesChange,
-  dates: {
-    mode,
-    minDate,
-    maxDate,
-    ...(mode !== 'range' && { selectSameDate: true }),
-  },
-  calendar: {
-    startDay: WEEK_START_MONDAY,
-    ...(calendarMode && { mode: calendarMode }),
-    ...(mode === 'range' && { offsets: [1] }),
-  },
-});
+  calendarMode?: 'static',
+) => {
+  const config: any = {
+    selectedDates,
+    onDatesChange: handleDatesChange,
+    dates: {
+      mode,
+      minDate,
+      maxDate,
+    },
+    calendar: {
+      startDay: WEEK_START_MONDAY,
+    },
+  };
+
+  if (mode !== 'range') {
+    config.dates.selectSameDate = true;
+  }
+  if (calendarMode) {
+    config.calendar.mode = calendarMode;
+  }
+  if (mode === 'range') {
+    config.calendar.offsets = [1];
+  }
+
+  return config;
+};
 
 function usePickerState({
   disabled,
@@ -340,6 +351,14 @@ function YearPicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
+  const handleYearSelect = useCallback(
+    (year: number) => {
+      onChange?.(new Date(year, 0, 1));
+      close();
+    },
+    [onChange, close],
+  );
+
   return (
     <PickerPopover
       title={title}
@@ -358,14 +377,7 @@ function YearPicker({
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
-            <Calendar
-              mode="year"
-              onYearSelect={(year) => {
-                const date = new Date(year, 0, 1);
-                onChange?.(date);
-                close();
-              }}
-            />
+            <Calendar mode="year" onYearSelect={handleYearSelect} />
           </DatePickerProvider>
         </YStack>
       }
@@ -419,6 +431,17 @@ function MonthPicker({
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
+  const handleMonthSelect = useCallback(
+    (monthIndex: number) => {
+      const currentYear = value
+        ? value.getFullYear()
+        : new Date().getFullYear();
+      onChange?.(new Date(currentYear, monthIndex, 1));
+      close();
+    },
+    [value, onChange, close],
+  );
+
   return (
     <PickerPopover
       title={title}
@@ -437,17 +460,7 @@ function MonthPicker({
       renderContent={
         <YStack padding="$3" minWidth={280}>
           <DatePickerProvider config={config}>
-            <Calendar
-              mode="month"
-              onMonthSelect={(monthIndex) => {
-                const currentYear = value
-                  ? value.getFullYear()
-                  : new Date().getFullYear();
-                const date = new Date(currentYear, monthIndex, 1);
-                onChange?.(date);
-                close();
-              }}
-            />
+            <Calendar mode="month" onMonthSelect={handleMonthSelect} />
           </DatePickerProvider>
         </YStack>
       }

@@ -23,6 +23,10 @@ export const CalendarHeader = memo(
     const titleSize = media.gtMd ? '$headingLg' : '$headingXl';
     const showMonthYear = mode !== 'month' && mode !== 'year';
 
+    const showPrevButton = onPrevMonth && !isPrevDisabled;
+    const showNextButton = onNextMonth && !isNextDisabled;
+    const yearClickable = showMonthYear && onYearClick;
+
     return (
       <XStack
         justifyContent="space-between"
@@ -31,7 +35,7 @@ export const CalendarHeader = memo(
         marginBottom="$3"
         $md={{ marginTop: '$2' }}
       >
-        {onPrevMonth && !isPrevDisabled ? (
+        {showPrevButton ? (
           <IconButton
             icon="ChevronLeftSmallOutline"
             variant="tertiary"
@@ -59,17 +63,13 @@ export const CalendarHeader = memo(
             color="$text"
             cursor="default"
             userSelect="none"
-            onPress={showMonthYear ? onYearClick : undefined}
-            hoverStyle={
-              showMonthYear && onYearClick
-                ? { color: '$textSubdued' }
-                : undefined
-            }
+            onPress={yearClickable ? onYearClick : undefined}
+            hoverStyle={yearClickable ? { color: '$textSubdued' } : undefined}
           >
             {year}
           </SizableText>
         </XStack>
-        {onNextMonth && !isNextDisabled ? (
+        {showNextButton ? (
           <IconButton
             icon="ChevronRightSmallOutline"
             variant="tertiary"

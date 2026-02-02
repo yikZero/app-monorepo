@@ -2,9 +2,7 @@ import { useDatePickerContext } from '@rehookify/datepicker';
 
 import { SizableText, Stack } from '../../primitives';
 
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
-  d.onClick?.();
-}
+import { callOnClick } from './utils';
 
 export function MonthGrid({
   onSelect,

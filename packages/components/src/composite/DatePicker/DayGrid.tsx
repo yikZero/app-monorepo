@@ -3,10 +3,7 @@ import { useDatePickerContext } from '@rehookify/datepicker';
 import { SizableText, Stack, YStack } from '../../primitives';
 
 import { DayCell } from './DayCell';
-
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
-  d.onClick?.();
-}
+import { callOnClick } from './utils';
 
 export function DayGrid({
   calendarIndex,

@@ -4,10 +4,7 @@ import { useMemo } from 'react';
 import { SizableText, Stack } from '../../primitives';
 
 import { CalendarHeader } from './CalendarHeader';
-
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
-  d.onClick?.();
-}
+import { callOnClick } from './utils';
 
 export function YearGrid({
   onSelect,
