@@ -17,12 +17,9 @@ const formatTriggerValue = (
   if (mode === 'range') {
     const range = value as IDateRange;
     if (!range.start && !range.end) return placeholder || 'Select date range';
-    const startStr = range.start
-      ? formatDate(range.start, { hideYear: false, hideTimeForever: true })
-      : '';
-    const endStr = range.end
-      ? formatDate(range.end, { hideYear: false, hideTimeForever: true })
-      : '';
+    const fmt = { formatTemplate: 'yyyy-MM-dd', hideTimeForever: true };
+    const startStr = range.start ? formatDate(range.start, fmt) : '';
+    const endStr = range.end ? formatDate(range.end, fmt) : '';
     if (startStr && endStr) {
       return `${startStr} → ${endStr}`;
     }
@@ -43,13 +40,16 @@ const formatTriggerValue = (
   if (mode === 'month') {
     const date = value as Date;
     return formatDate(date, {
-      formatTemplate: 'yyyy/LL',
+      formatTemplate: 'yyyy-MM',
       hideTimeForever: true,
     });
   }
 
   const date = value as Date;
-  return formatDate(date, { hideYear: false, hideTimeForever: true });
+  return formatDate(date, {
+    formatTemplate: 'yyyy-MM-dd',
+    hideTimeForever: true,
+  });
 };
 
 export const DatePickerTrigger = memo(
@@ -61,15 +61,13 @@ export const DatePickerTrigger = memo(
     onClear,
   }: IDatePickerTriggerProps) => {
     const displayValue = formatTriggerValue(value, mode, placeholder);
-    const hasValue = (() => {
-      if (!value) return false;
-      if (Array.isArray(value)) return value.length > 0;
-      if (mode === 'range') {
-        const range = value as IDateRange;
-        return !!(range.start || range.end);
-      }
-      return true;
-    })();
+    const hasValue =
+      value &&
+      (Array.isArray(value)
+        ? value.length > 0
+        : mode === 'range'
+        ? !!(value as IDateRange).start || (value as IDateRange).end
+        : true);
 
     const handleClearPress = useCallback(
       (e: any) => {

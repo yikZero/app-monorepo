@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import { useMedia } from '../../hooks';
 import { SizableText, Stack, XStack } from '../../primitives';
 import { IconButton } from '../../actions/IconButton';
 
@@ -17,8 +18,10 @@ export const CalendarHeader = memo(
     isPrevDisabled,
     isNextDisabled,
   }: ICalendarHeaderProps) => {
-    const showMonthYear =
-      mode === 'date' || mode === 'range' || mode === 'multiple';
+    const media = useMedia();
+    const iconSize = 'medium' as const;
+    const titleSize = media.gtMd ? '$headingLg' : '$headingXl';
+    const showMonthYear = mode !== 'month' && mode !== 'year';
 
     return (
       <XStack
@@ -26,67 +29,55 @@ export const CalendarHeader = memo(
         alignItems="center"
         paddingHorizontal="$2"
         marginBottom="$3"
+        $md={{ marginTop: '$2' }}
       >
-        {onPrevMonth ? (
+        {onPrevMonth && !isPrevDisabled ? (
           <IconButton
             icon="ChevronLeftSmallOutline"
             variant="tertiary"
-            size="small"
-            disabled={isPrevDisabled}
+            size={iconSize}
             onPress={onPrevMonth}
           />
         ) : (
-          <Stack width="$8" />
+          <Stack width="$10" />
         )}
         <XStack gap="$1">
-          {showMonthYear ? (
-            <>
-              {month ? (
-                <SizableText
-                  size="$bodyLgMedium"
-                  color="$text"
-                  cursor="default"
-                  userSelect="none"
-                  onPress={onMonthClick}
-                  hoverStyle={
-                    onMonthClick ? { color: '$textSubdued' } : undefined
-                  }
-                >
-                  {month}
-                </SizableText>
-              ) : null}
-              <SizableText
-                size="$bodyLgMedium"
-                color="$text"
-                cursor="default"
-                userSelect="none"
-                onPress={onYearClick}
-                hoverStyle={onYearClick ? { color: '$textSubdued' } : undefined}
-              >
-                {year}
-              </SizableText>
-            </>
-          ) : (
+          {showMonthYear && month && (
             <SizableText
-              size="$bodyLgMedium"
+              size={titleSize}
               color="$text"
               cursor="default"
               userSelect="none"
+              onPress={onMonthClick}
+              hoverStyle={onMonthClick ? { color: '$textSubdued' } : undefined}
             >
-              {year}
+              {month}
             </SizableText>
           )}
+          <SizableText
+            size={titleSize}
+            color="$text"
+            cursor="default"
+            userSelect="none"
+            onPress={showMonthYear ? onYearClick : undefined}
+            hoverStyle={
+              showMonthYear && onYearClick
+                ? { color: '$textSubdued' }
+                : undefined
+            }
+          >
+            {year}
+          </SizableText>
         </XStack>
-        {onNextMonth ? (
+        {onNextMonth && !isNextDisabled ? (
           <IconButton
             icon="ChevronRightSmallOutline"
             variant="tertiary"
-            size="small"
-            disabled={isNextDisabled}
+            size={iconSize}
             onPress={onNextMonth}
           />
         ) : (
-          <Stack width="$8" />
+          <Stack width="$10" />
         )}
       </XStack>
     );

@@ -71,6 +71,8 @@ export interface IDatePickerTriggerProps {
 }
 
 export interface IDayCellProps {
+  hideOutOfMonth?: boolean;
+  fullWidth?: boolean;
   day: {
     day: string;
     date: string;

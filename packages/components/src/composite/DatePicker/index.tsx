@@ -20,6 +20,29 @@ import type {
 
 const WEEK_START_MONDAY = 1 as const;
 
+const createPickerConfig = (
+  selectedDates: Date[],
+  handleDatesChange: (dates: Date[]) => void,
+  minDate?: Date,
+  maxDate?: Date,
+  mode: 'single' | 'range' | 'multiple' = 'single',
+  calendarMode?: 'static' | undefined,
+) => ({
+  selectedDates,
+  onDatesChange: handleDatesChange,
+  dates: {
+    mode,
+    minDate,
+    maxDate,
+    ...(mode !== 'range' && { selectSameDate: true }),
+  },
+  calendar: {
+    startDay: WEEK_START_MONDAY,
+    ...(calendarMode && { mode: calendarMode }),
+    ...(mode === 'range' && { offsets: [1] }),
+  },
+});
+
 function BasicDatePicker({
   value,
   onChange,
@@ -46,18 +69,8 @@ function BasicDatePicker({
   );
 
   const config = useMemo(
-    () => ({
-      selectedDates,
-      onDatesChange: handleDatesChange,
-      dates: {
-        mode: 'single' as const,
-        minDate,
-        maxDate,
-      },
-      calendar: {
-        startDay: WEEK_START_MONDAY,
-      },
-    }),
+    () =>
+      createPickerConfig(selectedDates, handleDatesChange, minDate, maxDate),
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
@@ -73,6 +86,7 @@ function BasicDatePicker({
   return (
     <Popover
       title={title}
+      showHeader={false}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
@@ -148,19 +162,14 @@ function RangePicker({
   );
 
   const config = useMemo(
-    () => ({
-      selectedDates,
-      onDatesChange: handleDatesChange,
-      dates: {
-        mode: 'range' as const,
+    () =>
+      createPickerConfig(
+        selectedDates,
+        handleDatesChange,
         minDate,
         maxDate,
-      },
-      calendar: {
-        startDay: WEEK_START_MONDAY,
-        offsets: [1],
-      },
-    }),
+        'range',
+      ),
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
@@ -176,6 +185,7 @@ function RangePicker({
   return (
     <Popover
       title={title}
+      showHeader={false}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
@@ -198,15 +208,15 @@ function RangePicker({
         )
       }
       renderContent={
-        <YStack padding="$3">
+        <YStack padding="$3" minWidth={280} $gtMd={{ padding: '$4' }}>
           <DatePickerProvider config={config}>
             <Calendar mode="range" minDate={minDate} maxDate={maxDate} />
           </DatePickerProvider>
         </YStack>
       }
       floatingPanelProps={{
-        w: 560,
-        maxWidth: 560,
+        w: 624,
+        maxWidth: 624,
         ...floatingPanelProps,
       }}
       sheetProps={sheetProps}
@@ -240,20 +250,15 @@ function YearPicker({
   );
 
   const config = useMemo(
-    () => ({
-      selectedDates,
-      onDatesChange: handleDatesChange,
-      dates: {
-        mode: 'single' as const,
+    () =>
+      createPickerConfig(
+        selectedDates,
+        handleDatesChange,
         minDate,
         maxDate,
-        selectSameDate: true,
-      },
-      calendar: {
-        mode: 'static' as const,
-        startDay: WEEK_START_MONDAY,
-      },
-    }),
+        'single',
+        'static',
+      ),
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
@@ -269,6 +274,7 @@ function YearPicker({
   return (
     <Popover
       title={title}
+      showHeader={false}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
@@ -340,20 +346,15 @@ function MonthPicker({
   );
 
   const config = useMemo(
-    () => ({
-      selectedDates,
-      onDatesChange: handleDatesChange,
-      dates: {
-        mode: 'single' as const,
+    () =>
+      createPickerConfig(
+        selectedDates,
+        handleDatesChange,
         minDate,
         maxDate,
-        selectSameDate: true,
-      },
-      calendar: {
-        mode: 'static' as const,
-        startDay: WEEK_START_MONDAY,
-      },
-    }),
+        'single',
+        'static',
+      ),
     [selectedDates, handleDatesChange, minDate, maxDate],
   );
 
@@ -369,6 +370,7 @@ function MonthPicker({
   return (
     <Popover
       title={title}
+      showHeader={false}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={
@@ -438,18 +440,14 @@ function MultiSelectPicker({
   );
 
   const config = useMemo(
-    () => ({
-      selectedDates: value,
-      onDatesChange: handleDatesChange,
-      dates: {
-        mode: 'multiple' as const,
+    () =>
+      createPickerConfig(
+        value,
+        handleDatesChange,
         minDate,
         maxDate,
-      },
-      calendar: {
-        startDay: WEEK_START_MONDAY,
-      },
-    }),
+        'multiple',
+      ),
     [value, handleDatesChange, minDate, maxDate],
   );
 
@@ -465,6 +463,7 @@ function MultiSelectPicker({
   return (
     <Popover
       title={title}
+      showHeader={false}
       open={isOpen}
       onOpenChange={handleOpenChange}
       renderTrigger={

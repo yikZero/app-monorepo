@@ -2,19 +2,20 @@ import { useDatePickerContext } from '@rehookify/datepicker';
 import { memo, useCallback, useMemo, useState } from 'react';
 
 import { useMedia } from '../../hooks';
-import { AnimatePresence, SizableText, Stack, YStack } from '../../primitives';
+import { SizableText, Stack, YStack } from '../../primitives';
 
 import { CalendarHeader } from './CalendarHeader';
 import { DayCell } from './DayCell';
-import { useDateAnimation } from './useDateAnimation';
 
 import type { DatePickerMode } from './type';
 
 type ViewMode = 'day' | 'month' | 'year';
 
-function callOnClick<T extends { onClick?: (...args: any[]) => void }>(d: T) {
+const callOnClick = <T extends { onClick?: (...args: any[]) => void }>(
+  d: T,
+) => {
   d.onClick?.();
-}
+};
 
 interface ICalendarProps {
   mode?: DatePickerMode;
@@ -24,62 +25,64 @@ interface ICalendarProps {
   maxDate?: Date;
 }
 
-function DayGrid({ calendarIndex }: { calendarIndex: number }) {
+function DayGrid({
+  calendarIndex,
+  hideOutOfMonth,
+  fullWidth,
+}: {
+  calendarIndex: number;
+  hideOutOfMonth?: boolean;
+  fullWidth?: boolean;
+}) {
   const { data, propGetters } = useDatePickerContext();
   const { calendars, weekDays } = data;
   const { dayButton } = propGetters;
   const cal = calendars[calendarIndex];
 
-  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
-    listenTo: 'month',
-  });
-
   if (!cal) return null;
 
   return (
-    <AnimatePresence key={prevNextAnimationKey}>
-      <YStack animation="quick" {...prevNextAnimation()}>
-        <Stack flexDirection="row" flexWrap="wrap" marginBottom="$1">
-          {weekDays.map((day) => (
-            <Stack
-              key={day}
-              flexBasis="14.28%"
-              height="$8"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <SizableText
-                size="$bodySm"
-                color="$textSubdued"
-                userSelect="none"
-              >
-                {day}
-              </SizableText>
-            </Stack>
-          ))}
-        </Stack>
-        <Stack flexWrap="wrap" flexDirection="row" overflow="hidden">
-          {cal.days.map((day) => {
-            const dateStr = day.$date.toString();
-            return (
-              <DayCell
-                key={dateStr}
-                day={{
-                  day: day.day,
-                  date: dateStr,
-                  active: day.now,
-                  inCurrentMonth: day.inCurrentMonth,
-                  selected: day.selected,
-                  disabled: dayButton(day).disabled || false,
-                  range: day.range || undefined,
-                }}
-                onPress={() => callOnClick(dayButton(day))}
-              />
-            );
-          })}
-        </Stack>
-      </YStack>
-    </AnimatePresence>
+    <YStack>
+      <Stack flexDirection="row" flexWrap="wrap" marginBottom="$1">
+        {weekDays.map((day) => (
+          <Stack
+            key={day}
+            flexBasis="14.28%"
+            flexGrow={0}
+            flexShrink={0}
+            height="$8"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <SizableText size="$bodySm" color="$textSubdued" userSelect="none">
+              {day}
+            </SizableText>
+          </Stack>
+        ))}
+      </Stack>
+      <Stack flexWrap="wrap" flexDirection="row" rowGap="$1">
+        {cal.days.map((day) => {
+          const dateStr = day.$date.toString();
+          return (
+            <DayCell
+              key={dateStr}
+              hideOutOfMonth={hideOutOfMonth}
+              fullWidth={fullWidth}
+              day={{
+                day: day.day,
+                date: dateStr,
+                active: day.now,
+                inCurrentMonth: day.inCurrentMonth,
+                selected: day.selected,
+                disabled: dayButton(day).disabled || false,
+                range: day.range || undefined,
+              }}
+              onPress={() => callOnClick(dayButton(day))}
+            />
+          );
+        })}
+      </Stack>
+    </YStack>
   );
 }
 
@@ -94,50 +97,37 @@ function MonthGrid({
   const { months } = data;
   const { monthButton } = propGetters;
 
-  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
-    listenTo: 'year',
-  });
-
   return (
-    <AnimatePresence key={prevNextAnimationKey}>
-      <Stack
-        flexWrap="wrap"
-        flexDirection="row"
-        gap="$2"
-        padding="$2"
-        animation="quick"
-        {...prevNextAnimation()}
-      >
-        {months.map((m) => (
-          <Stack
-            key={m.$date.toString()}
-            flexBasis="31%"
-            flexGrow={1}
-            height="$11"
-            alignItems="center"
-            justifyContent="center"
-            borderRadius="$2"
-            bg={m.active ? '$bgPrimary' : 'transparent'}
-            hoverStyle={{
-              bg: m.active ? '$bgPrimary' : '$bgHover',
-            }}
-            onPress={() => {
-              callOnClick(monthButton(m));
-              onMonthSelect?.(m.$date.getMonth());
-              onSelect?.();
-            }}
+    <Stack flexWrap="wrap" flexDirection="row" gap="$2" padding="$2">
+      {months.map((m) => (
+        <Stack
+          key={m.$date.toString()}
+          flexBasis="31%"
+          flexGrow={1}
+          height="$11"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="$2"
+          bg={m.active ? '$bgPrimary' : 'transparent'}
+          hoverStyle={{
+            bg: m.active ? '$bgPrimary' : '$bgHover',
+          }}
+          onPress={() => {
+            callOnClick(monthButton(m));
+            onMonthSelect?.(m.$date.getMonth());
+            onSelect?.();
+          }}
+        >
+          <SizableText
+            size="$bodyMd"
+            color={m.active ? '$textInverse' : '$text'}
+            userSelect="none"
           >
-            <SizableText
-              size="$bodyMd"
-              color={m.active ? '$textInverse' : '$text'}
-              userSelect="none"
-            >
-              {m.month}
-            </SizableText>
-          </Stack>
-        ))}
-      </Stack>
-    </AnimatePresence>
+            {m.month}
+          </SizableText>
+        </Stack>
+      ))}
+    </Stack>
   );
 }
 
@@ -153,53 +143,40 @@ function YearGrid({
   const { yearButton } = propGetters;
   const selectedYear = calendars[0].year;
 
-  const { prevNextAnimation, prevNextAnimationKey } = useDateAnimation({
-    listenTo: 'years',
-  });
-
   return (
-    <AnimatePresence key={prevNextAnimationKey}>
-      <Stack
-        flexWrap="wrap"
-        flexDirection="row"
-        gap="$2"
-        padding="$2"
-        animation="quick"
-        {...prevNextAnimation()}
-      >
-        {years.map((y) => {
-          const isActive = y.year === Number(selectedYear);
-          return (
-            <Stack
-              key={y.$date.toString()}
-              flexBasis="31%"
-              flexGrow={1}
-              height="$11"
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="$2"
-              bg={isActive ? '$bgPrimary' : 'transparent'}
-              hoverStyle={{
-                bg: isActive ? '$bgPrimary' : '$bgHover',
-              }}
-              onPress={() => {
-                callOnClick(yearButton(y));
-                onYearSelect?.(y.year);
-                onSelect?.();
-              }}
+    <Stack flexWrap="wrap" flexDirection="row" gap="$2" padding="$2">
+      {years.map((y) => {
+        const isActive = y.year === Number(selectedYear);
+        return (
+          <Stack
+            key={y.$date.toString()}
+            flexBasis="31%"
+            flexGrow={1}
+            height="$11"
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="$2"
+            bg={isActive ? '$bgPrimary' : 'transparent'}
+            hoverStyle={{
+              bg: isActive ? '$bgPrimary' : '$bgHover',
+            }}
+            onPress={() => {
+              callOnClick(yearButton(y));
+              onYearSelect?.(y.year);
+              onSelect?.();
+            }}
+          >
+            <SizableText
+              size="$bodyMd"
+              color={isActive ? '$textInverse' : '$text'}
+              userSelect="none"
             >
-              <SizableText
-                size="$bodyMd"
-                color={isActive ? '$textInverse' : '$text'}
-                userSelect="none"
-              >
-                {y.year}
-              </SizableText>
-            </Stack>
-          );
-        })}
-      </Stack>
-    </AnimatePresence>
+              {y.year}
+            </SizableText>
+          </Stack>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -238,24 +215,15 @@ function useNavDisabled(calendarIndex: number, minDate?: Date, maxDate?: Date) {
       : Number(cal.year);
     const calMonth = currentMonthDay ? currentMonthDay.$date.getMonth() : 0;
 
-    let isPrevDisabled = false;
-    let isNextDisabled = false;
+    const isPrevDisabled = minDate
+      ? calYear < minDate.getFullYear() ||
+        (calYear === minDate.getFullYear() && calMonth <= minDate.getMonth())
+      : false;
 
-    if (minDate) {
-      const minYear = minDate.getFullYear();
-      const minMonth = minDate.getMonth();
-      if (calYear < minYear || (calYear === minYear && calMonth <= minMonth)) {
-        isPrevDisabled = true;
-      }
-    }
-
-    if (maxDate) {
-      const maxYear = maxDate.getFullYear();
-      const maxMonth = maxDate.getMonth();
-      if (calYear > maxYear || (calYear === maxYear && calMonth >= maxMonth)) {
-        isNextDisabled = true;
-      }
-    }
+    const isNextDisabled = maxDate
+      ? calYear > maxDate.getFullYear() ||
+        (calYear === maxDate.getFullYear() && calMonth >= maxDate.getMonth())
+      : false;
 
     return { isPrevDisabled, isNextDisabled };
   }, [cal, minDate, maxDate]);
@@ -269,6 +237,7 @@ function CalendarPanel({
   onMonthSelect,
   minDate,
   maxDate,
+  isDualPanel,
 }: {
   calendarIndex: number;
   showNav: 'both' | 'prev' | 'next' | 'none';
@@ -277,14 +246,14 @@ function CalendarPanel({
   onMonthSelect?: (monthIndex: number) => void;
   minDate?: Date;
   maxDate?: Date;
+  isDualPanel?: boolean;
 }) {
   const { data, propGetters } = useDatePickerContext();
   const { calendars } = data;
   const { addOffset, subtractOffset } = propGetters;
   const cal = calendars[calendarIndex];
 
-  // In range dual-panel mode, disable drill-down to keep UX simple
-  const isRangeDualPanel = mode === 'range';
+  const isRangeDualPanel = mode === 'range' && isDualPanel;
 
   const [viewMode, setViewMode] = useState<ViewMode>('day');
 
@@ -295,25 +264,19 @@ function CalendarPanel({
   );
 
   const handlePrevMonth = useCallback(() => {
-    if (viewMode === 'day') {
-      callOnClick(subtractOffset({ months: 1 }));
-    } else if (viewMode === 'month') {
-      callOnClick(subtractOffset({ years: 1 }));
-    }
+    const offset = viewMode === 'day' ? { months: 1 } : { years: 1 };
+    callOnClick(subtractOffset(offset));
   }, [viewMode, subtractOffset]);
 
   const handleNextMonth = useCallback(() => {
-    if (viewMode === 'day') {
-      callOnClick(addOffset({ months: 1 }));
-    } else if (viewMode === 'month') {
-      callOnClick(addOffset({ years: 1 }));
-    }
+    const offset = viewMode === 'day' ? { months: 1 } : { years: 1 };
+    callOnClick(addOffset(offset));
   }, [viewMode, addOffset]);
 
   if (!cal) return null;
 
   return (
-    <YStack flex={1}>
+    <YStack {...(isDualPanel ? { flex: 1, flexBasis: 0 } : {})}>
       {viewMode === 'year' ? (
         <YearRangeHeader />
       ) : (
@@ -348,7 +311,13 @@ function CalendarPanel({
         />
       )}
 
-      {viewMode === 'day' && <DayGrid calendarIndex={calendarIndex} />}
+      {viewMode === 'day' && (
+        <DayGrid
+          calendarIndex={calendarIndex}
+          hideOutOfMonth={false}
+          fullWidth={mode === 'range'}
+        />
+      )}
       {viewMode === 'month' && (
         <MonthGrid
           onSelect={() => setViewMode('day')}
@@ -404,42 +373,31 @@ export const Calendar = memo(
       );
     }
 
-    if (mode === 'range' && calendars.length > 1 && media.gtMd) {
+    const isDualPanelRange =
+      mode === 'range' && calendars.length > 1 && media.gtMd;
+    const panelProps = { mode, onYearSelect, onMonthSelect, minDate, maxDate };
+
+    if (isDualPanelRange) {
       return (
         <Stack flexDirection="row" gap="$6">
           <CalendarPanel
             calendarIndex={0}
             showNav="prev"
-            mode={mode}
-            onYearSelect={onYearSelect}
-            onMonthSelect={onMonthSelect}
-            minDate={minDate}
-            maxDate={maxDate}
+            isDualPanel
+            {...panelProps}
           />
+          <Stack width={1} bg="$neutral3" alignSelf="stretch" />
           <CalendarPanel
             calendarIndex={1}
             showNav="next"
-            mode={mode}
-            onYearSelect={onYearSelect}
-            onMonthSelect={onMonthSelect}
-            minDate={minDate}
-            maxDate={maxDate}
+            isDualPanel
+            {...panelProps}
           />
         </Stack>
       );
     }
 
-    return (
-      <CalendarPanel
-        calendarIndex={0}
-        showNav="both"
-        mode={mode}
-        onYearSelect={onYearSelect}
-        onMonthSelect={onMonthSelect}
-        minDate={minDate}
-        maxDate={maxDate}
-      />
-    );
+    return <CalendarPanel calendarIndex={0} showNav="both" {...panelProps} />;
   },
 );
 
