@@ -55,7 +55,7 @@ export function CalendarPanel({
   showNav: 'both' | 'prev' | 'next' | 'none';
   mode: DatePickerMode;
   onYearSelect?: (year: number) => void;
-  onMonthSelect?: (monthIndex: number) => void;
+  onMonthSelect?: (date: Date) => void;
   minDate?: Date;
   maxDate?: Date;
   isDualPanel?: boolean;

@@ -425,14 +425,11 @@ function MonthPicker({
   );
 
   const handleMonthSelect = useCallback(
-    (monthIndex: number) => {
-      const currentYear = value
-        ? value.getFullYear()
-        : new Date().getFullYear();
-      onChange?.(new Date(currentYear, monthIndex, 1));
+    (date: Date) => {
+      onChange?.(new Date(date.getFullYear(), date.getMonth(), 1));
       close();
     },
-    [value, onChange, close],
+    [onChange, close],
   );
 
   return (

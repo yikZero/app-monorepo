@@ -15,7 +15,7 @@ import type { DatePickerMode } from './type';
 interface ICalendarProps {
   mode?: DatePickerMode;
   onYearSelect?: (year: number) => void;
-  onMonthSelect?: (monthIndex: number) => void;
+  onMonthSelect?: (date: Date) => void;
   minDate?: Date;
   maxDate?: Date;
 }

@@ -9,7 +9,7 @@ export function MonthGrid({
   onMonthSelect,
 }: {
   onSelect?: () => void;
-  onMonthSelect?: (monthIndex: number) => void;
+  onMonthSelect?: (date: Date) => void;
 }) {
   const { data, propGetters } = useDatePickerContext();
   const { months } = data;
@@ -32,7 +32,7 @@ export function MonthGrid({
           }}
           onPress={() => {
             callOnClick(monthButton(m));
-            onMonthSelect?.(m.$date.getMonth());
+            onMonthSelect?.(m.$date);
             onSelect?.();
           }}
         >
