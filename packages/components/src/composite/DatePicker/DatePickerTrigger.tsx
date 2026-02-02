@@ -101,7 +101,7 @@ export const DatePickerTrigger = memo(
     }, [value, mode]);
 
     const handleClearPress = useCallback(
-      (e: any) => {
+      (e: { stopPropagation: () => void }) => {
         e?.stopPropagation();
         onClear?.();
       },

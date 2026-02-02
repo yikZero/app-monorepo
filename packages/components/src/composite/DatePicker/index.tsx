@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { withStaticProperties } from '@onekeyhq/components/src/shared/tamagui';
+import { withStaticProperties } from '../../shared/tamagui';
 
 import { Popover } from '../../actions/Popover';
 import { YStack } from '../../primitives';
@@ -34,28 +34,21 @@ const createPickerConfig = (
   mode: 'single' | 'range' | 'multiple' = 'single',
   calendarMode?: 'static',
 ) => {
-  const config: any = {
+  const config: React.ComponentProps<typeof DatePickerProvider>['config'] = {
     selectedDates,
     onDatesChange: handleDatesChange,
     dates: {
       mode,
       minDate,
       maxDate,
+      selectSameDate: mode !== 'range' ? true : undefined,
     },
     calendar: {
       startDay: WEEK_START_MONDAY,
+      mode: calendarMode,
+      offsets: mode === 'range' ? [1] : undefined,
     },
   };
-
-  if (mode !== 'range') {
-    config.dates.selectSameDate = true;
-  }
-  if (calendarMode) {
-    config.calendar.mode = calendarMode;
-  }
-  if (mode === 'range') {
-    config.calendar.offsets = [1];
-  }
 
   return config;
 };
