@@ -1,5 +1,5 @@
 import { useDatePickerContext } from '@rehookify/datepicker';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const SLIDE_OFFSET = 15;
 const INITIAL_ANIMATION = { enterStyle: { opacity: 0 } };
@@ -12,6 +12,23 @@ function slideAnimation(direction: number) {
   };
 }
 
+function getCalendarMonthYear(
+  calendars: {
+    days: { inCurrentMonth: boolean; $date: Date }[];
+    year: string;
+  }[],
+) {
+  const cal = calendars[0];
+  const currentMonthDay = cal?.days.find((d) => d.inCurrentMonth);
+  if (currentMonthDay) {
+    return {
+      monthIndex: currentMonthDay.$date.getMonth(),
+      year: currentMonthDay.$date.getFullYear(),
+    };
+  }
+  return { monthIndex: 0, year: Number(cal?.year ?? 0) };
+}
+
 export function useDateAnimation({
   listenTo,
 }: {
@@ -20,8 +37,14 @@ export function useDateAnimation({
   const {
     data: { years, calendars },
   } = useDatePickerContext();
-  const [currentMonth, setCurrentMonth] = useState<string | null>(null);
-  const [currentYear, setCurrentYear] = useState<string | null>(null);
+
+  const { monthIndex: calMonthIndex, year: calYear } = useMemo(
+    () => getCalendarMonthYear(calendars),
+    [calendars],
+  );
+
+  const [prevMonthIndex, setPrevMonthIndex] = useState<number | null>(null);
+  const [prevYear, setPrevYear] = useState<number | null>(null);
   const [currentYearsSum, setCurrentYearsSum] = useState<number | null>(null);
 
   const sumYears = useCallback(
@@ -36,16 +59,16 @@ export function useDateAnimation({
   }, [years, currentYearsSum, listenTo, sumYears]);
 
   useEffect(() => {
-    if (listenTo === 'month' && currentMonth !== calendars[0].month) {
-      setCurrentMonth(calendars[0].month);
+    if (listenTo === 'month' && prevMonthIndex !== calMonthIndex) {
+      setPrevMonthIndex(calMonthIndex);
     }
-  }, [calendars, currentMonth, listenTo]);
+  }, [calMonthIndex, prevMonthIndex, listenTo]);
 
   useEffect(() => {
-    if (listenTo === 'year' && currentYear !== calendars[0].year) {
-      setCurrentYear(calendars[0].year);
+    if (listenTo === 'year' && prevYear !== calYear) {
+      setPrevYear(calYear);
     }
-  }, [calendars, currentYear, listenTo]);
+  }, [calYear, prevYear, listenTo]);
 
   const prevNextAnimation = () => {
     if (listenTo === 'years') {
@@ -54,26 +77,22 @@ export function useDateAnimation({
     }
 
     if (listenTo === 'month') {
-      if (currentMonth === null) return INITIAL_ANIMATION;
+      if (prevMonthIndex === null) return INITIAL_ANIMATION;
 
-      // Handle December->January and January->December wrapping
-      if (currentMonth === 'December' && calendars[0].month === 'January') {
+      // Handle December(11)->January(0) and January(0)->December(11) wrapping
+      if (prevMonthIndex === 11 && calMonthIndex === 0) {
         return slideAnimation(1);
       }
-      if (currentMonth === 'January' && calendars[0].month === 'December') {
+      if (prevMonthIndex === 0 && calMonthIndex === 11) {
         return slideAnimation(-1);
       }
 
-      const newDate = new Date(`${calendars[0].month} 1, ${calendars[0].year}`);
-      const currentDate = new Date(`${currentMonth} 1, ${calendars[0].year}`);
-      return slideAnimation(newDate < currentDate ? -1 : 1);
+      return slideAnimation(calMonthIndex - prevMonthIndex);
     }
 
     if (listenTo === 'year') {
-      if (currentYear === null) return INITIAL_ANIMATION;
-      const newDate = new Date(`${calendars[0].month} 1, ${calendars[0].year}`);
-      const currentDate = new Date(`${calendars[0].month} 1, ${currentYear}`);
-      return slideAnimation(newDate < currentDate ? -1 : 1);
+      if (prevYear === null) return INITIAL_ANIMATION;
+      return slideAnimation(calYear - prevYear);
     }
 
     return INITIAL_ANIMATION;

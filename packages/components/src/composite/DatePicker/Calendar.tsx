@@ -44,7 +44,7 @@ function DayGrid({ calendarIndex }: { calendarIndex: number }) {
             <Stack
               key={day}
               flexBasis="14.28%"
-              height="$6"
+              height="$8"
               alignItems="center"
               justifyContent="center"
             >
@@ -113,7 +113,7 @@ function MonthGrid({
             key={m.$date.toString()}
             flexBasis="31%"
             flexGrow={1}
-            height="$9"
+            height="$11"
             alignItems="center"
             justifyContent="center"
             borderRadius="$2"
@@ -174,7 +174,7 @@ function YearGrid({
               key={y.$date.toString()}
               flexBasis="31%"
               flexGrow={1}
-              height="$9"
+              height="$11"
               alignItems="center"
               justifyContent="center"
               borderRadius="$2"
@@ -232,9 +232,11 @@ function useNavDisabled(calendarIndex: number, minDate?: Date, maxDate?: Date) {
   return useMemo(() => {
     if (!cal) return { isPrevDisabled: false, isNextDisabled: false };
 
-    const calYear = Number(cal.year);
-    const calMonthDate = new Date(`${cal.month} 1, ${cal.year}`);
-    const calMonth = calMonthDate.getMonth();
+    const currentMonthDay = cal.days.find((d) => d.inCurrentMonth);
+    const calYear = currentMonthDay
+      ? currentMonthDay.$date.getFullYear()
+      : Number(cal.year);
+    const calMonth = currentMonthDay ? currentMonthDay.$date.getMonth() : 0;
 
     let isPrevDisabled = false;
     let isNextDisabled = false;

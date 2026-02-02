@@ -4,7 +4,7 @@ import { SizableText, Stack } from '../../primitives';
 
 import type { IDayCellProps } from './type';
 
-const CELL_SIZE = '$8'; // 32px
+const CELL_SIZE = '$10'; // 40px
 
 export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
   const handlePress = () => {
@@ -53,8 +53,8 @@ export const DayCell = memo(({ day, onPress }: IDayCellProps) => {
     day.disabled || !day.inCurrentMonth
       ? '$textDisabled'
       : isSelected
-        ? '$textInverse'
-        : '$text';
+      ? '$textInverse'
+      : '$text';
 
   const outerBg =
     hasRangeHighlight || day.disabled ? '$bgStrong' : 'transparent';

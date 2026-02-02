@@ -18,6 +18,8 @@ import type {
   IYearPickerProps,
 } from './type';
 
+const WEEK_START_MONDAY = 1 as const;
+
 function BasicDatePicker({
   value,
   onChange,
@@ -51,6 +53,9 @@ function BasicDatePicker({
         mode: 'single' as const,
         minDate,
         maxDate,
+      },
+      calendar: {
+        startDay: WEEK_START_MONDAY,
       },
     }),
     [selectedDates, handleDatesChange, minDate, maxDate],
@@ -152,6 +157,7 @@ function RangePicker({
         maxDate,
       },
       calendar: {
+        startDay: WEEK_START_MONDAY,
         offsets: [1],
       },
     }),
@@ -245,6 +251,7 @@ function YearPicker({
       },
       calendar: {
         mode: 'static' as const,
+        startDay: WEEK_START_MONDAY,
       },
     }),
     [selectedDates, handleDatesChange, minDate, maxDate],
@@ -344,6 +351,7 @@ function MonthPicker({
       },
       calendar: {
         mode: 'static' as const,
+        startDay: WEEK_START_MONDAY,
       },
     }),
     [selectedDates, handleDatesChange, minDate, maxDate],
@@ -437,6 +445,9 @@ function MultiSelectPicker({
         mode: 'multiple' as const,
         minDate,
         maxDate,
+      },
+      calendar: {
+        startDay: WEEK_START_MONDAY,
       },
     }),
     [value, handleDatesChange, minDate, maxDate],
