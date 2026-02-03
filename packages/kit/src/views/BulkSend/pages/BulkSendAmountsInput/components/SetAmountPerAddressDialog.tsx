@@ -189,8 +189,12 @@ function SetAmountPerAddressDialogContent({
         />
         <Dialog.Footer
           onConfirm={handleConfirm}
-          onConfirmText="Confirm"
-          onCancelText="Cancel"
+          onConfirmText={appLocale.intl.formatMessage({
+            id: ETranslations.global_confirm,
+          })}
+          onCancelText={appLocale.intl.formatMessage({
+            id: ETranslations.global_cancel,
+          })}
           confirmButtonProps={{
             disabled: !isAmountValid,
           }}

@@ -126,6 +126,11 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       for (let i = 0; i < lines.length; i += 1) {
         const line = lines[i].trim();
 
+        // Skip empty lines
+        if (!line) {
+          continue;
+        }
+
         const currentLineMode = parseLineMode(line);
 
         // Set mode from first non-empty line
