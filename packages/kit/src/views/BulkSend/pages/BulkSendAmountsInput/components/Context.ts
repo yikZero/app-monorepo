@@ -13,6 +13,8 @@ import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
 export type IPreviewState = {
   specifiedPreviewed: boolean;
   rangePreviewed: boolean;
+  // Pre-generated amounts for Range mode preview
+  rangePreviewAmounts: string[];
 };
 
 // Mobile-specific data structure for each mode
@@ -121,6 +123,7 @@ export const BulkSendAmountsInputContext =
     previewState: {
       specifiedPreviewed: false,
       rangePreviewed: false,
+      rangePreviewAmounts: [],
     },
     setPreviewState: () => {},
     // Mobile-specific

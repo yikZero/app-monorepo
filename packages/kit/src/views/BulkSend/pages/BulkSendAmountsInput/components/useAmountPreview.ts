@@ -30,17 +30,26 @@ export function useAmountPreview({
   setPreviewState,
 }: IUseAmountPreviewParams) {
   const updateTransfersInfoWithAmounts = useCallback(
-    (mode: EAmountInputMode, values: IAmountInputValues) => {
+    (
+      mode: EAmountInputMode,
+      values: IAmountInputValues,
+      preGeneratedAmounts?: string[],
+    ) => {
       let amounts: string[] = [];
 
       switch (mode) {
         case EAmountInputMode.Range:
-          amounts = generateRandomAmountsFromRange({
-            transfersInfo,
-            rangeMin: values.rangeMin,
-            rangeMax: values.rangeMax,
-            decimals: tokenInfo.decimals,
-          });
+          // Use pre-generated amounts if available, otherwise generate new ones
+          if (preGeneratedAmounts && preGeneratedAmounts.length > 0) {
+            amounts = preGeneratedAmounts;
+          } else {
+            amounts = generateRandomAmountsFromRange({
+              transfersInfo,
+              rangeMin: values.rangeMin,
+              rangeMax: values.rangeMax,
+              decimals: tokenInfo.decimals,
+            });
+          }
           break;
         case EAmountInputMode.Specified:
           amounts = generateAmountsFromSpecifiedAmount({
@@ -63,8 +72,12 @@ export function useAmountPreview({
   );
 
   const handlePreview = useCallback(
-    (mode: EAmountInputMode, values: IAmountInputValues) => {
-      updateTransfersInfoWithAmounts(mode, values);
+    (
+      mode: EAmountInputMode,
+      values: IAmountInputValues,
+      preGeneratedAmounts?: string[],
+    ) => {
+      updateTransfersInfoWithAmounts(mode, values, preGeneratedAmounts);
 
       switch (mode) {
         case EAmountInputMode.Specified:

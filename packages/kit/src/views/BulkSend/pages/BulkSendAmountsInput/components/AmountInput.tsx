@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import BigNumber from 'bignumber.js';
 
@@ -22,6 +22,8 @@ import {
   EAmountInputMode,
   type IAmountInputError,
 } from '@onekeyhq/shared/types/bulkSend';
+
+import { generateRandomAmountsFromRange } from '../../../utils';
 
 import { useBulkSendAmountsInputContext } from './Context';
 
@@ -132,11 +134,12 @@ export function SpecifiedAmountInput() {
 export function RangeAmountInput() {
   const {
     tokenDetails,
+    tokenInfo,
+    transfersInfo,
     amountInputValues,
     setAmountInputValues,
     amountInputErrors,
     setAmountInputErrors,
-    tokenInfo,
     setPreviewState,
   } = useBulkSendAmountsInputContext();
 
@@ -148,58 +151,96 @@ export function RangeAmountInput() {
     (min: string, max: string): IAmountInputError => {
       const errors: IAmountInputError = {};
 
-      // rangeMin can be 0 (it's just the lower bound of the range)
-      const { error: rangeMinError } = validateTokenAmount({
-        token: tokenInfo,
-        amount: min,
-        maxAmount: balance,
-        allowZero: true,
-        customErrorMessages: {
-          emptyAmount: 'Min is required',
-          maxAmount: 'Insufficient balance',
-        },
-      });
-      errors.rangeMin = rangeMinError;
-      const { error: rangeMaxError } = validateTokenAmount({
-        token: tokenInfo,
-        amount: max,
-        maxAmount: balance,
-        allowZero: false,
-        customErrorMessages: {
-          emptyAmount: 'Max is required',
-          maxAmount: 'Insufficient balance',
-          zeroAmount: 'Max must be greater than 0',
-        },
-      });
-      errors.rangeMax = rangeMaxError;
-      // Check max > min
-      if (!errors.rangeMin && !errors.rangeMax) {
-        const minBN = new BigNumber(min);
-        const maxBN = new BigNumber(max);
-        if (maxBN.isLessThanOrEqualTo(minBN)) {
-          errors.rangeMax = 'Max must be greater than Min';
-        }
+      // Check if min or max exceeds balance
+      const minBN = new BigNumber(min || '0');
+      const maxBN = new BigNumber(max || '0');
+      const balanceBN = new BigNumber(balance);
+
+      if (minBN.isGreaterThan(balanceBN) || maxBN.isGreaterThan(balanceBN)) {
+        errors.rangeError = 'Insufficient balance.';
+        return errors;
+      }
+
+      // Check if min >= max (invalid range)
+      if (min !== '' && max !== '' && minBN.isGreaterThanOrEqualTo(maxBN)) {
+        errors.rangeError = 'Set a proper range.';
+        return errors;
       }
 
       return errors;
     },
-    [tokenInfo, balance],
+    [balance],
   );
+
+  const generatePreviewAmounts = useCallback(
+    (min: string, max: string): string[] => {
+      if (!min || !max || transfersInfo.length === 0) return [];
+      return generateRandomAmountsFromRange({
+        transfersInfo,
+        rangeMin: min,
+        rangeMax: max,
+        decimals: tokenInfo.decimals,
+        balance: [balance], // Pass balance to constrain total
+      });
+    },
+    [transfersInfo, tokenInfo.decimals, balance],
+  );
+
+  // Generate initial preview amounts when component mounts with valid values
+  useEffect(() => {
+    const { rangeMin, rangeMax } = amountInputValues;
+    if (!rangeMin || !rangeMax || transfersInfo.length === 0) return;
+
+    const minBN = new BigNumber(rangeMin);
+    const maxBN = new BigNumber(rangeMax);
+    const balanceBN = new BigNumber(balance);
+
+    // Check if values are valid
+    const isValid =
+      !minBN.isGreaterThan(balanceBN) &&
+      !maxBN.isGreaterThan(balanceBN) &&
+      !minBN.isGreaterThanOrEqualTo(maxBN);
+
+    if (isValid) {
+      const previewAmounts = generatePreviewAmounts(rangeMin, rangeMax);
+      setPreviewState((prev) => ({
+        ...prev,
+        rangePreviewAmounts: previewAmounts,
+      }));
+    }
+    // Only run on mount and when transfersInfo changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transfersInfo.length]);
 
   const handleMinChange = useCallback(
     (value: string) => {
       const newValues = { ...amountInputValues, rangeMin: value };
       setAmountInputValues(newValues);
 
-      // Reset preview state when input changes
-      setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
-
       const errors = validateRange(value, amountInputValues.rangeMax);
       setAmountInputErrors({
         ...amountInputErrors,
-        rangeMin: errors.rangeMin,
-        rangeMax: errors.rangeMax,
+        rangeError: errors.rangeError,
       });
+
+      // Generate preview amounts if valid
+      if (!errors.rangeError && value && amountInputValues.rangeMax) {
+        const previewAmounts = generatePreviewAmounts(
+          value,
+          amountInputValues.rangeMax,
+        );
+        setPreviewState((prev) => ({
+          ...prev,
+          rangePreviewed: false,
+          rangePreviewAmounts: previewAmounts,
+        }));
+      } else {
+        setPreviewState((prev) => ({
+          ...prev,
+          rangePreviewed: false,
+          rangePreviewAmounts: [],
+        }));
+      }
     },
     [
       amountInputValues,
@@ -208,6 +249,7 @@ export function RangeAmountInput() {
       amountInputErrors,
       setAmountInputErrors,
       setPreviewState,
+      generatePreviewAmounts,
     ],
   );
 
@@ -216,15 +258,30 @@ export function RangeAmountInput() {
       const newValues = { ...amountInputValues, rangeMax: value };
       setAmountInputValues(newValues);
 
-      // Reset preview state when input changes
-      setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
-
       const errors = validateRange(amountInputValues.rangeMin, value);
       setAmountInputErrors({
         ...amountInputErrors,
-        rangeMin: errors.rangeMin,
-        rangeMax: errors.rangeMax,
+        rangeError: errors.rangeError,
       });
+
+      // Generate preview amounts if valid
+      if (!errors.rangeError && amountInputValues.rangeMin && value) {
+        const previewAmounts = generatePreviewAmounts(
+          amountInputValues.rangeMin,
+          value,
+        );
+        setPreviewState((prev) => ({
+          ...prev,
+          rangePreviewed: false,
+          rangePreviewAmounts: previewAmounts,
+        }));
+      } else {
+        setPreviewState((prev) => ({
+          ...prev,
+          rangePreviewed: false,
+          rangePreviewAmounts: [],
+        }));
+      }
     },
     [
       amountInputValues,
@@ -233,6 +290,7 @@ export function RangeAmountInput() {
       amountInputErrors,
       setAmountInputErrors,
       setPreviewState,
+      generatePreviewAmounts,
     ],
   );
 
@@ -249,116 +307,107 @@ export function RangeAmountInput() {
     return amount.times(tokenDetails.price).toFixed();
   }, [amountInputValues.rangeMax, tokenDetails?.price]);
 
-  const minSharedStyles = getSharedInputStyles({
-    error: !!amountInputErrors.rangeMin,
-  });
-  const maxSharedStyles = getSharedInputStyles({
-    error: !!amountInputErrors.rangeMax,
+  const hasError = !!amountInputErrors.rangeError;
+  const sharedStyles = getSharedInputStyles({
+    error: hasError,
   });
 
   return (
     <YStack gap="$1.5" w="100%">
-      <XStack gap="$2" alignItems="flex-start" w="100%">
-        <YStack flex={1} gap="$1">
-          <Stack
-            borderRadius="$3"
-            borderWidth={minSharedStyles.borderWidth}
-            borderColor={minSharedStyles.borderColor}
-            overflow="hidden"
+      <XStack gap="$2" alignItems="center" w="100%">
+        <Stack
+          flex={1}
+          borderRadius="$3"
+          borderWidth={sharedStyles.borderWidth}
+          borderColor={sharedStyles.borderColor}
+          overflow="hidden"
+        >
+          <XStack alignItems="center" px="$3.5" pt="$2.5" pb="$1">
+            <Input
+              flex={1}
+              value={amountInputValues.rangeMin}
+              onChangeText={handleMinChange}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              containerProps={{
+                width: '100%',
+                borderWidth: 0,
+              }}
+              fontSize={28}
+              fontWeight="600"
+              px="$0"
+            />
+          </XStack>
+          <XStack
+            alignItems="center"
+            justifyContent="space-between"
+            px="$3.5"
+            pb="$2"
           >
-            <XStack alignItems="center" px="$3.5" pt="$2.5" pb="$1">
-              <Input
-                flex={1}
-                value={amountInputValues.rangeMin}
-                onChangeText={handleMinChange}
-                placeholder="0"
-                keyboardType="decimal-pad"
-                containerProps={{
-                  width: '100%',
-                  borderWidth: 0,
-                }}
-                fontSize={28}
-                fontWeight="600"
-                px="$0"
-              />
-            </XStack>
-            <XStack
-              alignItems="center"
-              justifyContent="space-between"
-              px="$3.5"
-              pb="$2"
+            <NumberSizeableText
+              size="$bodyMd"
+              color="$textSubdued"
+              formatter="value"
+              formatterOptions={{ currency: settings.currencyInfo.symbol }}
             >
-              <NumberSizeableText
-                size="$bodyMd"
-                color="$textSubdued"
-                formatter="value"
-                formatterOptions={{ currency: settings.currencyInfo.symbol }}
-              >
-                {minFiatValue}
-              </NumberSizeableText>
-              <SizableText size="$bodyMdMedium" color="$text">
-                {tokenDetails?.info.symbol}
-              </SizableText>
-            </XStack>
-          </Stack>
-          {amountInputErrors.rangeMin ? (
-            <SizableText size="$bodySm" color="$textCritical" px="$1">
-              {amountInputErrors.rangeMin}
+              {minFiatValue}
+            </NumberSizeableText>
+            <SizableText size="$bodyMdMedium" color="$text">
+              {tokenDetails?.info.symbol}
             </SizableText>
-          ) : null}
-        </YStack>
+          </XStack>
+        </Stack>
 
-        <Stack w="$2" h={1} bg="$text" mt="$8" />
+        <Stack w="$2" h="$0.5" bg="$borderStrong" />
 
-        <YStack flex={1} gap="$1">
-          <Stack
-            borderRadius="$3"
-            borderWidth={maxSharedStyles.borderWidth}
-            borderColor={maxSharedStyles.borderColor}
-            overflow="hidden"
+        <Stack
+          flex={1}
+          borderRadius="$3"
+          borderWidth={sharedStyles.borderWidth}
+          borderColor={sharedStyles.borderColor}
+          overflow="hidden"
+        >
+          <XStack alignItems="center" px="$3.5" pt="$2.5" pb="$1">
+            <Input
+              flex={1}
+              value={amountInputValues.rangeMax}
+              onChangeText={handleMaxChange}
+              placeholder="Max"
+              keyboardType="decimal-pad"
+              containerProps={{
+                width: '100%',
+                borderWidth: 0,
+              }}
+              fontSize={28}
+              fontWeight="600"
+              px="$0"
+            />
+          </XStack>
+          <XStack
+            alignItems="center"
+            justifyContent="space-between"
+            px="$3.5"
+            pb="$2"
           >
-            <XStack alignItems="center" px="$3.5" pt="$2.5" pb="$1">
-              <Input
-                flex={1}
-                value={amountInputValues.rangeMax}
-                onChangeText={handleMaxChange}
-                placeholder="Max"
-                keyboardType="decimal-pad"
-                containerProps={{
-                  width: '100%',
-                  borderWidth: 0,
-                }}
-                fontSize={28}
-                fontWeight="600"
-                px="$0"
-              />
-            </XStack>
-            <XStack
-              alignItems="center"
-              justifyContent="space-between"
-              px="$3.5"
-              pb="$2"
+            <NumberSizeableText
+              size="$bodyMd"
+              color="$textSubdued"
+              formatter="value"
+              formatterOptions={{ currency: settings.currencyInfo.symbol }}
             >
-              <NumberSizeableText
-                size="$bodyMd"
-                color="$textSubdued"
-                formatter="value"
-                formatterOptions={{ currency: settings.currencyInfo.symbol }}
-              >
-                {maxFiatValue}
-              </NumberSizeableText>
-              <SizableText size="$bodyMdMedium" color="$text">
-                {tokenDetails?.info.symbol}
-              </SizableText>
-            </XStack>
-          </Stack>
-          {amountInputErrors.rangeMax ? (
-            <SizableText size="$bodySm" color="$textCritical" px="$1">
-              {amountInputErrors.rangeMax}
+              {maxFiatValue}
+            </NumberSizeableText>
+            <SizableText size="$bodyMdMedium" color="$text">
+              {tokenDetails?.info.symbol}
             </SizableText>
-          ) : null}
-        </YStack>
+          </XStack>
+        </Stack>
       </XStack>
+      {amountInputErrors.rangeError ? (
+        <SizableText size="$bodyMd" color="$textCritical" px="$1">
+          {amountInputErrors.rangeError}
+        </SizableText>
+      ) : null}
     </YStack>
   );
 }
@@ -479,44 +528,28 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     const balance = tokenDetails?.balanceParsed ?? '0';
     const errors: IAmountInputError = {};
 
-    // rangeMin can be 0 (it's just the lower bound of the range)
-    const { error: rangeMinError } = validateTokenAmount({
-      token: tokenInfo,
-      amount: amountInputValues.rangeMin,
-      maxAmount: balance,
-      allowZero: true,
-      customErrorMessages: {
-        emptyAmount: 'Min is required',
-        maxAmount: 'Insufficient balance',
-      },
-    });
-    errors.rangeMin = rangeMinError;
+    const minBN = new BigNumber(amountInputValues.rangeMin || '0');
+    const maxBN = new BigNumber(amountInputValues.rangeMax || '0');
+    const balanceBN = new BigNumber(balance);
 
-    const { error: rangeMaxError } = validateTokenAmount({
-      token: tokenInfo,
-      amount: amountInputValues.rangeMax,
-      maxAmount: balance,
-      allowZero: false,
-      customErrorMessages: {
-        emptyAmount: 'Max is required',
-        maxAmount: 'Insufficient balance',
-        zeroAmount: 'Max must be greater than 0',
-      },
-    });
-    errors.rangeMax = rangeMaxError;
+    // Check if min or max exceeds balance
+    if (minBN.isGreaterThan(balanceBN) || maxBN.isGreaterThan(balanceBN)) {
+      errors.rangeError = 'Insufficient balance.';
+      return errors;
+    }
 
-    // Check max > min
-    if (!errors.rangeMin && !errors.rangeMax) {
-      const minBN = new BigNumber(amountInputValues.rangeMin);
-      const maxBN = new BigNumber(amountInputValues.rangeMax);
-      if (maxBN.isLessThanOrEqualTo(minBN)) {
-        errors.rangeMax = 'Max must be greater than Min';
-      }
+    // Check if min >= max (invalid range)
+    if (
+      amountInputValues.rangeMin !== '' &&
+      amountInputValues.rangeMax !== '' &&
+      minBN.isGreaterThanOrEqualTo(maxBN)
+    ) {
+      errors.rangeError = 'Set a proper range.';
+      return errors;
     }
 
     return errors;
   }, [
-    tokenInfo,
     tokenDetails?.balanceParsed,
     amountInputValues.rangeMin,
     amountInputValues.rangeMax,

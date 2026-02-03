@@ -8,6 +8,7 @@ import {
 } from '@onekeyhq/components';
 import {
   EAmountInputMode,
+  type IAmountInputError,
   type IAmountInputValues,
 } from '@onekeyhq/shared/types/bulkSend';
 import type { IToken, ITokenFiat } from '@onekeyhq/shared/types/token';
@@ -20,6 +21,7 @@ type IAmountPreviewProps = {
   inDialog?: boolean;
   amountInputValues: IAmountInputValues;
   amountInputMode: EAmountInputMode;
+  amountInputErrors?: IAmountInputError;
   tokenDetails: ({ info: IToken } & ITokenFiat) | undefined;
   transfersInfo: ITransferInfo[];
   containerProps?: IYStackProps;
@@ -27,6 +29,7 @@ type IAmountPreviewProps = {
   isInPreviewMode?: boolean;
   previewTotalTokenAmount?: string;
   previewTotalFiatAmount?: string;
+  rangePreviewAmounts?: string[];
   onMaxPress?: () => void;
 };
 
@@ -34,15 +37,39 @@ export function AmountPreview({
   inDialog,
   amountInputValues,
   amountInputMode,
+  amountInputErrors,
   tokenDetails,
   transfersInfo,
   isInPreviewMode,
   previewTotalTokenAmount,
   previewTotalFiatAmount,
+  rangePreviewAmounts,
   containerProps,
   onMaxPress,
 }: IAmountPreviewProps) {
   const [settings] = useSettingsPersistAtom();
+
+  // Check if range has values (for showing the section)
+  const hasRangeValues = useMemo(() => {
+    if (amountInputMode !== EAmountInputMode.Range) return false;
+    return (
+      amountInputValues.rangeMin !== '' || amountInputValues.rangeMax !== ''
+    );
+  }, [amountInputMode, amountInputValues.rangeMin, amountInputValues.rangeMax]);
+
+  // Check if range values are valid (no errors)
+  const isRangeValid = useMemo(() => {
+    if (amountInputMode !== EAmountInputMode.Range) return false;
+    const hasErrors = !!amountInputErrors?.rangeError;
+    const hasValues =
+      amountInputValues.rangeMin !== '' && amountInputValues.rangeMax !== '';
+    return !hasErrors && hasValues;
+  }, [
+    amountInputMode,
+    amountInputErrors?.rangeError,
+    amountInputValues.rangeMin,
+    amountInputValues.rangeMax,
+  ]);
 
   // Determine if we should show Total amount section
   const showTotalAmount = useMemo(() => {
@@ -51,13 +78,14 @@ export function AmountPreview({
     }
     // Mobile mode logic:
     // - Specified mode: always show Total (real-time or preview)
-    // - Range mode: only show Total when in preview mode
+    // - Range mode: show section when has values or in preview mode
     // - Custom mode: always show Total
     if (amountInputMode === EAmountInputMode.Range) {
-      return isInPreviewMode;
+      return isInPreviewMode || hasRangeValues;
     }
     return true;
-  }, [inDialog, amountInputMode, isInPreviewMode]);
+  }, [inDialog, amountInputMode, isInPreviewMode, hasRangeValues]);
+
 
   // Determine if we should show Available section
   // In preview mode for Specified/Range, hide Available
@@ -104,6 +132,21 @@ export function AmountPreview({
         .toFixed();
       return { totalTokenAmount, totalFiatAmount };
     }
+    // Mobile Range mode (not in preview): use pre-generated amounts
+    if (amountInputMode === EAmountInputMode.Range && !isInPreviewMode) {
+      // If range has errors or no preview amounts, show placeholder
+      if (!isRangeValid || !rangePreviewAmounts?.length) {
+        return { totalTokenAmount: '--', totalFiatAmount: '--' };
+      }
+      // Calculate total from pre-generated amounts
+      const total = rangePreviewAmounts.reduce(
+        (acc, amount) => acc.plus(amount || '0'),
+        new BigNumber(0),
+      );
+      const totalTokenAmount = total.toFixed();
+      const totalFiatAmount = total.times(tokenDetails?.price ?? 0).toFixed();
+      return { totalTokenAmount, totalFiatAmount };
+    }
     // For other modes, calculate from transfersInfo
     const total = transfersInfo.reduce(
       (acc, transfer) => acc.plus(transfer.amount || '0'),
@@ -121,6 +164,8 @@ export function AmountPreview({
     tokenDetails?.price,
     transfersInfo,
     amountInputMode,
+    isRangeValid,
+    rangePreviewAmounts,
   ]);
 
   return (
@@ -132,24 +177,30 @@ export function AmountPreview({
               Total amount
             </SizableText>
             <XStack alignItems="center" gap="$1">
-              <NumberSizeableText
-                size="$bodyLgMedium"
-                formatter="balance"
-                formatterOptions={{ tokenSymbol: tokenDetails?.info.symbol }}
-              >
-                {totalTokenAmount}
-              </NumberSizeableText>
-              <SizableText size="$bodyLgMedium" color="$textSubdued">
-                (
-                <NumberSizeableText
-                  size="$bodyLgMedium"
-                  formatter="value"
-                  formatterOptions={{ currency: settings.currencyInfo.symbol }}
-                >
-                  {totalFiatAmount}
-                </NumberSizeableText>
-                )
-              </SizableText>
+              {totalTokenAmount === '--' ? (
+                <SizableText size="$bodyLgMedium">--</SizableText>
+              ) : (
+                <>
+                  <NumberSizeableText
+                    size="$bodyLgMedium"
+                    formatter="balance"
+                    formatterOptions={{ tokenSymbol: tokenDetails?.info.symbol }}
+                  >
+                    {totalTokenAmount}
+                  </NumberSizeableText>
+                  <SizableText size="$bodyLgMedium" color="$textSubdued">
+                    (
+                    <NumberSizeableText
+                      size="$bodyLgMedium"
+                      formatter="value"
+                      formatterOptions={{ currency: settings.currencyInfo.symbol }}
+                    >
+                      {totalFiatAmount}
+                    </NumberSizeableText>
+                    )
+                  </SizableText>
+                </>
+              )}
             </XStack>
           </YStack>
           {showAvailable ? (

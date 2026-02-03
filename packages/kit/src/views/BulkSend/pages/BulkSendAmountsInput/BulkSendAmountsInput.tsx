@@ -136,7 +136,13 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       amountInputMode !== EAmountInputMode.Custom &&
       !shouldShowTxDetails(amountInputMode)
     ) {
-      handlePreview(amountInputMode, amountInputValues);
+      handlePreview(
+        amountInputMode,
+        amountInputValues,
+        amountInputMode === EAmountInputMode.Range
+          ? previewState.rangePreviewAmounts
+          : undefined,
+      );
       return;
     }
 
@@ -387,6 +393,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
                 }}
                 amountInputValues={amountInputValues}
                 amountInputMode={amountInputMode}
+                amountInputErrors={amountInputErrors}
                 tokenDetails={tokenDetails}
                 transfersInfo={
                   amountInputMode === EAmountInputMode.Custom
@@ -396,6 +403,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
                 isInPreviewMode={isInPreviewMode}
                 previewTotalTokenAmount={currentModeData.totalTokenAmount}
                 previewTotalFiatAmount={currentModeData.totalFiatAmount}
+                rangePreviewAmounts={previewState.rangePreviewAmounts}
                 onMaxPress={
                   amountInputMode === EAmountInputMode.Specified
                     ? handleMaxPress
@@ -505,6 +513,7 @@ function BulkSendAmountsInput() {
   const [previewState, setPreviewState] = useState<IPreviewState>({
     specifiedPreviewed: false,
     rangePreviewed: false,
+    rangePreviewAmounts: [],
   });
 
   // Mobile-specific: independent data for each mode

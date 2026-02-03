@@ -35,8 +35,7 @@ export function calculateIsAmountValid({
     }
     case EAmountInputMode.Range:
       return (
-        !amountInputErrors.rangeMin &&
-        !amountInputErrors.rangeMax &&
+        !amountInputErrors.rangeError &&
         amountInputValues.rangeMin !== '' &&
         amountInputValues.rangeMax !== ''
       );
