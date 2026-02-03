@@ -102,15 +102,16 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       }
 
       const lines = value.split('\n');
+      const nonEmptyLines = lines.filter((l) => l.trim());
       const lineErrors: ILineError[] = [];
 
-      // Check max lines limit
-      if (maxLines && lines.length > maxLines) {
+      // Check max lines limit (based on non-empty lines)
+      if (maxLines && nonEmptyLines.length > maxLines) {
         lineErrors.push({
           lineNumber: -1,
           message: intl.formatMessage(
             { id: ETranslations.wallet_bulk_send_error_max_addresses },
-            { max: maxLines, current: lines.length },
+            { max: maxLines, current: nonEmptyLines.length },
           ),
         });
         setErrors(lineErrors);
