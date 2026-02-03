@@ -189,7 +189,11 @@ function SenderAddressesInput() {
     }
 
     if (tokenDetailsState.isRefreshing) {
-      return <Skeleton.BodyMd mt="$1.5" />;
+      return (
+        <XStack alignItems="center" gap="$1" mt="$1.5">
+          <Skeleton.BodyMd width="$40" />
+        </XStack>
+      );
     }
     return null;
   }, [

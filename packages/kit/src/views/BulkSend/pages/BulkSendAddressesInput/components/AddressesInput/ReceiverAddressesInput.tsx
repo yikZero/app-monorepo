@@ -247,7 +247,6 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           clearNotMatch: true,
         }}
         placeholder="Enter addresses, one per line"
-        height={120}
         errors={errors}
         networkId={selectedNetworkId}
         accountId={selectedAccountId}

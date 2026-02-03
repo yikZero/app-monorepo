@@ -36,7 +36,11 @@ export function SpecifiedAmountInput() {
     setAmountInputValues,
     amountInputErrors,
     setAmountInputErrors,
+    previewState,
+    setPreviewState,
   } = useBulkSendAmountsInputContext();
+
+  const isInPreviewMode = previewState.specifiedPreviewed;
 
   const { network } = useAccountData({ networkId });
 
@@ -53,6 +57,9 @@ export function SpecifiedAmountInput() {
         ...amountInputValues,
         specifiedAmount: value,
       });
+
+      // Reset preview state when input changes
+      setPreviewState((prev) => ({ ...prev, specifiedPreviewed: false }));
 
       const { error } = validateTokenAmount({
         token: tokenInfo,
@@ -79,6 +86,7 @@ export function SpecifiedAmountInput() {
       transfersInfo.length,
       amountInputErrors,
       setAmountInputErrors,
+      setPreviewState,
     ],
   );
 
@@ -98,6 +106,7 @@ export function SpecifiedAmountInput() {
         inputProps={{
           placeholder: '0',
           loading: isLoading,
+          autoFocus: !isInPreviewMode,
         }}
         valueProps={{
           value: fiatValue,
@@ -128,6 +137,7 @@ export function RangeAmountInput() {
     amountInputErrors,
     setAmountInputErrors,
     tokenInfo,
+    setPreviewState,
   } = useBulkSendAmountsInputContext();
 
   const [settings] = useSettingsPersistAtom();
@@ -181,6 +191,9 @@ export function RangeAmountInput() {
       const newValues = { ...amountInputValues, rangeMin: value };
       setAmountInputValues(newValues);
 
+      // Reset preview state when input changes
+      setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
+
       const errors = validateRange(value, amountInputValues.rangeMax);
       setAmountInputErrors({
         ...amountInputErrors,
@@ -194,6 +207,7 @@ export function RangeAmountInput() {
       validateRange,
       amountInputErrors,
       setAmountInputErrors,
+      setPreviewState,
     ],
   );
 
@@ -201,6 +215,9 @@ export function RangeAmountInput() {
     (value: string) => {
       const newValues = { ...amountInputValues, rangeMax: value };
       setAmountInputValues(newValues);
+
+      // Reset preview state when input changes
+      setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
 
       const errors = validateRange(amountInputValues.rangeMin, value);
       setAmountInputErrors({
@@ -215,6 +232,7 @@ export function RangeAmountInput() {
       validateRange,
       amountInputErrors,
       setAmountInputErrors,
+      setPreviewState,
     ],
   );
 

@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
+import BigNumber from 'bignumber.js';
+
 import {
   type IYStackProps,
   Icon,
@@ -274,26 +276,32 @@ function BulkSendTxDetails(props: IProps) {
     >();
 
     transfersInfo.forEach((transfer, index) => {
-      // Aggregate senders
+      // Aggregate senders - sum amounts for the same sender
       const existingSender = senderMap.get(transfer.from);
       if (existingSender) {
+        existingSender.amount = new BigNumber(existingSender.amount)
+          .plus(transfer.amount || '0')
+          .toFixed();
         existingSender.indices.push(index);
       } else {
         senderMap.set(transfer.from, {
           address: transfer.from,
-          amount: transfer.amount,
+          amount: transfer.amount || '0',
           indices: [index],
         });
       }
 
-      // Aggregate receivers
+      // Aggregate receivers - sum amounts for the same receiver
       const existingReceiver = receiverMap.get(transfer.to);
       if (existingReceiver) {
+        existingReceiver.amount = new BigNumber(existingReceiver.amount)
+          .plus(transfer.amount || '0')
+          .toFixed();
         existingReceiver.indices.push(index);
       } else {
         receiverMap.set(transfer.to, {
           address: transfer.to,
-          amount: transfer.amount,
+          amount: transfer.amount || '0',
           indices: [index],
         });
       }

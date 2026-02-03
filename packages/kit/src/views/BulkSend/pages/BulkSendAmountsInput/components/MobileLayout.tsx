@@ -91,6 +91,7 @@ function MobileLayout() {
           bulkSendMode={bulkSendMode}
           onDeleteTransfer={handleDeleteTransfer}
           onAmountChange={isEditMode ? handleAmountChange : undefined}
+          containerProps={{ mt: '$6' }}
         />
       ) : null}
     </YStack>

@@ -37,7 +37,6 @@ import type { IToken, ITokenFiat } from '@onekeyhq/shared/types/token';
 import BulkSendBar from '../../components/BulkSendBar';
 import BulkSendContentWrapper from '../../components/BulkSendContentWrapper';
 import BulkSendHeader from '../../components/BulkSendHeader';
-import { useBulkSendMobileHeader } from '../../components/BulkSendMobileHeader';
 import { calculateIsAmountValid, calculateTotalAmounts } from '../../utils';
 
 import { AmountPreview } from './components/AmountPreview';
@@ -68,6 +67,9 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     isInsufficientBalance,
     amountInputMode,
     amountInputValues,
+    setAmountInputValues,
+    amountInputErrors,
+    setAmountInputErrors,
     previewState,
     setPreviewState,
     setTransfersInfo,
@@ -79,7 +81,6 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
   const navigation = useAppNavigation();
 
   const media = useMedia();
-  const { headerTitle } = useBulkSendMobileHeader({ bulkSendMode });
 
   const [isBuilding, setIsBuilding] = useState(false);
 
@@ -96,7 +97,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     [setTransfersInfo, media.gtMd, amountInputMode, updateCurrentModeData],
   );
 
-  const { handlePreview, shouldShowTxDetails, hidePreview } = useAmountPreview({
+  const { handlePreview, shouldShowTxDetails } = useAmountPreview({
     tokenInfo,
     transfersInfo,
     setTransfersInfo: setTransfersInfoWithModeUpdate,
@@ -319,23 +320,41 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     currentModeData.transfersInfo.length,
   ]);
 
-  // Handle back button press
-  const handleBack = useCallback(() => {
-    // If in preview mode (TransactionDetail shown for Specified/Range), hide it first
-    if (isInPreviewMode) {
-      hidePreview(amountInputMode);
-      return;
-    }
-    // Otherwise, navigate back
-    navigation.pop();
-  }, [isInPreviewMode, hidePreview, amountInputMode, navigation]);
-
   // Determine button text based on preview state
   const confirmButtonText = isInPreviewMode ? 'Review' : 'Next';
 
+  // Handle Max button press - fills in max amount per address
+  const handleMaxPress = useCallback(() => {
+    if (amountInputMode !== EAmountInputMode.Specified) return;
+    const balance = tokenDetails?.balanceParsed ?? '0';
+    if (!balance || transfersInfo.length === 0) return;
+    const maxAmountPerAddress = new BigNumber(balance)
+      .dividedBy(transfersInfo.length)
+      .decimalPlaces(tokenInfo.decimals, BigNumber.ROUND_DOWN)
+      .toFixed();
+    setAmountInputValues({
+      ...amountInputValues,
+      specifiedAmount: maxAmountPerAddress,
+    });
+    // Clear any existing errors since max amount is always valid
+    setAmountInputErrors({
+      ...amountInputErrors,
+      specifiedAmount: undefined,
+    });
+  }, [
+    amountInputMode,
+    tokenDetails?.balanceParsed,
+    transfersInfo.length,
+    setAmountInputValues,
+    amountInputValues,
+    tokenInfo.decimals,
+    setAmountInputErrors,
+    amountInputErrors,
+  ]);
+
   return (
     <Page scrollEnabled>
-      {media.gtMd ? null : <Page.Header headerTitle={headerTitle} />}
+      {media.gtMd ? null : <Page.Header headerTitle="Set amount per address" />}
       <BulkSendBar />
       <Page.Body>
         <BulkSendContentWrapper>
@@ -355,10 +374,6 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
           <Page.FooterActions
             px="$0"
             onConfirmText={confirmButtonText}
-            onCancelText="Back"
-            cancelButtonProps={{
-              onPress: handleBack,
-            }}
             confirmButtonProps={{
               onPress: handleSubmit,
               disabled: isSubmitDisabled,
@@ -381,6 +396,11 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
                 isInPreviewMode={isInPreviewMode}
                 previewTotalTokenAmount={currentModeData.totalTokenAmount}
                 previewTotalFiatAmount={currentModeData.totalFiatAmount}
+                onMaxPress={
+                  amountInputMode === EAmountInputMode.Specified
+                    ? handleMaxPress
+                    : undefined
+                }
               />
             ) : null}
           </Page.FooterActions>

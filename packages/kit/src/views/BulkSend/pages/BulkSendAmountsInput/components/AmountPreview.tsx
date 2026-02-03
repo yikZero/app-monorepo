@@ -27,6 +27,7 @@ type IAmountPreviewProps = {
   isInPreviewMode?: boolean;
   previewTotalTokenAmount?: string;
   previewTotalFiatAmount?: string;
+  onMaxPress?: () => void;
 };
 
 export function AmountPreview({
@@ -39,6 +40,7 @@ export function AmountPreview({
   previewTotalTokenAmount,
   previewTotalFiatAmount,
   containerProps,
+  onMaxPress,
 }: IAmountPreviewProps) {
   const [settings] = useSettingsPersistAtom();
 
@@ -171,6 +173,16 @@ export function AmountPreview({
               {tokenDetails?.balanceParsed ?? '-'}
             </NumberSizeableText>
           </XStack>
+          {onMaxPress ? (
+            <SizableText
+              size="$bodyMdMedium"
+              color="$textInteractive"
+              onPress={onMaxPress}
+              hitSlop={8}
+            >
+              Max
+            </SizableText>
+          ) : null}
         </XStack>
       ) : null}
     </YStack>
