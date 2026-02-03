@@ -60,6 +60,7 @@ function MobileLayout() {
     setTransfersInfo: setModeTransfersInfo,
     previewState,
     setPreviewState,
+    balance: tokenDetails?.balanceParsed,
   });
 
   const isEditMode = amountInputMode === EAmountInputMode.Custom;

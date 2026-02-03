@@ -82,6 +82,7 @@ function SetAmountPerAddressSection() {
     setTransfersInfo,
     previewState,
     setPreviewState,
+    balance: tokenDetails?.balanceParsed,
   });
 
   const validateTransfersInfo = useCallback(() => {

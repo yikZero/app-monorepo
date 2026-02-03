@@ -103,6 +103,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     setTransfersInfo: setTransfersInfoWithModeUpdate,
     previewState,
     setPreviewState,
+    balance: tokenDetails?.balanceParsed,
   });
 
   // Check if we're in preview mode (TransactionDetail is shown for Specified/Range)
@@ -276,6 +277,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     currentModeData.transfersInfo,
     currentModeData.totalTokenAmount,
     currentModeData.totalFiatAmount,
+    previewState.rangePreviewAmounts,
   ]);
 
   const isSubmitDisabled = useMemo(() => {
@@ -560,13 +562,18 @@ function BulkSendAmountsInput() {
     currentModeData.transfersInfo.map((t) => ({ to: t.to, amount: t.amount })),
   );
   useEffect(() => {
-    const modeTransfersInfo = currentModeData.transfersInfo;
-    if (modeTransfersInfo.length > 0 && tokenDetails) {
+    if (!tokenDetails) return;
+
+    // Use functional update to avoid race conditions - read latest state inside setState
+    setMobileModeData((prev) => {
+      const modeData = prev[amountInputMode];
+      if (modeData.transfersInfo.length === 0) return prev;
+
       const {
         totalTokenAmount: modeTotalToken,
         totalFiatAmount: modeTotalFiat,
       } = calculateTotalAmounts({
-        transfersInfo: modeTransfersInfo,
+        transfersInfo: modeData.transfersInfo,
         tokenPrice: tokenDetails.price,
       });
       const modeIsInsufficient = new BigNumber(modeTotalToken).gt(
@@ -575,21 +582,23 @@ function BulkSendAmountsInput() {
 
       // Only update if values actually changed
       if (
-        currentModeData.totalTokenAmount !== modeTotalToken ||
-        currentModeData.totalFiatAmount !== modeTotalFiat ||
-        currentModeData.isInsufficientBalance !== modeIsInsufficient
+        modeData.totalTokenAmount === modeTotalToken &&
+        modeData.totalFiatAmount === modeTotalFiat &&
+        modeData.isInsufficientBalance === modeIsInsufficient
       ) {
-        setMobileModeData((prev) => ({
-          ...prev,
-          [amountInputMode]: {
-            ...prev[amountInputMode],
-            totalTokenAmount: modeTotalToken,
-            totalFiatAmount: modeTotalFiat,
-            isInsufficientBalance: modeIsInsufficient,
-          },
-        }));
+        return prev;
       }
-    }
+
+      return {
+        ...prev,
+        [amountInputMode]: {
+          ...modeData,
+          totalTokenAmount: modeTotalToken,
+          totalFiatAmount: modeTotalFiat,
+          isInsufficientBalance: modeIsInsufficient,
+        },
+      };
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentModeTransfersInfoJson,
@@ -769,26 +778,11 @@ function BulkSendAmountsInput() {
     // Custom mode uses the generated transfersInfo
     // Specified and Range modes start with empty data (populated on Preview)
     setMobileModeData({
-      [EAmountInputMode.Specified]: {
-        transfersInfo: [],
-        transferInfoErrors: {},
-        isInsufficientBalance: false,
-        totalTokenAmount: '0',
-        totalFiatAmount: '0',
-      },
-      [EAmountInputMode.Range]: {
-        transfersInfo: [],
-        transferInfoErrors: {},
-        isInsufficientBalance: false,
-        totalTokenAmount: '0',
-        totalFiatAmount: '0',
-      },
+      [EAmountInputMode.Specified]: { ...defaultModeData },
+      [EAmountInputMode.Range]: { ...defaultModeData },
       [EAmountInputMode.Custom]: {
+        ...defaultModeData,
         transfersInfo: _transfersInfo,
-        transferInfoErrors: {},
-        isInsufficientBalance: false,
-        totalTokenAmount: '0',
-        totalFiatAmount: '0',
       },
     });
   }, [
@@ -797,6 +791,7 @@ function BulkSendAmountsInput() {
     receivers,
     tokenInfo,
     initialTokenDetails?.balanceParsed,
+    defaultModeData,
   ]);
 
   const context = useMemo<IBulkSendAmountsInputContext>(

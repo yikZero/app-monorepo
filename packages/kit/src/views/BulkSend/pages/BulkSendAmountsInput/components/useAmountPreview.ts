@@ -20,6 +20,7 @@ type IUseAmountPreviewParams = {
   setTransfersInfo: (transfersInfo: ITransferInfo[]) => void;
   previewState: IPreviewState;
   setPreviewState: React.Dispatch<React.SetStateAction<IPreviewState>>;
+  balance?: string;
 };
 
 export function useAmountPreview({
@@ -28,6 +29,7 @@ export function useAmountPreview({
   setTransfersInfo,
   previewState,
   setPreviewState,
+  balance,
 }: IUseAmountPreviewParams) {
   const updateTransfersInfoWithAmounts = useCallback(
     (
@@ -48,6 +50,7 @@ export function useAmountPreview({
               rangeMin: values.rangeMin,
               rangeMax: values.rangeMax,
               decimals: tokenInfo.decimals,
+              balance: balance ? [balance] : undefined,
             });
           }
           break;
@@ -68,7 +71,7 @@ export function useAmountPreview({
 
       setTransfersInfo(newTransfersInfo);
     },
-    [tokenInfo?.decimals, transfersInfo, setTransfersInfo],
+    [tokenInfo?.decimals, transfersInfo, setTransfersInfo, balance],
   );
 
   const handlePreview = useCallback(
@@ -79,47 +82,32 @@ export function useAmountPreview({
     ) => {
       updateTransfersInfoWithAmounts(mode, values, preGeneratedAmounts);
 
-      switch (mode) {
-        case EAmountInputMode.Specified:
-          setPreviewState((prev) => ({ ...prev, specifiedPreviewed: true }));
-          break;
-        case EAmountInputMode.Range:
-          setPreviewState((prev) => ({ ...prev, rangePreviewed: true }));
-          break;
-        default:
-          break;
+      if (mode === EAmountInputMode.Specified) {
+        setPreviewState((prev) => ({ ...prev, specifiedPreviewed: true }));
+      } else if (mode === EAmountInputMode.Range) {
+        setPreviewState((prev) => ({ ...prev, rangePreviewed: true }));
       }
     },
     [updateTransfersInfoWithAmounts, setPreviewState],
   );
 
   const shouldShowTxDetails = useCallback(
-    (mode: EAmountInputMode) => {
-      switch (mode) {
-        case EAmountInputMode.Custom:
-          return true;
-        case EAmountInputMode.Specified:
-          return previewState.specifiedPreviewed;
-        case EAmountInputMode.Range:
-          return previewState.rangePreviewed;
-        default:
-          return false;
-      }
+    (mode: EAmountInputMode): boolean => {
+      if (mode === EAmountInputMode.Custom) return true;
+      if (mode === EAmountInputMode.Specified)
+        return previewState.specifiedPreviewed;
+      if (mode === EAmountInputMode.Range) return previewState.rangePreviewed;
+      return false;
     },
     [previewState],
   );
 
   const hidePreview = useCallback(
     (mode: EAmountInputMode) => {
-      switch (mode) {
-        case EAmountInputMode.Specified:
-          setPreviewState((prev) => ({ ...prev, specifiedPreviewed: false }));
-          break;
-        case EAmountInputMode.Range:
-          setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
-          break;
-        default:
-          break;
+      if (mode === EAmountInputMode.Specified) {
+        setPreviewState((prev) => ({ ...prev, specifiedPreviewed: false }));
+      } else if (mode === EAmountInputMode.Range) {
+        setPreviewState((prev) => ({ ...prev, rangePreviewed: false }));
       }
     },
     [setPreviewState],

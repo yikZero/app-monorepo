@@ -313,19 +313,7 @@ function BulkSendTxDetails(props: IProps) {
     };
   }, [transfersInfo]);
 
-  const handleDeleteSender = useCallback(
-    (indices: number[]) => {
-      // Delete in descending order to avoid index shifting issues
-      [...indices]
-        .toSorted((a, b) => b - a)
-        .forEach((index) => {
-          onDeleteTransfer?.(index);
-        });
-    },
-    [onDeleteTransfer],
-  );
-
-  const handleDeleteReceiver = useCallback(
+  const handleDeleteTransfers = useCallback(
     (indices: number[]) => {
       // Delete in descending order to avoid index shifting issues
       [...indices]
@@ -376,7 +364,7 @@ function BulkSendTxDetails(props: IProps) {
             deleteDisabled={isDeleteDisabled}
             onDelete={
               onDeleteTransfer && canEditSender && !isDeleteDisabled
-                ? () => handleDeleteSender(sender.indices)
+                ? () => handleDeleteTransfers(sender.indices)
                 : undefined
             }
             onAmountChange={
@@ -402,7 +390,7 @@ function BulkSendTxDetails(props: IProps) {
             deleteDisabled={isDeleteDisabled}
             onDelete={
               onDeleteTransfer && canEditReceiver && !isDeleteDisabled
-                ? () => handleDeleteReceiver(receiver.indices)
+                ? () => handleDeleteTransfers(receiver.indices)
                 : undefined
             }
             onAmountChange={

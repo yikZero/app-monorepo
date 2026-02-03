@@ -86,19 +86,10 @@ export function AmountPreview({
     return true;
   }, [inDialog, amountInputMode, isInPreviewMode, hasRangeValues]);
 
-
   // Determine if we should show Available section
   // In preview mode for Specified/Range, hide Available
-  const showAvailable = useMemo(() => {
-    if (inDialog) {
-      return true;
-    }
-    // Mobile mode: hide Available when in preview mode for Specified/Range
-    if (isInPreviewMode && amountInputMode !== EAmountInputMode.Custom) {
-      return false;
-    }
-    return true;
-  }, [inDialog, isInPreviewMode, amountInputMode]);
+  const showAvailable =
+    inDialog || !isInPreviewMode || amountInputMode === EAmountInputMode.Custom;
 
   const { totalTokenAmount, totalFiatAmount } = useMemo(() => {
     // In preview mode, use pre-calculated values
@@ -184,7 +175,9 @@ export function AmountPreview({
                   <NumberSizeableText
                     size="$bodyLgMedium"
                     formatter="balance"
-                    formatterOptions={{ tokenSymbol: tokenDetails?.info.symbol }}
+                    formatterOptions={{
+                      tokenSymbol: tokenDetails?.info.symbol,
+                    }}
                   >
                     {totalTokenAmount}
                   </NumberSizeableText>
@@ -193,7 +186,9 @@ export function AmountPreview({
                     <NumberSizeableText
                       size="$bodyLgMedium"
                       formatter="value"
-                      formatterOptions={{ currency: settings.currencyInfo.symbol }}
+                      formatterOptions={{
+                        currency: settings.currencyInfo.symbol,
+                      }}
                     >
                       {totalFiatAmount}
                     </NumberSizeableText>

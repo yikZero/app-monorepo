@@ -212,35 +212,29 @@ export function RangeAmountInput() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transfersInfo.length]);
 
-  const handleMinChange = useCallback(
-    (value: string) => {
-      const newValues = { ...amountInputValues, rangeMin: value };
+  const handleRangeChange = useCallback(
+    (field: 'rangeMin' | 'rangeMax', value: string) => {
+      const newValues = { ...amountInputValues, [field]: value };
       setAmountInputValues(newValues);
 
-      const errors = validateRange(value, amountInputValues.rangeMax);
+      const errors = validateRange(newValues.rangeMin, newValues.rangeMax);
       setAmountInputErrors({
         ...amountInputErrors,
         rangeError: errors.rangeError,
       });
 
       // Generate preview amounts if valid
-      if (!errors.rangeError && value && amountInputValues.rangeMax) {
-        const previewAmounts = generatePreviewAmounts(
-          value,
-          amountInputValues.rangeMax,
-        );
-        setPreviewState((prev) => ({
-          ...prev,
-          rangePreviewed: false,
-          rangePreviewAmounts: previewAmounts,
-        }));
-      } else {
-        setPreviewState((prev) => ({
-          ...prev,
-          rangePreviewed: false,
-          rangePreviewAmounts: [],
-        }));
-      }
+      const hasValidRange =
+        !errors.rangeError && newValues.rangeMin && newValues.rangeMax;
+      const previewAmounts = hasValidRange
+        ? generatePreviewAmounts(newValues.rangeMin, newValues.rangeMax)
+        : [];
+
+      setPreviewState((prev) => ({
+        ...prev,
+        rangePreviewed: false,
+        rangePreviewAmounts: previewAmounts,
+      }));
     },
     [
       amountInputValues,
@@ -253,45 +247,14 @@ export function RangeAmountInput() {
     ],
   );
 
+  const handleMinChange = useCallback(
+    (value: string) => handleRangeChange('rangeMin', value),
+    [handleRangeChange],
+  );
+
   const handleMaxChange = useCallback(
-    (value: string) => {
-      const newValues = { ...amountInputValues, rangeMax: value };
-      setAmountInputValues(newValues);
-
-      const errors = validateRange(amountInputValues.rangeMin, value);
-      setAmountInputErrors({
-        ...amountInputErrors,
-        rangeError: errors.rangeError,
-      });
-
-      // Generate preview amounts if valid
-      if (!errors.rangeError && amountInputValues.rangeMin && value) {
-        const previewAmounts = generatePreviewAmounts(
-          amountInputValues.rangeMin,
-          value,
-        );
-        setPreviewState((prev) => ({
-          ...prev,
-          rangePreviewed: false,
-          rangePreviewAmounts: previewAmounts,
-        }));
-      } else {
-        setPreviewState((prev) => ({
-          ...prev,
-          rangePreviewed: false,
-          rangePreviewAmounts: [],
-        }));
-      }
-    },
-    [
-      amountInputValues,
-      setAmountInputValues,
-      validateRange,
-      amountInputErrors,
-      setAmountInputErrors,
-      setPreviewState,
-      generatePreviewAmounts,
-    ],
+    (value: string) => handleRangeChange('rangeMax', value),
+    [handleRangeChange],
   );
 
   // Calculate fiat values
@@ -502,7 +465,7 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     [],
   );
 
-  const validateSpecifiedAmount = useCallback(() => {
+  const validateSpecifiedAmount = useCallback((): IAmountInputError => {
     const balance = tokenDetails?.balanceParsed ?? '0';
     const { error } = validateTokenAmount({
       token: tokenInfo,
@@ -524,31 +487,25 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     transfersInfo.length,
   ]);
 
-  const validateRangeAmount = useCallback(() => {
+  const validateRangeAmount = useCallback((): IAmountInputError => {
     const balance = tokenDetails?.balanceParsed ?? '0';
-    const errors: IAmountInputError = {};
-
     const minBN = new BigNumber(amountInputValues.rangeMin || '0');
     const maxBN = new BigNumber(amountInputValues.rangeMax || '0');
     const balanceBN = new BigNumber(balance);
 
-    // Check if min or max exceeds balance
     if (minBN.isGreaterThan(balanceBN) || maxBN.isGreaterThan(balanceBN)) {
-      errors.rangeError = 'Insufficient balance.';
-      return errors;
+      return { rangeError: 'Insufficient balance.' };
     }
 
-    // Check if min >= max (invalid range)
     if (
       amountInputValues.rangeMin !== '' &&
       amountInputValues.rangeMax !== '' &&
       minBN.isGreaterThanOrEqualTo(maxBN)
     ) {
-      errors.rangeError = 'Set a proper range.';
-      return errors;
+      return { rangeError: 'Set a proper range.' };
     }
 
-    return errors;
+    return {};
   }, [
     tokenDetails?.balanceParsed,
     amountInputValues.rangeMin,
@@ -568,16 +525,12 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
       }
 
       // Re-validate based on the new mode (Dialog only)
-      switch (newMode) {
-        case EAmountInputMode.Specified:
-          setAmountInputErrors(validateSpecifiedAmount());
-          break;
-        case EAmountInputMode.Range:
-          setAmountInputErrors(validateRangeAmount());
-          break;
-        case EAmountInputMode.Custom:
-        default:
-          setAmountInputErrors({});
+      if (newMode === EAmountInputMode.Specified) {
+        setAmountInputErrors(validateSpecifiedAmount());
+      } else if (newMode === EAmountInputMode.Range) {
+        setAmountInputErrors(validateRangeAmount());
+      } else {
+        setAmountInputErrors({});
       }
     },
     [
@@ -589,18 +542,18 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     ],
   );
 
-  const renderContent = useCallback(() => {
-    switch (amountInputMode) {
-      case EAmountInputMode.Specified:
-        return <SpecifiedAmountInput />;
-      case EAmountInputMode.Range:
-        return <RangeAmountInput />;
-      case EAmountInputMode.Custom:
-        return <CustomAmountDisplay inDialog={inDialog} />;
-      default:
-        return null;
+  const renderContent = () => {
+    if (amountInputMode === EAmountInputMode.Specified) {
+      return <SpecifiedAmountInput />;
     }
-  }, [amountInputMode, inDialog]);
+    if (amountInputMode === EAmountInputMode.Range) {
+      return <RangeAmountInput />;
+    }
+    if (amountInputMode === EAmountInputMode.Custom) {
+      return <CustomAmountDisplay inDialog={inDialog} />;
+    }
+    return null;
+  };
 
   return (
     <YStack gap="$4" w="100%">
