@@ -2,11 +2,13 @@
 import { useCallback, useState } from 'react';
 
 import pLimit from 'p-limit';
+import { useIntl } from 'react-intl';
 
 import { Form } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { useDebouncedValidation } from '@onekeyhq/kit/src/views/BulkSend/hooks/useDebouncedValidation';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
 import type { IAddressValidation } from '@onekeyhq/shared/types/address';
 import { EReceiverMode } from '@onekeyhq/shared/types/bulkSend';
@@ -22,6 +24,7 @@ type IReceiverAddressesInputProps = {
 };
 
 function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
+  const intl = useIntl();
   const { selectedAccountId, selectedNetworkId, selectedToken } =
     useBulkSendAddressesInputContext();
   const { network } = useAccountData({ networkId: selectedNetworkId });
@@ -40,18 +43,25 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       if (!result.isValid) {
         return {
           isValid: false,
-          error: `Not a valid ${network?.name ?? ''} address`,
+          error: intl.formatMessage(
+            {
+              id: ETranslations.wallet_bulk_send_error_invalid_network_address,
+            },
+            { network: network?.name ?? '' },
+          ),
         };
       }
       return result;
     },
-    [selectedNetworkId, network?.name],
+    [intl, selectedNetworkId, network?.name],
   );
 
   const validateAmount = useCallback(
     (amount: string): string | boolean => {
       if (!selectedToken) {
-        return 'Token not selected';
+        return intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_error_token_not_selected,
+        });
       }
 
       const { isValid, error } = validateTokenAmount({
@@ -59,7 +69,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
         amount,
         allowZero: false,
         customErrorMessages: {
-          zeroAmount: 'Amount must be greater than 0',
+          zeroAmount: intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_error_amount_zero,
+          }),
         },
       });
 
@@ -69,7 +81,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
 
       return true;
     },
-    [selectedToken],
+    [intl, selectedToken],
   );
 
   const parseLineMode = useCallback(
@@ -84,7 +96,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
     async (value: string) => {
       if (!value) {
         setErrors([]);
-        return 'Receiver address(es) is required';
+        return intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_error_receiver_required,
+        });
       }
 
       const lines = value.split('\n');
@@ -94,7 +108,10 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       if (maxLines && lines.length > maxLines) {
         lineErrors.push({
           lineNumber: -1,
-          message: `Maximum ${maxLines} addresses allowed, currently ${lines.length}`,
+          message: intl.formatMessage(
+            { id: ETranslations.wallet_bulk_send_error_max_addresses },
+            { max: maxLines, current: lines.length },
+          ),
         });
         setErrors(lineErrors);
         return lineErrors[0].message;
@@ -122,8 +139,12 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
             lineNumber: i + 1,
             message:
               receiverMode === EReceiverMode.AddressOnly
-                ? 'Expected address only format'
-                : 'Expected address,amount format',
+                ? intl.formatMessage({
+                    id: ETranslations.wallet_bulk_send_error_expected_address_only,
+                  })
+                : intl.formatMessage({
+                    id: ETranslations.wallet_bulk_send_error_expected_address_amount,
+                  }),
           });
           continue;
         }
@@ -137,7 +158,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           if (parts.length !== 2) {
             lineErrors.push({
               lineNumber: i + 1,
-              message: 'Invalid format, expected: address,amount',
+              message: intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_error_invalid_format,
+              }),
             });
             continue;
           }
@@ -155,7 +178,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
               message:
                 typeof amountValidationResult === 'string'
                   ? amountValidationResult
-                  : 'Invalid amount',
+                  : intl.formatMessage({
+                      id: ETranslations.wallet_bulk_send_error_invalid_amount,
+                    }),
             });
           }
         }
@@ -179,7 +204,12 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           if (!result.isValid) {
             lineErrors.push({
               lineNumber: index + 1,
-              message: 'error' in result ? result.error : 'Invalid address',
+              message:
+                'error' in result
+                  ? result.error
+                  : intl.formatMessage({
+                      id: ETranslations.wallet_bulk_send_error_invalid_address,
+                    }),
             });
           } else {
             // Use normalizedAddress from validation result for duplicate detection
@@ -189,7 +219,12 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
             if (seenIndex !== undefined) {
               lineErrors.push({
                 lineNumber: index + 1,
-                message: `Duplicate address (same as line ${seenIndex})`,
+                message: intl.formatMessage(
+                  {
+                    id: ETranslations.wallet_bulk_send_error_duplicate_address,
+                  },
+                  { line: seenIndex },
+                ),
               });
             } else {
               seenNormalizedAddresses.set(normalizedAddress, index + 1);
@@ -208,7 +243,10 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
         if (lineErrors.length > maxErrors) {
           errorsToDisplay.push({
             lineNumber: -1,
-            message: `... and ${lineErrors.length - maxErrors} more errors`,
+            message: intl.formatMessage(
+              { id: ETranslations.wallet_bulk_send_error_more_errors },
+              { count: lineErrors.length - maxErrors },
+            ),
           });
         }
         return errorsToDisplay
@@ -221,7 +259,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       }
       return true;
     },
-    [maxLines, parseLineMode, validateAddress, validateAmount],
+    [intl, maxLines, parseLineMode, validateAddress, validateAmount],
   );
 
   const debouncedValidateAddresses = useDebouncedValidation(
@@ -231,12 +269,16 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
   return (
     <Form.Field
       name="receiverAddresses"
-      label="Receiving Address(es)"
+      label={intl.formatMessage({
+        id: ETranslations.wallet_bulk_send_label_receiving_addresses,
+      })}
       rules={{
         required: true,
         validate: debouncedValidateAddresses,
       }}
-      description="Supports: Address only OR Address, Amount"
+      description={intl.formatMessage({
+        id: ETranslations.wallet_bulk_send_label_receiving_desc,
+      })}
     >
       <LineNumberedTextArea
         showPaste
@@ -246,7 +288,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           num: 1,
           clearNotMatch: true,
         }}
-        placeholder="Enter addresses, one per line"
+        placeholder={intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_placeholder_addresses,
+        })}
         height={120}
         errors={errors}
         networkId={selectedNetworkId}

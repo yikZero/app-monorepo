@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { Dialog, Stack, YStack } from '@onekeyhq/components';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
 import {
   EAmountInputMode,
   EBulkSendMode,
@@ -202,7 +204,9 @@ export function showSetAmountPerAddressDialog(
   props: ISetAmountPerAddressDialogProps,
 ) {
   Dialog.show({
-    title: 'Set amount per address',
+    title: appLocale.intl.formatMessage({
+      id: ETranslations.wallet_bulk_send_set_amount_title,
+    }),
     renderContent: <SetAmountPerAddressDialogContent {...props} />,
     showFooter: false,
   });
