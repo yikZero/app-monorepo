@@ -205,6 +205,7 @@ function SetAmountPerAddressSection() {
       </XStack>
     );
   }, [
+    intl,
     tokenDetailsState.isRefreshing,
     tokenDetailsState.initialized,
     tokenInfo.symbol,
