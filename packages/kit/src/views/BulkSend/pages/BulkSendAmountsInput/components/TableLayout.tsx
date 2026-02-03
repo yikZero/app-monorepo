@@ -178,7 +178,7 @@ function SetAmountPerAddressSection() {
     return (
       <XStack alignItems="center" gap="$1" flexWrap="wrap">
         <SizableText size="$bodyMd" color="$textSubdued">
-          Total:
+          {intl.formatMessage({ id: ETranslations.wallet_bulk_send_total })}
         </SizableText>
         <NumberSizeableText
           formatter="balance"
@@ -438,6 +438,7 @@ function TransferInfoListSection() {
 }
 
 function TableLayout() {
+  const intl = useIntl();
   const { isInsufficientBalance, tokenDetails, totalTokenAmount, tokenInfo } =
     useBulkSendAmountsInputContext();
 
@@ -453,9 +454,16 @@ function TableLayout() {
         <XStack gap="$1" alignItems="center">
           <Icon name="InfoCircleOutline" size="$4" color="$iconCritical" />
           <SizableText size="$bodySm" color="$textCritical">
-            Insufficient balance, available balance:{' '}
-            {tokenDetails?.balanceParsed} {tokenInfo.symbol}, total amount:{' '}
-            {totalTokenAmount} {tokenInfo.symbol}
+            {intl.formatMessage(
+              {
+                id: ETranslations.wallet_bulk_send_insufficient_balance_detail_desktop,
+              },
+              {
+                available: tokenDetails?.balanceParsed,
+                symbol: tokenInfo.symbol,
+                total: totalTokenAmount,
+              },
+            )}
           </SizableText>
         </XStack>
       ) : null}
