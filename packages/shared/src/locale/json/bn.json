@@ -4290,6 +4290,7 @@
   "wallet.bulk_send_mode_many_to_many": "অনেক থেকে অনেক",
   "wallet.bulk_send_mode_many_to_one": "অনেক থেকে এক",
   "wallet.bulk_send_mode_one_to_many": "এক থেকে অনেক",
+  "wallet.bulk_send_mode_one_to_many_desc": "One-to-Many uses a single smart contract to batch send all transactions",
   "wallet.bulk_send_mode_unknown": "অজানা",
   "wallet.bulk_send_placeholder_address": "ঠিকানা লিখুন",
   "wallet.bulk_send_placeholder_addresses": "ঠিকানা লিখন, প্রতি লাইনে একটি",

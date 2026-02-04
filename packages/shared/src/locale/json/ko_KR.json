@@ -4290,6 +4290,7 @@
   "wallet.bulk_send_mode_many_to_many": "다대다",
   "wallet.bulk_send_mode_many_to_one": "다대일",
   "wallet.bulk_send_mode_one_to_many": "일대다",
+  "wallet.bulk_send_mode_one_to_many_desc": "One-to-Many uses a single smart contract to batch send all transactions",
   "wallet.bulk_send_mode_unknown": "알 수 없음",
   "wallet.bulk_send_placeholder_address": "주소 입력",
   "wallet.bulk_send_placeholder_addresses": "주소 입력, 한 줄에 하나씩",

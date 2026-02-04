@@ -4290,6 +4290,7 @@
   "wallet.bulk_send_mode_many_to_many": "Plusieurs vers Plusieurs",
   "wallet.bulk_send_mode_many_to_one": "Plusieurs vers Un",
   "wallet.bulk_send_mode_one_to_many": "Un vers Plusieurs",
+  "wallet.bulk_send_mode_one_to_many_desc": "One-to-Many uses a single smart contract to batch send all transactions",
   "wallet.bulk_send_mode_unknown": "Inconnu",
   "wallet.bulk_send_placeholder_address": "Entrez l'adresse",
   "wallet.bulk_send_placeholder_addresses": "Entrez les adresses, une par ligne",

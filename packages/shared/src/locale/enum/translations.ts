@@ -4295,6 +4295,7 @@
   wallet_bulk_send_mode_many_to_many = 'wallet.bulk_send_mode_many_to_many',
   wallet_bulk_send_mode_many_to_one = 'wallet.bulk_send_mode_many_to_one',
   wallet_bulk_send_mode_one_to_many = 'wallet.bulk_send_mode_one_to_many',
+  wallet_bulk_send_mode_one_to_many_desc = 'wallet.bulk_send_mode_one_to_many_desc',
   wallet_bulk_send_mode_unknown = 'wallet.bulk_send_mode_unknown',
   wallet_bulk_send_placeholder_address = 'wallet.bulk_send_placeholder_address',
   wallet_bulk_send_placeholder_addresses = 'wallet.bulk_send_placeholder_addresses',

@@ -4290,6 +4290,7 @@
   "wallet.bulk_send_mode_many_to_many": "अनेक से अनेक",
   "wallet.bulk_send_mode_many_to_one": "अनेक से एक",
   "wallet.bulk_send_mode_one_to_many": "एक से अनेक",
+  "wallet.bulk_send_mode_one_to_many_desc": "One-to-Many uses a single smart contract to batch send all transactions",
   "wallet.bulk_send_mode_unknown": "अज्ञात",
   "wallet.bulk_send_placeholder_address": "पता दर्ज करें",
   "wallet.bulk_send_placeholder_addresses": "पते दर्ज करें, प्रति पंक्ति एक",
