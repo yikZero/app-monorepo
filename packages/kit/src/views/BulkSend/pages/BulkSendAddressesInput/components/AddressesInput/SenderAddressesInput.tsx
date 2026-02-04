@@ -212,6 +212,7 @@ function SenderAddressesInput() {
     }
     return null;
   }, [
+    intl,
     tokenDetailsState.initialized,
     tokenDetailsState.isRefreshing,
     selectedTokenDetail?.info.symbol,
