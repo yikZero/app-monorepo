@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "Tối đa phải lớn hơn 0",
   "wallet.bulk_send_error_min_required": "Yêu cầu tối thiểu",
   "wallet.bulk_send_error_more_errors": "... và thêm {count} lỗi nữa",
+  "wallet.bulk_send_error_proper_range": "Đặt phạm vi thích hợp",
   "wallet.bulk_send_error_receiver_required": "Yêu cầu địa chỉ người nhận",
   "wallet.bulk_send_error_sender_required": "Yêu cầu địa chỉ người gửi",
   "wallet.bulk_send_error_token_not_selected": "Vui lòng chọn mã thông báo",

@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "สูงสุดต้องมากกว่า 0",
   "wallet.bulk_send_error_min_required": "จำเป็นต้องมีขั้นต่ำ",
   "wallet.bulk_send_error_more_errors": "... และข้อผิดพลาดอีก {count} รายการ",
+  "wallet.bulk_send_error_proper_range": "กำหนดช่วงที่เหมาะสม",
   "wallet.bulk_send_error_receiver_required": "จำเป็นต้องมีที่อยู่ผู้รับ",
   "wallet.bulk_send_error_sender_required": "จำเป็นต้องมีที่อยู่ผู้ส่ง",
   "wallet.bulk_send_error_token_not_selected": "โปรดเลือกโทเค็น",

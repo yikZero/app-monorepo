@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "Максимум повинен бути більше 0",
   "wallet.bulk_send_error_min_required": "Потрібен мінімум",
   "wallet.bulk_send_error_more_errors": "... та ще {count} помилок",
+  "wallet.bulk_send_error_proper_range": "Встановіть правильний діапазон",
   "wallet.bulk_send_error_receiver_required": "Потрібна адреса(и) отримувача",
   "wallet.bulk_send_error_sender_required": "Потрібна адреса(и) відправника",
   "wallet.bulk_send_error_token_not_selected": "Будь ласка, виберіть токен",

@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "সর্বোচ্চ মান অবশ্যই ০ এর বেশি হতে হবে",
   "wallet.bulk_send_error_min_required": "সর্বনিম্ন মান প্রয়োজন",
   "wallet.bulk_send_error_more_errors": "... এবং আরও {count} টি ত্রুটি",
+  "wallet.bulk_send_error_proper_range": "একটি উপযুক্ত পরিসীমা সেট করুন",
   "wallet.bulk_send_error_receiver_required": "প্রাপকের ঠিকানা(গুলি) প্রয়োজন",
   "wallet.bulk_send_error_sender_required": "প্রেরকের ঠিকানা(গুলি) প্রয়োজন",
   "wallet.bulk_send_error_token_not_selected": "টোকেন নির্বাচন করুন",

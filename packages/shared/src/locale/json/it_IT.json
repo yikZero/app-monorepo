@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "Il massimo deve essere maggiore di 0",
   "wallet.bulk_send_error_min_required": "È richiesto il minimo",
   "wallet.bulk_send_error_more_errors": "... e altri {count} errori",
+  "wallet.bulk_send_error_proper_range": "Imposta un intervallo appropriato",
   "wallet.bulk_send_error_receiver_required": "Indirizzo/i di ricezione richiesto/i",
   "wallet.bulk_send_error_sender_required": "Indirizzo/i di invio richiesto/i",
   "wallet.bulk_send_error_token_not_selected": "Si prega di selezionare il token",

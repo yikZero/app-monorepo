@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "Maksimum harus lebih besar dari 0",
   "wallet.bulk_send_error_min_required": "Diperlukan minimum",
   "wallet.bulk_send_error_more_errors": "... dan {count} kesalahan lainnya",
+  "wallet.bulk_send_error_proper_range": "Atur rentang yang sesuai",
   "wallet.bulk_send_error_receiver_required": "Alamat penerima diperlukan",
   "wallet.bulk_send_error_sender_required": "Alamat pengirim diperlukan",
   "wallet.bulk_send_error_token_not_selected": "Silakan pilih token",

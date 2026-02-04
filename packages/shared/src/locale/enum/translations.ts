@@ -4277,6 +4277,7 @@
   wallet_bulk_send_error_max_zero = 'wallet.bulk_send_error_max_zero',
   wallet_bulk_send_error_min_required = 'wallet.bulk_send_error_min_required',
   wallet_bulk_send_error_more_errors = 'wallet.bulk_send_error_more_errors',
+  wallet_bulk_send_error_proper_range = 'wallet.bulk_send_error_proper_range',
   wallet_bulk_send_error_receiver_required = 'wallet.bulk_send_error_receiver_required',
   wallet_bulk_send_error_sender_required = 'wallet.bulk_send_error_sender_required',
   wallet_bulk_send_error_token_not_selected = 'wallet.bulk_send_error_token_not_selected',

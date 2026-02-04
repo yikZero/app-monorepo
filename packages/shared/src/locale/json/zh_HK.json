@@ -4272,6 +4272,7 @@
   "wallet.bulk_send_error_max_zero": "最大值必須大於 0",
   "wallet.bulk_send_error_min_required": "請輸入最小值",
   "wallet.bulk_send_error_more_errors": "... 以及另外 {count} 個錯誤",
+  "wallet.bulk_send_error_proper_range": "設定合理的範圍",
   "wallet.bulk_send_error_receiver_required": "需要接收地址",
   "wallet.bulk_send_error_sender_required": "需要發送地址",
   "wallet.bulk_send_error_token_not_selected": "請選擇代幣",

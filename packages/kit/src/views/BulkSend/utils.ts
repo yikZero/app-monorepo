@@ -348,7 +348,7 @@ export function validateRangeInput({
     minBN.isGreaterThanOrEqualTo(maxBN)
   ) {
     return appLocale.intl.formatMessage({
-      id: ETranslations.wallet_bulk_send_error_max_less_than_min,
+      id: ETranslations.wallet_bulk_send_error_proper_range,
     });
   }
 
