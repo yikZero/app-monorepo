@@ -32,6 +32,8 @@ export type IBulkSendAmountsInputContext = {
   accountId: string | undefined;
   networkId: string;
   tokenInfo: IToken;
+  // Whether receivers have custom amounts (from address input)
+  hasCustomAmounts: boolean;
   tokenDetails: ({ info: IToken } & ITokenFiat) | undefined;
   setTokenDetails: (
     tokenDetails: ({ info: IToken } & ITokenFiat) | undefined,
@@ -87,6 +89,7 @@ export const BulkSendAmountsInputContext =
   createContext<IBulkSendAmountsInputContext>({
     accountId: undefined,
     networkId: '',
+    hasCustomAmounts: false,
     transfersInfo: [],
     setTransfersInfo: () => {},
     tokenDetails: undefined,

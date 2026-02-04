@@ -152,7 +152,11 @@ export function RangeAmountInput() {
 
   const validateRange = useCallback(
     (min: string, max: string): IAmountInputError => {
-      const error = validateRangeInput({ rangeMin: min, rangeMax: max, balance });
+      const error = validateRangeInput({
+        rangeMin: min,
+        rangeMax: max,
+        balance,
+      });
       return error ? { rangeError: error } : {};
     },
     [balance],
@@ -432,16 +436,20 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     tokenInfo,
     tokenDetails,
     amountInputValues,
+    hasCustomAmounts,
   } = useBulkSendAmountsInputContext();
 
-  const segmentOptions = useMemo(
-    () => [
+  // Only show Custom option if receivers have custom amounts from address input
+  const segmentOptions = useMemo(() => {
+    const options = [
       { label: 'Specified', value: EAmountInputMode.Specified },
       { label: 'Range', value: EAmountInputMode.Range },
-      { label: 'Custom', value: EAmountInputMode.Custom },
-    ],
-    [],
-  );
+    ];
+    if (hasCustomAmounts) {
+      options.push({ label: 'Custom', value: EAmountInputMode.Custom });
+    }
+    return options;
+  }, [hasCustomAmounts]);
 
   const validateSpecifiedAmount = useCallback((): IAmountInputError => {
     const balance = tokenDetails?.balanceParsed ?? '0';
@@ -486,16 +494,17 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
 
       // Only re-validate in Dialog mode (Desktop)
       // MobileLayout has independent data for each mode, so no need to re-validate
-      if (!inDialog) {
-        setAmountInputErrors({});
-        return;
-      }
-
-      // Re-validate based on the new mode (Dialog only)
-      if (newMode === EAmountInputMode.Specified) {
-        setAmountInputErrors(validateSpecifiedAmount());
-      } else if (newMode === EAmountInputMode.Range) {
-        setAmountInputErrors(validateRangeAmount());
+      if (inDialog) {
+        switch (newMode) {
+          case EAmountInputMode.Specified:
+            setAmountInputErrors(validateSpecifiedAmount());
+            break;
+          case EAmountInputMode.Range:
+            setAmountInputErrors(validateRangeAmount());
+            break;
+          default:
+            setAmountInputErrors({});
+        }
       } else {
         setAmountInputErrors({});
       }
@@ -510,16 +519,16 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
   );
 
   const renderContent = () => {
-    if (amountInputMode === EAmountInputMode.Specified) {
-      return <SpecifiedAmountInput />;
+    switch (amountInputMode) {
+      case EAmountInputMode.Specified:
+        return <SpecifiedAmountInput />;
+      case EAmountInputMode.Range:
+        return <RangeAmountInput />;
+      case EAmountInputMode.Custom:
+        return <CustomAmountDisplay inDialog={inDialog} />;
+      default:
+        return null;
     }
-    if (amountInputMode === EAmountInputMode.Range) {
-      return <RangeAmountInput />;
-    }
-    if (amountInputMode === EAmountInputMode.Custom) {
-      return <CustomAmountDisplay inDialog={inDialog} />;
-    }
-    return null;
   };
 
   return (

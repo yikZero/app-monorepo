@@ -439,6 +439,12 @@ function BulkSendAmountsInput() {
     isInModal,
   } = route.params ?? {};
 
+  // Check if receivers have custom amounts (from address input with "address,amount" format)
+  const hasCustomAmounts = useMemo(
+    () => receivers?.some((r) => r.amount !== undefined && r.amount !== '') ?? false,
+    [receivers],
+  );
+
   // Validate required parameters and redirect if missing
   useEffect(() => {
     const hasRequiredParams =
@@ -798,6 +804,7 @@ function BulkSendAmountsInput() {
     () => ({
       accountId,
       networkId,
+      hasCustomAmounts,
       tokenInfo,
       tokenDetails,
       setTokenDetails,
@@ -829,6 +836,7 @@ function BulkSendAmountsInput() {
     [
       networkId,
       accountId,
+      hasCustomAmounts,
       tokenDetails,
       tokenDetailsState,
       bulkSendMode,

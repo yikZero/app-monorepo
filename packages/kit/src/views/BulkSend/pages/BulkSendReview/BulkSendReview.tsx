@@ -251,8 +251,6 @@ function BaseBulkSendReview({
     [navigation, accountId, networkId],
   );
 
-  const handleCancel = useCallback(() => navigation.pop(), [navigation]);
-
   // Navigate back to address input page after successful transaction
   const navigateAfterSuccess = useCallback(() => {
     if (accountUtils.isQrAccount({ accountId: accountId ?? '' })) {
@@ -460,10 +458,6 @@ function BaseBulkSendReview({
       <Page.Footer>
         <Page.FooterActions
           onConfirmText={confirmButtonText}
-          onCancelText="Cancel"
-          cancelButtonProps={{
-            onPress: handleCancel,
-          }}
           confirmButtonProps={{
             onPress: handleConfirm,
             disabled: isConfirmDisabled,
