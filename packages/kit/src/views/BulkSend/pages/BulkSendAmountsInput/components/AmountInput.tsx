@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import BigNumber from 'bignumber.js';
 
@@ -162,7 +162,7 @@ export function RangeAmountInput() {
 
   const generatePreviewAmounts = useCallback(
     (min: string, max: string): string[] => {
-      if (!min || !max || transfersInfo.length === 0) return [];
+      if (!tokenInfo || !min || !max || transfersInfo.length === 0) return [];
       return generateRandomAmountsFromRange({
         transfersInfo,
         rangeMin: min,
@@ -171,26 +171,36 @@ export function RangeAmountInput() {
         balance: [balance], // Pass balance to constrain total
       });
     },
-    [transfersInfo, tokenInfo.decimals, balance],
+    [transfersInfo, tokenInfo, balance],
   );
 
+  // Use refs to avoid stale closures in useEffect
+  const validateRangeRef = useRef(validateRange);
+  validateRangeRef.current = validateRange;
+  const generatePreviewAmountsRef = useRef(generatePreviewAmounts);
+  generatePreviewAmountsRef.current = generatePreviewAmounts;
+  const amountInputValuesRef = useRef(amountInputValues);
+  amountInputValuesRef.current = amountInputValues;
+
   // Generate initial preview amounts when component mounts with valid values
+  // or when transfersInfo length changes (e.g., user adds/removes addresses)
   useEffect(() => {
-    const { rangeMin, rangeMax } = amountInputValues;
+    const { rangeMin, rangeMax } = amountInputValuesRef.current;
     if (!rangeMin || !rangeMax || transfersInfo.length === 0) return;
 
     // Use validateRange to check validity
-    const errors = validateRange(rangeMin, rangeMax);
+    const errors = validateRangeRef.current(rangeMin, rangeMax);
     if (!errors.rangeError) {
-      const previewAmounts = generatePreviewAmounts(rangeMin, rangeMax);
+      const previewAmounts = generatePreviewAmountsRef.current(
+        rangeMin,
+        rangeMax,
+      );
       setPreviewState((prev) => ({
         ...prev,
         rangePreviewAmounts: previewAmounts,
       }));
     }
-    // Only run on mount and when transfersInfo changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transfersInfo.length]);
+  }, [transfersInfo.length, setPreviewState]);
 
   const handleRangeChange = useCallback(
     (field: 'rangeMin' | 'rangeMax', value: string) => {
