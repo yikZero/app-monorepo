@@ -64,8 +64,8 @@ function IntervalCard() {
       </XStack>
 
       {/* Content */}
-      <YStack flex={1} justifyContent="center">
-        <SizableText size="$bodyMd" color="$textSubdued">
+      <YStack flex={1} justifyContent="center" alignItems="center">
+        <SizableText size="$bodyMd" color="$textSubdued" textAlign="center">
           {intl.formatMessage({
             id: ETranslations.wallet_bulk_send_interval_desc,
           })}
