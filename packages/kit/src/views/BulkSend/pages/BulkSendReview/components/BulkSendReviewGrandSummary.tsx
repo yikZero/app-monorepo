@@ -13,7 +13,7 @@ function BulkSendReviewGrandSummary() {
   const { tokenInfo, networkImageUri, totalTokenAmount, totalFiatAmount } =
     useBulkSendReviewContext();
   return (
-    <YStack gap="$1" alignItems="center" py="$3">
+    <YStack gap="$1" alignItems="center">
       <SizableText size="$bodyLgMedium" color="$textSubdued">
         Sending amount
       </SizableText>

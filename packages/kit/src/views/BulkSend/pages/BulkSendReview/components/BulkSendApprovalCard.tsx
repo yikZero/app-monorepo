@@ -152,7 +152,7 @@ function BulkSendApprovalCard({ onEditApproval }: Props) {
   const tokenSymbol = approvesInfo[0]?.tokenInfo?.symbol ?? 'Token';
 
   return (
-    <YStack px="$5" py="$3">
+    <YStack px="$5">
       <YStack bg="$bgSubdued" borderRadius="$3" py="$2" overflow="hidden">
         <Accordion type="single" collapsible defaultValue="" bg="transparent">
           <Accordion.Item value="approval" bg="transparent">
