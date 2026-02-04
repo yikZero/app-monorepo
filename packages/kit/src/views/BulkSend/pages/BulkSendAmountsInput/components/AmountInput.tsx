@@ -23,7 +23,10 @@ import {
   type IAmountInputError,
 } from '@onekeyhq/shared/types/bulkSend';
 
-import { generateRandomAmountsFromRange } from '../../../utils';
+import {
+  generateRandomAmountsFromRange,
+  validateRangeInput,
+} from '../../../utils';
 
 import { useBulkSendAmountsInputContext } from './Context';
 
@@ -149,25 +152,8 @@ export function RangeAmountInput() {
 
   const validateRange = useCallback(
     (min: string, max: string): IAmountInputError => {
-      const errors: IAmountInputError = {};
-
-      // Check if min or max exceeds balance
-      const minBN = new BigNumber(min || '0');
-      const maxBN = new BigNumber(max || '0');
-      const balanceBN = new BigNumber(balance);
-
-      if (minBN.isGreaterThan(balanceBN) || maxBN.isGreaterThan(balanceBN)) {
-        errors.rangeError = 'Insufficient balance.';
-        return errors;
-      }
-
-      // Check if min >= max (invalid range)
-      if (min !== '' && max !== '' && minBN.isGreaterThanOrEqualTo(maxBN)) {
-        errors.rangeError = 'Set a proper range.';
-        return errors;
-      }
-
-      return errors;
+      const error = validateRangeInput({ rangeMin: min, rangeMax: max, balance });
+      return error ? { rangeError: error } : {};
     },
     [balance],
   );
@@ -191,17 +177,9 @@ export function RangeAmountInput() {
     const { rangeMin, rangeMax } = amountInputValues;
     if (!rangeMin || !rangeMax || transfersInfo.length === 0) return;
 
-    const minBN = new BigNumber(rangeMin);
-    const maxBN = new BigNumber(rangeMax);
-    const balanceBN = new BigNumber(balance);
-
-    // Check if values are valid
-    const isValid =
-      !minBN.isGreaterThan(balanceBN) &&
-      !maxBN.isGreaterThan(balanceBN) &&
-      !minBN.isGreaterThanOrEqualTo(maxBN);
-
-    if (isValid) {
+    // Use validateRange to check validity
+    const errors = validateRange(rangeMin, rangeMax);
+    if (!errors.rangeError) {
       const previewAmounts = generatePreviewAmounts(rangeMin, rangeMax);
       setPreviewState((prev) => ({
         ...prev,
@@ -489,23 +467,12 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
 
   const validateRangeAmount = useCallback((): IAmountInputError => {
     const balance = tokenDetails?.balanceParsed ?? '0';
-    const minBN = new BigNumber(amountInputValues.rangeMin || '0');
-    const maxBN = new BigNumber(amountInputValues.rangeMax || '0');
-    const balanceBN = new BigNumber(balance);
-
-    if (minBN.isGreaterThan(balanceBN) || maxBN.isGreaterThan(balanceBN)) {
-      return { rangeError: 'Insufficient balance.' };
-    }
-
-    if (
-      amountInputValues.rangeMin !== '' &&
-      amountInputValues.rangeMax !== '' &&
-      minBN.isGreaterThanOrEqualTo(maxBN)
-    ) {
-      return { rangeError: 'Set a proper range.' };
-    }
-
-    return {};
+    const error = validateRangeInput({
+      rangeMin: amountInputValues.rangeMin,
+      rangeMax: amountInputValues.rangeMax,
+      balance,
+    });
+    return error ? { rangeError: error } : {};
   }, [
     tokenDetails?.balanceParsed,
     amountInputValues.rangeMin,
