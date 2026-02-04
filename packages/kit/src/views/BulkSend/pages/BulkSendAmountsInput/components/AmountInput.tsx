@@ -432,6 +432,7 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
     amountInputMode,
     setAmountInputMode,
     setAmountInputErrors,
+    setPreviewState,
     transfersInfo,
     tokenInfo,
     tokenDetails,
@@ -506,13 +507,21 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
             setAmountInputErrors({});
         }
       } else {
+        // Mobile mode: reset preview state when switching tabs
+        // User should click "Next" again to confirm the new mode
         setAmountInputErrors({});
+        setPreviewState((prev) => ({
+          ...prev,
+          specifiedPreviewed: false,
+          rangePreviewed: false,
+        }));
       }
     },
     [
       inDialog,
       setAmountInputMode,
       setAmountInputErrors,
+      setPreviewState,
       validateSpecifiedAmount,
       validateRangeAmount,
     ],
