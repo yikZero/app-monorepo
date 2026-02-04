@@ -15,7 +15,7 @@ import {
 import type { IPreviewState } from './Context';
 
 type IUseAmountPreviewParams = {
-  tokenInfo: IToken;
+  tokenInfo: IToken | undefined;
   transfersInfo: ITransferInfo[];
   setTransfersInfo: (transfersInfo: ITransferInfo[]) => void;
   previewState: IPreviewState;
@@ -37,6 +37,8 @@ export function useAmountPreview({
       values: IAmountInputValues,
       preGeneratedAmounts?: string[],
     ) => {
+      if (!tokenInfo) return;
+
       let amounts: string[] = [];
 
       switch (mode) {
@@ -71,7 +73,7 @@ export function useAmountPreview({
 
       setTransfersInfo(newTransfersInfo);
     },
-    [tokenInfo?.decimals, transfersInfo, setTransfersInfo, balance],
+    [tokenInfo, transfersInfo, setTransfersInfo, balance],
   );
 
   const handlePreview = useCallback(

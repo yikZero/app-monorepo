@@ -229,6 +229,7 @@ export function AmountPreview({
             <SizableText
               size="$bodyMdMedium"
               color="$textInteractive"
+              cursor="default"
               onPress={onMaxPress}
               hitSlop={8}
             >

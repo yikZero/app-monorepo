@@ -3,7 +3,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { isEmpty } from 'lodash';
 
-import { Page, useMedia } from '@onekeyhq/components';
+import {
+  NumberSizeableText,
+  Page,
+  SizableText,
+  XStack,
+  YStack,
+  useMedia,
+} from '@onekeyhq/components';
+import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import type { IUnsignedTxPro } from '@onekeyhq/core/src/types';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
@@ -81,6 +89,8 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
   const navigation = useAppNavigation();
 
   const media = useMedia();
+
+  const [settings] = useSettingsPersistAtom();
 
   const [isBuilding, setIsBuilding] = useState(false);
 
@@ -330,12 +340,12 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
 
   // Determine button text based on preview state and insufficient balance
   const confirmButtonText = useMemo(() => {
-    // Check insufficient balance based on platform and mode
+    // Only show "Insufficient Balance" in Custom mode
     const hasInsufficientBalance = !media.gtMd
-      ? (amountInputMode === EAmountInputMode.Custom || isInPreviewMode)
+      ? amountInputMode === EAmountInputMode.Custom || isInPreviewMode
         ? currentModeData.isInsufficientBalance
         : false
-      : isInsufficientBalance;
+      : amountInputMode === EAmountInputMode.Custom && isInsufficientBalance;
 
     if (hasInsufficientBalance) {
       return 'Insufficient Balance';
@@ -351,6 +361,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
 
   // Handle Max button press - fills in max amount per address
   const handleMaxPress = useCallback(() => {
+    if (!tokenInfo) return;
     if (amountInputMode !== EAmountInputMode.Specified) return;
     const balance = tokenDetails?.balanceParsed ?? '0';
     if (!balance || transfersInfo.length === 0) return;
@@ -373,7 +384,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     transfersInfo.length,
     setAmountInputValues,
     amountInputValues,
-    tokenInfo.decimals,
+    tokenInfo,
     setAmountInputErrors,
     amountInputErrors,
   ]);
@@ -406,7 +417,37 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
               loading: isBuilding,
             }}
           >
-            {!media.gtMd ? (
+            {media.gtMd ? (
+              // Desktop: Show Total amount on the left
+              <YStack gap="$1">
+                <SizableText size="$bodySm" color="$textSubdued">
+                  Total amount
+                </SizableText>
+                <XStack alignItems="center" gap="$1">
+                  <NumberSizeableText
+                    size="$bodyLgMedium"
+                    formatter="balance"
+                    formatterOptions={{ tokenSymbol: tokenInfo?.symbol }}
+                  >
+                    {totalTokenAmount}
+                  </NumberSizeableText>
+                  <SizableText size="$bodyMd" color="$textSubdued">
+                    (
+                    <NumberSizeableText
+                      size="$bodyMd"
+                      formatter="value"
+                      formatterOptions={{
+                        currency: settings.currencyInfo.symbol,
+                      }}
+                    >
+                      {totalFiatAmount}
+                    </NumberSizeableText>
+                    )
+                  </SizableText>
+                </XStack>
+              </YStack>
+            ) : (
+              // Mobile: Show AmountPreview
               <AmountPreview
                 containerProps={{
                   mb: '$4',
@@ -435,7 +476,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
                     : false
                 }
               />
-            ) : null}
+            )}
           </Page.FooterActions>
         </BulkSendContentWrapper>
       </Page.Footer>
@@ -464,7 +505,9 @@ function BulkSendAmountsInput() {
 
   // Check if receivers have custom amounts (from address input with "address,amount" format)
   const hasCustomAmounts = useMemo(
-    () => receivers?.some((r) => r.amount !== undefined && r.amount !== '') ?? false,
+    () =>
+      receivers?.some((r) => r.amount !== undefined && r.amount !== '') ??
+      false,
     [receivers],
   );
 

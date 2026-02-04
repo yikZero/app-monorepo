@@ -121,9 +121,11 @@ function SetAmountPerAddressDialogContent({
       totalTokenAmount,
       totalFiatAmount,
       isInsufficientBalance: false,
+      hasCustomAmounts: false,
       previewState: {
         specifiedPreviewed: false,
         rangePreviewed: false,
+        rangePreviewAmounts: [],
       },
       setPreviewState: () => {},
       // Mobile-specific (not used in dialog, but required by context type)

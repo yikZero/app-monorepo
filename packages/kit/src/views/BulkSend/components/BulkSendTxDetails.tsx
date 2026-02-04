@@ -110,7 +110,6 @@ function TransferListItem({
     [tokenSymbol],
   );
 
-
   const renderAmount = () => {
     if (editMode) {
       return (
@@ -119,11 +118,7 @@ function TransferListItem({
             <Tooltip
               renderTrigger={
                 <Stack onPress={handleErrorIconPress}>
-                  <Icon
-                    name="ErrorOutline"
-                    size="$5"
-                    color="$iconCritical"
-                  />
+                  <Icon name="ErrorOutline" size="$5" color="$iconCritical" />
                 </Stack>
               }
               renderContent={amountError}
@@ -164,8 +159,21 @@ function TransferListItem({
     );
   };
 
-  // Render address with tooltip
+  // Render address - full on desktop, shortened with tooltip on mobile
   const renderAddress = () => {
+    // Desktop: show full address without tooltip
+    if (media.gtMd) {
+      return (
+        <SizableText
+          size="$bodyMdMedium"
+          color={hasAddressError ? '$textCritical' : '$text'}
+        >
+          {address}
+        </SizableText>
+      );
+    }
+
+    // Mobile: show shortened address with tooltip
     const addressText = (
       <SizableText
         size="$bodyMdMedium"
@@ -176,7 +184,6 @@ function TransferListItem({
       </SizableText>
     );
 
-    // On mobile, show tooltip on press; on desktop, show on hover
     return (
       <Tooltip
         renderTrigger={addressText}
@@ -191,8 +198,10 @@ function TransferListItem({
       <YStack
         justifyContent="center"
         flexShrink={0}
-        width={ADDRESS_WIDTH}
-        minWidth={ADDRESS_WIDTH}
+        {...(!media.gtMd && {
+          width: ADDRESS_WIDTH,
+          minWidth: ADDRESS_WIDTH,
+        })}
       >
         {renderAddress()}
         {hasAddressError ? (

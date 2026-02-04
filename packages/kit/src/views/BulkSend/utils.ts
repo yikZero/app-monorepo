@@ -293,7 +293,10 @@ export function generateRandomAmountsFromRange({
       // Reduce the largest amount by the excess, respecting min
       const adjusted = maxVal.minus(excess);
       if (adjusted.gte(min)) {
-        formattedAmounts[maxIdx] = adjusted.toFixed(decimals, BigNumber.ROUND_DOWN);
+        formattedAmounts[maxIdx] = adjusted.toFixed(
+          decimals,
+          BigNumber.ROUND_DOWN,
+        );
       }
     }
   }
@@ -335,7 +338,11 @@ export function validateRangeInput({
   }
 
   // Check if min >= max (invalid range)
-  if (rangeMin !== '' && rangeMax !== '' && minBN.isGreaterThanOrEqualTo(maxBN)) {
+  if (
+    rangeMin !== '' &&
+    rangeMax !== '' &&
+    minBN.isGreaterThanOrEqualTo(maxBN)
+  ) {
     return 'Set a proper range';
   }
 
