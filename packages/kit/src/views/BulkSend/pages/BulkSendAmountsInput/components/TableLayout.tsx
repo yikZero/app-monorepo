@@ -696,7 +696,7 @@ function TransferInfoListSection() {
                 />
               ) : (
                 <SizableText
-                  size="$bodyLgMedium"
+                  size="$bodyMdMedium"
                   width="100%"
                   flex={1}
                   textAlign="right"

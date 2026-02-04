@@ -355,6 +355,11 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
         id: ETranslations.swap_page_button_insufficient_balance,
       });
     }
+    // Desktop: always show "Review" (no preview mode, goes directly to review page)
+    // Mobile: show "Review" only after preview, otherwise show "Next"
+    if (media.gtMd) {
+      return intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_review });
+    }
     return isInPreviewMode
       ? intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_review })
       : intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_next });
