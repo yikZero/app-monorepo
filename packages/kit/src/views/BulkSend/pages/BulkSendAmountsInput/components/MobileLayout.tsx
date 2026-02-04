@@ -1,4 +1,4 @@
-import { Icon, SizableText, XStack, YStack } from '@onekeyhq/components';
+import { YStack } from '@onekeyhq/components';
 import { EAmountInputMode } from '@onekeyhq/shared/types/bulkSend';
 
 import BulkSendTxDetails from '../../../components/BulkSendTxDetails';
@@ -24,12 +24,8 @@ function MobileLayout() {
   } = useBulkSendAmountsInputContext();
 
   // Use mode-specific data for mobile display
-  const {
-    transfersInfo: modeTransfersInfo,
-    transferInfoErrors,
-    isInsufficientBalance,
-    totalTokenAmount,
-  } = currentModeData;
+  const { transfersInfo: modeTransfersInfo, transferInfoErrors } =
+    currentModeData;
 
   // For display: use mode-specific data if available, otherwise use base
   const displayTransfersInfo =
@@ -66,23 +62,9 @@ function MobileLayout() {
   const isEditMode = amountInputMode === EAmountInputMode.Custom;
   const showTxDetails = shouldShowTxDetails(amountInputMode);
 
-  // Only show insufficient balance error in Custom mode
-  // In Specified/Range modes, the user hasn't confirmed the amounts yet
-  const showInsufficientBalanceError = isEditMode && isInsufficientBalance;
-
   return (
     <YStack gap="$6">
       <AmountInputSection />
-      {/* Insufficient Balance Error - only shown in Custom mode */}
-      {showInsufficientBalanceError ? (
-        <XStack gap="$1" alignItems="center">
-          <Icon name="InfoCircleOutline" size="$4" color="$iconCritical" />
-          <SizableText size="$bodySm" color="$textCritical">
-            Insufficient balance, available: {tokenDetails?.balanceParsed}{' '}
-            {tokenInfo.symbol}, total: {totalTokenAmount} {tokenInfo.symbol}
-          </SizableText>
-        </XStack>
-      ) : null}
       {showTxDetails ? (
         <BulkSendTxDetails
           tokenInfo={tokenInfo}

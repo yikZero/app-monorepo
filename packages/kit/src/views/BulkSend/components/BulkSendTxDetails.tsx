@@ -110,40 +110,42 @@ function TransferListItem({
     [tokenSymbol],
   );
 
-  const errorLeftAddOnProps = useMemo<IInputAddOnProps | undefined>(() => {
-    if (!hasAmountError) return undefined;
-    return {
-      iconName: 'ErrorOutline',
-      iconColor: '$iconCritical',
-      onPress: handleErrorIconPress,
-      tooltipProps: platformEnv.isNative
-        ? undefined
-        : {
-            renderContent: amountError,
-            placement: 'top',
-          },
-    };
-  }, [hasAmountError, amountError, handleErrorIconPress]);
 
   const renderAmount = () => {
     if (editMode) {
       return (
-        <Input
-          width={INPUT_WIDTH}
-          value={amount}
-          onChangeText={handleAmountChange}
-          placeholder="0"
-          keyboardType="decimal-pad"
-          error={hasAmountError}
-          leftAddOnProps={errorLeftAddOnProps}
-          addOns={inputAddOns}
-          textAlign="right"
-          containerProps={{
-            width: INPUT_WIDTH,
-            borderWidth: 0,
-            bg: '$bgSubdued',
-          }}
-        />
+        <XStack alignItems="center" gap="$2">
+          {hasAmountError ? (
+            <Tooltip
+              renderTrigger={
+                <Stack onPress={handleErrorIconPress}>
+                  <Icon
+                    name="ErrorOutline"
+                    size="$5"
+                    color="$iconCritical"
+                  />
+                </Stack>
+              }
+              renderContent={amountError}
+              placement="top"
+              {...(platformEnv.isNative && { open: false })}
+            />
+          ) : null}
+          <Input
+            width={INPUT_WIDTH}
+            value={amount}
+            onChangeText={handleAmountChange}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            addOns={inputAddOns}
+            textAlign="right"
+            containerProps={{
+              width: INPUT_WIDTH,
+              borderWidth: 0,
+              bg: '$bgSubdued',
+            }}
+          />
+        </XStack>
       );
     }
 
@@ -279,14 +281,14 @@ function BulkSendTxDetails(props: IProps) {
       // Aggregate senders - sum amounts for the same sender
       const existingSender = senderMap.get(transfer.from);
       if (existingSender) {
-        existingSender.amount = new BigNumber(existingSender.amount)
+        existingSender.amount = new BigNumber(existingSender.amount || '0')
           .plus(transfer.amount || '0')
           .toFixed();
         existingSender.indices.push(index);
       } else {
         senderMap.set(transfer.from, {
           address: transfer.from,
-          amount: transfer.amount || '0',
+          amount: transfer.amount ?? '',
           indices: [index],
         });
       }
@@ -294,14 +296,14 @@ function BulkSendTxDetails(props: IProps) {
       // Aggregate receivers - sum amounts for the same receiver
       const existingReceiver = receiverMap.get(transfer.to);
       if (existingReceiver) {
-        existingReceiver.amount = new BigNumber(existingReceiver.amount)
+        existingReceiver.amount = new BigNumber(existingReceiver.amount || '0')
           .plus(transfer.amount || '0')
           .toFixed();
         existingReceiver.indices.push(index);
       } else {
         receiverMap.set(transfer.to, {
           address: transfer.to,
-          amount: transfer.amount || '0',
+          amount: transfer.amount ?? '',
           indices: [index],
         });
       }

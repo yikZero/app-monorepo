@@ -31,6 +31,7 @@ type IAmountPreviewProps = {
   previewTotalFiatAmount?: string;
   rangePreviewAmounts?: string[];
   onMaxPress?: () => void;
+  isInsufficientBalance?: boolean;
 };
 
 export function AmountPreview({
@@ -46,6 +47,7 @@ export function AmountPreview({
   rangePreviewAmounts,
   containerProps,
   onMaxPress,
+  isInsufficientBalance,
 }: IAmountPreviewProps) {
   const [settings] = useSettingsPersistAtom();
 
@@ -208,11 +210,15 @@ export function AmountPreview({
       {showAvailable ? (
         <XStack py="$0.5" alignItems="center" justifyContent="space-between">
           <XStack gap="$1" alignItems="center">
-            <SizableText size="$bodyMd" color="$textSubdued">
+            <SizableText
+              size="$bodyMd"
+              color={isInsufficientBalance ? '$textCritical' : '$textSubdued'}
+            >
               Available:
             </SizableText>
             <NumberSizeableText
               size="$bodyMd"
+              color={isInsufficientBalance ? '$textCritical' : '$text'}
               formatter="balance"
               formatterOptions={{ tokenSymbol: tokenDetails?.info.symbol }}
             >

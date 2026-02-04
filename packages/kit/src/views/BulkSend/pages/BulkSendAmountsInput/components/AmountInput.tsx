@@ -13,8 +13,6 @@ import {
 } from '@onekeyhq/components';
 import { getSharedInputStyles } from '@onekeyhq/components/src/forms/Input/sharedStyles';
 import { AmountInput as BaseAmountInput } from '@onekeyhq/kit/src/components/AmountInput';
-import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
-import { Token } from '@onekeyhq/kit/src/components/Token';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
@@ -357,73 +355,18 @@ export function RangeAmountInput() {
   );
 }
 
-function CustomAmountDisplay({ inDialog }: { inDialog?: boolean }) {
-  const {
-    networkId,
-    tokenDetails,
-    tokenInfo,
-    totalTokenAmount,
-    totalFiatAmount,
-  } = useBulkSendAmountsInputContext();
-
-  const { network } = useAccountData({ networkId });
-
-  const [settings] = useSettingsPersistAtom();
-
-  const tokenSymbol = tokenInfo.symbol;
-
-  if (inDialog) {
-    return (
-      <YStack alignItems="center" justifyContent="center" p="$5">
-        <SizableText
-          size="$bodyLg"
-          color="$textSubdued"
-          textAlign="center"
-          maxWidth={256}
-        >
-          Each transfer will use the amount you entered.
-        </SizableText>
-      </YStack>
-    );
-  }
-
+function CustomAmountDisplay() {
   return (
-    <ListItem
-      renderAvatar={() => (
-        <Token
-          tokenImageUri={tokenDetails?.info.logoURI}
-          size="lg"
-          showNetworkIcon
-          networkImageUri={network?.logoURI}
-          networkId={network?.id}
-        />
-      )}
-      mx="$0"
-      px="$0"
-    >
-      <XStack alignItems="center" gap="$2" flex={1}>
-        <YStack flex={1}>
-          <NumberSizeableText
-            size="$bodyLgMedium"
-            formatter="balance"
-            formatterOptions={{ tokenSymbol }}
-          >
-            {totalTokenAmount}
-          </NumberSizeableText>
-          <NumberSizeableText
-            size="$bodyMd"
-            color="$textSubdued"
-            formatter="value"
-            formatterOptions={{ currency: settings.currencyInfo.symbol }}
-          >
-            {totalFiatAmount}
-          </NumberSizeableText>
-        </YStack>
-        <SizableText size="$bodyMd" color="$textSubdued">
-          Sending Amount
-        </SizableText>
-      </XStack>
-    </ListItem>
+    <YStack alignItems="center" justifyContent="center" p="$5">
+      <SizableText
+        size="$bodyLg"
+        color="$textSubdued"
+        textAlign="center"
+        maxWidth={256}
+      >
+        Each transfer will use the amount you entered.
+      </SizableText>
+    </YStack>
   );
 }
 
@@ -534,7 +477,7 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
       case EAmountInputMode.Range:
         return <RangeAmountInput />;
       case EAmountInputMode.Custom:
-        return <CustomAmountDisplay inDialog={inDialog} />;
+        return <CustomAmountDisplay />;
       default:
         return null;
     }

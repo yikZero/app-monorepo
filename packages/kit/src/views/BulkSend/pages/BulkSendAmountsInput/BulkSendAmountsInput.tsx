@@ -328,8 +328,26 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     currentModeData.transfersInfo.length,
   ]);
 
-  // Determine button text based on preview state
-  const confirmButtonText = isInPreviewMode ? 'Review' : 'Next';
+  // Determine button text based on preview state and insufficient balance
+  const confirmButtonText = useMemo(() => {
+    // Check insufficient balance based on platform and mode
+    const hasInsufficientBalance = !media.gtMd
+      ? (amountInputMode === EAmountInputMode.Custom || isInPreviewMode)
+        ? currentModeData.isInsufficientBalance
+        : false
+      : isInsufficientBalance;
+
+    if (hasInsufficientBalance) {
+      return 'Insufficient Balance';
+    }
+    return isInPreviewMode ? 'Review' : 'Next';
+  }, [
+    media.gtMd,
+    amountInputMode,
+    isInPreviewMode,
+    currentModeData.isInsufficientBalance,
+    isInsufficientBalance,
+  ]);
 
   // Handle Max button press - fills in max amount per address
   const handleMaxPress = useCallback(() => {
@@ -410,6 +428,11 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
                   amountInputMode === EAmountInputMode.Specified
                     ? handleMaxPress
                     : undefined
+                }
+                isInsufficientBalance={
+                  amountInputMode === EAmountInputMode.Custom || isInPreviewMode
+                    ? currentModeData.isInsufficientBalance
+                    : false
                 }
               />
             ) : null}
