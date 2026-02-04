@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import BigNumber from 'bignumber.js';
+import { useIntl } from 'react-intl';
 
 import {
   Input,
@@ -15,6 +16,7 @@ import { getSharedInputStyles } from '@onekeyhq/components/src/forms/Input/share
 import { AmountInput as BaseAmountInput } from '@onekeyhq/kit/src/components/AmountInput';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
 import {
   EAmountInputMode,
@@ -29,6 +31,7 @@ import {
 import { useBulkSendAmountsInputContext } from './Context';
 
 export function SpecifiedAmountInput() {
+  const intl = useIntl();
   const {
     networkId,
     tokenInfo,
@@ -72,8 +75,12 @@ export function SpecifiedAmountInput() {
         maxAmount: balance ?? '0',
         allowZero: false,
         customErrorMessages: {
-          maxAmount: 'Insufficient balance',
-          zeroAmount: 'Amount must be greater than 0',
+          maxAmount: intl.formatMessage({
+            id: ETranslations.swap_page_button_insufficient_balance,
+          }),
+          zeroAmount: intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_error_amount_zero,
+          }),
         },
       });
       setAmountInputErrors({
@@ -82,6 +89,7 @@ export function SpecifiedAmountInput() {
       });
     },
     [
+      intl,
       amountInputValues,
       setAmountInputValues,
       tokenInfo,
@@ -133,6 +141,7 @@ export function SpecifiedAmountInput() {
 }
 
 export function RangeAmountInput() {
+  const intl = useIntl();
   const {
     tokenDetails,
     tokenInfo,
@@ -325,7 +334,9 @@ export function RangeAmountInput() {
               flex={1}
               value={amountInputValues.rangeMax}
               onChangeText={handleMaxChange}
-              placeholder="Max"
+              placeholder={intl.formatMessage({
+                id: ETranslations.global_max,
+              })}
               keyboardType="decimal-pad"
               containerProps={{
                 width: '100%',
@@ -366,6 +377,7 @@ export function RangeAmountInput() {
 }
 
 function CustomAmountDisplay() {
+  const intl = useIntl();
   return (
     <YStack alignItems="center" justifyContent="center" p="$5">
       <SizableText
@@ -374,13 +386,16 @@ function CustomAmountDisplay() {
         textAlign="center"
         maxWidth={256}
       >
-        Each transfer will use the amount you entered.
+        {intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_custom_mode_hint,
+        })}
       </SizableText>
     </YStack>
   );
 }
 
 export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
+  const intl = useIntl();
   const {
     amountInputMode,
     setAmountInputMode,
@@ -396,14 +411,29 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
   // Only show Custom option if receivers have custom amounts from address input
   const segmentOptions = useMemo(() => {
     const options = [
-      { label: 'Specified', value: EAmountInputMode.Specified },
-      { label: 'Range', value: EAmountInputMode.Range },
+      {
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_specified,
+        }),
+        value: EAmountInputMode.Specified,
+      },
+      {
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_range,
+        }),
+        value: EAmountInputMode.Range,
+      },
     ];
     if (hasCustomAmounts) {
-      options.push({ label: 'Custom', value: EAmountInputMode.Custom });
+      options.push({
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_custom,
+        }),
+        value: EAmountInputMode.Custom,
+      });
     }
     return options;
-  }, [hasCustomAmounts]);
+  }, [intl, hasCustomAmounts]);
 
   const validateSpecifiedAmount = useCallback((): IAmountInputError => {
     const balance = tokenDetails?.balanceParsed ?? '0';
@@ -415,12 +445,17 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
       maxAmount: balance,
       allowZero: false,
       customErrorMessages: {
-        maxAmount: 'Insufficient balance',
-        zeroAmount: 'Amount must be greater than 0',
+        maxAmount: intl.formatMessage({
+          id: ETranslations.swap_page_button_insufficient_balance,
+        }),
+        zeroAmount: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_error_amount_zero,
+        }),
       },
     });
     return { specifiedAmount: error };
   }, [
+    intl,
     tokenInfo,
     tokenDetails?.balanceParsed,
     amountInputValues.specifiedAmount,

@@ -3,6 +3,8 @@ import { isEmpty } from 'lodash';
 
 import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
+import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import {
   EAmountInputMode,
   type IAmountInputError,
@@ -334,7 +336,9 @@ export function validateRangeInput({
   // Only check if min exceeds balance (min must be achievable)
   // max > balance is allowed - generation logic will use balance/count as effective max
   if (minBN.isGreaterThan(balanceBN)) {
-    return 'Insufficient balance';
+    return appLocale.intl.formatMessage({
+      id: ETranslations.swap_page_button_insufficient_balance,
+    });
   }
 
   // Check if min >= max (invalid range)
@@ -343,7 +347,9 @@ export function validateRangeInput({
     rangeMax !== '' &&
     minBN.isGreaterThanOrEqualTo(maxBN)
   ) {
-    return 'Set a proper range';
+    return appLocale.intl.formatMessage({
+      id: ETranslations.wallet_bulk_send_error_max_less_than_min,
+    });
   }
 
   return undefined;

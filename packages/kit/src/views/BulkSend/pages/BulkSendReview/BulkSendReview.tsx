@@ -83,7 +83,11 @@ function BaseBulkSendReview({
 
   // Determine button text based on whether approvals are needed
   const confirmButtonText =
-    approvesInfo.length > 0 ? 'Approve and Confirm' : 'Confirm';
+    approvesInfo.length > 0
+      ? intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_btn_approve_and_confirm,
+        })
+      : intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_confirm });
 
   // Handle editing approval amount
   const handleEditApproval = useCallback(
@@ -421,7 +425,11 @@ function BaseBulkSendReview({
 
   return (
     <Page scrollEnabled>
-      <Page.Header title="Review transaction" />
+      <Page.Header
+        title={intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_review_title,
+        })}
+      />
       <Page.Body>
         <YStack gap="$8">
           {/* Fee Error Alert - Top Section */}

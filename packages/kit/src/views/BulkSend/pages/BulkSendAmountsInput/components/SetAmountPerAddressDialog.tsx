@@ -1,6 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import { useIntl } from 'react-intl';
+
 import { Dialog, Stack, YStack } from '@onekeyhq/components';
+import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
 import {
   EAmountInputMode,
   EBulkSendMode,
@@ -8,7 +13,6 @@ import {
   type IAmountInputValues,
 } from '@onekeyhq/shared/types/bulkSend';
 import type { IToken, ITokenFiat } from '@onekeyhq/shared/types/token';
-import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
 
 import { BulkSendAmountsInputContext, type IMobileModeData } from './Context';
 import { AmountInputSection } from './AmountInput';
@@ -60,6 +64,7 @@ function SetAmountPerAddressDialogContent({
   initialValues,
   onConfirm,
 }: ISetAmountPerAddressDialogProps) {
+  const intl = useIntl();
   // Local state for the dialog (changes only apply on confirm)
   const [amountInputMode, setAmountInputMode] =
     useState<EAmountInputMode>(initialMode);
@@ -189,8 +194,12 @@ function SetAmountPerAddressDialogContent({
         />
         <Dialog.Footer
           onConfirm={handleConfirm}
-          onConfirmText="Confirm"
-          onCancelText="Cancel"
+          onConfirmText={intl.formatMessage({
+            id: ETranslations.global_confirm,
+          })}
+          onCancelText={intl.formatMessage({
+            id: ETranslations.global_cancel,
+          })}
           confirmButtonProps={{
             disabled: !isAmountValid,
           }}
@@ -204,7 +213,9 @@ export function showSetAmountPerAddressDialog(
   props: ISetAmountPerAddressDialogProps,
 ) {
   Dialog.show({
-    title: 'Set amount per address',
+    title: appLocale.intl.formatMessage({
+      id: ETranslations.wallet_bulk_send_set_amount_title,
+    }),
     renderContent: <SetAmountPerAddressDialogContent {...props} />,
     showFooter: false,
   });

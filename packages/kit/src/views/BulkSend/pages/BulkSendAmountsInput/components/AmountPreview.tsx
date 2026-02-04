@@ -1,3 +1,8 @@
+import { useMemo } from 'react';
+
+import BigNumber from 'bignumber.js';
+import { useIntl } from 'react-intl';
+
 import {
   Divider,
   type IYStackProps,
@@ -6,16 +11,15 @@ import {
   XStack,
   YStack,
 } from '@onekeyhq/components';
+import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
+import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import {
   EAmountInputMode,
   type IAmountInputError,
   type IAmountInputValues,
 } from '@onekeyhq/shared/types/bulkSend';
 import type { IToken, ITokenFiat } from '@onekeyhq/shared/types/token';
-import type { ITransferInfo } from '@onekeyhq/kit-bg/src/vaults/types';
-import BigNumber from 'bignumber.js';
-import { useMemo } from 'react';
-import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 
 type IAmountPreviewProps = {
   inDialog?: boolean;
@@ -49,6 +53,7 @@ export function AmountPreview({
   onMaxPress,
   isInsufficientBalance,
 }: IAmountPreviewProps) {
+  const intl = useIntl();
   const [settings] = useSettingsPersistAtom();
 
   // Check if range has values (for showing the section)
@@ -167,7 +172,9 @@ export function AmountPreview({
         <>
           <YStack>
             <SizableText size="$bodyMd" color="$textSubdued">
-              Total amount
+              {intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_total_amount,
+              })}
             </SizableText>
             <XStack alignItems="center" gap="$1">
               {totalTokenAmount === '--' ? (
@@ -214,7 +221,9 @@ export function AmountPreview({
               size="$bodyMd"
               color={isInsufficientBalance ? '$textCritical' : '$textSubdued'}
             >
-              Available:
+              {intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_available,
+              })}
             </SizableText>
             <NumberSizeableText
               size="$bodyMd"
@@ -233,7 +242,7 @@ export function AmountPreview({
               onPress={onMaxPress}
               hitSlop={8}
             >
-              Max
+              {intl.formatMessage({ id: ETranslations.global_max })}
             </SizableText>
           ) : null}
         </XStack>

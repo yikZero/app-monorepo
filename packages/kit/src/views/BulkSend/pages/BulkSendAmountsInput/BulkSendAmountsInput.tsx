@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import BigNumber from 'bignumber.js';
 import { isEmpty } from 'lodash';
+import { useIntl } from 'react-intl';
 
 import {
   NumberSizeableText,
@@ -11,6 +12,7 @@ import {
   YStack,
   useMedia,
 } from '@onekeyhq/components';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import type { IUnsignedTxPro } from '@onekeyhq/core/src/types';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
@@ -86,6 +88,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     updateCurrentModeData,
   } = useBulkSendAmountsInputContext();
 
+  const intl = useIntl();
   const navigation = useAppNavigation();
 
   const media = useMedia();
@@ -348,10 +351,15 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       : amountInputMode === EAmountInputMode.Custom && isInsufficientBalance;
 
     if (hasInsufficientBalance) {
-      return 'Insufficient Balance';
+      return intl.formatMessage({
+        id: ETranslations.swap_page_button_insufficient_balance,
+      });
     }
-    return isInPreviewMode ? 'Review' : 'Next';
+    return isInPreviewMode
+      ? intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_review })
+      : intl.formatMessage({ id: ETranslations.wallet_bulk_send_btn_next });
   }, [
+    intl,
     media.gtMd,
     amountInputMode,
     isInPreviewMode,
@@ -391,7 +399,13 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
 
   return (
     <Page scrollEnabled>
-      {media.gtMd ? null : <Page.Header headerTitle="Set amount per address" />}
+      {media.gtMd ? null : (
+        <Page.Header
+          headerTitle={intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_set_amount_title,
+          })}
+        />
+      )}
       <BulkSendBar />
       <Page.Body>
         <BulkSendContentWrapper>
@@ -421,7 +435,9 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
               // Desktop: Show Total amount on the left
               <YStack gap="$1">
                 <SizableText size="$bodySm" color="$textSubdued">
-                  Total amount
+                  {intl.formatMessage({
+                    id: ETranslations.wallet_bulk_send_total_amount,
+                  })}
                 </SizableText>
                 <XStack alignItems="center" gap="$1">
                   <NumberSizeableText

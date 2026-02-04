@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import BigNumber from 'bignumber.js';
+import { useIntl } from 'react-intl';
 
 import {
   Button,
@@ -18,6 +19,7 @@ import { getSharedInputStyles } from '@onekeyhq/components/src/forms/Input/share
 import { AmountInput as BaseAmountInput } from '@onekeyhq/kit/src/components/AmountInput';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import {
   EAmountInputMode,
   type ITransferInfoErrors,
@@ -31,6 +33,7 @@ import { useAmountPreview } from './useAmountPreview';
 import { useTransferInfoActions } from './useTransferInfoActions';
 
 function IntervalCard() {
+  const intl = useIntl();
   return (
     <YStack
       flex={1}
@@ -43,22 +46,29 @@ function IntervalCard() {
     >
       {/* Header: Title + Disabled Select */}
       <XStack alignItems="center" justifyContent="space-between">
-        <SizableText size="$bodyLgMedium">Set interval</SizableText>
+        <SizableText size="$bodyLgMedium">
+          {intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_interval_title,
+          })}
+        </SizableText>
         <Button
           variant="tertiary"
           size="small"
           iconAfter="ChevronDownSmallOutline"
           disabled
         >
-          No interval
+          {intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_interval_none,
+          })}
         </Button>
       </XStack>
 
       {/* Content */}
       <YStack flex={1} justifyContent="center">
         <SizableText size="$bodyMd" color="$textSubdued">
-          One-to-Many uses a unified smart contract to send all transactions at
-          once.
+          {intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_interval_desc,
+          })}
         </SizableText>
       </YStack>
     </YStack>
@@ -66,6 +76,7 @@ function IntervalCard() {
 }
 
 function AmountCard() {
+  const intl = useIntl();
   const {
     networkId,
     tokenInfo,
@@ -101,14 +112,29 @@ function AmountCard() {
   // Mode select options
   const modeOptions = useMemo(() => {
     const options = [
-      { label: 'Specified', value: EAmountInputMode.Specified },
-      { label: 'Range', value: EAmountInputMode.Range },
+      {
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_specified,
+        }),
+        value: EAmountInputMode.Specified,
+      },
+      {
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_range,
+        }),
+        value: EAmountInputMode.Range,
+      },
     ];
     if (hasCustomAmounts) {
-      options.push({ label: 'Custom', value: EAmountInputMode.Custom });
+      options.push({
+        label: intl.formatMessage({
+          id: ETranslations.wallet_bulk_send_amount_mode_custom,
+        }),
+        value: EAmountInputMode.Custom,
+      });
     }
     return options;
-  }, [hasCustomAmounts]);
+  }, [intl, hasCustomAmounts]);
 
   // Handle mode change
   const handleModeChange = useCallback(
@@ -124,7 +150,9 @@ function AmountCard() {
             amount: transfer.amount,
             allowZero: false,
             customErrorMessages: {
-              zeroAmount: 'Amount must be greater than 0',
+              zeroAmount: intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_error_amount_zero,
+              }),
             },
           });
           if (!isValid && error) {
@@ -137,6 +165,7 @@ function AmountCard() {
       }
     },
     [
+      intl,
       setAmountInputMode,
       updateTransfersInfoWithAmounts,
       amountInputValues,
@@ -161,8 +190,12 @@ function AmountCard() {
         maxAmount: balance,
         allowZero: false,
         customErrorMessages: {
-          maxAmount: 'Insufficient balance',
-          zeroAmount: 'Amount must be greater than 0',
+          maxAmount: intl.formatMessage({
+            id: ETranslations.swap_page_button_insufficient_balance,
+          }),
+          zeroAmount: intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_error_amount_zero,
+          }),
         },
       });
       setAmountInputErrors({ ...amountInputErrors, specifiedAmount: error });
@@ -170,6 +203,7 @@ function AmountCard() {
       updateTransfersInfoWithAmounts(amountInputMode, newValues);
     },
     [
+      intl,
       amountInputValues,
       setAmountInputValues,
       tokenInfo,
@@ -391,7 +425,9 @@ function AmountCard() {
         return (
           <YStack alignItems="center" justifyContent="center" py="$4">
             <SizableText size="$bodyMd" color="$textSubdued" textAlign="center">
-              Each transfer will use the amount you entered.
+              {intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_custom_mode_hint,
+              })}
             </SizableText>
           </YStack>
         );
@@ -413,9 +449,13 @@ function AmountCard() {
     >
       {/* Header: Title + Mode Select */}
       <XStack alignItems="center" justifyContent="space-between">
-        <SizableText size="$bodyLgMedium">Amount per address</SizableText>
+        <SizableText size="$bodyLgMedium">
+          {intl.formatMessage({
+            id: ETranslations.wallet_bulk_send_label_set_amount,
+          })}
+        </SizableText>
         <Select
-          title="Amount Mode"
+          title=""
           value={amountInputMode}
           onChange={handleModeChange}
           items={modeOptions}
@@ -454,7 +494,7 @@ function AmountCard() {
       <XStack alignItems="center" justifyContent="space-between">
         <XStack gap="$1" alignItems="center">
           <SizableText size="$bodySm" color="$textSubdued">
-            Available:
+            {intl.formatMessage({ id: ETranslations.wallet_bulk_send_available })}
           </SizableText>
           <NumberSizeableText
             size="$bodySm"
@@ -473,7 +513,7 @@ function AmountCard() {
             onPress={handleMaxPress}
             hitSlop={8}
           >
-            Max
+            {intl.formatMessage({ id: ETranslations.global_max })}
           </SizableText>
         ) : null}
       </XStack>
@@ -482,6 +522,7 @@ function AmountCard() {
 }
 
 function TransferInfoListSection() {
+  const intl = useIntl();
   const {
     transfersInfo,
     setTransfersInfo,
@@ -520,7 +561,7 @@ function TransferInfoListSection() {
             color="$textSubdued"
             textTransform="uppercase"
           >
-            FROM
+            {intl.formatMessage({ id: ETranslations.wallet_bulk_send_table_from })}
           </SizableText>
         </XStack>
         <Stack flex={1} minWidth={0}>
@@ -529,7 +570,7 @@ function TransferInfoListSection() {
             color="$textSubdued"
             textTransform="uppercase"
           >
-            TO
+            {intl.formatMessage({ id: ETranslations.wallet_bulk_send_table_to })}
           </SizableText>
         </Stack>
         <Stack width={100}>
@@ -539,7 +580,9 @@ function TransferInfoListSection() {
             textTransform="uppercase"
             textAlign="right"
           >
-            AMOUNT
+            {intl.formatMessage({
+              id: ETranslations.wallet_bulk_send_table_amount,
+            })}
           </SizableText>
         </Stack>
         <Stack width={64}>
@@ -549,7 +592,9 @@ function TransferInfoListSection() {
             textTransform="uppercase"
             textAlign="right"
           >
-            ACTION
+            {intl.formatMessage({
+              id: ETranslations.wallet_bulk_send_table_action,
+            })}
           </SizableText>
         </Stack>
       </XStack>
