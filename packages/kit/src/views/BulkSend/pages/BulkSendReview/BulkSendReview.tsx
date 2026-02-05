@@ -420,6 +420,9 @@ function BaseBulkSendReview({
     navigation,
     handleTronTxsOneByOne,
     navigateAfterSuccess,
+    bulkSendMode,
+    transfersInfo.length,
+    tokenInfo?.symbol,
   ]);
 
   // Determine if confirm button should be disabled
