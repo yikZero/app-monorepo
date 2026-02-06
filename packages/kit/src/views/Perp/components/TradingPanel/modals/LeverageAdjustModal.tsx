@@ -276,13 +276,13 @@ export const LeverageAdjustModal = memo(
         px="$3.5"
         h={isMobile ? 32 : 30}
         alignItems="center"
+        cursor="default"
         hoverStyle={{
           bg: '$bgStrongHover',
         }}
         pressStyle={{
           bg: '$bgStrongActive',
         }}
-        cursor="pointer"
         gap="$1"
       >
         {isMobile ? null : (

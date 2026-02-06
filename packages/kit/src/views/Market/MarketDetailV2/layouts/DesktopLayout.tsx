@@ -57,7 +57,7 @@ export function DesktopLayout() {
         </Stack>
 
         {/* Info tabs */}
-        <Stack h="30vh">
+        <Stack h="30vh" borderTopWidth="$px" borderTopColor="$borderSubdued">
           <DesktopInformationTabs
             portfolioData={portfolioData}
             isRefreshing={isRefreshing}

@@ -26,7 +26,14 @@ function HolderItemNormalBase({
     useHolderItemData({ item, index });
 
   return (
-    <XStack h={40} px="$4" alignItems="center">
+    <XStack
+      h={40}
+      pl="$5"
+      pr="$3"
+      alignItems="center"
+      cursor="default"
+      hoverStyle={{ backgroundColor: '$bgHover' }}
+    >
       {/* Rank */}
       <SizableText size="$bodyMd" color="$textSubdued" {...styles.rank}>
         #{rank}

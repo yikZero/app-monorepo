@@ -40,7 +40,14 @@ function TransactionItemNormalBase({
   const [settingsPersistAtom] = useSettingsPersistAtom();
 
   return (
-    <XStack py="$1" px="$4" alignItems="center">
+    <XStack
+      py="$1"
+      pl="$5"
+      pr="$3"
+      alignItems="center"
+      cursor="default"
+      hoverStyle={{ backgroundColor: '$bgHover' }}
+    >
       <SizableText size="$bodyMd" color="$textSubdued" {...styles.time}>
         {formattedTime}
       </SizableText>

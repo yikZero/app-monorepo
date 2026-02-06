@@ -133,10 +133,10 @@ export const TradingFormInput = memo(
             renderContent: (
               <XStack
                 alignItems="center"
-                cursor="pointer"
                 onPress={action.onPress}
                 opacity={action.disabled ? 0.5 : 1}
                 gap="$1"
+                cursor="default"
               >
                 <SizableText size="$bodyMdMedium" color={action.labelColor}>
                   {action.label}
