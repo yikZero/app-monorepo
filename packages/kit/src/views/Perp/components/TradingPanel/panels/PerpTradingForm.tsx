@@ -434,7 +434,7 @@ function PerpTradingForm({
           p: '$2.5',
           borderWidth: '$px',
           borderColor: '$borderSubdued',
-          borderRadius: '$3',
+          borderRadius: '$2',
         })}
       >
         <XStack justifyContent="space-between">
@@ -579,7 +579,7 @@ function PerpTradingForm({
         leverage={formData.leverage ?? 1}
       />
 
-      <YStack {...(isMobile && { pt: '$2', pb: '$2' })}>
+      <YStack mt="$-1" {...(isMobile && { pt: '$2', pb: '$2', mt: '$0' })}>
         <PerpsSlider
           min={0}
           max={100}

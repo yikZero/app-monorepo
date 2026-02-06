@@ -61,7 +61,7 @@ export function BalanceDisplay({
       />
 
       {isLoading ? (
-        <Skeleton height="$6" width="$12" />
+        <Skeleton height="$3" width="$12" />
       ) : (
         <>
           <XStack
