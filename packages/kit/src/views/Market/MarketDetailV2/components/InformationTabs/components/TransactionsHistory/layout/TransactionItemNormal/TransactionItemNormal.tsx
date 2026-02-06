@@ -19,10 +19,12 @@ import { useTransactionsLayoutNormal } from './useTransactionsLayoutNormal';
 interface ITransactionItemNormalProps {
   item: IMarketTokenTransaction;
   networkId: string;
+  index: number;
 }
 
 function TransactionItemNormalBase({
   item,
+  index,
   networkId,
 }: ITransactionItemNormalProps) {
   const { styles, isSmallScreen } = useTransactionsLayoutNormal();
@@ -46,6 +48,7 @@ function TransactionItemNormalBase({
       pr="$3"
       alignItems="center"
       cursor="default"
+      {...(index % 2 === 1 && { backgroundColor: '$bgSubdued' })}
       hoverStyle={{ backgroundColor: '$bgHover' }}
     >
       <SizableText size="$bodyMd" color="$textSubdued" {...styles.time}>

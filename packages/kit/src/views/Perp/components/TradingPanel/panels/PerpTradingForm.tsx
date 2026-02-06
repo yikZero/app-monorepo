@@ -377,7 +377,8 @@ function PerpTradingForm({
       ) : (
         <>
           <XStack
-            mx="$-2.5"
+            ml="$-3"
+            mr="$-5"
             h={54}
             alignItems="center"
             borderBottomWidth="$px"

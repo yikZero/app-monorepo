@@ -9,7 +9,7 @@ interface IPortfolioItemNormalProps {
   index: number;
 }
 
-function PortfolioItemNormalBase({ item }: IPortfolioItemNormalProps) {
+function PortfolioItemNormalBase({ item, index }: IPortfolioItemNormalProps) {
   const [settingsPersistAtom] = useSettingsPersistAtom();
 
   return (
@@ -19,6 +19,7 @@ function PortfolioItemNormalBase({ item }: IPortfolioItemNormalProps) {
       pr="$3"
       alignItems="center"
       cursor="default"
+      {...(index % 2 === 1 && { backgroundColor: '$bgSubdued' })}
       hoverStyle={{ backgroundColor: '$bgHover' }}
     >
       {/* Amount */}

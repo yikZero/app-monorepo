@@ -32,6 +32,7 @@ function HolderItemNormalBase({
       pr="$3"
       alignItems="center"
       cursor="default"
+      {...(index % 2 === 1 && { backgroundColor: '$bgSubdued' })}
       hoverStyle={{ backgroundColor: '$bgHover' }}
     >
       {/* Rank */}

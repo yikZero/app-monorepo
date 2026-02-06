@@ -221,8 +221,8 @@ export const TradingFormInput = memo(
     }
     return (
       <YStack
-        bg={ifOnDialog ? '$bgApp' : '$bgSubdued'}
-        borderRadius="$3"
+        bg={ifOnDialog ? '$bgApp' : '$bgStrong'}
+        borderRadius="$2"
         py="$1"
         pl="$1"
         pr="$2.5"
@@ -257,7 +257,7 @@ export const TradingFormInput = memo(
             keyboardType={keyboardType}
             size="small"
             containerProps={{
-              bg: ifOnDialog ? '$bgApp' : '$bgSubdued',
+              bg: 'transparent',
               borderRadius: '$2',
               borderWidth: '$0',
             }}
