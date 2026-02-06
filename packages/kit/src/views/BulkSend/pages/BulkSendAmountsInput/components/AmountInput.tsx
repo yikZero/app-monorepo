@@ -81,6 +81,12 @@ export function SpecifiedAmountInput() {
           zeroAmount: intl.formatMessage({
             id: ETranslations.wallet_bulk_send_error_amount_zero,
           }),
+          decimalPlaces: intl.formatMessage(
+            {
+              id: ETranslations.wallet_bulk_send_error_max_decimal_places,
+            },
+            { decimals: tokenInfo.decimals },
+          ),
         },
       });
       setAmountInputErrors({
@@ -451,6 +457,12 @@ export function AmountInputSection({ inDialog }: { inDialog?: boolean }) {
         zeroAmount: intl.formatMessage({
           id: ETranslations.wallet_bulk_send_error_amount_zero,
         }),
+        decimalPlaces: intl.formatMessage(
+          {
+            id: ETranslations.wallet_bulk_send_error_max_decimal_places,
+          },
+          { decimals: tokenInfo.decimals },
+        ),
       },
     });
     return { specifiedAmount: error };
