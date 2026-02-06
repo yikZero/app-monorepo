@@ -271,7 +271,7 @@ export const LeverageAdjustModal = memo(
     return (
       <Badge
         borderRadius="$2"
-        bg="$bgStrong"
+        bg={isMobile ? '$bgSubdued' : '$bgStrong'}
         onPress={showLeverageDialog}
         px="$3.5"
         h={isMobile ? 32 : 30}
