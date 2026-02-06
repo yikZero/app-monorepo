@@ -10,17 +10,8 @@ import type { Ref } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import {
-  Divider,
-  Icon,
-  Input,
-  SizableText,
-  XStack,
-  YStack,
-  useMedia,
-} from '@onekeyhq/components';
+import { Icon, Input, SizableText, XStack, YStack } from '@onekeyhq/components';
 import type { IInputRef, IYStackProps } from '@onekeyhq/components';
-import { Token } from '@onekeyhq/kit/src/components/Token';
 import { validateAmountInput } from '@onekeyhq/kit/src/utils/validateAmountInput';
 import {
   EAppEventBusNames,
@@ -72,7 +63,6 @@ function TokenInputSectionComponent(
   ref: Ref<ITokenInputSectionRef>,
 ) {
   const intl = useIntl();
-  const { gtMd } = useMedia();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [internalValue, setInternalValue] = useState('');
   const inputRef = useRef<IInputRef>(null);

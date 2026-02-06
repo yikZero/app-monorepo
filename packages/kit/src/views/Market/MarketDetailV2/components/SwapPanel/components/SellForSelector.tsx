@@ -23,7 +23,7 @@ const SellForSelector = ({
   currentSelectToken,
   onTokenSelect,
   symbol,
-  isLoading,
+  isLoading: _isLoading,
 }: ISellForSelectorProps) => {
   const intl = useIntl();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);

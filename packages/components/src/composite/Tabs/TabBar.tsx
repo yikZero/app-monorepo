@@ -8,7 +8,7 @@ import { ListView, ScrollView } from '../../layouts';
 import { GradientMask, SizableText, XStack, YStack } from '../../primitives';
 
 import type { IListViewRef } from '../../layouts';
-import type { IYStackProps } from '../../primitives';
+import type { ISizableTextProps, IYStackProps } from '../../primitives';
 import type {
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -34,7 +34,7 @@ export function TabBarItem({
   tabItemStyle?: IYStackProps;
   focusedTabStyle?: IYStackProps;
   variant?: ITabBarVariant;
-  textSize?: string;
+  textSize?: ISizableTextProps['size'];
 }) {
   const handlePress = useCallback(() => {
     onPress(name);
@@ -59,7 +59,7 @@ export function TabBarItem({
         {...(isFocused ? focusedTabStyle : undefined)}
       >
         <SizableText
-          size={resolvedTextSize as any}
+          size={resolvedTextSize}
           color={isFocused ? '$textInverse' : '$text'}
           userSelect="none"
         >
@@ -83,7 +83,7 @@ export function TabBarItem({
       {...(isFocused ? focusedTabStyle : undefined)}
     >
       <SizableText
-        size={resolvedTextSize as any}
+        size={resolvedTextSize}
         color={isFocused ? '$text' : '$textSubdued'}
       >
         {name}
@@ -115,7 +115,7 @@ export interface ITabBarItemProps {
   tabItemStyle?: IYStackProps;
   focusedTabStyle?: IYStackProps;
   variant?: ITabBarVariant;
-  textSize?: string;
+  textSize?: ISizableTextProps['size'];
 }
 
 const PILL_GRADIENT_THRESHOLD = 2;
@@ -223,7 +223,7 @@ export function TabBar({
   renderItem?: (props: ITabBarItemProps, index: number) => React.ReactNode;
   scrollable?: boolean;
   variant?: ITabBarVariant;
-  textSize?: string;
+  textSize?: ISizableTextProps['size'];
 }) {
   const listViewRef = useRef<IListViewRef<string>>(null);
   const listViewTimerId = useRef<ReturnType<typeof setTimeout> | null>(null);
