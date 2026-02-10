@@ -145,7 +145,10 @@ function useTabAction(navigation: BottomTabBarProps['navigation']) {
     (
       route: NavigationState['routes'][0],
       isActive: boolean,
-      callback?: () => void,
+      options?: {
+        onPressWhenSelected?: () => void;
+        callback?: () => void;
+      },
     ) => {
       const event = navigation.emit({
         type: 'tabPress',
@@ -159,7 +162,9 @@ function useTabAction(navigation: BottomTabBarProps['navigation']) {
         });
       }
 
-      if (!isActive && !event.defaultPrevented) {
+      if (isActive) {
+        options?.onPressWhenSelected?.();
+      } else if (!event.defaultPrevented) {
         switchTab(route.name as ETabRoutes);
         if (route.name === ETabRoutes.Market) {
           appEventBus.emit(EAppEventBusNames.MarketHomePageEnter, {
@@ -167,7 +172,7 @@ function useTabAction(navigation: BottomTabBarProps['navigation']) {
           });
         }
       }
-      callback?.();
+      options?.callback?.();
     },
     [navigation],
   );
@@ -348,7 +353,12 @@ function OverflowMoreButton({
                 isActive={isActive}
                 options={options}
                 onPress={() =>
-                  handleTabPress(route, isActive, () => setIsOpen(false))
+                  handleTabPress(route, isActive, {
+                    onPressWhenSelected: (
+                      options as { onPressWhenSelected?: () => void }
+                    ).onPressWhenSelected,
+                    callback: () => setIsOpen(false),
+                  })
                 }
               />
             );
@@ -394,9 +404,10 @@ export function DesktopLeftSideBar({
       const { options } = descriptors[route.key] as {
         options: {
           hiddenIcon?: boolean;
+          hideOnTabBar?: boolean;
         };
       };
-      if (options.hiddenIcon) {
+      if (options.hiddenIcon || options.hideOnTabBar) {
         return false;
       }
       if (isShowWebTabBar && route.name === extraConfig?.name) {
