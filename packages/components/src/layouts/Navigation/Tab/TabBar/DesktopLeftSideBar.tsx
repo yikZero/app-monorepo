@@ -146,10 +146,17 @@ function useTabAction(navigation: BottomTabBarProps['navigation']) {
       route: NavigationState['routes'][0],
       isActive: boolean,
       options?: {
+        tabbarOnPress?: () => void;
         onPressWhenSelected?: () => void;
         callback?: () => void;
       },
     ) => {
+      if (options?.tabbarOnPress) {
+        options.tabbarOnPress();
+        options?.callback?.();
+        return;
+      }
+
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,
@@ -354,6 +361,8 @@ function OverflowMoreButton({
                 options={options}
                 onPress={() =>
                   handleTabPress(route, isActive, {
+                    tabbarOnPress: (options as { tabbarOnPress?: () => void })
+                      .tabbarOnPress,
                     onPressWhenSelected: (
                       options as { onPressWhenSelected?: () => void }
                     ).onPressWhenSelected,
