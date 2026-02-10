@@ -86,6 +86,7 @@ function TabItemView({
     () =>
       options.hideOnTabBar ? null : (
         <YStack
+          className="sidebar-tab-item"
           w="100%"
           ai="center"
           gap="$0.5"
