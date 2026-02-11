@@ -40,10 +40,9 @@ function IntervalCard() {
       flex={1}
       flexBasis={0}
       gap="$3"
-      p="$4"
-      borderWidth={1}
-      borderColor="$borderSubdued"
+      bg="$bgSubdued"
       borderRadius="$3"
+      p="$5"
     >
       {/* Header: Title + Disabled Select */}
       <XStack alignItems="center" justifyContent="space-between">
@@ -374,6 +373,7 @@ function AmountCard() {
       case EAmountInputMode.Specified:
         return (
           <BaseAmountInput
+            bg="$bgApp"
             value={amountInputValues.specifiedAmount}
             onChange={handleSpecifiedAmountChange}
             hasError={!!amountInputErrors.specifiedAmount}
@@ -402,6 +402,7 @@ function AmountCard() {
               borderRadius="$3"
               borderWidth={sharedStyles.borderWidth}
               borderColor={sharedStyles.borderColor}
+              bg="$bgApp"
               overflow="hidden"
             >
               <Input
@@ -459,6 +460,7 @@ function AmountCard() {
               borderRadius="$3"
               borderWidth={sharedStyles.borderWidth}
               borderColor={sharedStyles.borderColor}
+              bg="$bgApp"
               overflow="hidden"
             >
               <Input
@@ -529,10 +531,9 @@ function AmountCard() {
       flex={1}
       flexBasis={0}
       gap="$3"
-      p="$4"
-      borderWidth={1}
-      borderColor="$borderSubdued"
+      bg="$bgSubdued"
       borderRadius="$3"
+      p="$5"
     >
       {/* Header: Title + Mode Select */}
       <XStack alignItems="center" justifyContent="space-between">
@@ -599,8 +600,11 @@ function AmountCard() {
             size="$bodySmMedium"
             color="$textInteractive"
             cursor="default"
+            userSelect="none"
             onPress={handleMaxPress}
             hitSlop={8}
+            hoverStyle={{ opacity: 0.75 }}
+            pressStyle={{ opacity: 0.5 }}
           >
             {intl.formatMessage({ id: ETranslations.global_max })}
           </SizableText>
@@ -818,7 +822,7 @@ function TransferInfoListSection() {
 
 function TableLayout() {
   return (
-    <YStack gap="$4">
+    <YStack gap="$8">
       <XStack gap="$4">
         <AmountCard />
         <IntervalCard />
