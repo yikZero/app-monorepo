@@ -10,6 +10,7 @@ import { useIsEnableTransferAllowList } from '@onekeyhq/kit/src/components/Addre
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { useDebouncedValidation } from '@onekeyhq/kit/src/views/BulkSend/hooks/useDebouncedValidation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
 import type { IAddressValidation } from '@onekeyhq/shared/types/address';
@@ -303,37 +304,71 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
             }
           }
 
-          // Allowlist validation — reject addresses not in address book
+          // Allowlist validation — reject addresses not in address book or local wallets
           if (isEnableTransferAllowList) {
             const isEvmNetwork = networkUtils.isEvmNetwork({
               networkId: selectedNetworkId,
             });
+            const isBTCNetwork = networkUtils.isBTCNetwork(selectedNetworkId);
             const allowListResults = await Promise.all(
               validAddresses.map(({ index, address }) =>
                 limit(async () => {
                   try {
+                    const trimmedAddress = address.trim();
+
+                    // Check if address belongs to user's own local wallet (HD/HW/QR/Imported)
+                    let walletAccountItems =
+                      await backgroundApiProxy.serviceAccount.getAccountNameFromAddress(
+                        {
+                          networkId: selectedNetworkId,
+                          address: trimmedAddress,
+                        },
+                      );
+
+                    // For BTC networks, also check fresh addresses
+                    if (walletAccountItems.length === 0 && isBTCNetwork) {
+                      walletAccountItems =
+                        await backgroundApiProxy.serviceFreshAddress.getAccountNameFromFreshAddress(
+                          {
+                            address: trimmedAddress,
+                            networkId: selectedNetworkId,
+                          },
+                        );
+                    }
+
+                    if (
+                      walletAccountItems.some((item) =>
+                        accountUtils.isOwnAccount({
+                          accountId: item.accountId,
+                        }),
+                      )
+                    ) {
+                      return { index, isAllowed: true };
+                    }
+
+                    // Check if address is in address book
                     const addressBookItem =
                       await backgroundApiProxy.serviceAddressBook.dangerouslyFindItemWithoutSafeCheck(
                         {
                           networkId: isEvmNetwork
                             ? undefined
                             : selectedNetworkId,
-                          address: address.trim(),
+                          address: trimmedAddress,
                         },
                       );
                     return {
                       index,
-                      isInAddressBook: !!addressBookItem,
+                      isAllowed: !!addressBookItem,
                     };
                   } catch {
-                    return { index, isInAddressBook: true };
+                    return { index, isAllowed: false };
                   }
                 }),
               ),
             );
 
-            for (const { index, isInAddressBook } of allowListResults) {
-              if (!isInAddressBook) {
+            for (const { index, isAllowed } of allowListResults) {
+              if (!isAllowed) {
                 lineErrors.push({
                   lineNumber: index + 1,
                   message: intl.formatMessage({
