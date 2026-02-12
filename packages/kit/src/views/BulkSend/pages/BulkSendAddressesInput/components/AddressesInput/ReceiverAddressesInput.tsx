@@ -313,10 +313,10 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
             const allowListResults = await Promise.all(
               validAddresses.map(({ index, address }) =>
                 limit(async () => {
-                  try {
-                    const trimmedAddress = address.trim();
+                  const trimmedAddress = address.trim();
 
-                    // Check if address belongs to user's own local wallet (HD/HW/QR/Imported)
+                  // Check if address belongs to user's own local wallet (HD/HW/QR/Imported)
+                  try {
                     let walletAccountItems =
                       await backgroundApiProxy.serviceAccount.getAccountNameFromAddress(
                         {
@@ -345,8 +345,13 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
                     ) {
                       return { index, isAllowed: true };
                     }
+                  } catch (e) {
+                    // Wallet account lookup failed, continue to address book check
+                    console.error(e);
+                  }
 
-                    // Check if address is in address book
+                  // Check if address is in address book
+                  try {
                     const addressBookItem =
                       await backgroundApiProxy.serviceAddressBook.dangerouslyFindItemWithoutSafeCheck(
                         {
@@ -360,9 +365,11 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
                       index,
                       isAllowed: !!addressBookItem,
                     };
-                  } catch {
-                    return { index, isAllowed: false };
+                  } catch (e) {
+                    console.error(e);
                   }
+
+                  return { index, isAllowed: false };
                 }),
               ),
             );
