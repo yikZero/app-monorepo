@@ -186,7 +186,7 @@ function BasePerpTokenSelectorContent({
   const tabNames = useMemo(
     () => ({
       favorites: intl.formatMessage({ id: ETranslations.perp_tab_favs }),
-      all: 'PERPS',
+      all: intl.formatMessage({ id: ETranslations.perps_token_selector_perps }),
     }),
     [intl],
   );
@@ -239,8 +239,7 @@ function BasePerpTokenSelectorContent({
     const field = selectorConfig?.field;
     const direction = selectorConfig?.direction;
     const last = lastSortRef.current;
-    const sortChanged =
-      last?.field !== field || last?.direction !== direction;
+    const sortChanged = last?.field !== field || last?.direction !== direction;
     // Also refresh when snapshot is empty (first WS data arrival after mount)
     const snapshotEmpty = !ctxSnapshotRef.current?.some(
       (arr) => arr?.length > 0,
