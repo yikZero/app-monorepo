@@ -436,6 +436,13 @@ export function DesktopLeftSideBar({
     setSidebarHovered(false);
   }, []);
 
+  useEffect(
+    () => () => {
+      clearTimeout(sidebarHoverTimerRef.current);
+    },
+    [],
+  );
+
   const isShowWebTabBar = platformEnv.isDesktop || platformEnv.isNativeIOS;
 
   // Current focused route for browser submenu
