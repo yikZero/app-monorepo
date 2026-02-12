@@ -323,7 +323,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
                       );
                     return {
                       index,
-                      isInAddressBook: !!addressBookItem,
+                      isInAddressBook: !!addressBookItem?.isAllowListed,
                     };
                   } catch {
                     return { index, isInAddressBook: true };
