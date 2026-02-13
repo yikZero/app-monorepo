@@ -216,6 +216,8 @@ export function List<Item>({
     return focusedTabValue === currentTabName;
   }, [focusedTabValue, currentTabName]);
 
+  const prevIsVisibleRef = useRef(isVisible);
+
   useEffect(() => {
     if (focusedTabValue === currentTabName) {
       if (
@@ -383,6 +385,28 @@ export function List<Item>({
     recompute,
     keyExtractor,
   ]);
+
+  // Recompute row heights when tab becomes visible to fix stale
+  // CellMeasurer cache from contentVisibility:hidden optimization.
+  // Uses double-rAF to ensure the browser has completed layout after
+  // contentVisibility transitions to 'visible' before re-measuring.
+  useEffect(() => {
+    const wasHidden = !prevIsVisibleRef.current;
+    prevIsVisibleRef.current = isVisible;
+    if (isVisible && wasHidden && listData.length > 0) {
+      let cancelled = false;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) {
+            recompute({ numColumns, width });
+          }
+        });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [isVisible, listData.length, recompute, numColumns, width]);
 
   const cellRenderer = useCallback(
     (params: CollectionCellRendererParams) => {
