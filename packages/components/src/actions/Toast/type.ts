@@ -26,4 +26,10 @@ export type IToastMessageOptions = {
    * @platform web
    */
   position?: ToastT['position'];
+  /**
+   * Auto-generated or explicit dedup key.
+   * On web, passed as sonner toast id so duplicate toasts
+   * update in place and reset the auto-dismiss timer.
+   */
+  dedupeKey?: string;
 };

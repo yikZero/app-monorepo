@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { createRef, useEffect, useMemo } from 'react';
+import { createRef, useEffect, useMemo, useRef } from 'react';
 
 import { ToastProvider } from '@onekeyhq/components/src/shared/tamagui';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors/errors/localError';
@@ -40,6 +40,7 @@ export interface IToastProps {
   actionsAlign?: 'left' | 'right';
   actions?: JSX.Element | JSX.Element[];
   onClose?: () => void;
+  dedupe?: boolean;
 }
 
 export interface IToastBaseProps extends IToastProps {
@@ -129,11 +130,13 @@ export function ToastContent({
   const { height } = useWindowDimensions();
   const pageWidth = usePageWidth();
   const media = useMedia();
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(
     () => () => {
-      onClose?.();
+      onCloseRef.current?.();
     },
-    [onClose],
+    [],
   );
   return (
     <YStack
@@ -198,45 +201,57 @@ export function ToastContent({
 
 const toastIdMap = new Map<string, [number, number]>();
 
-const handleToastId = ({
+const handleToastDedup = ({
   title,
+  message,
+  haptic,
   toastId,
+  dedupe = true,
   duration = 0,
   onClose,
 }: {
-  toastId?: string;
   title: string;
   message?: string;
+  haptic?: string;
+  toastId?: string;
+  dedupe?: boolean;
   duration?: number;
   onClose?: () => void;
 }) => {
+  if (platformEnv.isDev && title?.length === 0) {
+    throw new OneKeyLocalError(
+      `The parameter 'title' cannot be an empty string`,
+    );
+  }
+
+  const dedupeKey =
+    toastId ??
+    (dedupe !== false
+      ? `${haptic ?? ''}_${title}_${message ?? ''}`
+      : undefined);
+
   const handleClose = () => {
-    if (toastId) {
-      toastIdMap.delete(toastId);
+    if (dedupeKey) {
+      toastIdMap.delete(dedupeKey);
     }
     onClose?.();
   };
-  if (platformEnv.isDev) {
-    if (title?.length === 0) {
-      throw new OneKeyLocalError(
-        `The parameter 'title' cannot be an empty string`,
-      );
-    }
-  }
-  if (toastId) {
-    if (toastIdMap.has(toastId)) {
-      const [createdAt, toastDuration] = toastIdMap.get(toastId) as [
-        number,
-        number,
-      ];
-      if (Date.now() - createdAt < toastDuration) {
-        return;
+
+  if (dedupeKey && toastIdMap.has(dedupeKey)) {
+    const [createdAt, toastDuration] = toastIdMap.get(dedupeKey)!;
+    if (Date.now() - createdAt < toastDuration) {
+      if (platformEnv.isNative) {
+        return { shouldSkip: true, handleClose, dedupeKey };
       }
-      toastIdMap.delete(toastId);
+      toastIdMap.set(dedupeKey, [Date.now(), duration + 500]);
+      return { shouldSkip: false, handleClose, dedupeKey };
     }
-    toastIdMap.set(toastId, [Date.now(), duration + 500]);
   }
-  return handleClose;
+
+  if (dedupeKey) {
+    toastIdMap.set(dedupeKey, [Date.now(), duration + 500]);
+  }
+  return { shouldSkip: false, handleClose, dedupeKey };
 };
 function toastMessage({
   toastId,
@@ -249,8 +264,19 @@ function toastMessage({
   actionsAlign = 'right',
   position,
   onClose,
+  dedupe,
 }: IToastBaseProps) {
-  const handleClose = handleToastId({ title, toastId, duration, onClose });
+  const { shouldSkip, handleClose, dedupeKey } = handleToastDedup({
+    title,
+    message,
+    haptic,
+    toastId,
+    dedupe,
+    duration,
+    onClose,
+  });
+  if (shouldSkip) return;
+
   return showMessage({
     renderContent: (props) => (
       <ToastContent
@@ -267,6 +293,7 @@ function toastMessage({
     haptic,
     preset,
     position,
+    dedupeKey,
   });
 }
 
@@ -280,11 +307,13 @@ function ToastNotificationContent({
   onPress,
 }: IToastNotificationProps) {
   const pageWidth = usePageWidth();
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(
     () => () => {
-      onClose?.();
+      onCloseRef.current?.();
     },
-    [onClose],
+    [],
   );
   const handlePress = () => {
     onPress?.();
@@ -352,8 +381,19 @@ function toastNotification({
   position,
   onPress,
   onClose,
+  dedupe,
 }: IToastNotificationProps) {
-  const handleClose = handleToastId({ title, toastId, duration, onClose });
+  const { shouldSkip, handleClose, dedupeKey } = handleToastDedup({
+    title,
+    message,
+    haptic,
+    toastId,
+    dedupe,
+    duration,
+    onClose,
+  });
+  if (shouldSkip) return;
+
   return showMessage({
     renderContent: (_props) => (
       <ToastNotificationContent
@@ -372,6 +412,7 @@ function toastNotification({
     haptic,
     preset,
     position,
+    dedupeKey,
   });
 }
 
