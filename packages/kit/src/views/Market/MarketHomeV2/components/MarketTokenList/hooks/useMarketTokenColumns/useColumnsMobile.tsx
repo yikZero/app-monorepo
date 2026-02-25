@@ -17,7 +17,7 @@ import {
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 
-import { PriceChangeBadge } from '../../PriceChangeBadge';
+import { PriceChangeBadge } from '../../../PriceChangeBadge';
 import { TokenIdentityItem } from '../../components/TokenIdentityItem';
 import { type IMarketToken } from '../../MarketTokenData';
 
