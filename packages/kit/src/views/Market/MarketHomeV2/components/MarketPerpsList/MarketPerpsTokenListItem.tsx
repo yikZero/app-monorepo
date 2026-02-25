@@ -55,17 +55,19 @@ const BasicMarketPerpsTokenListItem: FC<IMarketPerpsTokenListItemProps> = ({
             <LeverageBadge leverage={item.maxLeverage} />
             {item.subtitle ? <SubtitleBadge subtitle={item.subtitle} /> : null}
           </XStack>
-          <SkeletonContainer isLoading={!hasRealTimeData}>
-            <NumberSizeableText
-              size="$bodyMd"
-              color="$textSubdued"
-              numberOfLines={1}
-              formatter="marketCap"
-              userSelect="none"
-            >
-              {item.volume24h ?? '0'}
-            </NumberSizeableText>
-          </SkeletonContainer>
+          <XStack alignItems="center" height="$4">
+            <SkeletonContainer isLoading={!hasRealTimeData}>
+              <NumberSizeableText
+                size="$bodyMd"
+                color="$textSubdued"
+                numberOfLines={1}
+                formatter="marketCap"
+                userSelect="none"
+              >
+                {item.volume24h ?? '0'}
+              </NumberSizeableText>
+            </SkeletonContainer>
+          </XStack>
         </YStack>
       </XStack>
 
