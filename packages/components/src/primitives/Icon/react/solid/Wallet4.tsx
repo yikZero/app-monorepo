@@ -1,18 +1,17 @@
 import Svg, { Path } from 'react-native-svg';
 import type { SvgProps } from 'react-native-svg';
-const SvgAutoFlash = (props: SvgProps) => (
+const SvgWallet4 = (props: SvgProps) => (
   <Svg
     fill="currentColor"
     viewBox="0 0 24 24"
     accessibilityRole="image"
     {...props}
   >
-    <Path d="M13.998 7.547h7.722L9.998 23.56v-7.638H2.223L13.998.55z" />
     <Path
       fillRule="evenodd"
-      d="M23.5 23h-2.1l-.28-1.5h-3.36L16.8 23h-2.4l5.8-9h1.35zm-4.454-3.5h1.645l-.41-1.92z"
+      d="M2 6.5C2 5.12 3.117 4 4.499 4H20v3h2v13H5a3 3 0 0 1-3-3zm2 0a.5.5 0 0 0 .5.5H18V6H4.499A.5.5 0 0 0 4 6.5m11 7a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0"
       clipRule="evenodd"
     />
   </Svg>
 );
-export default SvgAutoFlash;
+export default SvgWallet4;
