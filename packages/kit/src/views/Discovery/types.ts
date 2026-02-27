@@ -116,6 +116,8 @@ export interface IMobileBottomOptionsProps {
   onDisconnect: () => void;
   siteMode?: ESiteMode;
   onRequestSiteMode: (siteMode: ESiteMode) => void;
+  isTranslated: boolean;
+  onTranslate: () => void;
 }
 
 export interface IMobileTabListOptionsProps {
@@ -129,4 +131,19 @@ export interface IMobileTabListEventProps {
   onBookmarkPress: (bookmark: boolean, url: string, title: string) => void;
   onShare: () => void;
   onPinnedPress: (id: string, pinned: boolean) => void;
+}
+
+export enum ETranslateEngine {
+  google = 'google',
+  gemini = 'gemini',
+}
+
+export enum ETranslateDisplayMode {
+  replace = 'replace',
+  bilingual = 'bilingual',
+}
+
+export interface ITranslateSettings {
+  engine: ETranslateEngine;
+  displayMode: ETranslateDisplayMode;
 }

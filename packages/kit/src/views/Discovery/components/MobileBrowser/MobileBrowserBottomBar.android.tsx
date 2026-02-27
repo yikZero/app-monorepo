@@ -64,6 +64,8 @@ function MobileBrowserBottomBar({
     handleBrowserOpen,
     disabledGoBack,
     disabledGoForward,
+    isTranslated,
+    handleTranslate,
   } = useMobileBrowserBottomBarData({ id, onGoBackHomePage });
 
   // Replicate TabCountButton's press logic for RNGH
@@ -147,6 +149,16 @@ function MobileBrowserBottomBar({
             },
             {
               label: intl.formatMessage({
+                id: isTranslated
+                  ? ETranslations.browser_restore_original
+                  : ETranslations.browser_translate_page,
+              }),
+              icon: isTranslated ? 'TranslateSolid' : 'TranslateOutline',
+              onPress: handleTranslate,
+              testID: 'action-list-item-translate',
+            },
+            {
+              label: intl.formatMessage({
                 id: ETranslations.explore_open_in_browser,
               }),
               icon: 'CompassCircleOutline',
@@ -226,6 +238,8 @@ function MobileBrowserBottomBar({
     handleBookmarkPress,
     handlePinTab,
     handleRequestSiteMode,
+    isTranslated,
+    handleTranslate,
     onCopyUrl,
     onShare,
     hasConnectedAccount,

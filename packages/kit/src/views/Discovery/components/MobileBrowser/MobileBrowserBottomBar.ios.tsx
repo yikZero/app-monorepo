@@ -34,6 +34,8 @@ function MobileBrowserBottomBar({
     handleBrowserOpen,
     disabledGoBack,
     disabledGoForward,
+    isTranslated,
+    handleTranslate,
   } = useMobileBrowserBottomBarData({ id, onGoBackHomePage });
 
   return (
@@ -95,6 +97,8 @@ function MobileBrowserBottomBar({
           onDisconnect={handleDisconnect}
           siteMode={tab?.siteMode}
           onRequestSiteMode={handleRequestSiteMode}
+          isTranslated={isTranslated}
+          onTranslate={handleTranslate}
         >
           <IconButton
             variant="tertiary"
