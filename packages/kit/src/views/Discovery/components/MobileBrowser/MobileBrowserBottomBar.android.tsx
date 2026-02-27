@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
-import { ActionList, IconButton, Stack } from '@onekeyhq/components';
+import { ActionList, IconButton, Popover, Stack } from '@onekeyhq/components';
 import type { IPageNavigationProp } from '@onekeyhq/components/src/layouts/Navigation';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
@@ -16,6 +16,7 @@ import {
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
 import { BROWSER_BOTTOM_BAR_HEIGHT } from '../../config/Animation.constants';
+import { TranslatePopoverContent } from '../../hooks/usePageTranslation';
 import { useTakeScreenshot } from '../../hooks/useTakeScreenshot';
 import { ESiteMode } from '../../types';
 
@@ -149,16 +150,6 @@ function MobileBrowserBottomBar({
             },
             {
               label: intl.formatMessage({
-                id: isTranslated
-                  ? ETranslations.browser_restore_original
-                  : ETranslations.browser_translate_page,
-              }),
-              icon: isTranslated ? 'TranslateSolid' : 'TranslateOutline',
-              onPress: handleTranslate,
-              testID: 'action-list-item-translate',
-            },
-            {
-              label: intl.formatMessage({
                 id: ETranslations.explore_open_in_browser,
               }),
               icon: 'CompassCircleOutline',
@@ -238,8 +229,6 @@ function MobileBrowserBottomBar({
     handleBookmarkPress,
     handlePinTab,
     handleRequestSiteMode,
-    isTranslated,
-    handleTranslate,
     onCopyUrl,
     onShare,
     hasConnectedAccount,
@@ -305,6 +294,8 @@ function MobileBrowserBottomBar({
     [displayHomePage, handleShowOptions],
   );
 
+  const translateGesture = useMemo(() => Gesture.Tap(), []);
+
   return (
     <Stack
       flexDirection="row"
@@ -344,6 +335,32 @@ function MobileBrowserBottomBar({
       <GestureDetector gesture={tabListGesture}>
         <View style={barStyles.buttonContainer}>
           <TabCountButton testID="browser-bar-tabs" />
+        </View>
+      </GestureDetector>
+
+      <GestureDetector gesture={translateGesture}>
+        <View style={barStyles.buttonContainer}>
+          <Popover
+            title={intl.formatMessage({
+              id: ETranslations.browser_translate_settings_title,
+            })}
+            placement="top"
+            renderTrigger={
+              <IconButton
+                variant="tertiary"
+                size="medium"
+                icon={isTranslated ? 'TranslateSolid' : 'TranslateOutline'}
+                testID="browser-bar-translate"
+              />
+            }
+            renderContent={({ closePopover }) => (
+              <TranslatePopoverContent
+                isTranslated={isTranslated}
+                onTranslate={handleTranslate}
+                closePopover={closePopover}
+              />
+            )}
+          />
         </View>
       </GestureDetector>
 

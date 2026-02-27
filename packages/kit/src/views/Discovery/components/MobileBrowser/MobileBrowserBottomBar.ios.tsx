@@ -1,8 +1,11 @@
+import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
-import { IconButton, Stack } from '@onekeyhq/components';
+import { IconButton, Popover, Stack } from '@onekeyhq/components';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 
 import { BROWSER_BOTTOM_BAR_HEIGHT } from '../../config/Animation.constants';
+import { TranslatePopoverContent } from '../../hooks/usePageTranslation';
 
 import MobileBrowserBottomOptions from './MobileBrowserBottomOptions';
 import RefreshButton from './RefreshButton';
@@ -16,6 +19,7 @@ function MobileBrowserBottomBar({
   onGoBackHomePage,
   ...rest
 }: IMobileBrowserBottomBarProps) {
+  const intl = useIntl();
   const {
     bottom,
     tab,
@@ -81,6 +85,30 @@ function MobileBrowserBottomBar({
       </Stack>
 
       <Stack flex={1} alignItems="center" justifyContent="center">
+        <Popover
+          title={intl.formatMessage({
+            id: ETranslations.browser_translate_settings_title,
+          })}
+          placement="top"
+          renderTrigger={
+            <IconButton
+              variant="tertiary"
+              size="medium"
+              icon={isTranslated ? 'TranslateSolid' : 'TranslateOutline'}
+              testID="browser-bar-translate"
+            />
+          }
+          renderContent={({ closePopover }) => (
+            <TranslatePopoverContent
+              isTranslated={isTranslated}
+              onTranslate={handleTranslate}
+              closePopover={closePopover}
+            />
+          )}
+        />
+      </Stack>
+
+      <Stack flex={1} alignItems="center" justifyContent="center">
         <MobileBrowserBottomOptions
           disabled={displayHomePage}
           isBookmark={tab?.isBookmark ?? false}
@@ -97,8 +125,6 @@ function MobileBrowserBottomBar({
           onDisconnect={handleDisconnect}
           siteMode={tab?.siteMode}
           onRequestSiteMode={handleRequestSiteMode}
-          isTranslated={isTranslated}
-          onTranslate={handleTranslate}
         >
           <IconButton
             variant="tertiary"

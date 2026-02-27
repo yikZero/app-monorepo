@@ -136,13 +136,8 @@ function HeaderLeftToolBar({
         isLoading={loading}
         onBookmarkPress={onBookmarkPress}
         onPinnedPress={onPinnedPress}
-      />
-      <HeaderIconButton
-        title="Translate"
-        titlePlacement="bottom"
-        icon={isTranslated ? 'TranslateSolid' : 'TranslateOutline'}
-        onPress={onTranslate}
-        testID="browser-bar-translate"
+        isTranslated={isTranslated}
+        onTranslate={onTranslate}
       />
     </XStack>
   );

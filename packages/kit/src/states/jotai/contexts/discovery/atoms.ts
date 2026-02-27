@@ -3,13 +3,8 @@ import { LRUCache } from 'lru-cache';
 import { createJotaiContext } from '@onekeyhq/kit/src/states/jotai/utils/createJotaiContext';
 import { MaximumNumberOfTabs } from '@onekeyhq/kit/src/views/Discovery/config/Discovery.constants';
 import type {
-  ITranslateSettings,
   IWebTab,
   IWebTabsAtom,
-} from '@onekeyhq/kit/src/views/Discovery/types';
-import {
-  ETranslateDisplayMode,
-  ETranslateEngine,
 } from '@onekeyhq/kit/src/views/Discovery/types';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
@@ -68,15 +63,3 @@ export const { atom: phishingLruCacheAtom, use: usePhishingLruCacheAtom } =
 export const { atom: browserDataReadyAtom, use: useBrowserDataReadyAtom } =
   contextAtom<boolean>(false);
 
-export const {
-  atom: translateSettingsAtom,
-  use: useTranslateSettingsAtom,
-} = contextAtom<ITranslateSettings>({
-  engine: ETranslateEngine.google,
-  displayMode: ETranslateDisplayMode.bilingual,
-});
-
-export const {
-  atom: translatedTabsAtom,
-  use: useTranslatedTabsAtom,
-} = contextAtom<Record<string, boolean>>({});

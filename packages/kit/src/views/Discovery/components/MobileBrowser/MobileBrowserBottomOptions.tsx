@@ -26,8 +26,6 @@ function MobileBrowserBottomOptions({
   onDisconnect,
   siteMode,
   onRequestSiteMode,
-  isTranslated,
-  onTranslate,
 }: PropsWithChildren<IMobileBottomOptionsProps>) {
   const intl = useIntl();
   const actionSectionItems = useMemo(
@@ -86,16 +84,6 @@ function MobileBrowserBottomOptions({
                   siteMode === ESiteMode.desktop ? 'mobile' : 'desktop'
                 }`,
               },
-          {
-            label: intl.formatMessage({
-              id: isTranslated
-                ? ETranslations.browser_restore_original
-                : ETranslations.browser_translate_page,
-            }),
-            icon: isTranslated ? 'TranslateSolid' : 'TranslateOutline',
-            onPress: onTranslate,
-            testID: 'action-list-item-translate',
-          },
           {
             label: intl.formatMessage({
               id: ETranslations.explore_open_in_browser,
@@ -168,8 +156,6 @@ function MobileBrowserBottomOptions({
       onBookmarkPress,
       onPinnedPress,
       onRequestSiteMode,
-      isTranslated,
-      onTranslate,
       onBrowserOpen,
       onCopyUrl,
       onShare,

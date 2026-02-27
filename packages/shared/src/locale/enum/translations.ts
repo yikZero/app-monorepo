@@ -297,7 +297,6 @@
   browser_request_desktop_site = 'browser.request_desktop_site',
   browser_request_mobile_site = 'browser.request_mobile_site',
   browser_restore_original = 'browser.restore_original',
-  browser_translate_page = 'browser_translate_page',
   browser_risk_detection = 'browser.risk_detection',
   browser_risk_detection_unknown = 'browser.risk_detection_unknown',
   browser_search_dapp_or_enter_url = 'browser.search_dapp_or_enter_url',
