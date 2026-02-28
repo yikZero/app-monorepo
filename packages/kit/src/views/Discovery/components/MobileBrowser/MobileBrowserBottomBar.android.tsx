@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
-import { ActionList, IconButton, Popover, Stack } from '@onekeyhq/components';
+import { ActionList, IconButton, Stack } from '@onekeyhq/components';
 import type { IPageNavigationProp } from '@onekeyhq/components/src/layouts/Navigation';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
@@ -16,7 +16,7 @@ import {
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
 import { BROWSER_BOTTOM_BAR_HEIGHT } from '../../config/Animation.constants';
-import { TranslatePopoverContent } from '../../hooks/usePageTranslation';
+import { TranslatePopoverTrigger } from '../../hooks/usePageTranslation';
 import { useTakeScreenshot } from '../../hooks/useTakeScreenshot';
 import { ESiteMode } from '../../types';
 
@@ -338,35 +338,18 @@ function MobileBrowserBottomBar({
         </View>
       </GestureDetector>
 
-      <GestureDetector gesture={translateGesture}>
-        <View style={barStyles.buttonContainer}>
-          <Popover
-            title={intl.formatMessage({
-              id: ETranslations.browser_translate_settings_title,
-            })}
-            placement="top"
-            renderTrigger={
-              <IconButton
-                variant="tertiary"
-                size="medium"
-                icon={isTranslated ? 'TranslateSolid' : 'TranslateOutline'}
-                testID="browser-bar-translate"
-              />
-            }
-            renderContent={({ closePopover }) => (
-              <TranslatePopoverContent
-                isTranslated={isTranslated}
-                onTranslate={handleTranslate}
-                closePopover={closePopover}
-              />
-            )}
-          />
-        </View>
-      </GestureDetector>
-
       <GestureDetector gesture={refreshGesture}>
         <View style={barStyles.buttonContainer}>
           <RefreshButton onRefresh={handleRefresh} />
+        </View>
+      </GestureDetector>
+
+      <GestureDetector gesture={translateGesture}>
+        <View style={barStyles.buttonContainer}>
+          <TranslatePopoverTrigger
+            isTranslated={isTranslated}
+            onTranslate={handleTranslate}
+          />
         </View>
       </GestureDetector>
 

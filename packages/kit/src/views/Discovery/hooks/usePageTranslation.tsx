@@ -5,6 +5,7 @@ import { useIntl } from 'react-intl';
 import {
   Button,
   IconButton,
+  Popover,
   SegmentControl,
   Select,
   SizableText,
@@ -21,6 +22,13 @@ import { ETranslateDisplayMode, ETranslateEngine } from '../types';
 function TranslateSettings() {
   const intl = useIntl();
   const [settings, setSettings] = useTranslateSettingsPersistAtom();
+
+  const updateSetting = useCallback(
+    <K extends keyof typeof settings>(key: K, value: (typeof settings)[K]) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    [setSettings],
+  );
 
   const isCustomLanguage = settings.targetLanguage !== 'auto';
 
@@ -98,12 +106,7 @@ function TranslateSettings() {
           fullWidth
           value={settings.engine}
           options={engineOptions}
-          onChange={(value) =>
-            setSettings((prev) => ({
-              ...prev,
-              engine: value as ETranslateEngine,
-            }))
-          }
+          onChange={(v) => updateSetting('engine', v as ETranslateEngine)}
         />
       </YStack>
       <YStack gap="$2">
@@ -116,19 +119,12 @@ function TranslateSettings() {
           fullWidth
           value={isCustomLanguage ? 'custom' : 'auto'}
           options={targetLanguageOptions}
-          onChange={(value) => {
-            if (value === 'auto') {
-              setSettings((prev) => ({
-                ...prev,
-                targetLanguage: 'auto',
-              }));
-            } else {
-              setSettings((prev) => ({
-                ...prev,
-                targetLanguage: intl.locale,
-              }));
-            }
-          }}
+          onChange={(v) =>
+            updateSetting(
+              'targetLanguage',
+              v === 'auto' ? 'auto' : intl.locale,
+            )
+          }
         />
         {isCustomLanguage ? (
           <Select
@@ -137,12 +133,7 @@ function TranslateSettings() {
             })}
             items={customLanguageOptions}
             value={settings.targetLanguage}
-            onChange={(value) => {
-              setSettings((prev) => ({
-                ...prev,
-                targetLanguage: value as string,
-              }));
-            }}
+            onChange={(v) => updateSetting('targetLanguage', v as string)}
           />
         ) : null}
       </YStack>
@@ -156,11 +147,8 @@ function TranslateSettings() {
           fullWidth
           value={settings.displayMode}
           options={displayModeOptions}
-          onChange={(value) =>
-            setSettings((prev) => ({
-              ...prev,
-              displayMode: value as ETranslateDisplayMode,
-            }))
+          onChange={(v) =>
+            updateSetting('displayMode', v as ETranslateDisplayMode)
           }
         />
       </YStack>
@@ -173,17 +161,12 @@ function useTargetLanguageLabel() {
   const [settings] = useTranslateSettingsPersistAtom();
 
   return useMemo(() => {
-    if (settings.targetLanguage === 'auto') {
-      const currentLocale = LOCALES_OPTION.find(
-        (o) => o.value === intl.locale,
-      );
-      return currentLocale?.label ?? intl.locale;
-    }
-    const locale = LOCALES_OPTION.find(
-      (o) => o.value === settings.targetLanguage,
+    const localeValue =
+      settings.targetLanguage === 'auto' ? intl.locale : settings.targetLanguage;
+    return (
+      LOCALES_OPTION.find((o) => o.value === localeValue)?.label ?? localeValue
     );
-    return locale?.label ?? settings.targetLanguage;
-  }, [intl, settings.targetLanguage]);
+  }, [intl.locale, settings.targetLanguage]);
 }
 
 export function TranslatePopoverContent({
@@ -248,6 +231,41 @@ export function TranslatePopoverContent({
         })}
       </Button>
     </YStack>
+  );
+}
+
+export function TranslatePopoverTrigger({
+  isTranslated,
+  onTranslate,
+  placement = 'top',
+}: {
+  isTranslated: boolean;
+  onTranslate: () => void;
+  placement?: 'top' | 'bottom-end';
+}) {
+  const intl = useIntl();
+  return (
+    <Popover
+      title={intl.formatMessage({
+        id: ETranslations.browser_translate_settings_title,
+      })}
+      placement={placement}
+      renderTrigger={
+        <IconButton
+          variant="tertiary"
+          size="medium"
+          icon={isTranslated ? 'TranslateSolid' : 'TranslateOutline'}
+          testID="browser-bar-translate"
+        />
+      }
+      renderContent={({ closePopover }) => (
+        <TranslatePopoverContent
+          isTranslated={isTranslated}
+          onTranslate={onTranslate}
+          closePopover={closePopover}
+        />
+      )}
+    />
   );
 }
 

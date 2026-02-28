@@ -10,7 +10,6 @@ export type ITranslateSettingsPersistAtom = {
   engine: ETranslateEngine;
   displayMode: ETranslateDisplayMode;
   targetLanguage: string;
-  hasShownFirstTimeGuide: boolean;
 };
 
 export const translateSettingsPersistAtomInitialValue: ITranslateSettingsPersistAtom =
@@ -18,7 +17,6 @@ export const translateSettingsPersistAtomInitialValue: ITranslateSettingsPersist
     engine: ETranslateEngine.ai,
     displayMode: ETranslateDisplayMode.bilingual,
     targetLanguage: 'auto',
-    hasShownFirstTimeGuide: false,
   };
 
 export const {
