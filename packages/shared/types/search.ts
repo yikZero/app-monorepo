@@ -113,7 +113,8 @@ export type IUniversalSearchSettings = {
     sectionIcon: string;
     keywords?: string[];
     settingRoute?: EModalSettingRoutes;
-    onPress?: (navigation?: unknown) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onPress?: (navigation?: any) => void;
   };
 };
 

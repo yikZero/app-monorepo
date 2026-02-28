@@ -5,6 +5,7 @@ import { Icon, SizableText } from '@onekeyhq/components';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
+import type { IModalSettingParamList } from '@onekeyhq/shared/src/routes';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalSettingRoutes } from '@onekeyhq/shared/src/routes/setting';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
@@ -28,7 +29,7 @@ export function UniversalSearchSettingsItem({
 
     if (settingRoute) {
       navigation.pushModal(EModalRoutes.SettingModal, {
-        screen: settingRoute,
+        screen: settingRoute as keyof IModalSettingParamList,
       });
     } else if (onPress) {
       onPress(navigation);
