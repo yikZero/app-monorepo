@@ -19,7 +19,8 @@ export function UniversalSearchSettingsItem({
 }: IUniversalSearchSettingsItemProps) {
   const navigation = useAppNavigation();
   const universalSearchActions = useUniversalSearchActions();
-  const { title, icon, sectionTitle, settingRoute, onPress } = item.payload;
+  const { title, icon, sectionName, sectionTitle, settingRoute, onPress } =
+    item.payload;
 
   const handlePress = useCallback(async () => {
     navigation.pop();
@@ -31,6 +32,11 @@ export function UniversalSearchSettingsItem({
       });
     } else if (onPress) {
       onPress(navigation);
+    } else if (sectionName) {
+      navigation.pushModal(EModalRoutes.SettingModal, {
+        screen: EModalSettingRoutes.SettingListSubModal,
+        params: { name: sectionName, title: sectionTitle },
+      });
     } else {
       navigation.pushModal(EModalRoutes.SettingModal, {
         screen: EModalSettingRoutes.SettingListModal,
@@ -52,9 +58,10 @@ export function UniversalSearchSettingsItem({
     navigation,
     settingRoute,
     onPress,
+    sectionName,
+    sectionTitle,
     universalSearchActions,
     title,
-    sectionTitle,
     item.type,
   ]);
 

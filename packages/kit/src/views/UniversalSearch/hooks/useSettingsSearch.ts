@@ -12,6 +12,7 @@ import {
 } from '../../Setting/pages/Tab/config';
 
 interface IFlatSettingsItem extends ISubSettingConfig {
+  sectionName?: string;
   sectionTitle: string;
   sectionIcon: string;
 }
@@ -24,14 +25,12 @@ export function useSettingsSearch() {
       settingsConfig.filter(Boolean).flatMap((config) =>
         config.configs
           .flat()
-          .filter(
-            (i): i is ISubSettingConfig =>
-              i != null && (i.settingRoute != null || i.onPress != null),
-          )
+          .filter((i): i is ISubSettingConfig => i != null)
           .map(
             (i) =>
               ({
                 ...i,
+                sectionName: config.name,
                 sectionTitle: config.title,
                 sectionIcon: config.icon,
               }) as IFlatSettingsItem,
@@ -54,6 +53,7 @@ export function useSettingsSearch() {
         payload: {
           title: result.item.title,
           icon: result.item.icon as string,
+          sectionName: result.item.sectionName,
           sectionTitle: result.item.sectionTitle,
           sectionIcon: result.item.sectionIcon,
           keywords: result.item.keywords,

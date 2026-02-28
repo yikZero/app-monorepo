@@ -109,6 +109,7 @@ export type IUniversalSearchSettings = {
   payload: {
     title: string;
     icon: string;
+    sectionName?: string;
     sectionTitle: string;
     sectionIcon: string;
     keywords?: string[];
