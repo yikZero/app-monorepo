@@ -52,7 +52,7 @@ export function useSettingsSearch() {
         type: EUniversalSearchType.Settings,
         payload: {
           title: result.item.title,
-          icon: result.item.icon as string,
+          icon: result.item.icon,
           sectionName: result.item.sectionName,
           sectionTitle: result.item.sectionTitle,
           sectionIcon: result.item.sectionIcon,

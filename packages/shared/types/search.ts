@@ -9,7 +9,6 @@ import type { IAddressValidation } from './address';
 import type { IDApp } from './discovery';
 import type { IMarketSearchV2Token, IMarketToken } from './market';
 import type { IAccountToken, ITokenFiat } from './token';
-
 import type { EModalSettingRoutes } from '../src/routes/setting';
 
 export enum EUniversalSearchType {
