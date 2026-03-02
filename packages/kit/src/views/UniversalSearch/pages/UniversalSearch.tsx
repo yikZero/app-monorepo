@@ -51,6 +51,7 @@ import {
 import { HomeTokenListProviderMirrorWrapper } from '../../Home/components/HomeTokenListProvider';
 import { MarketWatchListProviderMirror } from '../../Market/MarketWatchListProviderMirror';
 import { MarketWatchListProviderMirrorV2 } from '../../Market/MarketWatchListProviderMirrorV2';
+import { MarketTableHeader } from '../components/MarketTableHeader';
 import {
   UniversalSearchAccountAssetItem,
   UniversalSearchAddressItem,
@@ -62,7 +63,6 @@ import {
 } from '../components/SearchResultItems';
 import { useSettingsSearch } from '../hooks/useSettingsSearch';
 
-import { MarketTableHeader } from '../components/MarketTableHeader';
 import { RecentSearched } from './components/RecentSearched';
 import { UniversalSearchProviderMirror } from './UniversalSearchProviderMirror';
 
