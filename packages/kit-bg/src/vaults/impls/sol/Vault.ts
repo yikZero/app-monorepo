@@ -36,6 +36,7 @@ import {
   SystemInstruction,
   SystemProgram,
   Transaction,
+  TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
 import BigNumber from 'bignumber.js';
@@ -229,15 +230,9 @@ export default class Vault extends VaultBase {
     }
     const client = await this.getClient();
     const source = new PublicKey(from);
-    const nativeTx = new Transaction();
+    const instructions: TransactionInstruction[] = [];
 
-    const { recentBlockhash, lastValidBlockHeight } =
-      await this._getRecentBlockHash();
-
-    nativeTx.recentBlockhash = recentBlockhash;
-    nativeTx.lastValidBlockHeight = lastValidBlockHeight;
-
-    nativeTx.feePayer = source;
+    const { recentBlockhash } = await this._getRecentBlockHash();
 
     const devSettings =
       await this.backgroundApi.serviceDevSetting.getDevSetting();
@@ -252,7 +247,7 @@ export default class Vault extends VaultBase {
         microLamports: prioritizationFee,
       });
 
-      nativeTx.add(addPriorityFee);
+      instructions.push(addPriorityFee);
     }
 
     for (let i = 0; i < transfersInfo.length; i += 1) {
@@ -268,7 +263,7 @@ export default class Vault extends VaultBase {
 
       const destination = new PublicKey(to || firstReceiver);
       if (isNativeTokenTransfer) {
-        nativeTx.add(
+        instructions.push(
           SystemProgram.transfer({
             fromPubkey: new PublicKey(from),
             toPubkey: new PublicKey(to),
@@ -313,7 +308,7 @@ export default class Vault extends VaultBase {
           const { isProgrammableNFT, metadata } =
             await this._checkIsProgrammableNFT(mint);
           if (isProgrammableNFT) {
-            nativeTx.add(
+            instructions.push(
               ...(await this._buildProgrammableNFTInstructions({
                 mint,
                 source,
@@ -327,7 +322,7 @@ export default class Vault extends VaultBase {
           } else {
             const ocpMintState = await this._checkIsOpenCreatorProtocol(mint);
             if (ocpMintState) {
-              nativeTx.add(
+              instructions.push(
                 ...this._buildOpenCreatorProtocolInstructions({
                   mint,
                   source,
@@ -340,7 +335,7 @@ export default class Vault extends VaultBase {
                 }),
               );
             } else {
-              nativeTx.add(
+              instructions.push(
                 ...this._buildTransferTokenInstructions({
                   mint,
                   source,
@@ -356,7 +351,7 @@ export default class Vault extends VaultBase {
             }
           }
         } else if (tokenInfo) {
-          nativeTx.add(
+          instructions.push(
             ...this._buildTransferTokenInstructions({
               mint,
               source,
@@ -373,7 +368,13 @@ export default class Vault extends VaultBase {
       }
     }
 
-    return bs58.encode(nativeTx.serialize({ requireAllSignatures: false }));
+    const messageV0 = new TransactionMessage({
+      payerKey: source,
+      recentBlockhash,
+      instructions,
+    }).compileToV0Message([]);
+    const versionedTx = new VersionedTransaction(messageV0);
+    return bs58.encode(Buffer.from(versionedTx.serialize()));
   }
 
   async _getRecentBlockHash() {
@@ -769,7 +770,9 @@ export default class Vault extends VaultBase {
     const decodedTx: IDecodedTx = {
       txid: signature ? bs58.encode(signature) : '',
       owner: accountAddress,
-      signer: (nativeTx as Transaction).feePayer?.toString() || accountAddress,
+      signer: isVersionedTransaction
+        ? nativeTx.message.staticAccountKeys[0]?.toString() || accountAddress
+        : (nativeTx as Transaction).feePayer?.toString() || accountAddress,
       nonce: 0,
       actions,
       status: EDecodedTxStatus.Pending,
@@ -1159,11 +1162,15 @@ export default class Vault extends VaultBase {
         nativeTx.message.recentBlockhash = recentBlockhash;
       }
 
-      newEncodedTx = bs58.encode(
-        nativeTx.serialize({
-          requireAllSignatures: false,
-        }),
-      );
+      if (nativeTx instanceof VersionedTransaction) {
+        newEncodedTx = bs58.encode(Buffer.from(nativeTx.serialize()));
+      } else {
+        newEncodedTx = bs58.encode(
+          (nativeTx as Transaction).serialize({
+            requireAllSignatures: false,
+          }),
+        );
+      }
     }
 
     // Extract ATA details from the encoded transaction for hardware signing
@@ -1214,41 +1221,56 @@ export default class Vault extends VaultBase {
   }) {
     const { encodedTx, nativeAmountInfo } = params;
     const network = await this.getNetwork();
-    const nativeTx = parseToNativeTx(encodedTx) as Transaction;
+    const nativeTx = parseToNativeTx(encodedTx) as INativeTxSol;
+    const isVersionedTransaction = nativeTx instanceof VersionedTransaction;
+    const client = await this.getClient();
 
     try {
-      // max native token transfer update
-      if (
-        !isNil(nativeAmountInfo.maxSendAmount) &&
-        nativeTx instanceof Transaction &&
-        nativeTx.instructions.length === 2
-      ) {
-        for (let i = 0; i < nativeTx.instructions.length; i += 1) {
-          const instruction = nativeTx.instructions[i];
-          if (
-            instruction.programId.toString() ===
-            SystemProgram.programId.toString()
-          ) {
-            const instructionType =
-              SystemInstruction.decodeInstructionType(instruction);
-            if (instructionType === 'Transfer') {
-              const { fromPubkey, toPubkey } =
-                SystemInstruction.decodeTransfer(instruction);
+      if (!isNil(nativeAmountInfo.maxSendAmount)) {
+        const {
+          instructions,
+          addressLookupTableAccounts,
+          versionedTransactionMessage,
+        } = await parseNativeTxDetail({ nativeTx, client });
 
-              nativeTx.instructions[i] = SystemProgram.transfer({
-                fromPubkey,
-                toPubkey,
-                lamports: BigInt(
-                  new BigNumber(nativeAmountInfo.maxSendAmount)
-                    .shiftedBy(network.decimals)
-                    .toFixed(),
-                ),
-              });
-              return bs58.encode(
-                nativeTx.serialize({
-                  requireAllSignatures: false,
-                }),
-              );
+        if (instructions.length === 2) {
+          for (let i = 0; i < instructions.length; i += 1) {
+            const instruction = instructions[i];
+            if (
+              instruction.programId.toString() ===
+              SystemProgram.programId.toString()
+            ) {
+              const instructionType =
+                SystemInstruction.decodeInstructionType(instruction);
+              if (instructionType === 'Transfer') {
+                const { fromPubkey, toPubkey } =
+                  SystemInstruction.decodeTransfer(instruction);
+
+                const newInstruction = SystemProgram.transfer({
+                  fromPubkey,
+                  toPubkey,
+                  lamports: BigInt(
+                    new BigNumber(nativeAmountInfo.maxSendAmount)
+                      .shiftedBy(network.decimals)
+                      .toFixed(),
+                  ),
+                });
+
+                if (isVersionedTransaction && versionedTransactionMessage) {
+                  versionedTransactionMessage.instructions[i] = newInstruction;
+                  nativeTx.message =
+                    versionedTransactionMessage.compileToV0Message(
+                      addressLookupTableAccounts,
+                    );
+                  return bs58.encode(Buffer.from(nativeTx.serialize()));
+                }
+                (nativeTx as Transaction).instructions[i] = newInstruction;
+                return bs58.encode(
+                  (nativeTx as Transaction).serialize({
+                    requireAllSignatures: false,
+                  }),
+                );
+              }
             }
           }
         }
@@ -1334,6 +1356,11 @@ export default class Vault extends VaultBase {
       }
 
       try {
+        if (isVersionedTransaction) {
+          return bs58.encode(
+            Buffer.from((nativeTx as VersionedTransaction).serialize()),
+          );
+        }
         return bs58.encode(
           (nativeTx as Transaction).serialize({ requireAllSignatures: false }),
         );
