@@ -380,8 +380,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                   title: intl.formatMessage({
                     id: ETranslations.settings_account_sync_modal_title,
                   }),
-                  settingRoute:
-                    EModalSettingRoutes.SettingAlignPrimaryAccount,
+                  settingRoute: EModalSettingRoutes.SettingAlignPrimaryAccount,
                   onPress: (navigation) => {
                     navigation?.push(
                       EModalSettingRoutes.SettingAlignPrimaryAccount,
@@ -406,8 +405,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                     }),
                     'hex',
                   ],
-                  settingRoute:
-                    EModalSettingRoutes.SettingCustomTransaction,
+                  settingRoute: EModalSettingRoutes.SettingCustomTransaction,
                   onPress: (navigation) => {
                     defaultLogger.setting.page.enterCustomizeTransaction();
                     navigation?.push(
@@ -556,8 +554,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                   title: intl.formatMessage({
                     id: ETranslations.settings_signature_record,
                   }),
-                  settingRoute:
-                    EModalSettingRoutes.SettingSignatureRecordModal,
+                  settingRoute: EModalSettingRoutes.SettingSignatureRecordModal,
                   onPress: (navigation) => {
                     navigation?.push(
                       EModalSettingRoutes.SettingSignatureRecordModal,
@@ -572,8 +569,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                   title: intl.formatMessage({
                     id: ETranslations.setting_floating_icon,
                   }),
-                  settingRoute:
-                    EModalSettingRoutes.SettingFloatingIconModal,
+                  settingRoute: EModalSettingRoutes.SettingFloatingIconModal,
                   onPress: (navigation) => {
                     navigation?.push(
                       EModalSettingRoutes.SettingFloatingIconModal,
