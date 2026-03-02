@@ -25,7 +25,7 @@ export function useSettingsSearch() {
       settingsConfig.filter(Boolean).flatMap((config) =>
         config.configs
           .flat()
-          .filter((i): i is ISubSettingConfig => i != null)
+          .filter((i): i is ISubSettingConfig => i !== null && i !== undefined)
           .map(
             (i) =>
               ({
