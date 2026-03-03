@@ -10,6 +10,7 @@ import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/Acco
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useAppRoute } from '@onekeyhq/kit/src/hooks/useAppRoute';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
+import { EmptyNoWalletView } from '@onekeyhq/kit/src/views/AccountManagerStacks/pages/AccountSelectorStack/WalletDetails/EmptyView';
 import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
 import {
   POLLING_DEBOUNCE_INTERVAL,
@@ -73,6 +74,19 @@ function BaseBulkSendAddressesInput() {
 
   const media = useMedia();
   const { headerTitle } = useBulkSendMobileHeader({ bulkSendMode });
+
+  const { result: availableWallets } = usePromiseResult(async () => {
+    const { wallets } = await backgroundApiProxy.serviceAccount.getWallets({
+      ignoreEmptySingletonWalletAccounts: true,
+      ignoreNonBackedUpWallets: true,
+    });
+    return wallets.filter(
+      (w) =>
+        !accountUtils.isQrWallet({ walletId: w.id }) &&
+        !accountUtils.isOthersWallet({ walletId: w.id }) &&
+        !w.deprecated,
+    );
+  }, []);
 
   const form = useForm({
     defaultValues: {
@@ -363,6 +377,17 @@ function BaseBulkSendAddressesInput() {
     bulkSendMode,
     isInModal,
   ]);
+
+  if (availableWallets && availableWallets.length === 0) {
+    return (
+      <Page>
+        {media.gtMd ? null : <Page.Header headerTitle={headerTitle} />}
+        <Page.Body>
+          <EmptyNoWalletView />
+        </Page.Body>
+      </Page>
+    );
+  }
 
   return (
     <Page scrollEnabled>
