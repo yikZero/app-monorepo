@@ -97,7 +97,11 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
     // Sync instanceId to RevenueCat so server-side events (renewal, cancellation, etc.)
     // are sent to Mixpanel with the same distinct_id as client-side analytics.
     if (instanceId) {
-      await PurchasesReactNative.setMixpanelDistinctID(instanceId);
+      try {
+        await PurchasesReactNative.setMixpanelDistinctID(instanceId);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, [instanceId, user?.onekeyUserId]);
 
