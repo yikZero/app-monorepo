@@ -20,7 +20,6 @@ import type { IPrimeUserInfo } from '@onekeyhq/shared/types/prime/primeTypes';
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 
 import { getPrimePaymentApiKey } from './getPrimePaymentApiKey';
-import primePaymentUtils from './primePaymentUtils';
 
 import type {
   IPackage,
