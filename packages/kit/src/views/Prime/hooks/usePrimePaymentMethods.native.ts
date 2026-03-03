@@ -260,14 +260,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
               : offering.product.pricePerMonth || 0;
           }
 
-          // Extract currency from price string
-          const currency =
-            primePaymentUtils.extractCurrencySymbol(
-              offering.product.priceString ||
-                offering.product.pricePerYearString ||
-                '',
-              { useShortUSSymbol: true },
-            ) || 'USD';
+          const currency = offering.product.currencyCode || 'USD';
 
           defaultLogger.prime.subscription.primeSubscribeSuccess({
             planType,
