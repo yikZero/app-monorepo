@@ -37,8 +37,8 @@ import {
   useSelectedTokensAtom,
   useTokenMapAtom,
 } from '../../../states/jotai/contexts/approvalList';
-import ApprovalActions from '../components/ApprovalActions';
 import { EmptyNoWalletView } from '../../AccountManagerStacks/pages/AccountSelectorStack/WalletDetails/EmptyView';
+import ApprovalActions from '../components/ApprovalActions';
 import { useBulkRevoke } from '../hooks/useBulkRevoke';
 
 import type { RouteProp } from '@react-navigation/core';
@@ -102,7 +102,7 @@ function ApprovalList() {
   }, []);
 
   const { run } = usePromiseResult(async () => {
-    if (!searchNetworkId) {
+    if (!searchNetworkId || !availableWallets?.length) {
       return;
     }
 
@@ -156,6 +156,7 @@ function ApprovalList() {
       });
     }
   }, [
+    availableWallets,
     updateApprovalListState,
     accountId,
     searchNetworkId,

@@ -218,7 +218,12 @@ function BaseBulkSendAddressesInput() {
 
   usePromiseResult(
     async () => {
-      if (selectedAccountId && selectedNetworkId && selectedToken) {
+      if (
+        selectedAccountId &&
+        selectedNetworkId &&
+        selectedToken &&
+        availableWallets?.length
+      ) {
         console.log('addresses input fetchSelectedTokenFiatInfo');
 
         const [checkInscriptionProtectionEnabled, vaultSettings] =
@@ -263,6 +268,7 @@ function BaseBulkSendAddressesInput() {
       }
     },
     [
+      availableWallets,
       selectedAccountId,
       selectedNetworkId,
       selectedToken,
