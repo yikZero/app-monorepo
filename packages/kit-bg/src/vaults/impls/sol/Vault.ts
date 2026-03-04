@@ -466,9 +466,7 @@ export default class Vault extends VaultBase {
       priorityFeeInstruction ? [priorityFeeInstruction] : [];
     let currentChunkIndices: number[] = [];
 
-    const trySerialize = (
-      instructions: TransactionInstruction[],
-    ): boolean => {
+    const trySerialize = (instructions: TransactionInstruction[]): boolean => {
       try {
         const messageV0 = new TransactionMessage({
           payerKey: source,
@@ -942,7 +940,7 @@ export default class Vault extends VaultBase {
       owner: accountAddress,
       signer: isVersionedTransaction
         ? nativeTx.message.staticAccountKeys[0]?.toString() || accountAddress
-        : (nativeTx as Transaction).feePayer?.toString() || accountAddress,
+        : (nativeTx).feePayer?.toString() || accountAddress,
       nonce: 0,
       actions,
       status: EDecodedTxStatus.Pending,
@@ -1336,7 +1334,7 @@ export default class Vault extends VaultBase {
         newEncodedTx = bs58.encode(Buffer.from(nativeTx.serialize()));
       } else {
         newEncodedTx = bs58.encode(
-          (nativeTx as Transaction).serialize({
+          (nativeTx).serialize({
             requireAllSignatures: false,
           }),
         );
@@ -1528,11 +1526,11 @@ export default class Vault extends VaultBase {
       try {
         if (isVersionedTransaction) {
           return bs58.encode(
-            Buffer.from((nativeTx as VersionedTransaction).serialize()),
+            Buffer.from((nativeTx).serialize()),
           );
         }
         return bs58.encode(
-          (nativeTx as Transaction).serialize({ requireAllSignatures: false }),
+          (nativeTx).serialize({ requireAllSignatures: false }),
         );
       } catch {
         return '';
