@@ -23,7 +23,7 @@ function getBulkSendSupportedEVMNetworkIds() {
 function getBulkSendSupportedNetworkIds() {
   const networkIdsMap = getNetworkIdsMap();
   const supportedEVMNetworkIds = getBulkSendSupportedEVMNetworkIds();
-  return [...supportedEVMNetworkIds, networkIdsMap.trx];
+  return [...supportedEVMNetworkIds, networkIdsMap.trx, networkIdsMap.sol];
 }
 
 function fixBulkSendSupportedNetworkId({ networkId }: { networkId: string }) {

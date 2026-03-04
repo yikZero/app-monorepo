@@ -31,6 +31,7 @@ import {
 import {
   ComputeBudgetInstruction,
   ComputeBudgetProgram,
+  PACKET_DATA_SIZE,
   PublicKey,
   SYSVAR_INSTRUCTIONS_PUBKEY,
   SystemInstruction,
@@ -214,6 +215,133 @@ export default class Vault extends VaultBase {
     });
   }
 
+  async _buildInstructionsForTransfer(params: {
+    transferInfo: ITransferInfo;
+    source: PublicKey;
+    firstReceiver: string;
+    client: ClientSol;
+  }): Promise<TransactionInstruction[]> {
+    const { transferInfo, source, firstReceiver, client } = params;
+    const { amount, to, tokenInfo, nftInfo } = transferInfo;
+    const from = transferInfo.from;
+
+    if (!tokenInfo && !nftInfo) {
+      throw new OneKeyLocalError(
+        'buildEncodedTx ERROR: transferInfo.tokenInfo and transferInfo.nftInfo are both missing',
+      );
+    }
+
+    const instructions: TransactionInstruction[] = [];
+    const isNativeTokenTransfer = !!tokenInfo?.isNative;
+
+    const destination = new PublicKey(to || firstReceiver);
+    if (isNativeTokenTransfer) {
+      instructions.push(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(from),
+          toPubkey: new PublicKey(to),
+          lamports: BigInt(
+            new BigNumber(amount).shiftedBy(tokenInfo.decimals).toFixed(),
+          ),
+        }),
+      );
+    } else {
+      // ata - associated token account
+      const tokenAddress = tokenInfo?.address ?? nftInfo?.nftAddress ?? '';
+      const tokenSendAddress = tokenInfo?.sendAddress;
+      const mint = new PublicKey(tokenAddress);
+      let destinationAta = destination;
+
+      const tokenProgramId = await this._getTokenProgramId({
+        owner: source,
+        mint,
+      });
+
+      const sourceAta = tokenSendAddress
+        ? new PublicKey(tokenSendAddress)
+        : await this._getAssociatedTokenAddress({
+            mint,
+            owner: source,
+            programId: tokenProgramId,
+          });
+
+      // system account, get token receiver address
+      destinationAta = await this._getAssociatedTokenAddress({
+        mint,
+        owner: destination,
+        programId: tokenProgramId,
+      });
+
+      const destinationAtaInfo = await client.getAccountInfo({
+        address: destinationAta.toString(),
+      });
+
+      if (nftInfo) {
+        const { isProgrammableNFT, metadata } =
+          await this._checkIsProgrammableNFT(mint);
+        if (isProgrammableNFT) {
+          instructions.push(
+            ...(await this._buildProgrammableNFTInstructions({
+              mint,
+              source,
+              sourceAta,
+              destination,
+              destinationAta,
+              amount,
+              metadata: metadata as Metadata,
+            })),
+          );
+        } else {
+          const ocpMintState = await this._checkIsOpenCreatorProtocol(mint);
+          if (ocpMintState) {
+            instructions.push(
+              ...this._buildOpenCreatorProtocolInstructions({
+                mint,
+                source,
+                sourceAta,
+                destination,
+                destinationAta,
+                destinationAtaInfo,
+                mintState: ocpMintState,
+                programId: tokenProgramId,
+              }),
+            );
+          } else {
+            instructions.push(
+              ...this._buildTransferTokenInstructions({
+                mint,
+                source,
+                sourceAta,
+                destination,
+                destinationAta,
+                destinationAtaInfo,
+                tokenDecimals: 0,
+                amount,
+                programId: tokenProgramId,
+              }),
+            );
+          }
+        }
+      } else if (tokenInfo) {
+        instructions.push(
+          ...this._buildTransferTokenInstructions({
+            mint,
+            source,
+            sourceAta,
+            destination,
+            destinationAta,
+            destinationAtaInfo,
+            tokenDecimals: tokenInfo.decimals,
+            amount,
+            programId: tokenProgramId,
+          }),
+        );
+      }
+    }
+
+    return instructions;
+  }
+
   async _buildEncodedTxFromBatchTransfer(params: {
     transfersInfo: ITransferInfo[];
   }): Promise<IEncodedTxSol> {
@@ -251,121 +379,13 @@ export default class Vault extends VaultBase {
     }
 
     for (let i = 0; i < transfersInfo.length; i += 1) {
-      const { amount, to, tokenInfo, nftInfo } = transfersInfo[i];
-
-      if (!tokenInfo && !nftInfo) {
-        throw new OneKeyLocalError(
-          'buildEncodedTx ERROR: transferInfo.tokenInfo and transferInfo.nftInfo are both missing',
-        );
-      }
-
-      const isNativeTokenTransfer = !!tokenInfo?.isNative;
-
-      const destination = new PublicKey(to || firstReceiver);
-      if (isNativeTokenTransfer) {
-        instructions.push(
-          SystemProgram.transfer({
-            fromPubkey: new PublicKey(from),
-            toPubkey: new PublicKey(to),
-            lamports: BigInt(
-              new BigNumber(amount).shiftedBy(tokenInfo.decimals).toFixed(),
-            ),
-          }),
-        );
-      } else {
-        // ata - associated token account
-        const tokenAddress = tokenInfo?.address ?? nftInfo?.nftAddress ?? '';
-        const tokenSendAddress = tokenInfo?.sendAddress;
-        const mint = new PublicKey(tokenAddress);
-        // const isNFT = !!nftInfo;
-        let destinationAta = destination;
-
-        const tokenProgramId = await this._getTokenProgramId({
-          owner: source,
-          mint,
-        });
-
-        const sourceAta = tokenSendAddress
-          ? new PublicKey(tokenSendAddress)
-          : await this._getAssociatedTokenAddress({
-              mint,
-              owner: source,
-              programId: tokenProgramId,
-            });
-
-        // system account, get token receiver address
-        destinationAta = await this._getAssociatedTokenAddress({
-          mint,
-          owner: destination,
-          programId: tokenProgramId,
-        });
-
-        const destinationAtaInfo = await client.getAccountInfo({
-          address: destinationAta.toString(),
-        });
-
-        if (nftInfo) {
-          const { isProgrammableNFT, metadata } =
-            await this._checkIsProgrammableNFT(mint);
-          if (isProgrammableNFT) {
-            instructions.push(
-              ...(await this._buildProgrammableNFTInstructions({
-                mint,
-                source,
-                sourceAta,
-                destination,
-                destinationAta,
-                amount,
-                metadata: metadata as Metadata,
-              })),
-            );
-          } else {
-            const ocpMintState = await this._checkIsOpenCreatorProtocol(mint);
-            if (ocpMintState) {
-              instructions.push(
-                ...this._buildOpenCreatorProtocolInstructions({
-                  mint,
-                  source,
-                  sourceAta,
-                  destination,
-                  destinationAta,
-                  destinationAtaInfo,
-                  mintState: ocpMintState,
-                  programId: tokenProgramId,
-                }),
-              );
-            } else {
-              instructions.push(
-                ...this._buildTransferTokenInstructions({
-                  mint,
-                  source,
-                  sourceAta,
-                  destination,
-                  destinationAta,
-                  destinationAtaInfo,
-                  tokenDecimals: 0,
-                  amount,
-                  programId: tokenProgramId,
-                }),
-              );
-            }
-          }
-        } else if (tokenInfo) {
-          instructions.push(
-            ...this._buildTransferTokenInstructions({
-              mint,
-              source,
-              sourceAta,
-              destination,
-              destinationAta,
-              destinationAtaInfo,
-              tokenDecimals: tokenInfo.decimals,
-              amount,
-              programId: tokenProgramId,
-            }),
-          );
-        }
-      }
+      const transferInstructions = await this._buildInstructionsForTransfer({
+        transferInfo: transfersInfo[i],
+        source,
+        firstReceiver,
+        client,
+      });
+      instructions.push(...transferInstructions);
     }
 
     const messageV0 = new TransactionMessage({
@@ -375,6 +395,144 @@ export default class Vault extends VaultBase {
     }).compileToV0Message([]);
     const versionedTx = new VersionedTransaction(messageV0);
     return bs58.encode(Buffer.from(versionedTx.serialize()));
+  }
+
+  override async buildBulkSendEncodedTxs(params: {
+    transfersInfo: ITransferInfo[];
+  }): Promise<{
+    encodedTxs: IEncodedTxSol[];
+    transfersInfoChunks: ITransferInfo[][];
+  }> {
+    const { transfersInfo } = params;
+    const transferInfo = transfersInfo[0];
+    const accountAddress = await this.getAccountAddress();
+
+    if (!transferInfo.to) {
+      throw new OneKeyLocalError(
+        'buildBulkSendEncodedTxs ERROR: transferInfo.to is missing',
+      );
+    }
+
+    const client = await this.getClient();
+    const source = new PublicKey(transferInfo.from);
+    const firstReceiver = transferInfo.to;
+    const { recentBlockhash } = await this._getRecentBlockHash();
+
+    // Build priority fee instruction
+    let priorityFeeInstruction: TransactionInstruction | undefined;
+    const devSettings =
+      await this.backgroundApi.serviceDevSetting.getDevSetting();
+    if (
+      !(devSettings.enabled && devSettings.settings?.disableSolanaPriorityFee)
+    ) {
+      const prioritizationFee = await client.getRecentMaxPrioritizationFees([
+        accountAddress,
+      ]);
+      priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: prioritizationFee,
+      });
+    }
+
+    // Phase 1: Build all instruction sets upfront
+    const allInstructionSets: TransactionInstruction[][] = [];
+    for (let i = 0; i < transfersInfo.length; i += 1) {
+      const transferInstructions = await this._buildInstructionsForTransfer({
+        transferInfo: transfersInfo[i],
+        source,
+        firstReceiver,
+        client,
+      });
+      allInstructionSets.push(transferInstructions);
+    }
+
+    // Phase 2: Split into size-safe chunks via trial serialization
+    const chunks: {
+      instructions: TransactionInstruction[];
+      transferIndices: number[];
+    }[] = [];
+    let currentChunkInstructions: TransactionInstruction[] =
+      priorityFeeInstruction ? [priorityFeeInstruction] : [];
+    let currentChunkIndices: number[] = [];
+
+    const trySerialize = (
+      instructions: TransactionInstruction[],
+    ): boolean => {
+      try {
+        const messageV0 = new TransactionMessage({
+          payerKey: source,
+          recentBlockhash,
+          instructions,
+        }).compileToV0Message([]);
+        const versionedTx = new VersionedTransaction(messageV0);
+        const serialized = versionedTx.serialize();
+        return serialized.length <= PACKET_DATA_SIZE;
+      } catch {
+        return false;
+      }
+    };
+
+    for (let i = 0; i < allInstructionSets.length; i += 1) {
+      const transferIxs = allInstructionSets[i];
+      const tentativeInstructions = [
+        ...currentChunkInstructions,
+        ...transferIxs,
+      ];
+
+      if (trySerialize(tentativeInstructions)) {
+        // Fits in current chunk
+        currentChunkInstructions = tentativeInstructions;
+        currentChunkIndices.push(i);
+      } else if (currentChunkIndices.length === 0) {
+        // Single transfer too large for one tx
+        throw new OneKeyLocalError(
+          `Transfer at index ${i} exceeds Solana transaction size limit`,
+        );
+      } else {
+        // Finalize current chunk and start a new one
+        chunks.push({
+          instructions: currentChunkInstructions,
+          transferIndices: currentChunkIndices,
+        });
+        currentChunkInstructions = priorityFeeInstruction
+          ? [priorityFeeInstruction, ...transferIxs]
+          : [...transferIxs];
+        currentChunkIndices = [i];
+
+        // Verify the new chunk with just this transfer fits
+        if (!trySerialize(currentChunkInstructions)) {
+          throw new OneKeyLocalError(
+            `Transfer at index ${i} exceeds Solana transaction size limit`,
+          );
+        }
+      }
+    }
+
+    // Don't forget the last chunk
+    if (currentChunkIndices.length > 0) {
+      chunks.push({
+        instructions: currentChunkInstructions,
+        transferIndices: currentChunkIndices,
+      });
+    }
+
+    // Phase 3: Build encoded txs
+    const encodedTxs: IEncodedTxSol[] = [];
+    const transfersInfoChunks: ITransferInfo[][] = [];
+
+    for (const chunk of chunks) {
+      const messageV0 = new TransactionMessage({
+        payerKey: source,
+        recentBlockhash,
+        instructions: chunk.instructions,
+      }).compileToV0Message([]);
+      const versionedTx = new VersionedTransaction(messageV0);
+      encodedTxs.push(bs58.encode(Buffer.from(versionedTx.serialize())));
+      transfersInfoChunks.push(
+        chunk.transferIndices.map((idx) => transfersInfo[idx]),
+      );
+    }
+
+    return { encodedTxs, transfersInfoChunks };
   }
 
   async _getRecentBlockHash() {

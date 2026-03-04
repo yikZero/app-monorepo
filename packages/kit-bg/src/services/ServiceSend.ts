@@ -57,6 +57,7 @@ import type {
   IPreCheckFeeInfoParams,
   ISignTransactionParamsBase,
   ITokenApproveInfo,
+  ITransferInfo,
   IUpdateUnsignedTxParams,
 } from '../vaults/types';
 
@@ -520,6 +521,13 @@ class ServiceSend extends ServiceBase {
         if (!signOnly && unsignedTx.uuid && successfullySentTxs) {
           successfullySentTxs.push(unsignedTx.uuid);
         }
+
+        if (isMultiTxs && !signOnly) {
+          appEventBus.emit(EAppEventBusNames.BulkSendBatchProgress, {
+            current: i + 1,
+            total: len,
+          });
+        }
       }
     }
 
@@ -955,6 +963,40 @@ class ServiceSend extends ServiceBase {
     return (await vaultFactory.getChainOnlyVault({ networkId })).validateMemo(
       memo,
     );
+  }
+
+  @backgroundMethod()
+  @toastIfError()
+  async buildBulkSendUnsignedTxs(params: {
+    networkId: string;
+    accountId: string;
+    transfersInfo: ITransferInfo[];
+  }): Promise<IUnsignedTxPro[]> {
+    const { networkId, accountId, transfersInfo } = params;
+    const vault = await vaultFactory.getVault({ networkId, accountId });
+
+    const { encodedTxs, transfersInfoChunks } =
+      await vault.buildBulkSendEncodedTxs({ transfersInfo });
+
+    const account = await this.backgroundApi.serviceAccount.getAccount({
+      accountId,
+      networkId,
+    });
+
+    const unsignedTxs: IUnsignedTxPro[] = [];
+    for (let i = 0; i < encodedTxs.length; i += 1) {
+      const unsignedTx: IUnsignedTxPro = {
+        encodedTx: encodedTxs[i],
+        transfersInfo: transfersInfoChunks[i],
+        accountId,
+        networkId,
+        indexedAccountId: account.indexedAccountId,
+        uuid: generateUUID(),
+      };
+      unsignedTxs.push(unsignedTx);
+    }
+
+    return unsignedTxs;
   }
 }
 

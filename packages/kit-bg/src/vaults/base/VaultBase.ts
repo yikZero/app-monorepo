@@ -133,6 +133,7 @@ import type {
   IGetPrivateKeyFromImportedResult,
   INativeAmountInfo,
   ISignTransactionParams,
+  ITransferInfo,
   ITransferPayload,
   IUpdateUnsignedTxParams,
   IValidateGeneralInputParams,
@@ -420,6 +421,15 @@ export abstract class VaultBase extends VaultBaseChainOnly {
   abstract updateUnsignedTx(
     params: IUpdateUnsignedTxParams,
   ): Promise<IUnsignedTxPro>;
+
+  async buildBulkSendEncodedTxs(_params: {
+    transfersInfo: ITransferInfo[];
+  }): Promise<{
+    encodedTxs: IEncodedTx[];
+    transfersInfoChunks: ITransferInfo[][];
+  }> {
+    throw new NotImplemented();
+  }
 
   async broadcastTransaction(
     params: IBroadcastTransactionParams,

@@ -123,14 +123,23 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     amountInputMode !== EAmountInputMode.Custom &&
     shouldShowTxDetails(amountInputMode);
 
+  const { result: vaultSettings } = usePromiseResult(
+    async () =>
+      backgroundApiProxy.serviceNetwork.getVaultSettings({ networkId }),
+    [networkId],
+  );
+  const isNativeBatchTransfer =
+    vaultSettings?.nativeBatchTransferEnabled ?? false;
+
   // Check if token needs approval (native tokens don't need approval)
   const needsApproval = useMemo(
     () =>
       tokenInfo &&
       !tokenInfo.isNative &&
+      !isNativeBatchTransfer &&
       bulkSendMode === EBulkSendMode.OneToMany &&
       transfersInfo.length > 1,
-    [tokenInfo, bulkSendMode, transfersInfo.length],
+    [tokenInfo, bulkSendMode, transfersInfo.length, isNativeBatchTransfer],
   );
 
   const bulkSendContractAddress = useMemo(() => {
@@ -140,7 +149,12 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
 
   const handleSubmit = useCallback(async () => {
     if (bulkSendMode !== EBulkSendMode.OneToMany) return;
-    if (!accountId || !networkId || !tokenInfo || !bulkSendContractAddress)
+    if (
+      !accountId ||
+      !networkId ||
+      !tokenInfo ||
+      (!bulkSendContractAddress && !isNativeBatchTransfer)
+    )
       return;
 
     // Mobile: Specified/Range mode requires a preview step before review
@@ -177,69 +191,81 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       const sender = effectiveTransfersInfo[0]?.from;
       if (!sender) return;
 
+      const unsignedTxs: IUnsignedTxPro[] = [];
       const approvesInfo: IApproveInfo[] = [];
 
-      if (needsApproval) {
-        const allowanceResponse =
-          await backgroundApiProxy.serviceSwap.fetchApproveAllowance({
+      if (isNativeBatchTransfer) {
+        // Native batch: no approvals, use vault's splitting method
+        const batchUnsignedTxs =
+          await backgroundApiProxy.serviceSend.buildBulkSendUnsignedTxs({
             networkId,
-            tokenAddress: tokenInfo.address,
-            spenderAddress: bulkSendContractAddress,
-            walletAddress: sender,
             accountId,
-            amount: effectiveTotalTokenAmount,
+            transfersInfo: effectiveTransfersInfo,
           });
+        unsignedTxs.push(...batchUnsignedTxs);
+      } else {
+        // EVM/TRON: existing approval + contract-based flow
+        if (needsApproval) {
+          const allowanceResponse =
+            await backgroundApiProxy.serviceSwap.fetchApproveAllowance({
+              networkId,
+              tokenAddress: tokenInfo.address,
+              spenderAddress: bulkSendContractAddress,
+              walletAddress: sender,
+              accountId,
+              amount: effectiveTotalTokenAmount,
+            });
 
-        if (!allowanceResponse?.isApproved) {
-          const baseTokenInfo = {
-            ...tokenInfo,
-            isNative: !!tokenInfo.isNative,
-            name: tokenInfo.name ?? tokenInfo.symbol,
-          };
+          if (!allowanceResponse?.isApproved) {
+            const baseTokenInfo = {
+              ...tokenInfo,
+              isNative: !!tokenInfo.isNative,
+              name: tokenInfo.name ?? tokenInfo.symbol,
+            };
 
-          // USDT-like tokens require reset approval first
-          if (allowanceResponse?.shouldResetApprove) {
+            // USDT-like tokens require reset approval first
+            if (allowanceResponse?.shouldResetApprove) {
+              approvesInfo.push({
+                owner: sender,
+                spender: bulkSendContractAddress,
+                amount: '0',
+                isMax: false,
+                tokenInfo: baseTokenInfo,
+              });
+            }
+
+            // Add the actual approval
             approvesInfo.push({
               owner: sender,
               spender: bulkSendContractAddress,
-              amount: '0',
+              amount: effectiveTotalTokenAmount,
               isMax: false,
               tokenInfo: baseTokenInfo,
             });
           }
-
-          // Add the actual approval
-          approvesInfo.push({
-            owner: sender,
-            spender: bulkSendContractAddress,
-            amount: effectiveTotalTokenAmount,
-            isMax: false,
-            tokenInfo: baseTokenInfo,
-          });
         }
-      }
 
-      const unsignedTxs: IUnsignedTxPro[] = [];
-      let prevNonce: number | undefined;
-      for (const approveInfo of approvesInfo) {
-        const unsignedTx =
+        let prevNonce: number | undefined;
+        for (const approveInfo of approvesInfo) {
+          const unsignedTx =
+            await backgroundApiProxy.serviceSend.prepareSendConfirmUnsignedTx({
+              networkId,
+              accountId,
+              approveInfo,
+              prevNonce,
+            });
+          prevNonce = unsignedTx.nonce;
+          unsignedTxs.push(unsignedTx);
+        }
+        unsignedTxs.push(
           await backgroundApiProxy.serviceSend.prepareSendConfirmUnsignedTx({
             networkId,
             accountId,
-            approveInfo,
+            transfersInfo: effectiveTransfersInfo,
             prevNonce,
-          });
-        prevNonce = unsignedTx.nonce;
-        unsignedTxs.push(unsignedTx);
+          }),
+        );
       }
-      unsignedTxs.push(
-        await backgroundApiProxy.serviceSend.prepareSendConfirmUnsignedTx({
-          networkId,
-          accountId,
-          transfersInfo: effectiveTransfersInfo,
-          prevNonce,
-        }),
-      );
 
       const params = {
         networkId,
@@ -273,6 +299,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     networkId,
     tokenInfo,
     bulkSendContractAddress,
+    isNativeBatchTransfer,
     transfersInfo,
     needsApproval,
     totalTokenAmount,
@@ -295,7 +322,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       !tokenDetailsState.initialized ||
       (tokenDetailsState.isRefreshing && !tokenDetails) ||
       isBuilding ||
-      !bulkSendContractAddress;
+      (!bulkSendContractAddress && !isNativeBatchTransfer);
 
     if (baseConditions) return true;
 
@@ -332,6 +359,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     isInsufficientBalance,
     isBuilding,
     bulkSendContractAddress,
+    isNativeBatchTransfer,
     media.gtMd,
     isInPreviewMode,
     amountInputMode,
