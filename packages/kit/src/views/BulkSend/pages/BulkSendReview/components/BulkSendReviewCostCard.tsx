@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { useIntl } from 'react-intl';
 
 import {
@@ -32,7 +33,7 @@ function BulkSendReviewCostCard({
 }: Props) {
   const intl = useIntl();
   const [settings] = useSettingsPersistAtom();
-  const { feeState } = useBulkSendReviewContext();
+  const { feeState, ataCount } = useBulkSendReviewContext();
   const {
     feeStatus,
     totalFeeNative: networkFee,
@@ -41,7 +42,10 @@ function BulkSendReviewCostCard({
     isInitialized,
     feeSelectorItems,
     selectedFee,
+    ataRentFeeNative,
   } = feeState;
+
+  const showAtaRent = ataRentFeeNative && new BigNumber(ataRentFeeNative).gt(0);
 
   // Only show loading skeleton when not initialized
   // After initialization, keep showing the current fee data during polling
@@ -146,6 +150,29 @@ function BulkSendReviewCostCard({
             )}
           </YStack>
         </XStack>
+
+        {/* ATA Rent Row (Solana SPL token transfers) */}
+        {showAtaRent ? (
+          <XStack gap="$2" px="$4" py="$2" alignItems="flex-start">
+            <SizableText flex={1} size="$bodyMd" color="$textSubdued">
+              {intl.formatMessage({
+                id: ETranslations.sig_account_rent_label,
+              })}
+              {ataCount ? ` x${ataCount}` : ''}
+            </SizableText>
+            <YStack alignItems="flex-end">
+              <XStack gap="$1" alignItems="baseline">
+                <NumberSizeableText
+                  size="$bodyMdMedium"
+                  formatter="balance"
+                  formatterOptions={{ tokenSymbol: nativeSymbol }}
+                >
+                  {ataRentFeeNative}
+                </NumberSizeableText>
+              </XStack>
+            </YStack>
+          </XStack>
+        ) : null}
       </YStack>
     </YStack>
   );

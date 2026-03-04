@@ -194,15 +194,18 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       const unsignedTxs: IUnsignedTxPro[] = [];
       const approvesInfo: IApproveInfo[] = [];
 
+      let ataCount: number | undefined;
+
       if (isNativeBatchTransfer) {
         // Native batch: no approvals, use vault's splitting method
-        const batchUnsignedTxs =
+        const batchResult =
           await backgroundApiProxy.serviceSend.buildBulkSendUnsignedTxs({
             networkId,
             accountId,
             transfersInfo: effectiveTransfersInfo,
           });
-        unsignedTxs.push(...batchUnsignedTxs);
+        unsignedTxs.push(...batchResult.unsignedTxs);
+        ataCount = batchResult.ataCount;
       } else {
         // EVM/TRON: existing approval + contract-based flow
         if (needsApproval) {
@@ -278,6 +281,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
         isInModal,
         totalTokenAmount: effectiveTotalTokenAmount,
         totalFiatAmount: effectiveTotalFiatAmount,
+        ataCount,
       };
 
       if (isInModal) {

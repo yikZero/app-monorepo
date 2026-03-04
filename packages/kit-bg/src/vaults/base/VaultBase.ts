@@ -427,6 +427,7 @@ export abstract class VaultBase extends VaultBaseChainOnly {
   }): Promise<{
     encodedTxs: IEncodedTx[];
     transfersInfoChunks: ITransferInfo[][];
+    ataCount?: number;
   }> {
     throw new NotImplemented();
   }

@@ -13,27 +13,42 @@ type IProps = {
 function BulkSendReviewAlert({ onRetry }: IProps) {
   const intl = useIntl();
   const { feeState } = useBulkSendReviewContext();
-  const { feeStatus, errMessage } = feeState;
+  const {
+    feeStatus,
+    errMessage,
+    insufficientSol,
+    solBalanceNeeded,
+    nativeSymbol,
+  } = feeState;
 
-  if (!errMessage) {
+  if (!errMessage && !insufficientSol) {
     return null;
   }
 
   return (
-    <YStack px="$5">
-      <Alert
-        icon="ErrorOutline"
-        type="critical"
-        title={errMessage}
-        action={{
-          primary: intl.formatMessage({
-            id: ETranslations.global_retry,
-          }),
-          isPrimaryLoading: feeStatus === ESendFeeStatus.Loading,
-          isPrimaryDisabled: feeStatus === ESendFeeStatus.Loading,
-          onPrimaryPress: onRetry,
-        }}
-      />
+    <YStack px="$5" gap="$3">
+      {errMessage ? (
+        <Alert
+          icon="ErrorOutline"
+          type="critical"
+          title={errMessage}
+          action={{
+            primary: intl.formatMessage({
+              id: ETranslations.global_retry,
+            }),
+            isPrimaryLoading: feeStatus === ESendFeeStatus.Loading,
+            isPrimaryDisabled: feeStatus === ESendFeeStatus.Loading,
+            onPrimaryPress: onRetry,
+          }}
+        />
+      ) : null}
+      {insufficientSol ? (
+        <Alert
+          icon="ErrorOutline"
+          type="critical"
+          title={`Insufficient ${nativeSymbol || 'SOL'} balance. You need at least ${solBalanceNeeded ?? '?'} ${nativeSymbol || 'SOL'} to cover network fees and account activation fees.`}
+        />
+      ) : null}
     </YStack>
   );
 }

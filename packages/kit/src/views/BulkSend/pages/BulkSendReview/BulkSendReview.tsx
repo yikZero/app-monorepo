@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import {
+  Alert,
   Page,
   Progress,
   SizableText,
@@ -80,11 +81,14 @@ function BaseBulkSendReview({
     isSubmitting,
     setIsSubmitting,
     isInModal,
+    ataCount,
   } = useBulkSendReviewContext();
 
   const intl = useIntl();
   const navigation = useAppNavigation();
   const isMultiTxs = unsignedTxs.length > 1;
+  const transferTxCount = unsignedTxs.length - approvesInfo.length;
+  const isTransferSplit = transferTxCount > 1;
 
   // Batch send progress tracking
   const [sendProgress, setSendProgress] = useState<{
@@ -110,6 +114,7 @@ function BaseBulkSendReview({
       unsignedTxs,
       feeState,
       setFeeState,
+      ataCount,
     });
 
   // Approval recheck hook - polls allowance after partial batch failure
@@ -536,6 +541,7 @@ function BaseBulkSendReview({
     (feeState.feeStatus === ESendFeeStatus.Loading &&
       !feeState.isInitialized) ||
     feeState.feeStatus === ESendFeeStatus.Error ||
+    feeState.insufficientSol ||
     isSubmitting ||
     isRecheckingApproval;
 
@@ -550,6 +556,17 @@ function BaseBulkSendReview({
         <YStack gap="$8">
           {/* Fee Error Alert - Top Section */}
           <BulkSendReviewAlert onRetry={handleRetryFeeEstimation} />
+
+          {/* Multi-tx Split Alert */}
+          {isTransferSplit ? (
+            <YStack px="$5">
+              <Alert
+                icon="InfoCircleOutline"
+                type="info"
+                title={`Your transaction has been split into ${transferTxCount} transactions`}
+              />
+            </YStack>
+          ) : null}
 
           {/* Grand Summary - Top Section */}
           <BulkSendReviewGrandSummary />
@@ -580,15 +597,21 @@ function BaseBulkSendReview({
         </YStack>
       </Page.Body>
       <Page.Footer>
-        {isSubmitting && sendProgress && sendProgress.total > 1 ? (
+        {isSubmitting && isTransferSplit ? (
           <YStack px="$5" pb="$3" gap="$2">
             <SizableText size="$bodyMdMedium" textAlign="center">
-              {`${sendProgress.current} / ${sendProgress.total}`}
+              {sendProgress
+                ? `${sendProgress.current} / ${sendProgress.total}`
+                : `0 / ${transferTxCount}`}
             </SizableText>
             <Progress
-              value={Math.round(
-                (sendProgress.current / sendProgress.total) * 100,
-              )}
+              value={
+                sendProgress
+                  ? Math.round(
+                      (sendProgress.current / sendProgress.total) * 100,
+                    )
+                  : 0
+              }
               size="medium"
             />
           </YStack>
@@ -623,6 +646,7 @@ function BulkSendReview() {
     totalTokenAmount,
     totalFiatAmount,
     isInModal,
+    ataCount,
     onSuccess,
     onFail,
   } = route.params ?? {};
@@ -681,6 +705,7 @@ function BulkSendReview() {
       totalTokenAmount,
       totalFiatAmount,
       isInModal,
+      ataCount,
       networkImageUri: networkInfo?.logoURI,
       initialApprovesInfoRef,
       approvesInfo,
@@ -701,6 +726,7 @@ function BulkSendReview() {
       totalTokenAmount,
       totalFiatAmount,
       isInModal,
+      ataCount,
       networkInfo?.logoURI,
       approvesInfo,
       unsignedTxs,

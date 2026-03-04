@@ -402,6 +402,7 @@ export default class Vault extends VaultBase {
   }): Promise<{
     encodedTxs: IEncodedTxSol[];
     transfersInfoChunks: ITransferInfo[][];
+    ataCount?: number;
   }> {
     const { transfersInfo } = params;
     const transferInfo = transfersInfo[0];
@@ -443,6 +444,17 @@ export default class Vault extends VaultBase {
         client,
       });
       allInstructionSets.push(transferInstructions);
+    }
+
+    // Count ATA creation instructions (for rent fee display)
+    let ataCount = 0;
+    const ataProgramId = ASSOCIATED_TOKEN_PROGRAM_ID.toString();
+    for (const instructionSet of allInstructionSets) {
+      for (const ix of instructionSet) {
+        if (ix.programId.toString() === ataProgramId) {
+          ataCount += 1;
+        }
+      }
     }
 
     // Phase 2: Split into size-safe chunks via trial serialization
@@ -532,7 +544,7 @@ export default class Vault extends VaultBase {
       );
     }
 
-    return { encodedTxs, transfersInfoChunks };
+    return { encodedTxs, transfersInfoChunks, ataCount };
   }
 
   async _getRecentBlockHash() {

@@ -971,11 +971,11 @@ class ServiceSend extends ServiceBase {
     networkId: string;
     accountId: string;
     transfersInfo: ITransferInfo[];
-  }): Promise<IUnsignedTxPro[]> {
+  }): Promise<{ unsignedTxs: IUnsignedTxPro[]; ataCount?: number }> {
     const { networkId, accountId, transfersInfo } = params;
     const vault = await vaultFactory.getVault({ networkId, accountId });
 
-    const { encodedTxs, transfersInfoChunks } =
+    const { encodedTxs, transfersInfoChunks, ataCount } =
       await vault.buildBulkSendEncodedTxs({ transfersInfo });
 
     const account = await this.backgroundApi.serviceAccount.getAccount({
@@ -996,7 +996,7 @@ class ServiceSend extends ServiceBase {
       unsignedTxs.push(unsignedTx);
     }
 
-    return unsignedTxs;
+    return { unsignedTxs, ataCount };
   }
 }
 
