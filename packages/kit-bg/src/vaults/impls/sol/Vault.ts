@@ -220,8 +220,17 @@ export default class Vault extends VaultBase {
     source: PublicKey;
     firstReceiver: string;
     client: ClientSol;
+    preFetchedDestinationAtaInfo?: AccountInfo<[string, string]> | null;
+    resolvedTokenProgramId?: PublicKey;
   }): Promise<TransactionInstruction[]> {
-    const { transferInfo, source, firstReceiver, client } = params;
+    const {
+      transferInfo,
+      source,
+      firstReceiver,
+      client,
+      preFetchedDestinationAtaInfo,
+      resolvedTokenProgramId,
+    } = params;
     const { amount, to, tokenInfo, nftInfo } = transferInfo;
     const from = transferInfo.from;
 
@@ -252,10 +261,12 @@ export default class Vault extends VaultBase {
       const mint = new PublicKey(tokenAddress);
       let destinationAta = destination;
 
-      const tokenProgramId = await this._getTokenProgramId({
-        owner: source,
-        mint,
-      });
+      const tokenProgramId =
+        resolvedTokenProgramId ??
+        (await this._getTokenProgramId({
+          owner: source,
+          mint,
+        }));
 
       const sourceAta = tokenSendAddress
         ? new PublicKey(tokenSendAddress)
@@ -272,9 +283,12 @@ export default class Vault extends VaultBase {
         programId: tokenProgramId,
       });
 
-      const destinationAtaInfo = await client.getAccountInfo({
-        address: destinationAta.toString(),
-      });
+      const destinationAtaInfo =
+        preFetchedDestinationAtaInfo !== undefined
+          ? preFetchedDestinationAtaInfo
+          : await client.getAccountInfo({
+              address: destinationAta.toString(),
+            });
 
       if (nftInfo) {
         const { isProgrammableNFT, metadata } =
@@ -434,14 +448,75 @@ export default class Vault extends VaultBase {
       });
     }
 
-    // Phase 1: Build all instruction sets upfront
+    // Phase 0: Pre-compute destination ATA addresses for token transfers (local, no RPC)
+    // Resolve tokenProgramId once since all bulk send transfers share the same token
+    let resolvedTokenProgramId: PublicKey | undefined;
+    const ataPreComputeMap = new Map<
+      number,
+      { ataAddress: string }
+    >();
+    for (let i = 0; i < transfersInfo.length; i += 1) {
+      const ti = transfersInfo[i];
+      const isNativeTokenTransfer = !!ti.tokenInfo?.isNative;
+      if (!isNativeTokenTransfer && (ti.tokenInfo || ti.nftInfo)) {
+        const tokenAddress =
+          ti.tokenInfo?.address ?? ti.nftInfo?.nftAddress ?? '';
+        const mint = new PublicKey(tokenAddress);
+        const destination = new PublicKey(ti.to || firstReceiver);
+        if (!resolvedTokenProgramId) {
+          resolvedTokenProgramId = await this._getTokenProgramId({
+            owner: source,
+            mint,
+          });
+        }
+        const destinationAta = await this._getAssociatedTokenAddress({
+          mint,
+          owner: destination,
+          programId: resolvedTokenProgramId,
+        });
+        ataPreComputeMap.set(i, {
+          ataAddress: destinationAta.toString(),
+        });
+      }
+    }
+
+    // Phase 0.5: Batch fetch all ATA account infos (single RPC per 100 addresses)
+    const ataAddresses = Array.from(ataPreComputeMap.values()).map(
+      (v) => v.ataAddress,
+    );
+    const ataInfoLookup = new Map<
+      string,
+      AccountInfo<[string, string]> | null
+    >();
+    if (ataAddresses.length > 0) {
+      const BATCH_SIZE = 100;
+      const allAtaInfos: (AccountInfo<[string, string]> | null)[] = [];
+      for (let i = 0; i < ataAddresses.length; i += BATCH_SIZE) {
+        const chunk = ataAddresses.slice(i, i + BATCH_SIZE);
+        const infos = await client.getMultipleAccountsInfo({
+          addresses: chunk,
+        });
+        allAtaInfos.push(...infos);
+      }
+      for (let i = 0; i < ataAddresses.length; i += 1) {
+        ataInfoLookup.set(ataAddresses[i], allAtaInfos[i]);
+      }
+    }
+
+    // Phase 1: Build all instruction sets using pre-fetched ATA info
     const allInstructionSets: TransactionInstruction[][] = [];
     for (let i = 0; i < transfersInfo.length; i += 1) {
+      const preComputed = ataPreComputeMap.get(i);
+      const preFetchedDestinationAtaInfo = preComputed
+        ? ataInfoLookup.get(preComputed.ataAddress)
+        : undefined;
       const transferInstructions = await this._buildInstructionsForTransfer({
         transferInfo: transfersInfo[i],
         source,
         firstReceiver,
         client,
+        preFetchedDestinationAtaInfo,
+        resolvedTokenProgramId,
       });
       allInstructionSets.push(transferInstructions);
     }
