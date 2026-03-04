@@ -451,10 +451,7 @@ export default class Vault extends VaultBase {
     // Phase 0: Pre-compute destination ATA addresses for token transfers (local, no RPC)
     // Resolve tokenProgramId once since all bulk send transfers share the same token
     let resolvedTokenProgramId: PublicKey | undefined;
-    const ataPreComputeMap = new Map<
-      number,
-      { ataAddress: string }
-    >();
+    const ataPreComputeMap = new Map<number, { ataAddress: string }>();
     for (let i = 0; i < transfersInfo.length; i += 1) {
       const ti = transfersInfo[i];
       const isNativeTokenTransfer = !!ti.tokenInfo?.isNative;
@@ -1015,7 +1012,7 @@ export default class Vault extends VaultBase {
       owner: accountAddress,
       signer: isVersionedTransaction
         ? nativeTx.message.staticAccountKeys[0]?.toString() || accountAddress
-        : (nativeTx).feePayer?.toString() || accountAddress,
+        : nativeTx.feePayer?.toString() || accountAddress,
       nonce: 0,
       actions,
       status: EDecodedTxStatus.Pending,
@@ -1409,7 +1406,7 @@ export default class Vault extends VaultBase {
         newEncodedTx = bs58.encode(Buffer.from(nativeTx.serialize()));
       } else {
         newEncodedTx = bs58.encode(
-          (nativeTx).serialize({
+          nativeTx.serialize({
             requireAllSignatures: false,
           }),
         );
@@ -1600,13 +1597,9 @@ export default class Vault extends VaultBase {
 
       try {
         if (isVersionedTransaction) {
-          return bs58.encode(
-            Buffer.from((nativeTx).serialize()),
-          );
+          return bs58.encode(Buffer.from(nativeTx.serialize()));
         }
-        return bs58.encode(
-          (nativeTx).serialize({ requireAllSignatures: false }),
-        );
+        return bs58.encode(nativeTx.serialize({ requireAllSignatures: false }));
       } catch {
         return '';
       }
