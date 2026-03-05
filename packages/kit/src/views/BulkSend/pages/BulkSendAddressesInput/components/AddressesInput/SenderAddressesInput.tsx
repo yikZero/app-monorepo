@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isEmpty } from 'lodash';
 import { useIntl } from 'react-intl';
@@ -11,11 +11,14 @@ import {
   XStack,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
+import AddressTypeSelector from '@onekeyhq/kit/src/components/AddressTypeSelector/AddressTypeSelector';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import type { IAccountSelectorActiveAccountInfo } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
 import { useDebouncedValidation } from '@onekeyhq/kit/src/views/BulkSend/hooks/useDebouncedValidation';
+import type { IAccountDeriveTypes } from '@onekeyhq/kit-bg/src/vaults/types';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
+import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import {
   EInputAddressChangeType,
   type IAddressBadge,
@@ -37,9 +40,43 @@ function SenderAddressesInput() {
     selectedTokenDetail,
     tokenDetailsState,
     bulkSendMode,
+    selectedDeriveType,
+    setSelectedDeriveType,
   } = useBulkSendAddressesInputContext();
   const { network } = useAccountData({ networkId: selectedNetworkId });
   const [addressBadges, setAddressBadges] = useState<IAddressBadge[]>([]);
+
+  const isBTC = useMemo(
+    () => networkUtils.isBTCNetwork(selectedNetworkId),
+    [selectedNetworkId],
+  );
+
+  const walletId = useMemo(() => {
+    if (selectedIndexedAccountId) {
+      return accountUtils.getWalletIdFromAccountId({
+        accountId: selectedIndexedAccountId,
+      });
+    }
+    return '';
+  }, [selectedIndexedAccountId]);
+
+  const handleAddressTypeSelect = useCallback(
+    async ({
+      account,
+      deriveType,
+    }: {
+      account: { id: string } | undefined;
+      deriveInfo: unknown;
+      deriveType: IAccountDeriveTypes;
+    }) => {
+      setSelectedDeriveType(deriveType);
+      if (account?.id) {
+        selectedAccountIdRef.current = account.id;
+        setSelectedAccountId(account.id);
+      }
+    },
+    [setSelectedDeriveType, setSelectedAccountId],
+  );
 
   // Use refs to store latest values for validation closure
   const selectedAccountIdRef = useRef(selectedAccountId);
@@ -251,6 +288,30 @@ function SenderAddressesInput() {
     selectedIndexedAccountIdRef.current = selectedIndexedAccountId;
   }, [selectedAccountId, selectedIndexedAccountId]);
 
+  const renderLabelAddon = useMemo(() => {
+    if (isBTC && selectedIndexedAccountId && walletId) {
+      return (
+        <AddressTypeSelector
+          walletId={walletId}
+          networkId={selectedNetworkId ?? ''}
+          indexedAccountId={selectedIndexedAccountId}
+          activeDeriveType={selectedDeriveType}
+          onSelect={handleAddressTypeSelect}
+          changeDefaultAddressTypeAfterSelect={false}
+          placement="bottom-end"
+        />
+      );
+    }
+    return undefined;
+  }, [
+    isBTC,
+    selectedIndexedAccountId,
+    walletId,
+    selectedNetworkId,
+    selectedDeriveType,
+    handleAddressTypeSelect,
+  ]);
+
   return (
     <Form.Field
       name="senderAddresses"
@@ -260,6 +321,7 @@ function SenderAddressesInput() {
             ? ETranslations.wallet_bulk_send_section_sending_address
             : ETranslations.wallet_bulk_send_label_sending_addresses,
       })}
+      labelAddon={renderLabelAddon}
       description={renderSenderAddressesDescription()}
       rules={{
         validate: debouncedValidateAddresses,

@@ -555,6 +555,36 @@ export default class VaultBtc extends VaultBase {
     });
   }
 
+  override async buildBulkSendEncodedTxs(params: {
+    transfersInfo: ITransferInfo[];
+  }): Promise<{
+    encodedTxs: IEncodedTxBtc[];
+    transfersInfoChunks: ITransferInfo[][];
+    ataCount?: number;
+  }> {
+    const { transfersInfo } = params;
+
+    if (!transfersInfo || transfersInfo.length === 0) {
+      throw new OneKeyLocalError('transfersInfo is required');
+    }
+
+    const MAX_OUTPUTS_PER_TX = 200;
+    const encodedTxs: IEncodedTxBtc[] = [];
+    const transfersInfoChunks: ITransferInfo[][] = [];
+
+    for (let i = 0; i < transfersInfo.length; i += MAX_OUTPUTS_PER_TX) {
+      const chunk = transfersInfo.slice(i, i + MAX_OUTPUTS_PER_TX);
+      transfersInfoChunks.push(chunk);
+
+      const encodedTx = await this._buildEncodedTxFromBatchTransfer({
+        transfersInfo: chunk,
+      });
+      encodedTxs.push(encodedTx);
+    }
+
+    return { encodedTxs, transfersInfoChunks };
+  }
+
   override async buildUnsignedTx(
     params: IBuildUnsignedTxParams,
   ): Promise<IUnsignedTxPro> {
