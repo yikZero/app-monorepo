@@ -623,6 +623,7 @@ function TransferInfoListSection() {
     tokenInfo,
     transferInfoErrors,
     setTransferInfoErrors,
+    minTransferAmount,
   } = useBulkSendAmountsInputContext();
 
   const { handleDeleteTransfer, handleAmountChange } = useTransferInfoActions({
@@ -631,6 +632,7 @@ function TransferInfoListSection() {
     setTransfersInfo,
     transferInfoErrors,
     setTransferInfoErrors,
+    minTransferAmount,
   });
 
   const isCustomMode = amountInputMode === EAmountInputMode.Custom;
