@@ -137,5 +137,4 @@ export enum EAppEventBusNames {
   ShowInAppPushNotification = 'ShowInAppPushNotification',
   ExecuteNotificationCommand = 'ExecuteNotificationCommand',
   CreateNewBrowserTab = 'CreateNewBrowserTab',
-  BulkSendBatchProgress = 'BulkSendBatchProgress',
 }

@@ -522,12 +522,6 @@ class ServiceSend extends ServiceBase {
           successfullySentTxs.push(unsignedTx.uuid);
         }
 
-        if (isMultiTxs && !signOnly) {
-          appEventBus.emit(EAppEventBusNames.BulkSendBatchProgress, {
-            current: i + 1,
-            total: len,
-          });
-        }
       }
     }
 

@@ -455,10 +455,6 @@ export interface IAppEventBusPayload {
     data?: Record<string, unknown>;
   };
   [EAppEventBusNames.CreateNewBrowserTab]: undefined;
-  [EAppEventBusNames.BulkSendBatchProgress]: {
-    current: number;
-    total: number;
-  };
 }
 
 export enum EEventBusBroadcastMethodNames {

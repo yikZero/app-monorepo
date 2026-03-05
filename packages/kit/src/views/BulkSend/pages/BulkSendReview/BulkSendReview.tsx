@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
 import {
   Alert,
   Page,
-  Progress,
-  SizableText,
   Toast,
   YStack,
   popModalPages,
@@ -19,10 +17,6 @@ import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useAppRoute } from '@onekeyhq/kit/src/hooks/useAppRoute';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import type { IApproveInfo } from '@onekeyhq/kit-bg/src/vaults/types';
-import {
-  EAppEventBusNames,
-  appEventBus,
-} from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import {
@@ -89,22 +83,6 @@ function BaseBulkSendReview({
   const isMultiTxs = unsignedTxs.length > 1;
   const transferTxCount = unsignedTxs.length - approvesInfo.length;
   const isTransferSplit = transferTxCount > 1;
-
-  // Batch send progress tracking
-  const [sendProgress, setSendProgress] = useState<{
-    current: number;
-    total: number;
-  } | null>(null);
-
-  useEffect(() => {
-    const handler = (payload: { current: number; total: number }) => {
-      setSendProgress(payload);
-    };
-    appEventBus.on(EAppEventBusNames.BulkSendBatchProgress, handler);
-    return () => {
-      appEventBus.off(EAppEventBusNames.BulkSendBatchProgress, handler);
-    };
-  }, []);
 
   // Use fee estimation hook
   const { feeLabel, handleFeeChange, vaultSettings, forceRefreshFee } =
@@ -341,7 +319,6 @@ function BaseBulkSendReview({
 
     const { serviceSend } = backgroundApiProxy;
 
-    setSendProgress(null);
     setIsSubmitting(true);
 
     // Step 1: Pre-check unsigned transactions
@@ -597,25 +574,6 @@ function BaseBulkSendReview({
         </YStack>
       </Page.Body>
       <Page.Footer>
-        {isSubmitting && isTransferSplit ? (
-          <YStack px="$5" pb="$3" gap="$2">
-            <SizableText size="$bodyMdMedium" textAlign="center">
-              {sendProgress
-                ? `${sendProgress.current} / ${sendProgress.total}`
-                : `0 / ${transferTxCount}`}
-            </SizableText>
-            <Progress
-              value={
-                sendProgress
-                  ? Math.round(
-                      (sendProgress.current / sendProgress.total) * 100,
-                    )
-                  : 0
-              }
-              size="medium"
-            />
-          </YStack>
-        ) : null}
         <Page.FooterActions
           onConfirmText={confirmButtonText}
           confirmButtonProps={{
