@@ -521,7 +521,6 @@ class ServiceSend extends ServiceBase {
         if (!signOnly && unsignedTx.uuid && successfullySentTxs) {
           successfullySentTxs.push(unsignedTx.uuid);
         }
-
       }
     }
 
