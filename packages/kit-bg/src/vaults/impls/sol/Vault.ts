@@ -419,6 +419,11 @@ export default class Vault extends VaultBase {
     ataCount?: number;
   }> {
     const { transfersInfo } = params;
+    if (!transfersInfo.length) {
+      throw new OneKeyLocalError(
+        'buildBulkSendEncodedTxs ERROR: transfersInfo is empty',
+      );
+    }
     const transferInfo = transfersInfo[0];
     const accountAddress = await this.getAccountAddress();
 
