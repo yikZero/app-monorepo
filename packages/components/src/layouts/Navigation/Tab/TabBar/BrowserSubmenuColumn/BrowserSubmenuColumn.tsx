@@ -86,12 +86,25 @@ export function BrowserSubmenuColumn({
   }, [clearHoverTimer]);
 
   const handleHoverOut = useCallback(() => {
-    if (popoverCountRef.current > 0) return;
     clearHoverTimer();
+    if (popoverCountRef.current > 0) return;
     setIsHovered(false);
   }, [clearHoverTimer]);
 
+  // Check if Browser or MultiTabBrowser is currently selected
+  const isBrowserSelected =
+    focusedRouteName === ETabRoutes.Discovery ||
+    focusedRouteName === multiTabBrowserRouteName;
+
   useEffect(() => clearHoverTimer, [clearHoverTimer]);
+
+  // Reset hover state when navigating away from the browser tab
+  useEffect(() => {
+    if (!isBrowserSelected) {
+      clearHoverTimer();
+      setIsHovered(false);
+    }
+  }, [isBrowserSelected, clearHoverTimer]);
 
   // When expanded, monitor pointer position to detect cursor leaving.
   // Uses coordinate-based check instead of DOM containment because
@@ -122,11 +135,6 @@ export function BrowserSubmenuColumn({
     document.addEventListener('pointermove', handlePointerMove);
     return () => document.removeEventListener('pointermove', handlePointerMove);
   }, [isHovered, clearHoverTimer]);
-
-  // Check if Browser or MultiTabBrowser is currently selected
-  const isBrowserSelected =
-    focusedRouteName === ETabRoutes.Discovery ||
-    focusedRouteName === multiTabBrowserRouteName;
 
   type ITabBarProps = { inSubmenu?: boolean; isExpanded?: boolean };
 
