@@ -13,10 +13,7 @@ import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes/tab';
 
 import { BrowserSubmenuContext } from './BrowserSubmenuContext';
-import {
-  EXPANDED_SUBMENU_WIDTH,
-  SubmenuColumn,
-} from './SubmenuColumn';
+import { EXPANDED_SUBMENU_WIDTH, SubmenuColumn } from './SubmenuColumn';
 import { VerticalDivider } from './VerticalDivider';
 
 export interface IBrowserSubmenuColumnProps {
@@ -39,16 +36,7 @@ export function BrowserSubmenuColumn({
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);
   const popoverCountRef = useRef(0);
-
-  const reportPopoverOpen = useCallback((isOpen: boolean) => {
-    popoverCountRef.current += isOpen ? 1 : -1;
-    popoverCountRef.current = Math.max(0, popoverCountRef.current);
-  }, []);
-
-  const contextValue = useMemo(
-    () => ({ reportPopoverOpen }),
-    [reportPopoverOpen],
-  );
+  const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
 
   const clearHoverTimer = useCallback(() => {
     if (hoverTimerRef.current) {
@@ -56,6 +44,39 @@ export function BrowserSubmenuColumn({
       hoverTimerRef.current = null;
     }
   }, []);
+
+  const checkPointerOutside = useCallback(() => {
+    const pointer = lastPointerRef.current;
+    const container = containerRef.current;
+    if (!pointer || !container) return;
+    const rect = container.getBoundingClientRect();
+    const isInside =
+      pointer.x >= rect.left &&
+      pointer.x <= rect.left + EXPANDED_SUBMENU_WIDTH &&
+      pointer.y >= rect.top &&
+      pointer.y <= rect.bottom;
+    if (!isInside) {
+      clearHoverTimer();
+      setIsHovered(false);
+    }
+  }, [clearHoverTimer]);
+
+  const reportPopoverOpen = useCallback(
+    (isOpen: boolean) => {
+      popoverCountRef.current += isOpen ? 1 : -1;
+      popoverCountRef.current = Math.max(0, popoverCountRef.current);
+      // When all popovers close, immediately check if cursor is outside
+      if (popoverCountRef.current === 0) {
+        checkPointerOutside();
+      }
+    },
+    [checkPointerOutside],
+  );
+
+  const contextValue = useMemo(
+    () => ({ reportPopoverOpen }),
+    [reportPopoverOpen],
+  );
 
   const handleHoverIn = useCallback(() => {
     clearHoverTimer();
@@ -75,10 +96,13 @@ export function BrowserSubmenuColumn({
   // When expanded, monitor pointer position to detect cursor leaving.
   // Uses coordinate-based check instead of DOM containment because
   // popovers render via portals outside the sidebar DOM tree.
+  // Only runs on web/desktop — native iOS relies on onHoverIn/onHoverOut.
   useEffect(() => {
     if (!isHovered) return;
+    if (typeof document === 'undefined') return;
 
     const handlePointerMove = (e: PointerEvent) => {
+      lastPointerRef.current = { x: e.clientX, y: e.clientY };
       // Don't collapse while a child popover (e.g. context menu) is open
       if (popoverCountRef.current > 0) return;
       const container = containerRef.current;
@@ -96,8 +120,7 @@ export function BrowserSubmenuColumn({
     };
 
     document.addEventListener('pointermove', handlePointerMove);
-    return () =>
-      document.removeEventListener('pointermove', handlePointerMove);
+    return () => document.removeEventListener('pointermove', handlePointerMove);
   }, [isHovered, clearHoverTimer]);
 
   // Check if Browser or MultiTabBrowser is currently selected
