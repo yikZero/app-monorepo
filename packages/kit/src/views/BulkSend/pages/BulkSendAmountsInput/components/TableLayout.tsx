@@ -93,6 +93,7 @@ function AmountCard() {
     previewState,
     setPreviewState,
     hasCustomAmounts,
+    minTransferAmount,
   } = useBulkSendAmountsInputContext();
 
   const [settings] = useSettingsPersistAtom();
@@ -188,11 +189,29 @@ function AmountCard() {
       const newValues = { ...amountInputValues, specifiedAmount: value };
       setAmountInputValues(newValues);
 
+      // Check per-transfer minTransferAmount first
+      const valueBN = new BigNumber(value || '0');
+      const minTransferAmountBN = new BigNumber(minTransferAmount);
+      if (
+        !minTransferAmountBN.isZero() &&
+        !valueBN.isZero() &&
+        !valueBN.isNaN() &&
+        valueBN.isLessThan(minTransferAmountBN)
+      ) {
+        setAmountInputErrors({
+          ...amountInputErrors,
+          specifiedAmount: intl.formatMessage(
+            { id: ETranslations.send_error_minimum_amount },
+            { amount: minTransferAmount, token: tokenInfo.symbol },
+          ),
+        });
+        updateTransfersInfoWithAmounts(amountInputMode, newValues);
+        return;
+      }
+
       const { error } = validateTokenAmount({
         token: tokenInfo,
-        amount: new BigNumber(value || '0')
-          .times(transfersInfo.length)
-          .toFixed(),
+        amount: valueBN.times(transfersInfo.length).toFixed(),
         maxAmount: balance,
         allowZero: false,
         customErrorMessages: {
@@ -225,6 +244,7 @@ function AmountCard() {
       setAmountInputErrors,
       updateTransfersInfoWithAmounts,
       amountInputMode,
+      minTransferAmount,
     ],
   );
 
@@ -273,6 +293,8 @@ function AmountCard() {
         rangeMin: newValues.rangeMin,
         rangeMax: newValues.rangeMax,
         balance,
+        minTransferAmount,
+        tokenSymbol: tokenInfo?.symbol,
       });
       setAmountInputErrors({
         ...amountInputErrorsRef.current,

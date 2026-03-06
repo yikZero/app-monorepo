@@ -131,15 +131,6 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
   const isNativeBatchTransfer =
     vaultSettings?.nativeBatchTransferEnabled ?? false;
 
-  const minTransferAmount = useMemo(() => {
-    if (!vaultSettings) return '0';
-    return tokenInfo.isNative
-      ? (vaultSettings.nativeMinTransferAmount ??
-          vaultSettings.minTransferAmount ??
-          '0')
-      : (vaultSettings.minTransferAmount ?? '0');
-  }, [vaultSettings, tokenInfo.isNative]);
-
   // Check if token needs approval (native tokens don't need approval)
   const needsApproval = useMemo(
     () =>
@@ -731,6 +722,21 @@ function BulkSendAmountsInput() {
       }),
     [amountInputMode, amountInputErrors, amountInputValues, transferInfoErrors],
   );
+
+  const { result: outerVaultSettings } = usePromiseResult(
+    async () =>
+      backgroundApiProxy.serviceNetwork.getVaultSettings({ networkId }),
+    [networkId],
+  );
+
+  const minTransferAmount = useMemo(() => {
+    if (!outerVaultSettings) return '0';
+    return tokenInfo?.isNative
+      ? (outerVaultSettings.nativeMinTransferAmount ??
+          outerVaultSettings.minTransferAmount ??
+          '0')
+      : (outerVaultSettings.minTransferAmount ?? '0');
+  }, [outerVaultSettings, tokenInfo?.isNative]);
 
   const [isInsufficientBalance, setIsInsufficientBalance] = useState(false);
 
