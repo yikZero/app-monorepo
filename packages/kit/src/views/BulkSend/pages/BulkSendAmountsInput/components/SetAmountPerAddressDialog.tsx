@@ -128,6 +128,7 @@ function SetAmountPerAddressDialogContent({
       totalFiatAmount,
       isInsufficientBalance: false,
       hasCustomAmounts: false,
+      minTransferAmount: '0',
       previewState: {
         specifiedPreviewed: false,
         rangePreviewed: false,

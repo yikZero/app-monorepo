@@ -465,8 +465,7 @@ class ServiceSend extends ServiceBase {
         !successfullySentTxs.includes(unsignedTx.uuid)
       ) {
         if (isMultiTxs && i > 0) {
-          unsignedTx =
-            await vault.refreshUnsignedTxBeforeBatchSign(unsignedTx);
+          unsignedTx = await vault.refreshUnsignedTxBeforeBatchSign(unsignedTx);
         }
         const signedTx = signOnly
           ? await this.signTransaction({
