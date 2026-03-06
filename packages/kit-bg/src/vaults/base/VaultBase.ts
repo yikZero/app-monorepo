@@ -422,6 +422,14 @@ export abstract class VaultBase extends VaultBaseChainOnly {
     params: IUpdateUnsignedTxParams,
   ): Promise<IUnsignedTxPro>;
 
+  // Override in chain vaults that need to refresh transaction data (e.g. blockhash)
+  // before signing each transaction in a batch send sequence.
+  async refreshUnsignedTxBeforeBatchSign(
+    unsignedTx: IUnsignedTxPro,
+  ): Promise<IUnsignedTxPro> {
+    return unsignedTx;
+  }
+
   async buildBulkSendEncodedTxs(_params: {
     transfersInfo: ITransferInfo[];
   }): Promise<{

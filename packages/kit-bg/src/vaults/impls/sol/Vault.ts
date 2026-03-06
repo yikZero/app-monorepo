@@ -622,6 +622,31 @@ export default class Vault extends VaultBase {
     return { encodedTxs, transfersInfoChunks, ataCount };
   }
 
+  override async refreshUnsignedTxBeforeBatchSign(
+    unsignedTx: IUnsignedTxPro,
+  ): Promise<IUnsignedTxPro> {
+    const encodedTx = unsignedTx.encodedTx as IEncodedTxSol;
+    const nativeTx = parseToNativeTx(encodedTx) as INativeTxSol;
+    const { recentBlockhash } = await this._getRecentBlockHash();
+
+    if (nativeTx instanceof Transaction) {
+      nativeTx.recentBlockhash = recentBlockhash;
+    } else if (nativeTx instanceof VersionedTransaction) {
+      nativeTx.message.recentBlockhash = recentBlockhash;
+    }
+
+    let newEncodedTx: IEncodedTxSol;
+    if (nativeTx instanceof VersionedTransaction) {
+      newEncodedTx = bs58.encode(Buffer.from(nativeTx.serialize()));
+    } else {
+      newEncodedTx = bs58.encode(
+        nativeTx.serialize({ requireAllSignatures: false }),
+      );
+    }
+
+    return { ...unsignedTx, encodedTx: newEncodedTx };
+  }
+
   async _getRecentBlockHash() {
     let lastRpcErrorMessage = '';
 

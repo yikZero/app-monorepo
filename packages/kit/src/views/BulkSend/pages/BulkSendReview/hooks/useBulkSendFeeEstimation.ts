@@ -30,6 +30,8 @@ import type { IBulkSendFeeState } from '../components/Context';
 
 // Rent cost per ATA creation on Solana (from kit-bg/src/vaults/impls/sol/utils.ts)
 const SOL_CREATE_TOKEN_ACCOUNT_RENT = '0.00203928';
+// Rent-exempt minimum for a basic system account (0 data bytes) = 890880 lamports
+const SOL_ACCOUNT_RENT_EXEMPT_MIN = '0.00089088';
 
 type IUseBulkSendFeeEstimationParams = {
   networkId: string;
@@ -320,7 +322,10 @@ export function useBulkSendFeeEstimation({
             .times(ataCount)
             .toFixed();
 
-          const totalSolNeeded = totalNative.plus(ataRentFeeNative).toFixed();
+          const totalSolNeeded = totalNative
+            .plus(ataRentFeeNative)
+            .plus(SOL_ACCOUNT_RENT_EXEMPT_MIN)
+            .toFixed();
           solBalanceNeeded = totalSolNeeded;
 
           try {

@@ -453,16 +453,21 @@ class ServiceSend extends ServiceBase {
     } = params;
 
     const isMultiTxs = unsignedTxs.length > 1;
+    const vault = await vaultFactory.getVault({ networkId, accountId });
 
     const result: ISendTxOnSuccessData[] = [];
     for (let i = 0, len = unsignedTxs.length; i < len; i += 1) {
-      const unsignedTx = unsignedTxs[i];
+      let unsignedTx = unsignedTxs[i];
       const feeInfo = sendSelectedFeeInfos?.[i];
       if (
         !successfullySentTxs ||
         !unsignedTx.uuid ||
         !successfullySentTxs.includes(unsignedTx.uuid)
       ) {
+        if (isMultiTxs && i > 0) {
+          unsignedTx =
+            await vault.refreshUnsignedTxBeforeBatchSign(unsignedTx);
+        }
         const signedTx = signOnly
           ? await this.signTransaction({
               unsignedTx,
