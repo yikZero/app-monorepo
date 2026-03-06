@@ -12,7 +12,11 @@ import { XStack } from '@onekeyhq/components/src/primitives';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes/tab';
 
-import { SubmenuColumn } from './SubmenuColumn';
+import { BrowserSubmenuContext } from './BrowserSubmenuContext';
+import {
+  EXPANDED_SUBMENU_WIDTH,
+  SubmenuColumn,
+} from './SubmenuColumn';
 import { VerticalDivider } from './VerticalDivider';
 
 export interface IBrowserSubmenuColumnProps {
@@ -33,6 +37,18 @@ export function BrowserSubmenuColumn({
 }: IBrowserSubmenuColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
+  const popoverCountRef = useRef(0);
+
+  const reportPopoverOpen = useCallback((isOpen: boolean) => {
+    popoverCountRef.current += isOpen ? 1 : -1;
+    popoverCountRef.current = Math.max(0, popoverCountRef.current);
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ reportPopoverOpen }),
+    [reportPopoverOpen],
+  );
 
   const clearHoverTimer = useCallback(() => {
     if (hoverTimerRef.current) {
@@ -49,11 +65,40 @@ export function BrowserSubmenuColumn({
   }, [clearHoverTimer]);
 
   const handleHoverOut = useCallback(() => {
+    if (popoverCountRef.current > 0) return;
     clearHoverTimer();
     setIsHovered(false);
   }, [clearHoverTimer]);
 
   useEffect(() => clearHoverTimer, [clearHoverTimer]);
+
+  // When expanded, monitor pointer position to detect cursor leaving.
+  // Uses coordinate-based check instead of DOM containment because
+  // popovers render via portals outside the sidebar DOM tree.
+  useEffect(() => {
+    if (!isHovered) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      // Don't collapse while a child popover (e.g. context menu) is open
+      if (popoverCountRef.current > 0) return;
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const isInside =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.left + EXPANDED_SUBMENU_WIDTH &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
+      if (!isInside) {
+        clearHoverTimer();
+        setIsHovered(false);
+      }
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    return () =>
+      document.removeEventListener('pointermove', handlePointerMove);
+  }, [isHovered, clearHoverTimer]);
 
   // Check if Browser or MultiTabBrowser is currently selected
   const isBrowserSelected =
@@ -77,17 +122,20 @@ export function BrowserSubmenuColumn({
   }
 
   return (
-    <XStack
-      position="relative"
-      flex={1}
-      onHoverIn={handleHoverIn}
-      onHoverOut={handleHoverOut}
-    >
-      <VerticalDivider />
-      <SubmenuColumn
-        webPageTabBar={webPageTabBarWithProps}
-        isExpanded={isHovered}
-      />
-    </XStack>
+    <BrowserSubmenuContext.Provider value={contextValue}>
+      <XStack
+        ref={containerRef}
+        position="relative"
+        flex={1}
+        onHoverIn={handleHoverIn}
+        onHoverOut={handleHoverOut}
+      >
+        <VerticalDivider />
+        <SubmenuColumn
+          webPageTabBar={webPageTabBarWithProps}
+          isExpanded={isHovered}
+        />
+      </XStack>
+    </BrowserSubmenuContext.Provider>
   );
 }
