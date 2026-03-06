@@ -150,6 +150,10 @@ function AmountCard() {
             token: tokenInfo,
             amount: transfer.amount,
             allowZero: false,
+            minAmount:
+              minTransferAmount && minTransferAmount !== '0'
+                ? minTransferAmount
+                : undefined,
             customErrorMessages: {
               zeroAmount: intl.formatMessage({
                 id: ETranslations.wallet_bulk_send_error_amount_zero,
@@ -159,6 +163,13 @@ function AmountCard() {
                   id: ETranslations.wallet_bulk_send_error_max_decimal_places,
                 },
                 { decimals: tokenInfo.decimals },
+              ),
+              minAmount: intl.formatMessage(
+                { id: ETranslations.send_error_minimum_amount },
+                {
+                  amount: minTransferAmount ?? '0',
+                  token: tokenInfo.symbol,
+                },
               ),
             },
           });
@@ -179,6 +190,7 @@ function AmountCard() {
       transfersInfo,
       tokenInfo,
       setTransferInfoErrors,
+      minTransferAmount,
     ],
   );
 

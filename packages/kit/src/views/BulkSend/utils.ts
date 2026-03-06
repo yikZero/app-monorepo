@@ -367,7 +367,6 @@ export function validateRangeInput({
       !minTransferBN.isZero() &&
       rangeMin !== '' &&
       !minBN.isNaN() &&
-      minBN.isGreaterThan(0) &&
       minBN.isLessThan(minTransferBN)
     ) {
       return appLocale.intl.formatMessage(
