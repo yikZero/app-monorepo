@@ -249,8 +249,8 @@ class ServicePrime extends ServiceBase {
         isLoggedIn: true,
         isLoggedInOnServer: true,
         primeSubscription,
-        subscriptionManageUrl:
-          v.subscriptionManageUrl || serverManagementUrl,
+        // Fallback: use server managementUrl when local SDK hasn't set it yet
+        subscriptionManageUrl: v.subscriptionManageUrl || serverManagementUrl,
         // salt: serverUserInfo.salt,
         // pwdHash: serverUserInfo.pwdHash,
       };
