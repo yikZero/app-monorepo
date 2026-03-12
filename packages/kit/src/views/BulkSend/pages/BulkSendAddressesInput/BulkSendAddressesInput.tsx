@@ -4,7 +4,14 @@ import BigNumber from 'bignumber.js';
 import { isUndefined } from 'lodash';
 import { useIntl } from 'react-intl';
 
-import { Form, Page, YStack, useForm, useMedia } from '@onekeyhq/components';
+import {
+  Dialog,
+  Form,
+  Page,
+  YStack,
+  useForm,
+  useMedia,
+} from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
@@ -70,6 +77,7 @@ function BaseBulkSendAddressesInput() {
     selectedTokenDetail,
     tokenDetailsState,
     bulkSendMode,
+    duplicateAddressCount,
   } = useBulkSendAddressesInputContext();
 
   const media = useMedia();
@@ -318,7 +326,7 @@ function BaseBulkSendAddressesInput() {
     selectedTokenDetail,
   ]);
 
-  const handleSubmit = useCallback(async () => {
+  const navigateToNextStep = useCallback(async () => {
     if (
       !selectedNetworkId ||
       !selectedAccountId ||
@@ -383,6 +391,28 @@ function BaseBulkSendAddressesInput() {
     bulkSendMode,
     isInModal,
   ]);
+
+  const handleSubmit = useCallback(async () => {
+    if (duplicateAddressCount > 0) {
+      Dialog.confirm({
+        icon: 'InfoCircleOutline',
+        tone: 'warning',
+        title: intl.formatMessage({
+          id: ETranslations.global_warning,
+        }),
+        // TODO: add i18n key for this description
+        description: `${duplicateAddressCount} duplicate receiving address(es) detected. Are you sure you want to continue?`,
+        onConfirmText: intl.formatMessage({
+          id: ETranslations.global_continue_anyway,
+        }),
+        onConfirm: () => {
+          void navigateToNextStep();
+        },
+      });
+      return;
+    }
+    await navigateToNextStep();
+  }, [duplicateAddressCount, intl, navigateToNextStep]);
 
   if (availableWallets && availableWallets.length === 0) {
     return (
@@ -484,6 +514,7 @@ function BulkSendAddressesInput() {
   const [bulkSendMode, setBulkSendMode] = useState<EBulkSendMode>(
     EBulkSendMode.OneToMany,
   );
+  const [duplicateAddressCount, setDuplicateAddressCount] = useState(0);
 
   const context = useMemo(
     () => ({
@@ -501,6 +532,8 @@ function BulkSendAddressesInput() {
       setTokenDetailsState,
       bulkSendMode,
       setBulkSendMode,
+      duplicateAddressCount,
+      setDuplicateAddressCount,
     }),
     [
       selectedAccountId,
@@ -517,6 +550,7 @@ function BulkSendAddressesInput() {
       setTokenDetailsState,
       bulkSendMode,
       setBulkSendMode,
+      duplicateAddressCount,
     ],
   );
 
