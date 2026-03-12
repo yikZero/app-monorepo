@@ -363,12 +363,14 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
       setErrors(lineErrors);
 
       // Separate hard errors from warnings (e.g. duplicate addresses)
-      const hardErrors = lineErrors.filter(
-        (e) => e.type !== ELineAnnotationType.Warning,
-      );
-      const warningCount = lineErrors.filter(
-        (e) => e.type === ELineAnnotationType.Warning,
-      ).length;
+      let warningCount = 0;
+      const hardErrors = lineErrors.filter((e) => {
+        if (e.type === ELineAnnotationType.Warning) {
+          warningCount += 1;
+          return false;
+        }
+        return true;
+      });
       setDuplicateAddressCount(warningCount);
 
       // Only block form submission for hard errors

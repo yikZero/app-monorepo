@@ -394,16 +394,20 @@ function BaseBulkSendAddressesInput() {
 
   const handleSubmit = useCallback(async () => {
     if (duplicateAddressCount > 0) {
-      Dialog.confirm({
+      Dialog.show({
         icon: 'InfoCircleOutline',
         tone: 'warning',
         title: intl.formatMessage({
           id: ETranslations.global_warning,
         }),
-        // TODO: add i18n key for this description
-        description: `${duplicateAddressCount} duplicate receiving address(es) detected. Are you sure you want to continue?`,
+        description: intl.formatMessage(
+          {
+            id: ETranslations.wallet_bulk_send_warning_duplicate_addresses_desc,
+          },
+          { count: duplicateAddressCount },
+        ),
         onConfirmText: intl.formatMessage({
-          id: ETranslations.global_continue_anyway,
+          id: ETranslations.global_continue,
         }),
         onConfirm: () => {
           void navigateToNextStep();
