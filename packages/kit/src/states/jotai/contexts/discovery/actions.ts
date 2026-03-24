@@ -467,7 +467,7 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
         const minUnpinnedTimestamp = allTabs
           .filter((t) => !t.isPinned && t.id !== payload.id && t.timestamp)
           .reduce(
-            (min, t) => Math.min(min, t.timestamp!),
+            (min, t) => Math.min(min, t.timestamp ?? min),
             Number.MAX_SAFE_INTEGER,
           );
         if (minUnpinnedTimestamp < Number.MAX_SAFE_INTEGER) {
