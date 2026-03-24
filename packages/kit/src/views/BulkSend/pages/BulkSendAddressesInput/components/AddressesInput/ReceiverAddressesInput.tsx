@@ -1,5 +1,5 @@
 /* eslint-disable no-continue */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import pLimit from 'p-limit';
 import { useIntl } from 'react-intl';
@@ -41,6 +41,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
   } = useBulkSendAddressesInputContext();
   const { network } = useAccountData({ networkId: selectedNetworkId });
   const isEnableTransferAllowList = useIsEnableTransferAllowList();
+  const validationSeqRef = useRef(0);
 
   const { result: vaultSettings } = usePromiseResult(
     async () =>
@@ -149,6 +150,9 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
 
   const handleValidateAddresses = useCallback(
     async (value: string) => {
+      validationSeqRef.current += 1;
+      const seq = validationSeqRef.current;
+
       if (!value) {
         setErrors([]);
         setDuplicateAddressCount(0);
@@ -171,6 +175,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           ),
         });
         setErrors(lineErrors);
+        setDuplicateAddressCount(0);
         return lineErrors[0].message;
       }
 
@@ -386,6 +391,11 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
 
         // Sort errors by line number for consistent display
         lineErrors.sort((a, b) => a.lineNumber - b.lineNumber);
+      }
+
+      // Skip applying side effects if a newer validation has started
+      if (validationSeqRef.current !== seq) {
+        return true;
       }
 
       setErrors(lineErrors);
