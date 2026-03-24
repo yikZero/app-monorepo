@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 
+import type { IAccountDeriveTypes } from '@onekeyhq/kit-bg/src/vaults/types';
 import { EBulkSendMode } from '@onekeyhq/shared/types/bulkSend';
 import type { IToken, ITokenFiat } from '@onekeyhq/shared/types/token';
 
@@ -31,6 +32,8 @@ export type IBulkSendAddressesInputContext = {
   setBulkSendMode: (bulkSendMode: EBulkSendMode) => void;
   duplicateAddressCount: number;
   setDuplicateAddressCount: (count: number) => void;
+  selectedDeriveType: IAccountDeriveTypes | undefined;
+  setSelectedDeriveType: (deriveType: IAccountDeriveTypes | undefined) => void;
 };
 export const BulkSendAddressesInputContext =
   createContext<IBulkSendAddressesInputContext>({
@@ -53,6 +56,8 @@ export const BulkSendAddressesInputContext =
     setBulkSendMode: () => {},
     duplicateAddressCount: 0,
     setDuplicateAddressCount: () => {},
+    selectedDeriveType: undefined,
+    setSelectedDeriveType: () => {},
   });
 
 export const useBulkSendAddressesInputContext = () =>

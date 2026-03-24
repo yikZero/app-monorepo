@@ -8,6 +8,7 @@ import { Form, SizableText, YStack } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useIsEnableTransferAllowList } from '@onekeyhq/kit/src/components/AddressInput/hooks';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
+import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { useDebouncedValidation } from '@onekeyhq/kit/src/views/BulkSend/hooks/useDebouncedValidation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -40,6 +41,25 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
   } = useBulkSendAddressesInputContext();
   const { network } = useAccountData({ networkId: selectedNetworkId });
   const isEnableTransferAllowList = useIsEnableTransferAllowList();
+
+  const { result: vaultSettings } = usePromiseResult(
+    async () =>
+      selectedNetworkId
+        ? backgroundApiProxy.serviceNetwork.getVaultSettings({
+            networkId: selectedNetworkId,
+          })
+        : undefined,
+    [selectedNetworkId],
+  );
+
+  const minTransferAmount = useMemo(() => {
+    if (!vaultSettings || !selectedToken) return '0';
+    return selectedToken.isNative
+      ? (vaultSettings.nativeMinTransferAmount ??
+          vaultSettings.minTransferAmount ??
+          '0')
+      : (vaultSettings.minTransferAmount ?? '0');
+  }, [vaultSettings, selectedToken]);
 
   const [errors, setErrors] = useState<ILineError[]>([]);
 
@@ -80,6 +100,10 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
         token: selectedToken,
         amount,
         allowZero: false,
+        minAmount:
+          minTransferAmount && minTransferAmount !== '0'
+            ? minTransferAmount
+            : undefined,
         customErrorMessages: {
           emptyAmount: intl.formatMessage({
             id: ETranslations.wallet_bulk_send_error_invalid_amount,
@@ -93,6 +117,10 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
           zeroAmount: intl.formatMessage({
             id: ETranslations.wallet_bulk_send_error_amount_zero,
           }),
+          minAmount: intl.formatMessage(
+            { id: ETranslations.send_error_minimum_amount },
+            { amount: minTransferAmount, token: selectedToken.symbol },
+          ),
           decimalPlaces: intl.formatMessage(
             {
               id: ETranslations.wallet_bulk_send_error_max_decimal_places,
@@ -108,7 +136,7 @@ function ReceiverAddressesInput({ maxLines }: IReceiverAddressesInputProps) {
 
       return true;
     },
-    [intl, selectedToken],
+    [intl, selectedToken, minTransferAmount],
   );
 
   const parseLineMode = useCallback(
