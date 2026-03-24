@@ -214,6 +214,7 @@ const DesktopWebView = forwardRef(
 
         const didFinishLoad = (e: any) => {
           clearLoadTimeout();
+          setDesktopLoadError(false);
           onDidFinishLoad?.();
           onLoadEnd?.(e);
         };

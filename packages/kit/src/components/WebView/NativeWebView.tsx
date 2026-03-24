@@ -25,10 +25,7 @@ import uriUtils, {
 } from '@onekeyhq/shared/src/utils/uriUtils';
 
 import ErrorView from './ErrorView';
-import {
-  WEBVIEW_LOAD_TIMEOUT_MS,
-  createMessageInjectedScript,
-} from './utils';
+import { WEBVIEW_LOAD_TIMEOUT_MS, createMessageInjectedScript } from './utils';
 
 import type { IInpageProviderWebViewProps, IWebViewRef } from './types';
 import type { IWebViewWrapperRef } from '@onekeyfe/onekey-cross-webview';
@@ -227,6 +224,7 @@ const NativeWebView = forwardRef(
       (event: any) => {
         if (isUnmountingRef.current) return;
         clearLoadTimeout();
+        setLoadTimeoutError(false);
         onLoad?.(event);
       },
       [clearLoadTimeout, onLoad],
@@ -236,6 +234,7 @@ const NativeWebView = forwardRef(
       (event: any) => {
         if (isUnmountingRef.current) return;
         clearLoadTimeout();
+        setLoadTimeoutError(false);
         onLoadEnd?.(event);
       },
       [clearLoadTimeout, onLoadEnd],
