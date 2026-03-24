@@ -25,10 +25,7 @@ import {
 } from '@onekeyhq/shared/src/utils/uriUtils';
 
 import ErrorView from './ErrorView';
-import {
-  WEBVIEW_LOAD_TIMEOUT_MS,
-  createMessageInjectedScript,
-} from './utils';
+import { WEBVIEW_LOAD_TIMEOUT_MS, createMessageInjectedScript } from './utils';
 
 import type {
   IElectronWebView,
@@ -178,7 +175,9 @@ const DesktopWebView = forwardRef(
         };
 
         const innerHandleDidFailLoad = (event: any) => {
-          clearLoadTimeout();
+          if (event.isMainFrame) {
+            clearLoadTimeout();
+          }
           if (event.errorCode !== -3) {
             // TODO iframe error also show ErrorView
             //      testing www.163.com
