@@ -258,7 +258,7 @@ export function DesktopTabItem(
           <IconButton
             size="small"
             icon={closeButtonIcon ?? 'CrossedSmallOutline'}
-            {...(closeButtonIcon ? { iconSize: '$4' } : {})}
+            {...(closeButtonIcon ? { iconSize: '$4', p: '$1' } : { p: '$0.5' })}
             variant="tertiary"
             focusVisibleStyle={undefined}
             title={
@@ -270,7 +270,6 @@ export function DesktopTabItem(
                 </Tooltip.Text>
               )
             }
-            p="$0.5"
             m={-3}
             testID="browser-bar-options"
             onPress={onClose}
