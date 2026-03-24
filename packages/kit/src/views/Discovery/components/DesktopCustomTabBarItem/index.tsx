@@ -233,7 +233,7 @@ function DesktopCustomTabBarItem({
         id={id}
         actionList={actionListItems}
         onClose={closeOrUnpinTab}
-        closeButtonIcon={tab?.isPinned ? 'ThumbtackSolid' : undefined}
+        closeButtonIcon={tab?.isPinned ? 'ThumbtackOutline' : undefined}
         closeButtonTitle={closeButtonTitle}
         alwaysShowCloseButton={!!tab?.isPinned}
         tabBarStyle={
