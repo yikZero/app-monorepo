@@ -258,7 +258,7 @@ export function DesktopTabItem(
           <IconButton
             size="small"
             icon={closeButtonIcon ?? 'CrossedSmallOutline'}
-            {...(closeButtonIcon ? { iconSize: '$3.5' } : {})}
+            {...(closeButtonIcon ? { iconSize: '$4' } : {})}
             variant="tertiary"
             focusVisibleStyle={undefined}
             title={
