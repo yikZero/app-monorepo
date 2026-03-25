@@ -4,7 +4,14 @@ import BigNumber from 'bignumber.js';
 import { isUndefined } from 'lodash';
 import { useIntl } from 'react-intl';
 
-import { Form, Page, YStack, useForm, useMedia } from '@onekeyhq/components';
+import {
+  Dialog,
+  Form,
+  Page,
+  YStack,
+  useForm,
+  useMedia,
+} from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
@@ -12,6 +19,7 @@ import { useAppRoute } from '@onekeyhq/kit/src/hooks/useAppRoute';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
 import { EmptyNoWalletView } from '@onekeyhq/kit/src/views/AccountManagerStacks/pages/AccountSelectorStack/WalletDetails/EmptyView';
+import type { IAccountDeriveTypes } from '@onekeyhq/kit-bg/src/vaults/types';
 import {
   POLLING_DEBOUNCE_INTERVAL,
   POLLING_INTERVAL_FOR_TOKEN,
@@ -70,6 +78,8 @@ function BaseBulkSendAddressesInput() {
     selectedTokenDetail,
     tokenDetailsState,
     bulkSendMode,
+    duplicateAddressCount,
+    setSelectedDeriveType,
   } = useBulkSendAddressesInputContext();
 
   const media = useMedia();
@@ -318,7 +328,7 @@ function BaseBulkSendAddressesInput() {
     selectedTokenDetail,
   ]);
 
-  const handleSubmit = useCallback(async () => {
+  const navigateToNextStep = useCallback(async () => {
     if (
       !selectedNetworkId ||
       !selectedAccountId ||
@@ -383,6 +393,32 @@ function BaseBulkSendAddressesInput() {
     bulkSendMode,
     isInModal,
   ]);
+
+  const handleSubmit = useCallback(async () => {
+    if (duplicateAddressCount > 0) {
+      Dialog.show({
+        icon: 'InfoCircleOutline',
+        tone: 'warning',
+        title: intl.formatMessage({
+          id: ETranslations.global_warning,
+        }),
+        description: intl.formatMessage(
+          {
+            id: ETranslations.wallet_bulk_send_warning_duplicate_addresses_desc,
+          },
+          { count: duplicateAddressCount },
+        ),
+        onConfirmText: intl.formatMessage({
+          id: ETranslations.global_continue,
+        }),
+        onConfirm: () => {
+          void navigateToNextStep();
+        },
+      });
+      return;
+    }
+    await navigateToNextStep();
+  }, [duplicateAddressCount, intl, navigateToNextStep]);
 
   if (availableWallets && availableWallets.length === 0) {
     return (
@@ -484,6 +520,10 @@ function BulkSendAddressesInput() {
   const [bulkSendMode, setBulkSendMode] = useState<EBulkSendMode>(
     EBulkSendMode.OneToMany,
   );
+  const [duplicateAddressCount, setDuplicateAddressCount] = useState(0);
+  const [selectedDeriveType, setSelectedDeriveType] = useState<
+    IAccountDeriveTypes | undefined
+  >(undefined);
 
   const context = useMemo(
     () => ({
@@ -501,6 +541,10 @@ function BulkSendAddressesInput() {
       setTokenDetailsState,
       bulkSendMode,
       setBulkSendMode,
+      duplicateAddressCount,
+      setDuplicateAddressCount,
+      selectedDeriveType,
+      setSelectedDeriveType,
     }),
     [
       selectedAccountId,
@@ -517,6 +561,8 @@ function BulkSendAddressesInput() {
       setTokenDetailsState,
       bulkSendMode,
       setBulkSendMode,
+      duplicateAddressCount,
+      selectedDeriveType,
     ],
   );
 
