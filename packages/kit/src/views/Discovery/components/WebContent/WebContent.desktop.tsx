@@ -97,16 +97,14 @@ function WebContent({ id, url }: IWebContentProps) {
   const onPageFaviconUpdated = useCallback(
     (e: PageFaviconUpdatedEvent) => {
       if (e.favicons.length > 0) {
-        const tabData = getWebTabById(id);
-        const newOrigin = uriUtils.getOriginFromUrl({ url: e.favicons[0] });
+        const newFavicon = e.favicons[0];
+        const newOrigin = uriUtils.getOriginFromUrl({ url: newFavicon });
+        if (!newOrigin) return;
         const oldOrigin = uriUtils.getOriginFromUrl({
-          url: tabData?.favicon ?? '',
+          url: getWebTabById(id)?.favicon ?? '',
         });
-        if (!tabData?.favicon || !newOrigin || newOrigin !== oldOrigin) {
-          setWebTabData({
-            id,
-            favicon: e.favicons[0],
-          });
+        if (newOrigin !== oldOrigin) {
+          setWebTabData({ id, favicon: newFavicon });
         }
       }
     },
