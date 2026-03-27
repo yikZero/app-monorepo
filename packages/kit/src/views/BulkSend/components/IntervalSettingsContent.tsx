@@ -36,7 +36,7 @@ function useIntervalLabels() {
     }),
     specifiedDesc: intl.formatMessage(
       { id: ETranslations.wallet_bulk_send_interval_specified_desc },
-      { max: BULK_SEND_INTERVAL_MAX_SECONDS },
+      { maxSeconds: BULK_SEND_INTERVAL_MAX_SECONDS },
     ),
     noneDesc: intl.formatMessage({
       id: ETranslations.wallet_bulk_send_interval_none_desc,
