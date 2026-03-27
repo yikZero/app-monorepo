@@ -120,10 +120,7 @@ function TranslateSettings() {
           value={isCustomLanguage ? 'custom' : 'auto'}
           options={targetLanguageOptions}
           onChange={(v) =>
-            updateSetting(
-              'targetLanguage',
-              v === 'auto' ? 'auto' : intl.locale,
-            )
+            updateSetting('targetLanguage', v === 'auto' ? 'auto' : intl.locale)
           }
         />
         {isCustomLanguage ? (
@@ -133,7 +130,7 @@ function TranslateSettings() {
             })}
             items={customLanguageOptions}
             value={settings.targetLanguage}
-            onChange={(v) => updateSetting('targetLanguage', v as string)}
+            onChange={(v) => updateSetting('targetLanguage', v)}
           />
         ) : null}
       </YStack>
@@ -162,7 +159,9 @@ function useTargetLanguageLabel() {
 
   return useMemo(() => {
     const localeValue =
-      settings.targetLanguage === 'auto' ? intl.locale : settings.targetLanguage;
+      settings.targetLanguage === 'auto'
+        ? intl.locale
+        : settings.targetLanguage;
     return (
       LOCALES_OPTION.find((o) => o.value === localeValue)?.label ?? localeValue
     );
@@ -189,7 +188,12 @@ export function TranslatePopoverContent({
 
   if (showSettings) {
     return (
-      <YStack gap="$5" px="$5" pb="$5" pt={platformEnv.isDesktop ? '$5' : undefined}>
+      <YStack
+        gap="$5"
+        px="$5"
+        pb="$5"
+        pt={platformEnv.isDesktop ? '$5' : undefined}
+      >
         <Button
           variant="tertiary"
           size="small"
