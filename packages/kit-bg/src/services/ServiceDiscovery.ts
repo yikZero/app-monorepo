@@ -210,6 +210,8 @@ class ServiceDiscovery extends ServiceBase {
   _checkUrlSecurity = memoizee(
     async (params: { url: string; from: 'app' | 'script' }) => {
       const client = await this.getClient(EServiceEndpointEnum.Utility);
+      const authToken =
+        await this.backgroundApi.simpleDb.prime.getAuthToken();
       const res = await client.get<{ data: IHostSecurity }>(
         '/utility/v1/discover/check-host',
         {
@@ -218,6 +220,9 @@ class ServiceDiscovery extends ServiceBase {
             from: params.from,
           },
           timeout: 5000,
+          headers: authToken
+            ? { 'X-Onekey-Request-Token': authToken }
+            : {},
         },
       );
       return res.data.data;
