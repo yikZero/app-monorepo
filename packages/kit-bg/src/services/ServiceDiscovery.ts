@@ -210,8 +210,13 @@ class ServiceDiscovery extends ServiceBase {
   _checkUrlSecurity = memoizee(
     async (params: { url: string; from: 'app' | 'script' }) => {
       const client = await this.getClient(EServiceEndpointEnum.Utility);
-      const authToken =
-        await this.backgroundApi.simpleDb.prime.getAuthToken();
+      let authToken = '';
+      try {
+        authToken =
+          await this.backgroundApi.simpleDb.prime.getAuthToken();
+      } catch {
+        // ignore auth token errors, proceed without it
+      }
       const res = await client.get<{ data: IHostSecurity }>(
         '/utility/v1/discover/check-host',
         {
