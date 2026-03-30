@@ -17,7 +17,6 @@ import {
   XStack,
   YStack,
   useSafeAreaInsets,
-  useScrollView,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
@@ -119,8 +118,6 @@ export default function PrimeDashboard({
   isFocusedRef.current = isFocused;
 
   const navigation = useAppNavigation();
-  const { scrollViewRef } = useScrollView();
-  const hasScrolledRef = useRef(false);
 
   const pendingSubscribeRef = useRef<{
     subscriptionPeriod: ISubscriptionPeriod;
@@ -159,11 +156,8 @@ export default function PrimeDashboard({
     if (isPrimeSubscriptionActive) {
       return false;
     }
-    if (!user?.onekeyUserId) {
-      return false;
-    }
     return true;
-  }, [isPrimeSubscriptionActive, shouldShowConfirmButton, user?.onekeyUserId]);
+  }, [isPrimeSubscriptionActive, shouldShowConfirmButton]);
 
   const { getPackagesWeb: getPackagesWeb2 } = usePrimePaymentMethodsWeb();
   // const getPackagesWeb2 = useCallback(async () => {
@@ -417,21 +411,49 @@ export default function PrimeDashboard({
   //   return isPrimeSubscriptionActive && platformEnv.isNativeIOS;
   // }, [isPrimeSubscriptionActive]);
 
-  const renderLoginPrompt = !isLoggedInMaybe ? (
-    <SizableText
-      size="$bodyMd"
-      color="$textInteractive"
-      cursor="pointer"
-      hoverStyle={{ opacity: 0.8 }}
-      onPress={() => {
-        void loginOneKeyId();
-      }}
-    >
-      {intl.formatMessage({
-        id: ETranslations.prime_already_subscribed_log_in,
-      })}
-    </SizableText>
-  ) : null;
+  const renderLoginPrompt = !isLoggedInMaybe
+    ? (() => {
+        const fullText = intl.formatMessage({
+          id: ETranslations.prime_already_subscribed_log_in,
+        });
+        const separatorIndex = fullText.search(/[?？]/);
+        if (separatorIndex === -1) {
+          return (
+            <SizableText
+              size="$bodyMd"
+              color="$textInteractive"
+              cursor="pointer"
+              hoverStyle={{ opacity: 0.8 }}
+              onPress={() => {
+                void loginOneKeyId();
+              }}
+            >
+              {fullText}
+            </SizableText>
+          );
+        }
+        const prefix = fullText.slice(0, separatorIndex + 1);
+        const action = fullText.slice(separatorIndex + 1).trim();
+        return (
+          <XStack gap="$1" alignItems="center">
+            <SizableText size="$bodyMd" color="$textSubdued">
+              {prefix}
+            </SizableText>
+            <SizableText
+              size="$bodyMd"
+              color="$textInteractive"
+              cursor="pointer"
+              hoverStyle={{ opacity: 0.8 }}
+              onPress={() => {
+                void loginOneKeyId();
+              }}
+            >
+              {action}
+            </SizableText>
+          </XStack>
+        );
+      })()
+    : null;
 
   return (
     <>
@@ -485,26 +507,12 @@ export default function PrimeDashboard({
             ) : null}
 
             {isPurchaseReady ? (
-              <Stack
-                onLayout={(e) => {
-                  if (fromFeature && !hasScrolledRef.current) {
-                    hasScrolledRef.current = true;
-                    setTimeout(() => {
-                      scrollViewRef?.current?.scrollTo({
-                        y: e.nativeEvent.layout.y,
-                        animated: true,
-                      });
-                    }, 300);
-                  }
-                }}
-              >
-                <PrimeBenefitsList
-                  selectedSubscriptionPeriod={selectedSubscriptionPeriod}
-                  networkId={route.params?.networkId}
-                  serverUserInfo={serverUserInfo}
-                  fromFeature={fromFeature}
-                />
-              </Stack>
+              <PrimeBenefitsList
+                selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+                networkId={route.params?.networkId}
+                serverUserInfo={serverUserInfo}
+                fromFeature={fromFeature}
+              />
             ) : (
               <Spinner my="$10" />
             )}
@@ -550,7 +558,7 @@ export default function PrimeDashboard({
 
           {shouldShowConfirmButton ? (
             <Page.Footer>
-              <Stack p="$5" gap="$4">
+              <Stack p="$5" $gtMd={{ pt: '$2' }} gap="$4">
                 {/* Desktop layout: row with login left, subscribe right */}
                 <XStack
                   display="none"
