@@ -69,6 +69,7 @@ import { UniversalSearchProviderMirror } from './UniversalSearchProviderMirror';
 interface IUniversalSection {
   tabIndex: number;
   title: string;
+  type: EUniversalSearchType;
   data: IUniversalSearchResultItem[];
   sliceData?: IUniversalSearchResultItem[];
   showMore?: boolean;
@@ -276,6 +277,7 @@ export function UniversalSearch({
     if (result?.[EUniversalSearchType.V2MarketToken]?.items?.length) {
       searchResultSections.push({
         tabIndex: 2,
+        type: EUniversalSearchType.V2MarketToken,
         title: intl.formatMessage({ id: ETranslations.market_trending }),
         data: result[EUniversalSearchType.V2MarketToken]
           .items as IUniversalSearchResultItem[],
@@ -308,6 +310,7 @@ export function UniversalSearch({
       );
       searchResultSections.push({
         tabIndex: 2,
+        type: EUniversalSearchType.V2MarketToken,
         title: intl.formatMessage({ id: ETranslations.market_trending }),
         data: v2Items as IUniversalSearchResultItem[],
       });
@@ -389,6 +392,7 @@ export function UniversalSearch({
           ?.items as IUniversalSearchResultItem[];
         searchResultSections.push({
           tabIndex: getTabIndexForSearchType(EUniversalSearchType.Address),
+          type: EUniversalSearchType.Address,
           title: intl.formatMessage({
             id: ETranslations.global_universal_search_tabs_wallets,
           }),
@@ -404,6 +408,7 @@ export function UniversalSearch({
           tabIndex: getTabIndexForSearchType(
             EUniversalSearchType.V2MarketToken,
           ),
+          type: EUniversalSearchType.V2MarketToken,
           title: intl.formatMessage({
             id: ETranslations.global_market,
           }),
@@ -418,6 +423,7 @@ export function UniversalSearch({
           ?.items as IUniversalSearchResultItem[];
         searchResultSections.push({
           tabIndex: getTabIndexForSearchType(EUniversalSearchType.Perp),
+          type: EUniversalSearchType.Perp,
           title: intl.formatMessage({
             id: ETranslations.global_perp,
           }),
@@ -430,6 +436,7 @@ export function UniversalSearch({
           ?.items as IUniversalSearchResultItem[];
         searchResultSections.push({
           tabIndex: getTabIndexForSearchType(EUniversalSearchType.MarketToken),
+          type: EUniversalSearchType.MarketToken,
           title: intl.formatMessage({
             id: ETranslations.global_universal_search_tabs_tokens,
           }),
@@ -444,6 +451,7 @@ export function UniversalSearch({
           tabIndex: getTabIndexForSearchType(
             EUniversalSearchType.AccountAssets,
           ),
+          type: EUniversalSearchType.AccountAssets,
           title: intl.formatMessage({
             id: ETranslations.global_universal_search_tabs_my_assets,
           }),
@@ -456,6 +464,7 @@ export function UniversalSearch({
           ?.items as IUniversalSearchResultItem[];
         searchResultSections.push({
           tabIndex: getTabIndexForSearchType(EUniversalSearchType.Dapp),
+          type: EUniversalSearchType.Dapp,
           title: intl.formatMessage({
             id: ETranslations.global_universal_search_tabs_dapps,
           }),
@@ -469,25 +478,22 @@ export function UniversalSearch({
         const data = settingsResults as IUniversalSearchResultItem[];
         searchResultSections.push({
           tabIndex: getTabIndexForSearchType(EUniversalSearchType.Settings),
+          type: EUniversalSearchType.Settings,
           title: intl.formatMessage({
             id: ETranslations.global_settings,
           }),
           ...generateDataFn(data),
         });
-
-        // Track settings exposure
-        defaultLogger.universalSearch.search.settingsSearchExposure({
-          searchText: input,
-          exposedItems: settingsResults.map((item) => {
-            const {
-              settingRoute,
-              sectionName,
-              title: itemTitle,
-            } = item.payload;
-            return settingRoute ?? sectionName ?? itemTitle;
-          }),
-        });
       }
+
+      // Track exposure for all result types
+      searchResultSections.forEach((section) => {
+        defaultLogger.universalSearch.search.universalSearchExposure({
+          searchText: input,
+          type: section.type,
+          exposedCount: section.data.length,
+        });
+      });
 
       setSections(searchResultSections);
       setSearchStatus(ESearchStatus.done);
@@ -609,6 +615,7 @@ export function UniversalSearch({
             <UniversalSearchAddressItem
               item={item}
               contextNetworkId={activeAccount?.network?.id}
+              getSearchInput={getSearchInput}
             />
           );
         case EUniversalSearchType.MarketToken:
@@ -616,6 +623,7 @@ export function UniversalSearch({
             <UniversalSearchMarketTokenItem
               item={item}
               searchStatus={searchStatus}
+              getSearchInput={getSearchInput}
             />
           );
         case EUniversalSearchType.V2MarketToken:
@@ -629,6 +637,7 @@ export function UniversalSearch({
               <UniversalSearchV2MarketTokenItem
                 item={item}
                 isTrending={searchStatus === ESearchStatus.init}
+                getSearchInput={getSearchInput}
               />
             </>
           );
@@ -637,6 +646,7 @@ export function UniversalSearch({
             <UniversalSearchAccountAssetItem
               item={item}
               allAggregateTokenMap={allAggregateTokenMap}
+              getSearchInput={getSearchInput}
             />
           );
         case EUniversalSearchType.Dapp:
@@ -647,7 +657,12 @@ export function UniversalSearch({
             />
           );
         case EUniversalSearchType.Perp:
-          return <UniversalSearchPerpItem item={item} />;
+          return (
+            <UniversalSearchPerpItem
+              item={item}
+              getSearchInput={getSearchInput}
+            />
+          );
         case EUniversalSearchType.Settings:
           return (
             <UniversalSearchSettingsItem

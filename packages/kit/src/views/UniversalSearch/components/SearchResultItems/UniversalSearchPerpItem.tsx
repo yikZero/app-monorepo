@@ -6,6 +6,7 @@ import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import {
   EPerpPageEnterSource,
   setPerpPageEnterSource,
@@ -16,10 +17,12 @@ import type { IUniversalSearchPerp } from '@onekeyhq/shared/types/search';
 
 interface IUniversalSearchPerpItemProps {
   item: IUniversalSearchPerp;
+  getSearchInput: () => string;
 }
 
 export function UniversalSearchPerpItem({
   item,
+  getSearchInput,
 }: IUniversalSearchPerpItemProps) {
   const navigation = useAppNavigation();
   const universalSearchActions = useUniversalSearchActions();
@@ -35,6 +38,13 @@ export function UniversalSearchPerpItem({
   const tag = isPerpsType ? `${maxLeverage}X` : 'xyz';
 
   const handlePress = useCallback(() => {
+    defaultLogger.universalSearch.search.universalSearchClick({
+      searchText: getSearchInput(),
+      type: item.type,
+      itemId: coin,
+      itemTitle: name,
+    });
+
     setPerpPageEnterSource(EPerpPageEnterSource.UniversalSearch);
     setTimeout(async () => {
       navigation.switchTab(ETabRoutes.Perp);
@@ -55,7 +65,15 @@ export function UniversalSearchPerpItem({
         });
       }, 10);
     }, 80);
-  }, [coin, name, assetType, item.type, navigation, universalSearchActions]);
+  }, [
+    coin,
+    getSearchInput,
+    item.type,
+    name,
+    assetType,
+    navigation,
+    universalSearchActions,
+  ]);
 
   return (
     <ListItem
