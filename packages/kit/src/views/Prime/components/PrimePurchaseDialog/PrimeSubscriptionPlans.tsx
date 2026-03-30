@@ -67,7 +67,13 @@ function PrimeSubscriptionPlanItem({
       <SizableText size="$bodyMdMedium" color="$textSubdued">
         {title}
       </SizableText>
-      <SizableText size="$headingLg" mt="$0.5">
+      <SizableText
+        size="$headingLg"
+        mt="$0.5"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
         {intl.formatMessage(
           {
             id: ETranslations.prime_prime_price_per_month,

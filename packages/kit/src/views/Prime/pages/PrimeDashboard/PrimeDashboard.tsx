@@ -512,12 +512,20 @@ export default function PrimeDashboard({
                   fromFeature
                     ? (e) => {
                         if (!hasScrolledRef.current) {
+                          const layout = e?.nativeEvent?.layout;
+                          if (!layout) return;
                           hasScrolledRef.current = true;
+                          const layoutY = layout.y ?? 0;
                           setTimeout(() => {
-                            scrollViewRef?.current?.scrollTo({
-                              y: Math.max(0, e.nativeEvent.layout.y - 120),
-                              animated: true,
-                            });
+                            if (
+                              typeof scrollViewRef?.current?.scrollTo ===
+                              'function'
+                            ) {
+                              scrollViewRef.current.scrollTo({
+                                y: Math.max(0, layoutY - 120),
+                                animated: true,
+                              });
+                            }
                           }, 300);
                         }
                       }
@@ -537,15 +545,13 @@ export default function PrimeDashboard({
 
             <YStack px="$5" py="$4" gap="$4">
               {platformEnv.isNativeIOS ? (
-                <>
-                  <Stack>
-                    <SizableText size="$bodyMd" color="$textSubdued">
-                      {intl.formatMessage({
-                        id: ETranslations.prime_subscription_manage_app_store,
-                      })}
-                    </SizableText>
-                  </Stack>
-                </>
+                <Stack>
+                  <SizableText size="$bodyMd" color="$textSubdued">
+                    {intl.formatMessage({
+                      id: ETranslations.prime_subscription_manage_app_store,
+                    })}
+                  </SizableText>
+                </Stack>
               ) : null}
               {!isPrimeSubscriptionActive &&
               isLoggedIn &&
@@ -565,6 +571,9 @@ export default function PrimeDashboard({
                   </SizableText>
                 </Stack>
               ) : null}
+              <Stack alignItems="center" $gtMd={{ alignItems: 'flex-start' }}>
+                <PrimeTermsAndPrivacy />
+              </Stack>
             </YStack>
 
             {platformEnv.isDev ? (
@@ -577,7 +586,7 @@ export default function PrimeDashboard({
           {shouldShowConfirmButton ? (
             <Page.Footer>
               <FooterGradient />
-              <Stack p="$5" $gtMd={{ pt: '$1' }} gap="$4">
+              <Stack p="$5" pt="$1" gap="$4">
                 {/* Desktop layout: row with login left, subscribe right */}
                 <XStack
                   display="none"
