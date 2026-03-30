@@ -199,10 +199,6 @@ export default function PrimeDashboard({
           return [];
         }
 
-        if (!user?.onekeyUserId) {
-          return [];
-        }
-
         // TODO There was a problem with the store.
         return errorToastUtils.withErrorAutoToast(async () => {
           try {
@@ -273,7 +269,6 @@ export default function PrimeDashboard({
         getPackagesWeb,
         isPurchaseReady,
         shouldShowSubscriptionPlans,
-        user?.onekeyUserId,
       ],
       {
         watchLoading: true,
