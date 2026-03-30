@@ -607,10 +607,7 @@ export default function PrimeDashboard({
                 </YStack>
 
                 {/* Terms & Privacy — always at bottom on both platforms */}
-                <Stack
-                  alignItems="center"
-                  $gtMd={{ alignItems: 'flex-start' }}
-                >
+                <Stack alignItems="center" $gtMd={{ alignItems: 'flex-start' }}>
                   <PrimeTermsAndPrivacy />
                 </Stack>
               </Stack>
