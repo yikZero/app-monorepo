@@ -134,10 +134,7 @@ export function PrimeSubscriptionPlans({
       );
     }
     return (
-      <SizableText
-        size="$bodyMd"
-        color="$textSubdued"
-      >
+      <SizableText size="$bodyMd" color="$textSubdued">
         {text}
       </SizableText>
     );

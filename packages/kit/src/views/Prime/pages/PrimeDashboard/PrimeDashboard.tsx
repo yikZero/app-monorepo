@@ -326,10 +326,32 @@ export default function PrimeDashboard({
     [isSubscribeLazyLoading, subscribeButtonEnabled],
   );
 
-  const subscribeButtonText = useMemo(
-    () => intl.formatMessage({ id: ETranslations.prime_subscribe }),
-    [intl],
+  const selectedPackage = useMemo(
+    () =>
+      packages?.find(
+        (p) => p.subscriptionPeriod === selectedSubscriptionPeriod,
+      ),
+    [packages, selectedSubscriptionPeriod],
   );
+
+  const subscribeButtonText = useMemo(() => {
+    if (!selectedPackage) {
+      return intl.formatMessage({ id: ETranslations.prime_subscribe });
+    }
+    const isYearly = selectedPackage.subscriptionPeriod === 'P1Y';
+    return intl.formatMessage(
+      {
+        id: isYearly
+          ? ETranslations.prime_subscribe_yearly_price
+          : ETranslations.prime_subscribe_monthly_price,
+      },
+      {
+        price: isYearly
+          ? selectedPackage.pricePerYearString
+          : selectedPackage.pricePerMonthString,
+      },
+    );
+  }, [intl, selectedPackage]);
 
   const subscribe = useCallback(async () => {
     if (!subscribeButtonEnabled) {
@@ -571,9 +593,6 @@ export default function PrimeDashboard({
                   </SizableText>
                 </Stack>
               ) : null}
-              <Stack alignItems="center" $gtMd={{ alignItems: 'flex-start' }}>
-                <PrimeTermsAndPrivacy />
-              </Stack>
             </YStack>
 
             {platformEnv.isDev ? (
