@@ -16,6 +16,7 @@ import {
   Theme,
   YStack,
   useSafeAreaInsets,
+  useScrollView,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
@@ -116,6 +117,8 @@ export default function PrimeDashboard({
   isFocusedRef.current = isFocused;
 
   const navigation = useAppNavigation();
+  const { scrollViewRef } = useScrollView();
+  const hasScrolledRef = useRef(false);
 
   useEffect(() => {
     const fn = async () => {
@@ -394,11 +397,26 @@ export default function PrimeDashboard({
             ) : null}
 
             {isPurchaseReady ? (
-              <PrimeBenefitsList
-                selectedSubscriptionPeriod={selectedSubscriptionPeriod}
-                networkId={route.params?.networkId}
-                serverUserInfo={serverUserInfo}
-              />
+              <Stack
+                onLayout={(e) => {
+                  if (fromFeature && !hasScrolledRef.current) {
+                    hasScrolledRef.current = true;
+                    setTimeout(() => {
+                      scrollViewRef?.current?.scrollTo({
+                        y: e.nativeEvent.layout.y,
+                        animated: true,
+                      });
+                    }, 300);
+                  }
+                }}
+              >
+                <PrimeBenefitsList
+                  selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+                  networkId={route.params?.networkId}
+                  serverUserInfo={serverUserInfo}
+                  fromFeature={fromFeature}
+                />
+              </Stack>
             ) : (
               <Spinner my="$10" />
             )}
