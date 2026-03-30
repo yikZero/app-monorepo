@@ -212,8 +212,7 @@ class ServiceDiscovery extends ServiceBase {
       const client = await this.getClient(EServiceEndpointEnum.Utility);
       let authToken = '';
       try {
-        authToken =
-          await this.backgroundApi.simpleDb.prime.getAuthToken();
+        authToken = await this.backgroundApi.simpleDb.prime.getAuthToken();
       } catch {
         // ignore auth token errors, proceed without it
       }
@@ -225,9 +224,7 @@ class ServiceDiscovery extends ServiceBase {
             from: params.from,
           },
           timeout: 5000,
-          headers: authToken
-            ? { 'X-Onekey-Request-Token': authToken }
-            : {},
+          headers: authToken ? { 'X-Onekey-Request-Token': authToken } : {},
         },
       );
       return res.data.data;
