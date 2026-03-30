@@ -53,8 +53,8 @@ function PrimeBanner({ isPrimeActive = false }: { isPrimeActive?: boolean }) {
 
   return (
     <YStack pt="$5" gap="$2" alignItems="center">
-      <Icon size="$20" name="OnekeyPrimeDarkColored" />
-      <SizableText size="$heading3xl" mt="$-1" textAlign="center">
+      <Icon size="$14" name="OnekeyPrimeDarkColored" />
+      <SizableText size="$heading2xl" mt="$-1" textAlign="center">
         OneKey Prime
       </SizableText>
       <SizableText
@@ -282,12 +282,6 @@ export default function PrimeDashboard({
     return webPackages || [];
   }, [sdkPackages, webPackages]);
 
-  const selectedPackage = useMemo(() => {
-    return packages?.find(
-      (p) => p.subscriptionPeriod === selectedSubscriptionPeriod,
-    );
-  }, [packages, selectedSubscriptionPeriod]);
-
   const [isSubscribeLazyLoading, setIsSubscribeLazyLoading] = useState(false);
   const isSubscribeLazyLoadingRef = useRef(isSubscribeLazyLoading);
   isSubscribeLazyLoadingRef.current = isSubscribeLazyLoading;
@@ -310,22 +304,10 @@ export default function PrimeDashboard({
     [isSubscribeLazyLoading, subscribeButtonEnabled],
   );
 
-  const subscribeButtonText = useMemo(() => {
-    if (!packages?.length) {
-      return intl.formatMessage({
-        id: ETranslations.prime_subscribe,
-      });
-    }
-    return selectedSubscriptionPeriod === 'P1Y'
-      ? intl.formatMessage(
-          { id: ETranslations.prime_subscribe_yearly_price },
-          { price: selectedPackage?.pricePerYearString },
-        )
-      : intl.formatMessage(
-          { id: ETranslations.prime_subscribe_monthly_price },
-          { price: selectedPackage?.pricePerMonthString },
-        );
-  }, [packages?.length, selectedSubscriptionPeriod, selectedPackage, intl]);
+  const subscribeButtonText = useMemo(
+    () => intl.formatMessage({ id: ETranslations.prime_subscribe }),
+    [intl],
+  );
 
   const subscribe = useCallback(async () => {
     if (!subscribeButtonEnabled) {
@@ -492,7 +474,7 @@ export default function PrimeDashboard({
             </Stack>
 
             {shouldShowSubscriptionPlans ? (
-              <Stack p="$5" gap="$2">
+              <Stack px="$5" pt="$5" pb="$2" gap="$2">
                 <PrimeSubscriptionPlans
                   packages={packages}
                   selectedSubscriptionPeriod={selectedSubscriptionPeriod}
@@ -553,7 +535,7 @@ export default function PrimeDashboard({
 
           {shouldShowConfirmButton ? (
             <Page.Footer>
-              <Stack p="$5" $gtMd={{ pt: '$2' }} gap="$4">
+              <Stack p="$5" $gtMd={{ pt: '$1' }} gap="$4">
                 {/* Desktop layout: row with login left, subscribe right */}
                 <XStack
                   display="none"
