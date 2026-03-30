@@ -122,6 +122,12 @@ export default function PrimeDashboard({
   const { scrollViewRef } = useScrollView();
   const hasScrolledRef = useRef(false);
 
+  const pendingSubscribeRef = useRef<{
+    subscriptionPeriod: ISubscriptionPeriod;
+  } | null>(null);
+
+  const prevIsLoggedInRef = useRef(isLoggedIn);
+
   useEffect(() => {
     const fn = async () => {
       // isFocused won't be triggered when Login Dialog is open or closed
@@ -314,6 +320,14 @@ export default function PrimeDashboard({
     if (isSubscribeLazyLoadingRef.current) {
       return;
     }
+
+    // If not logged in, store intent so we can resume after login
+    if (!isLoggedIn) {
+      pendingSubscribeRef.current = {
+        subscriptionPeriod: selectedSubscriptionPeriod,
+      };
+    }
+
     setIsSubscribeLazyLoading(true);
     setTimeout(() => {
       setIsSubscribeLazyLoading(false);
@@ -332,7 +346,32 @@ export default function PrimeDashboard({
     selectedSubscriptionPeriod,
     subscribeButtonEnabled,
     fromFeature,
+    isLoggedIn,
   ]);
+
+  useEffect(() => {
+    const wasNotLoggedIn = !prevIsLoggedInRef.current;
+    prevIsLoggedInRef.current = isLoggedIn;
+
+    if (wasNotLoggedIn && isLoggedIn && pendingSubscribeRef.current) {
+      const { subscriptionPeriod } = pendingSubscribeRef.current;
+      pendingSubscribeRef.current = null;
+
+      // Small delay to let auth state fully settle and packages load
+      setTimeout(async () => {
+        try {
+          await ensurePrimeSubscriptionActive({
+            skipDialogConfirm: true,
+            selectedSubscriptionPeriod: subscriptionPeriod,
+            featureName: fromFeature,
+          });
+        } catch {
+          // Login was completed but subscription check may throw
+          // (e.g., user cancelled purchase dialog) — safe to ignore
+        }
+      }, 1000);
+    }
+  }, [isLoggedIn, ensurePrimeSubscriptionActive, fromFeature]);
 
   const isLoggedInMaybe =
     isSupabaseLoggedIn ||
