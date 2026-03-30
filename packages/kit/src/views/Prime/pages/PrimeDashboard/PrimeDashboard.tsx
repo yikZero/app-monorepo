@@ -14,6 +14,7 @@ import {
   Spinner,
   Stack,
   Theme,
+  XStack,
   YStack,
   useSafeAreaInsets,
   useScrollView,
@@ -88,6 +89,7 @@ export default function PrimeDashboard({
     isPrimeSubscriptionActive,
     supabaseUser,
     isSupabaseLoggedIn,
+    loginOneKeyId,
     // logout,
   } = useOneKeyAuth();
 
@@ -462,57 +464,116 @@ export default function PrimeDashboard({
 
           {shouldShowConfirmButton ? (
             <Page.Footer>
-              <Stack
-                flexDirection="row-reverse"
-                justifyContent="space-between"
-                alignItems="center"
-                gap="$2.5"
-                p="$5"
-                $md={{
-                  alignItems: 'flex-start',
-                  flexDirection: 'column',
-                }}
-              >
-                <Page.FooterActions
-                  p="$0"
-                  $md={{
-                    width: '100%',
+              <Stack p="$5" gap="$4">
+                {/* Desktop layout: row with login left, subscribe right */}
+                <XStack
+                  display="none"
+                  $gtMd={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: isLoggedInMaybe
+                      ? 'flex-end'
+                      : 'space-between',
+                    alignItems: 'center',
+                    gap: '$2.5',
                   }}
-                  confirmButtonProps={
-                    shouldShowConfirmButton
-                      ? {
-                          loading: isSubscribeLazyLoading,
-                          disabled: !subscribeButtonEnabled,
-                        }
-                      : undefined
-                  }
-                  onConfirm={shouldShowConfirmButton ? subscribe : undefined}
-                  onConfirmText={(() => {
-                    if (!packages?.length) {
-                      return intl.formatMessage({
-                        id: ETranslations.prime_subscribe,
-                      });
-                    }
-                    return selectedSubscriptionPeriod === 'P1Y'
-                      ? intl.formatMessage(
-                          {
-                            id: ETranslations.prime_subscribe_yearly_price,
-                          },
-                          {
-                            price: selectedPackage?.pricePerYearString,
-                          },
-                        )
-                      : intl.formatMessage(
-                          {
-                            id: ETranslations.prime_subscribe_monthly_price,
-                          },
-                          {
-                            price: selectedPackage?.pricePerMonthString,
-                          },
-                        );
-                  })()}
-                />
-                {shouldShowConfirmButton ? <PrimeTermsAndPrivacy /> : null}
+                >
+                  {!isLoggedInMaybe ? (
+                    <SizableText
+                      size="$bodyMd"
+                      color="$textInteractive"
+                      cursor="pointer"
+                      hoverStyle={{ opacity: 0.8 }}
+                      onPress={() => {
+                        void loginOneKeyId();
+                      }}
+                    >
+                      {intl.formatMessage({
+                        id: ETranslations.prime_already_subscribed_log_in,
+                      })}
+                    </SizableText>
+                  ) : null}
+                  <Page.FooterActions
+                    p="$0"
+                    confirmButtonProps={{
+                      loading: isSubscribeLazyLoading,
+                      disabled: !subscribeButtonEnabled,
+                    }}
+                    onConfirm={subscribe}
+                    onConfirmText={(() => {
+                      if (!packages?.length) {
+                        return intl.formatMessage({
+                          id: ETranslations.prime_subscribe,
+                        });
+                      }
+                      return selectedSubscriptionPeriod === 'P1Y'
+                        ? intl.formatMessage(
+                            { id: ETranslations.prime_subscribe_yearly_price },
+                            { price: selectedPackage?.pricePerYearString },
+                          )
+                        : intl.formatMessage(
+                            { id: ETranslations.prime_subscribe_monthly_price },
+                            { price: selectedPackage?.pricePerMonthString },
+                          );
+                    })()}
+                  />
+                </XStack>
+
+                {/* Mobile layout: column with subscribe, login, terms */}
+                <YStack
+                  display="flex"
+                  gap="$3"
+                  alignItems="center"
+                  $gtMd={{ display: 'none' }}
+                >
+                  <Page.FooterActions
+                    p="$0"
+                    width="100%"
+                    confirmButtonProps={{
+                      loading: isSubscribeLazyLoading,
+                      disabled: !subscribeButtonEnabled,
+                    }}
+                    onConfirm={subscribe}
+                    onConfirmText={(() => {
+                      if (!packages?.length) {
+                        return intl.formatMessage({
+                          id: ETranslations.prime_subscribe,
+                        });
+                      }
+                      return selectedSubscriptionPeriod === 'P1Y'
+                        ? intl.formatMessage(
+                            { id: ETranslations.prime_subscribe_yearly_price },
+                            { price: selectedPackage?.pricePerYearString },
+                          )
+                        : intl.formatMessage(
+                            { id: ETranslations.prime_subscribe_monthly_price },
+                            { price: selectedPackage?.pricePerMonthString },
+                          );
+                    })()}
+                  />
+                  {!isLoggedInMaybe ? (
+                    <SizableText
+                      size="$bodyMd"
+                      color="$textInteractive"
+                      cursor="pointer"
+                      onPress={() => {
+                        void loginOneKeyId();
+                      }}
+                    >
+                      {intl.formatMessage({
+                        id: ETranslations.prime_already_subscribed_log_in,
+                      })}
+                    </SizableText>
+                  ) : null}
+                </YStack>
+
+                {/* Terms & Privacy — always at bottom on both platforms */}
+                <Stack
+                  alignItems="center"
+                  $gtMd={{ alignItems: 'flex-start' }}
+                >
+                  <PrimeTermsAndPrivacy />
+                </Stack>
               </Stack>
             </Page.Footer>
           ) : null}
