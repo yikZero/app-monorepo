@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import { useIntl } from 'react-intl';
 import Animated, {
@@ -17,7 +17,6 @@ import {
   Toast,
   XStack,
   YStack,
-  useScrollView,
 } from '@onekeyhq/components';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
@@ -55,8 +54,6 @@ function PrimeBenefitsItem({
   isHighlighted?: boolean;
 }) {
   const intl = useIntl();
-  const { scrollViewRef } = useScrollView();
-  const hasScrolledRef = useRef(false);
   const highlightOpacity = useSharedValue(isHighlighted ? 1 : 0);
 
   useEffect(() => {
@@ -77,24 +74,7 @@ function PrimeBenefitsItem({
   }));
 
   return (
-    <Animated.View
-      style={highlightStyle}
-      onLayout={
-        isHighlighted
-          ? (e) => {
-              if (!hasScrolledRef.current) {
-                hasScrolledRef.current = true;
-                setTimeout(() => {
-                  scrollViewRef?.current?.scrollTo({
-                    y: Math.max(0, e.nativeEvent.layout.y - 120),
-                    animated: true,
-                  });
-                }, 300);
-              }
-            }
-          : undefined
-      }
-    >
+    <Animated.View style={highlightStyle}>
       <ListItem drillIn onPress={onPress}>
         <YStack borderRadius="$3" borderCurve="continuous" bg="$brand4" p="$2">
           <Icon name={icon} size="$6" color="$brand9" />

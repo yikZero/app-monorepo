@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useIsFocused } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
@@ -8,6 +8,7 @@ import {
   Dialog,
   Icon,
   IconButton,
+  LinearGradient,
   NavCloseButton,
   Page,
   SizableText,
@@ -17,6 +18,8 @@ import {
   XStack,
   YStack,
   useSafeAreaInsets,
+  useScrollView,
+  useTheme,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
@@ -47,6 +50,23 @@ import { PrimeUserInfo } from './PrimeUserInfo';
 
 import type { ISubscriptionPeriod } from '../../hooks/usePrimePaymentTypes';
 import type { RouteProp } from '@react-navigation/core';
+
+const FooterGradient = memo(function FooterGradient() {
+  const theme = useTheme();
+  return (
+    <LinearGradient
+      position="absolute"
+      top={-24}
+      left={0}
+      right={0}
+      height={25}
+      colors={[`${theme.bgApp.val}00`, theme.bgApp.val]}
+      start={[0, 0]}
+      end={[0, 1]}
+      pointerEvents="none"
+    />
+  );
+});
 
 function PrimeBanner({ isPrimeActive = false }: { isPrimeActive?: boolean }) {
   const intl = useIntl();
@@ -118,6 +138,8 @@ export default function PrimeDashboard({
   isFocusedRef.current = isFocused;
 
   const navigation = useAppNavigation();
+  const { scrollViewRef } = useScrollView();
+  const hasScrolledRef = useRef(false);
 
   const pendingSubscribeRef = useRef<{
     subscriptionPeriod: ISubscriptionPeriod;
@@ -388,49 +410,50 @@ export default function PrimeDashboard({
   //   return isPrimeSubscriptionActive && platformEnv.isNativeIOS;
   // }, [isPrimeSubscriptionActive]);
 
-  const renderLoginPrompt = !isLoggedInMaybe
-    ? (() => {
-        const fullText = intl.formatMessage({
-          id: ETranslations.prime_already_subscribed_log_in,
-        });
-        const separatorIndex = fullText.search(/[?？]/);
-        if (separatorIndex === -1) {
-          return (
-            <SizableText
-              size="$bodyMd"
-              color="$textInteractive"
-              cursor="pointer"
-              hoverStyle={{ opacity: 0.8 }}
-              onPress={() => {
-                void loginOneKeyId();
-              }}
-            >
-              {fullText}
-            </SizableText>
-          );
-        }
-        const prefix = fullText.slice(0, separatorIndex + 1);
-        const action = fullText.slice(separatorIndex + 1).trim();
-        return (
-          <XStack gap="$1" alignItems="center">
-            <SizableText size="$bodyMd" color="$textSubdued">
-              {prefix}
-            </SizableText>
-            <SizableText
-              size="$bodyMd"
-              color="$textInteractive"
-              cursor="pointer"
-              hoverStyle={{ opacity: 0.8 }}
-              onPress={() => {
-                void loginOneKeyId();
-              }}
-            >
-              {action}
-            </SizableText>
-          </XStack>
-        );
-      })()
-    : null;
+  const renderLoginPrompt = useMemo(() => {
+    if (isLoggedInMaybe) {
+      return null;
+    }
+    const fullText = intl.formatMessage({
+      id: ETranslations.prime_already_subscribed_log_in,
+    });
+    const separatorIndex = fullText.search(/[?？]/);
+    if (separatorIndex === -1) {
+      return (
+        <SizableText
+          size="$bodyMd"
+          color="$textInteractive"
+          cursor="pointer"
+          hoverStyle={{ opacity: 0.8 }}
+          onPress={() => {
+            void loginOneKeyId();
+          }}
+        >
+          {fullText}
+        </SizableText>
+      );
+    }
+    const prefix = fullText.slice(0, separatorIndex + 1);
+    const action = fullText.slice(separatorIndex + 1).trim();
+    return (
+      <XStack gap="$1" alignItems="center">
+        <SizableText size="$bodyMd" color="$textSubdued">
+          {prefix}
+        </SizableText>
+        <SizableText
+          size="$bodyMd"
+          color="$textInteractive"
+          cursor="pointer"
+          hoverStyle={{ opacity: 0.8 }}
+          onPress={() => {
+            void loginOneKeyId();
+          }}
+        >
+          {action}
+        </SizableText>
+      </XStack>
+    );
+  }, [isLoggedInMaybe, intl, loginOneKeyId]);
 
   return (
     <>
@@ -484,12 +507,30 @@ export default function PrimeDashboard({
             ) : null}
 
             {isPurchaseReady ? (
-              <PrimeBenefitsList
-                selectedSubscriptionPeriod={selectedSubscriptionPeriod}
-                networkId={route.params?.networkId}
-                serverUserInfo={serverUserInfo}
-                fromFeature={fromFeature}
-              />
+              <Stack
+                onLayout={
+                  fromFeature
+                    ? (e) => {
+                        if (!hasScrolledRef.current) {
+                          hasScrolledRef.current = true;
+                          setTimeout(() => {
+                            scrollViewRef?.current?.scrollTo({
+                              y: Math.max(0, e.nativeEvent.layout.y - 120),
+                              animated: true,
+                            });
+                          }, 300);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                <PrimeBenefitsList
+                  selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+                  networkId={route.params?.networkId}
+                  serverUserInfo={serverUserInfo}
+                  fromFeature={fromFeature}
+                />
+              </Stack>
             ) : (
               <Spinner my="$10" />
             )}
@@ -535,6 +576,7 @@ export default function PrimeDashboard({
 
           {shouldShowConfirmButton ? (
             <Page.Footer>
+              <FooterGradient />
               <Stack p="$5" $gtMd={{ pt: '$1' }} gap="$4">
                 {/* Desktop layout: row with login left, subscribe right */}
                 <XStack
