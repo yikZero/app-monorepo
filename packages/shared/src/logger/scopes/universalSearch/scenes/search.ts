@@ -2,8 +2,8 @@ import { BaseScene } from '../../../base/baseScene';
 import { LogToLocal, LogToServer } from '../../../base/decorators';
 
 import type {
-  ISettingsSearchClickParams,
-  ISettingsSearchExposureParams,
+  ISearchResultClickParams,
+  ISearchResultExposureParams,
   IUniversalSearchParams,
 } from '../types';
 
@@ -19,22 +19,22 @@ export class SearchScene extends BaseScene {
   }
 
   /**
-   * Track when settings items are exposed in search results
-   * Fired when search returns settings matches visible to the user
+   * Track when search results are exposed to the user
+   * Fired once per result type when search completes
    */
   @LogToServer()
   @LogToLocal({ level: 'info' })
-  public settingsSearchExposure(params: ISettingsSearchExposureParams) {
+  public universalSearchExposure(params: ISearchResultExposureParams) {
     return params;
   }
 
   /**
-   * Track when user clicks a settings search result to navigate
+   * Track when user clicks a search result
    * Represents completed feature reach
    */
   @LogToServer()
   @LogToLocal({ level: 'info' })
-  public settingsSearchClick(params: ISettingsSearchClickParams) {
+  public universalSearchClick(params: ISearchResultClickParams) {
     return params;
   }
 }

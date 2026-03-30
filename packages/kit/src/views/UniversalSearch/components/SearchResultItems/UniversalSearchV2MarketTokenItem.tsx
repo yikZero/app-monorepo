@@ -150,11 +150,13 @@ export function MarketTokenLiquidity({
 interface IUniversalSearchMarketTokenItemProps {
   item: IUniversalSearchV2MarketToken;
   isTrending?: boolean;
+  getSearchInput?: () => string;
 }
 
 export function UniversalSearchV2MarketTokenItem({
   item,
   isTrending,
+  getSearchInput,
 }: IUniversalSearchMarketTokenItemProps) {
   // Ensure market watch list atom is initialized
   const [{ isMounted }] = useMarketWatchListV2Atom();
@@ -203,6 +205,15 @@ export function UniversalSearchV2MarketTokenItem({
   );
 
   const handlePress = useCallback(() => {
+    if (getSearchInput) {
+      defaultLogger.universalSearch.search.universalSearchClick({
+        searchText: getSearchInput(),
+        type: item.type,
+        itemId: address ?? symbol ?? '',
+        itemTitle: symbol ?? '',
+      });
+    }
+
     if (isLegacyNavigation) {
       // Legacy trending item: address contains coingeckoId, use legacy navigation
       setTimeout(async () => {
@@ -242,6 +253,7 @@ export function UniversalSearchV2MarketTokenItem({
       }, 80);
     }
   }, [
+    getSearchInput,
     isLegacyNavigation,
     isTrending,
     address,

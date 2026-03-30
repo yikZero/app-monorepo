@@ -1,3 +1,5 @@
+import type { EUniversalSearchType } from '@onekeyhq/shared/types/search';
+
 export interface IUniversalSearchParams {
   /**
    * The search text entered by the user
@@ -9,14 +11,15 @@ export interface IUniversalSearchParams {
   resultCount: number;
 }
 
-export interface ISettingsSearchExposureParams {
+export interface ISearchResultExposureParams {
   searchText: string;
-  exposedItems: string[];
+  type: EUniversalSearchType;
+  exposedCount: number;
 }
 
-export interface ISettingsSearchClickParams {
+export interface ISearchResultClickParams {
   searchText: string;
-  settingTitle: string;
-  settingRoute: string;
-  sectionTitle: string;
+  type: EUniversalSearchType;
+  itemId: string;
+  itemTitle: string;
 }

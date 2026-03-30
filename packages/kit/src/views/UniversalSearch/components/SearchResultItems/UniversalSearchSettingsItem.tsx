@@ -25,14 +25,12 @@ export function UniversalSearchSettingsItem({
   const universalSearchActions = useUniversalSearchActions();
   const { title, icon, sectionName, sectionTitle, settingRoute, onPress } =
     item.payload;
-  const resolvedRoute = settingRoute ?? '';
-
   const handlePress = useCallback(async () => {
-    defaultLogger.universalSearch.search.settingsSearchClick({
+    defaultLogger.universalSearch.search.universalSearchClick({
       searchText: getSearchInput(),
-      settingTitle: title,
-      settingRoute: resolvedRoute,
-      sectionTitle: sectionTitle ?? '',
+      type: item.type,
+      itemId: settingRoute ?? sectionName ?? title,
+      itemTitle: title,
     });
 
     navigation.pop();
@@ -63,13 +61,12 @@ export function UniversalSearchSettingsItem({
       timestamp: Date.now(),
       extra: {
         sectionTitle,
-        settingRoute: resolvedRoute,
+        settingRoute: settingRoute ?? '',
       },
     });
   }, [
     navigation,
     settingRoute,
-    resolvedRoute,
     onPress,
     sectionName,
     sectionTitle,
