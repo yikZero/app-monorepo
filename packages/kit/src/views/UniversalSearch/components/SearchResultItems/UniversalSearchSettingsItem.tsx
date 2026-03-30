@@ -5,6 +5,7 @@ import { Icon, SizableText } from '@onekeyhq/components';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import type { IModalSettingParamList } from '@onekeyhq/shared/src/routes';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalSettingRoutes } from '@onekeyhq/shared/src/routes/setting';
@@ -13,17 +14,27 @@ import type { IUniversalSearchSettings } from '@onekeyhq/shared/types/search';
 
 interface IUniversalSearchSettingsItemProps {
   item: IUniversalSearchSettings;
+  getSearchInput: () => string;
 }
 
 export function UniversalSearchSettingsItem({
   item,
+  getSearchInput,
 }: IUniversalSearchSettingsItemProps) {
   const navigation = useAppNavigation();
   const universalSearchActions = useUniversalSearchActions();
   const { title, icon, sectionName, sectionTitle, settingRoute, onPress } =
     item.payload;
+  const resolvedRoute = settingRoute ?? '';
 
   const handlePress = useCallback(async () => {
+    defaultLogger.universalSearch.search.settingsSearchClick({
+      searchText: getSearchInput(),
+      settingTitle: title,
+      settingRoute: resolvedRoute,
+      sectionTitle: sectionTitle ?? '',
+    });
+
     navigation.pop();
     await timerUtils.wait(300);
 
@@ -52,18 +63,20 @@ export function UniversalSearchSettingsItem({
       timestamp: Date.now(),
       extra: {
         sectionTitle,
-        settingRoute: settingRoute ?? '',
+        settingRoute: resolvedRoute,
       },
     });
   }, [
     navigation,
     settingRoute,
+    resolvedRoute,
     onPress,
     sectionName,
     sectionTitle,
     universalSearchActions,
     title,
     item.type,
+    getSearchInput,
   ]);
 
   return (
