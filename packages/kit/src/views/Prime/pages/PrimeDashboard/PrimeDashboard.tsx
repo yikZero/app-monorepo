@@ -313,6 +313,31 @@ export default function PrimeDashboard({
     return false;
   }, [isLoggedIn, packages?.length]);
 
+  const subscribeConfirmButtonProps = useMemo(
+    () => ({
+      loading: isSubscribeLazyLoading,
+      disabled: !subscribeButtonEnabled,
+    }),
+    [isSubscribeLazyLoading, subscribeButtonEnabled],
+  );
+
+  const subscribeButtonText = useMemo(() => {
+    if (!packages?.length) {
+      return intl.formatMessage({
+        id: ETranslations.prime_subscribe,
+      });
+    }
+    return selectedSubscriptionPeriod === 'P1Y'
+      ? intl.formatMessage(
+          { id: ETranslations.prime_subscribe_yearly_price },
+          { price: selectedPackage?.pricePerYearString },
+        )
+      : intl.formatMessage(
+          { id: ETranslations.prime_subscribe_monthly_price },
+          { price: selectedPackage?.pricePerMonthString },
+        );
+  }, [packages?.length, selectedSubscriptionPeriod, selectedPackage, intl]);
+
   const subscribe = useCallback(async () => {
     if (!subscribeButtonEnabled) {
       return;
@@ -353,12 +378,14 @@ export default function PrimeDashboard({
     const wasNotLoggedIn = !prevIsLoggedInRef.current;
     prevIsLoggedInRef.current = isLoggedIn;
 
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
     if (wasNotLoggedIn && isLoggedIn && pendingSubscribeRef.current) {
       const { subscriptionPeriod } = pendingSubscribeRef.current;
       pendingSubscribeRef.current = null;
 
       // Small delay to let auth state fully settle and packages load
-      setTimeout(async () => {
+      timerId = setTimeout(async () => {
         try {
           await ensurePrimeSubscriptionActive({
             skipDialogConfirm: true,
@@ -371,6 +398,10 @@ export default function PrimeDashboard({
         }
       }, 1000);
     }
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
   }, [isLoggedIn, ensurePrimeSubscriptionActive, fromFeature]);
 
   const isLoggedInMaybe =
@@ -385,6 +416,22 @@ export default function PrimeDashboard({
   //   // return true;
   //   return isPrimeSubscriptionActive && platformEnv.isNativeIOS;
   // }, [isPrimeSubscriptionActive]);
+
+  const renderLoginPrompt = !isLoggedInMaybe ? (
+    <SizableText
+      size="$bodyMd"
+      color="$textInteractive"
+      cursor="pointer"
+      hoverStyle={{ opacity: 0.8 }}
+      onPress={() => {
+        void loginOneKeyId();
+      }}
+    >
+      {intl.formatMessage({
+        id: ETranslations.prime_already_subscribed_log_in,
+      })}
+    </SizableText>
+  ) : null;
 
   return (
     <>
@@ -517,44 +564,12 @@ export default function PrimeDashboard({
                     gap: '$2.5',
                   }}
                 >
-                  {!isLoggedInMaybe ? (
-                    <SizableText
-                      size="$bodyMd"
-                      color="$textInteractive"
-                      cursor="pointer"
-                      hoverStyle={{ opacity: 0.8 }}
-                      onPress={() => {
-                        void loginOneKeyId();
-                      }}
-                    >
-                      {intl.formatMessage({
-                        id: ETranslations.prime_already_subscribed_log_in,
-                      })}
-                    </SizableText>
-                  ) : null}
+                  {renderLoginPrompt}
                   <Page.FooterActions
                     p="$0"
-                    confirmButtonProps={{
-                      loading: isSubscribeLazyLoading,
-                      disabled: !subscribeButtonEnabled,
-                    }}
+                    confirmButtonProps={subscribeConfirmButtonProps}
                     onConfirm={subscribe}
-                    onConfirmText={(() => {
-                      if (!packages?.length) {
-                        return intl.formatMessage({
-                          id: ETranslations.prime_subscribe,
-                        });
-                      }
-                      return selectedSubscriptionPeriod === 'P1Y'
-                        ? intl.formatMessage(
-                            { id: ETranslations.prime_subscribe_yearly_price },
-                            { price: selectedPackage?.pricePerYearString },
-                          )
-                        : intl.formatMessage(
-                            { id: ETranslations.prime_subscribe_monthly_price },
-                            { price: selectedPackage?.pricePerMonthString },
-                          );
-                    })()}
+                    onConfirmText={subscribeButtonText}
                   />
                 </XStack>
 
@@ -568,42 +583,11 @@ export default function PrimeDashboard({
                   <Page.FooterActions
                     p="$0"
                     width="100%"
-                    confirmButtonProps={{
-                      loading: isSubscribeLazyLoading,
-                      disabled: !subscribeButtonEnabled,
-                    }}
+                    confirmButtonProps={subscribeConfirmButtonProps}
                     onConfirm={subscribe}
-                    onConfirmText={(() => {
-                      if (!packages?.length) {
-                        return intl.formatMessage({
-                          id: ETranslations.prime_subscribe,
-                        });
-                      }
-                      return selectedSubscriptionPeriod === 'P1Y'
-                        ? intl.formatMessage(
-                            { id: ETranslations.prime_subscribe_yearly_price },
-                            { price: selectedPackage?.pricePerYearString },
-                          )
-                        : intl.formatMessage(
-                            { id: ETranslations.prime_subscribe_monthly_price },
-                            { price: selectedPackage?.pricePerMonthString },
-                          );
-                    })()}
+                    onConfirmText={subscribeButtonText}
                   />
-                  {!isLoggedInMaybe ? (
-                    <SizableText
-                      size="$bodyMd"
-                      color="$textInteractive"
-                      cursor="pointer"
-                      onPress={() => {
-                        void loginOneKeyId();
-                      }}
-                    >
-                      {intl.formatMessage({
-                        id: ETranslations.prime_already_subscribed_log_in,
-                      })}
-                    </SizableText>
-                  ) : null}
+                  {renderLoginPrompt}
                 </YStack>
 
                 {/* Terms & Privacy — always at bottom on both platforms */}
