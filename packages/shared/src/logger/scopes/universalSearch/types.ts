@@ -8,3 +8,15 @@ export interface IUniversalSearchParams {
    */
   resultCount: number;
 }
+
+export interface ISettingsSearchExposureParams {
+  searchText: string;
+  exposedItems: string[];
+}
+
+export interface ISettingsSearchClickParams {
+  searchText: string;
+  settingTitle: string;
+  settingRoute: string;
+  sectionTitle: string;
+}

@@ -320,6 +320,7 @@ export function UniversalSearch({
   }, [fetchRecommendList]);
 
   const searchInputRef = useRef<string>('');
+  const getSearchInput = useCallback(() => searchInputRef.current, []);
 
   const handleTextChange = useDebouncedCallback(async (val: string) => {
     console.log('[universalSearch] handleTextChange: ', val);
@@ -472,6 +473,19 @@ export function UniversalSearch({
             id: ETranslations.global_settings,
           }),
           ...generateDataFn(data),
+        });
+
+        // Track settings exposure
+        defaultLogger.universalSearch.search.settingsSearchExposure({
+          searchText: input,
+          exposedItems: settingsResults.map((item) => {
+            const {
+              settingRoute,
+              sectionName,
+              title: itemTitle,
+            } = item.payload;
+            return settingRoute ?? sectionName ?? itemTitle;
+          }),
         });
       }
 
@@ -629,18 +643,28 @@ export function UniversalSearch({
           return (
             <UniversalSearchDappItem
               item={item}
-              getSearchInput={() => searchInputRef.current}
+              getSearchInput={getSearchInput}
             />
           );
         case EUniversalSearchType.Perp:
           return <UniversalSearchPerpItem item={item} />;
         case EUniversalSearchType.Settings:
-          return <UniversalSearchSettingsItem item={item} />;
+          return (
+            <UniversalSearchSettingsItem
+              item={item}
+              getSearchInput={getSearchInput}
+            />
+          );
         default:
           return null;
       }
     },
-    [activeAccount?.network?.id, searchStatus, allAggregateTokenMap],
+    [
+      activeAccount?.network?.id,
+      searchStatus,
+      allAggregateTokenMap,
+      getSearchInput,
+    ],
   );
 
   const keyExtractor = useCallback(
