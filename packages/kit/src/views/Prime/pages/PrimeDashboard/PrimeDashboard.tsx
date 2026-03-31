@@ -1,11 +1,4 @@
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useIsFocused } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
@@ -88,7 +81,7 @@ function PrimeBenefitsScrollContainer({
 }) {
   const { scrollViewRef } = useScrollView();
   const hasScrolledRef = useRef(false);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(
     () => () => {
@@ -110,9 +103,7 @@ function PrimeBenefitsScrollContainer({
                 hasScrolledRef.current = true;
                 const layoutY = layout.y ?? 0;
                 scrollTimerRef.current = setTimeout(() => {
-                  if (
-                    typeof scrollViewRef?.current?.scrollTo === 'function'
-                  ) {
+                  if (typeof scrollViewRef?.current?.scrollTo === 'function') {
                     scrollViewRef.current.scrollTo({
                       y: Math.max(0, layoutY - 120),
                       animated: true,
