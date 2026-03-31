@@ -68,6 +68,55 @@ const FooterGradient = memo(function FooterGradient() {
   );
 });
 
+function PrimeBenefitsScrollContainer({
+  fromFeature,
+  selectedSubscriptionPeriod,
+  networkId,
+  serverUserInfo,
+}: {
+  fromFeature: EPrimeFeatures | undefined;
+  selectedSubscriptionPeriod: ISubscriptionPeriod;
+  networkId: string | undefined;
+  serverUserInfo: IPrimeServerUserInfo | undefined;
+}) {
+  const { scrollViewRef } = useScrollView();
+  const hasScrolledRef = useRef(false);
+
+  return (
+    <Stack
+      onLayout={
+        fromFeature
+          ? (e) => {
+              if (!hasScrolledRef.current) {
+                const layout = e?.nativeEvent?.layout;
+                if (!layout) return;
+                hasScrolledRef.current = true;
+                const layoutY = layout.y ?? 0;
+                setTimeout(() => {
+                  if (
+                    typeof scrollViewRef?.current?.scrollTo === 'function'
+                  ) {
+                    scrollViewRef.current.scrollTo({
+                      y: Math.max(0, layoutY - 120),
+                      animated: true,
+                    });
+                  }
+                }, 300);
+              }
+            }
+          : undefined
+      }
+    >
+      <PrimeBenefitsList
+        selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+        networkId={networkId}
+        serverUserInfo={serverUserInfo}
+        fromFeature={fromFeature}
+      />
+    </Stack>
+  );
+}
+
 function PrimeBanner({ isPrimeActive = false }: { isPrimeActive?: boolean }) {
   const intl = useIntl();
 
@@ -138,8 +187,6 @@ export default function PrimeDashboard({
   isFocusedRef.current = isFocused;
 
   const navigation = useAppNavigation();
-  const { scrollViewRef } = useScrollView();
-  const hasScrolledRef = useRef(false);
 
   const pendingSubscribeRef = useRef<{
     subscriptionPeriod: ISubscriptionPeriod;
@@ -529,38 +576,12 @@ export default function PrimeDashboard({
             ) : null}
 
             {isPurchaseReady ? (
-              <Stack
-                onLayout={
-                  fromFeature
-                    ? (e) => {
-                        if (!hasScrolledRef.current) {
-                          const layout = e?.nativeEvent?.layout;
-                          if (!layout) return;
-                          hasScrolledRef.current = true;
-                          const layoutY = layout.y ?? 0;
-                          setTimeout(() => {
-                            if (
-                              typeof scrollViewRef?.current?.scrollTo ===
-                              'function'
-                            ) {
-                              scrollViewRef.current.scrollTo({
-                                y: Math.max(0, layoutY - 120),
-                                animated: true,
-                              });
-                            }
-                          }, 300);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                <PrimeBenefitsList
-                  selectedSubscriptionPeriod={selectedSubscriptionPeriod}
-                  networkId={route.params?.networkId}
-                  serverUserInfo={serverUserInfo}
-                  fromFeature={fromFeature}
-                />
-              </Stack>
+              <PrimeBenefitsScrollContainer
+                fromFeature={fromFeature}
+                selectedSubscriptionPeriod={selectedSubscriptionPeriod}
+                networkId={route.params?.networkId}
+                serverUserInfo={serverUserInfo}
+              />
             ) : (
               <Spinner my="$10" />
             )}
