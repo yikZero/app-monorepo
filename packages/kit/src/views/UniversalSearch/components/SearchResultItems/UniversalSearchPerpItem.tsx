@@ -1,19 +1,32 @@
 import { useCallback, useMemo } from 'react';
 
-import { NumberSizeableText, SizableText, XStack } from '@onekeyhq/components';
+import {
+  NumberSizeableText,
+  SizableText,
+  XStack,
+  rootNavigationRef,
+} from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useMarketWatchListV2Atom } from '@onekeyhq/kit/src/states/jotai/contexts/marketV2/atoms';
 import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import {
   EPerpPageEnterSource,
   setPerpPageEnterSource,
 } from '@onekeyhq/shared/src/logger/scopes/perp/perpPageSource';
-import { ETabRoutes } from '@onekeyhq/shared/src/routes';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import { ERootRoutes, ETabRoutes } from '@onekeyhq/shared/src/routes';
+import { EModalPerpRoutes } from '@onekeyhq/shared/src/routes/perp';
 import { XYZ_DEX_PREFIX } from '@onekeyhq/shared/types/hyperliquid/perp.constants';
 import type { IUniversalSearchPerp } from '@onekeyhq/shared/types/search';
+
+import { MarketPerpsStarV2 } from '../../../Market/components/MarketStarV2';
+
+const shouldShowFavoriteButton =
+  !platformEnv.isExtensionUiPopup && !platformEnv.isExtensionUiSidePanel;
 
 interface IUniversalSearchPerpItemProps {
   item: IUniversalSearchPerp;
@@ -24,6 +37,7 @@ export function UniversalSearchPerpItem({
   item,
   getSearchInput,
 }: IUniversalSearchPerpItemProps) {
+  const [{ isMounted }] = useMarketWatchListV2Atom();
   const navigation = useAppNavigation();
   const universalSearchActions = useUniversalSearchActions();
   const { assetType, logoUrl, name, maxLeverage, midPx, subtitle } =
@@ -54,6 +68,18 @@ export function UniversalSearchPerpItem({
         });
       } catch (error) {
         console.error('Failed to change active asset:', error);
+        return;
+      }
+      if (platformEnv.isNative) {
+        // rootNavigationRef needed because search modal's navigation context can't push into Perp tab's stack
+        setTimeout(() => {
+          rootNavigationRef.current?.navigate(ERootRoutes.Main, {
+            screen: ETabRoutes.Perp,
+            params: {
+              screen: EModalPerpRoutes.MobilePerpMarket,
+            },
+          });
+        }, 500);
       }
       setTimeout(() => {
         universalSearchActions.current.addIntoRecentSearchList({
@@ -80,12 +106,17 @@ export function UniversalSearchPerpItem({
       jc="space-between"
       onPress={handlePress}
       renderAvatar={
-        <Token
-          size="lg"
-          borderRadius="$full"
-          tokenImageUri={logoUrl}
-          fallbackIcon="CryptoCoinOutline"
-        />
+        <XStack alignItems="center" gap="$2">
+          {shouldShowFavoriteButton && isMounted ? (
+            <MarketPerpsStarV2 perpsCoin={coin} size="small" />
+          ) : null}
+          <Token
+            size="lg"
+            borderRadius="$full"
+            tokenImageUri={logoUrl}
+            fallbackIcon="CryptoCoinOutline"
+          />
+        </XStack>
       }
     >
       <ListItem.Text
