@@ -12,6 +12,7 @@ import {
   useMedia,
   usePopoverContext,
 } from '@onekeyhq/components';
+import { formatInviteUrlForDisplay } from '@onekeyhq/kit/src/views/ReferFriends/utils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 
@@ -78,13 +79,27 @@ function ReferralLinkItem({
   );
 }
 
-function removeHttpsPrefix(url: string): string {
-  return url.replace(/^https?:\/\//, '');
-}
-
 interface IReferralLinkPopoverContentProps {
   inviteUrl: string;
 }
+
+const REFERRAL_LINKS = [
+  {
+    pathSuffix: '/shop',
+    titleId: ETranslations.referral_link_hw_title,
+    descId: ETranslations.referral_link_hw_desc,
+  },
+  {
+    pathSuffix: '/app',
+    titleId: ETranslations.referral_link_onchain_title,
+    descId: ETranslations.referral_link_onchain_desc,
+  },
+  {
+    pathSuffix: '/app/perps',
+    titleId: ETranslations.referral_link_perps_title,
+    descId: ETranslations.referral_link_perps_desc,
+  },
+];
 
 export function ReferralLinkPopoverContent({
   inviteUrl,
@@ -93,43 +108,35 @@ export function ReferralLinkPopoverContent({
   const { copyUrl } = useClipboard();
   const { closePopover } = usePopoverContext();
 
-  const walletInviteUrl = useMemo(() => `${inviteUrl}/app`, [inviteUrl]);
-  const shopInviteUrl = useMemo(() => `${inviteUrl}/shop`, [inviteUrl]);
+  const handleCopyLink = useCallback(
+    (url: string) => {
+      copyUrl(url);
+      defaultLogger.referral.page.shareReferralLink('copy');
+      void closePopover?.();
+    },
+    [closePopover, copyUrl],
+  );
 
-  const handleCopyWalletLink = useCallback(() => {
-    copyUrl(walletInviteUrl);
-    defaultLogger.referral.page.shareReferralLink('copy');
-    void closePopover?.();
-  }, [closePopover, copyUrl, walletInviteUrl]);
-
-  const handleCopyShopLink = useCallback(() => {
-    copyUrl(shopInviteUrl);
-    defaultLogger.referral.page.shareReferralLink('copy');
-    void closePopover?.();
-  }, [closePopover, copyUrl, shopInviteUrl]);
+  const links = useMemo(
+    () =>
+      REFERRAL_LINKS.map((link) => ({
+        ...link,
+        url: `${inviteUrl}${link.pathSuffix}`,
+      })),
+    [inviteUrl],
+  );
 
   return (
     <YStack p="$1" $md={{ pb: '$3' }}>
-      <ReferralLinkItem
-        title={intl.formatMessage({
-          id: ETranslations.referral_link_hw_title,
-        })}
-        description={intl.formatMessage({
-          id: ETranslations.referral_link_hw_desc,
-        })}
-        displayUrl={removeHttpsPrefix(shopInviteUrl)}
-        onCopy={handleCopyShopLink}
-      />
-      <ReferralLinkItem
-        title={intl.formatMessage({
-          id: ETranslations.referral_link_onchain_title,
-        })}
-        description={intl.formatMessage({
-          id: ETranslations.referral_link_onchain_desc,
-        })}
-        displayUrl={removeHttpsPrefix(walletInviteUrl)}
-        onCopy={handleCopyWalletLink}
-      />
+      {links.map((link) => (
+        <ReferralLinkItem
+          key={link.pathSuffix}
+          title={intl.formatMessage({ id: link.titleId })}
+          description={intl.formatMessage({ id: link.descId })}
+          displayUrl={formatInviteUrlForDisplay(link.url)}
+          onCopy={() => handleCopyLink(link.url)}
+        />
+      ))}
     </YStack>
   );
 }
