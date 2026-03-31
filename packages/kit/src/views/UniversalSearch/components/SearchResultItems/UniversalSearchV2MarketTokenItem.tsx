@@ -205,9 +205,10 @@ export function UniversalSearchV2MarketTokenItem({
   );
 
   const handlePress = useCallback(() => {
-    if (getSearchInput) {
+    const searchText = getSearchInput?.();
+    if (searchText) {
       defaultLogger.universalSearch.search.universalSearchClick({
-        searchText: getSearchInput(),
+        searchText,
         type: item.type,
         itemId: address ?? symbol ?? '',
         itemTitle: symbol ?? '',

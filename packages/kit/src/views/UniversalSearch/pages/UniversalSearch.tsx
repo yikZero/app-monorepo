@@ -486,19 +486,10 @@ export function UniversalSearch({
         });
       }
 
-      // Track exposure for all result types
-      searchResultSections.forEach((section) => {
-        defaultLogger.universalSearch.search.universalSearchExposure({
-          searchText: input,
-          type: section.type,
-          exposedCount: section.data.length,
-        });
-      });
-
       setSections(searchResultSections);
       setSearchStatus(ESearchStatus.done);
 
-      // Track search event for analytics
+      // Track search event with per-type breakdown for exposure/reach analysis
       // Exclude Google search item from result count
       const resultCount = searchResultSections.reduce((sum, section) => {
         const count = section.data.filter(
@@ -510,11 +501,16 @@ export function UniversalSearch({
         ).length;
         return sum + count;
       }, 0);
+      const exposedTypes = searchResultSections
+        .map((section) => `${section.type}:${section.data.length}`)
+        .join(',');
       defaultLogger.universalSearch.search.universalSearchQuery({
         searchText: input,
         resultCount,
+        exposedTypes,
       });
     } else {
+      searchInputRef.current = '';
       setSearchStatus(ESearchStatus.init);
     }
   }, 1200);

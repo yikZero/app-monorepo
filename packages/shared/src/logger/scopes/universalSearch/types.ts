@@ -9,12 +9,10 @@ export interface IUniversalSearchParams {
    * Total number of search results
    */
   resultCount: number;
-}
-
-export interface ISearchResultExposureParams {
-  searchText: string;
-  type: EUniversalSearchType;
-  exposedCount: number;
+  /**
+   * Per-type result breakdown, e.g. "V2MarketToken:5,Perp:3,Settings:2"
+   */
+  exposedTypes: string;
 }
 
 export interface ISearchResultClickParams {
