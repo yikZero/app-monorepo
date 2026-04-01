@@ -1,4 +1,20 @@
-import type { EUniversalSearchType } from '@onekeyhq/shared/types/search';
+import { EUniversalSearchType } from '@onekeyhq/shared/types/search';
+
+const searchTypeTrackingNameMap: Record<EUniversalSearchType, string> = {
+  [EUniversalSearchType.Address]: 'address',
+  [EUniversalSearchType.MarketToken]: 'tokens',
+  [EUniversalSearchType.V2MarketToken]: 'market',
+  [EUniversalSearchType.AccountAssets]: 'myAssets',
+  [EUniversalSearchType.Dapp]: 'dApps',
+  [EUniversalSearchType.Perp]: 'perps',
+  [EUniversalSearchType.Settings]: 'settings',
+};
+
+export function getSearchTypeTrackingName(
+  type: EUniversalSearchType,
+): string {
+  return searchTypeTrackingNameMap[type] ?? type;
+}
 
 export interface IUniversalSearchParams {
   /**

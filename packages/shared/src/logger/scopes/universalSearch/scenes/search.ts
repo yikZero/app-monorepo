@@ -5,6 +5,7 @@ import type {
   ISearchResultClickParams,
   IUniversalSearchParams,
 } from '../types';
+import { getSearchTypeTrackingName } from '../types';
 
 export class SearchScene extends BaseScene {
   /**
@@ -24,6 +25,9 @@ export class SearchScene extends BaseScene {
   @LogToServer()
   @LogToLocal({ level: 'info' })
   public universalSearchClick(params: ISearchResultClickParams) {
-    return params;
+    return {
+      ...params,
+      type: getSearchTypeTrackingName(params.type),
+    };
   }
 }

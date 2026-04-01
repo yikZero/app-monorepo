@@ -36,6 +36,7 @@ import {
   ESearchStatus,
   EUniversalSearchType,
 } from '@onekeyhq/shared/types/search';
+import { getSearchTypeTrackingName } from '@onekeyhq/shared/src/logger/scopes/universalSearch/types';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '../../../components/AccountSelector';
@@ -502,7 +503,10 @@ export function UniversalSearch({
         return sum + count;
       }, 0);
       const exposedTypes = searchResultSections
-        .map((section) => `${section.type}:${section.data.length}`)
+        .map(
+          (section) =>
+            `${getSearchTypeTrackingName(section.type)}:${section.data.length}`,
+        )
         .join(',');
       defaultLogger.universalSearch.search.universalSearchQuery({
         searchText: input,
