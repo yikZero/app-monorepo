@@ -158,6 +158,12 @@ class ServicePrime extends ServiceBase {
     );
     if (instanceId) {
       await this.apiLogin({ accessToken });
+      // Refresh from /user/info for accurate isPrimeDeviceLimitExceeded,
+      // as the login endpoint may return stale device limit data after removal
+      const serverUserInfo = await this.callApiFetchPrimeUserInfo();
+      if (serverUserInfo) {
+        await this.updatePrimeAtomByServerUserInfo({ serverUserInfo });
+      }
     }
   }
 
