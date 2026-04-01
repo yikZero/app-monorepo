@@ -26,7 +26,7 @@ export interface IUniversalSearchParams {
    */
   resultCount: number;
   /**
-   * Per-type result breakdown, e.g. "V2MarketToken:5,Perp:3,Settings:2"
+   * Per-type result breakdown, e.g. "market:5,perps:3,settings:2"
    */
   exposedTypes: string;
 }
