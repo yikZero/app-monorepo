@@ -93,16 +93,19 @@ const REFERRAL_LINKS = [
     pathSuffix: '/shop',
     titleId: ETranslations.referral_link_hw_title,
     descId: ETranslations.referral_link_hw_desc,
+    useWebAppUrl: false,
   },
   {
-    pathSuffix: '/app',
-    titleId: ETranslations.referral_link_onchain_title,
-    descId: ETranslations.referral_link_onchain_desc,
+    pathSuffix: '/app/defi',
+    titleId: ETranslations.referral_link_defi_title,
+    descId: ETranslations.referral_link_defi_desc,
+    useWebAppUrl: true,
   },
   {
     pathSuffix: '/app/perps',
     titleId: ETranslations.referral_link_perps_title,
     descId: ETranslations.referral_link_perps_desc,
+    useWebAppUrl: true,
   },
 ];
 
@@ -139,8 +142,8 @@ export function ReferralLinkPopoverContent({
     return REFERRAL_LINKS.map((link) => ({
       ...link,
       url:
-        link.pathSuffix === '/app/perps' && inviteCode
-          ? `${webAppUrl}/r/${inviteCode}/app/perps`
+        link.useWebAppUrl && inviteCode
+          ? `${webAppUrl}/r/${inviteCode}${link.pathSuffix}`
           : `${inviteUrl}${link.pathSuffix}`,
     }));
   }, [inviteUrl, webAppUrl]);
