@@ -13,6 +13,11 @@ import {
   usePopoverContext,
 } from '@onekeyhq/components';
 import { formatInviteUrlForDisplay } from '@onekeyhq/kit/src/views/ReferFriends/utils';
+import { useDevSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms/devSettings';
+import {
+  WEB_APP_URL,
+  WEB_APP_URL_DEV,
+} from '@onekeyhq/shared/src/config/appConfig';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 
@@ -101,12 +106,24 @@ const REFERRAL_LINKS = [
   },
 ];
 
+function extractInviteCode(url: string): string | undefined {
+  const match = url.match(/\/r\/([^/]+)/);
+  return match?.[1];
+}
+
 export function ReferralLinkPopoverContent({
   inviteUrl,
 }: IReferralLinkPopoverContentProps) {
   const intl = useIntl();
   const { copyUrl } = useClipboard();
   const { closePopover } = usePopoverContext();
+  const [devSettings] = useDevSettingsPersistAtom();
+
+  const webAppUrl = useMemo(() => {
+    const useTestUrl =
+      devSettings.enabled && devSettings.settings?.enableTestEndpoint;
+    return useTestUrl ? WEB_APP_URL_DEV : WEB_APP_URL;
+  }, [devSettings.enabled, devSettings.settings?.enableTestEndpoint]);
 
   const handleCopyLink = useCallback(
     (url: string) => {
@@ -117,14 +134,16 @@ export function ReferralLinkPopoverContent({
     [closePopover, copyUrl],
   );
 
-  const links = useMemo(
-    () =>
-      REFERRAL_LINKS.map((link) => ({
-        ...link,
-        url: `${inviteUrl}${link.pathSuffix}`,
-      })),
-    [inviteUrl],
-  );
+  const links = useMemo(() => {
+    const inviteCode = extractInviteCode(inviteUrl);
+    return REFERRAL_LINKS.map((link) => ({
+      ...link,
+      url:
+        link.pathSuffix === '/app/perps' && inviteCode
+          ? `${webAppUrl}/r/${inviteCode}/app/perps`
+          : `${inviteUrl}${link.pathSuffix}`,
+    }));
+  }, [inviteUrl, webAppUrl]);
 
   return (
     <YStack p="$1" $md={{ pb: '$3' }}>
