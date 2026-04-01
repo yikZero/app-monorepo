@@ -10,9 +10,7 @@ const searchTypeTrackingNameMap: Record<EUniversalSearchType, string> = {
   [EUniversalSearchType.Settings]: 'settings',
 };
 
-export function getSearchTypeTrackingName(
-  type: EUniversalSearchType,
-): string {
+export function getSearchTypeTrackingName(type: EUniversalSearchType): string {
   return searchTypeTrackingNameMap[type] ?? type;
 }
 

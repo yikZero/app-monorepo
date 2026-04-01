@@ -1,6 +1,5 @@
 import { BaseScene } from '../../../base/baseScene';
 import { LogToLocal, LogToServer } from '../../../base/decorators';
-
 import { getSearchTypeTrackingName } from '../types';
 
 import type {

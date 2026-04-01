@@ -24,6 +24,7 @@ import { EJotaiContextStoreNames } from '@onekeyhq/kit-bg/src/states/jotai/atoms
 import { isGoogleSearchItem } from '@onekeyhq/shared/src/consts/discovery';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import { getSearchTypeTrackingName } from '@onekeyhq/shared/src/logger/scopes/universalSearch/types';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes';
 import type {
@@ -36,7 +37,6 @@ import {
   ESearchStatus,
   EUniversalSearchType,
 } from '@onekeyhq/shared/types/search';
-import { getSearchTypeTrackingName } from '@onekeyhq/shared/src/logger/scopes/universalSearch/types';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '../../../components/AccountSelector';
@@ -502,10 +502,7 @@ export function UniversalSearch({
             ),
         ).length,
       }));
-      const resultCount = filteredSections.reduce(
-        (sum, s) => sum + s.count,
-        0,
-      );
+      const resultCount = filteredSections.reduce((sum, s) => sum + s.count, 0);
       const exposedTypes = filteredSections
         .filter((s) => s.count > 0)
         .map((s) => `${getSearchTypeTrackingName(s.type)}:${s.count}`)
