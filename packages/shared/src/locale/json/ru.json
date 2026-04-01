@@ -2995,7 +2995,7 @@
   "perps.trade_reward": "Торговое вознаграждение",
   "perps__claim_failed__msg": "Не удалось получить скидку. Попробуйте позже",
   "perps__claim_fee_discount__desc": "Подпишите один раз бесплатно, чтобы навсегда получить скидку 4% на комиссии Perps. Газ не требуется, действует мгновенно.",
-  "perps__claim_fee_discount__title": "Получить скидку 4% на комиссию Perps",
+  "perps__claim_fee_discount__title": "Скидка 4% на Perps",
   "perps__claim_fee_discount_short__desc": "Подпишите раз, скидка 4%",
   "perps__claim_now__action": "Получить сейчас",
   "perps__fee_discount_activated__msg": "Скидка на комиссию активирована",
