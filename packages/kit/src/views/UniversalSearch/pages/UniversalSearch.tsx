@@ -491,22 +491,24 @@ export function UniversalSearch({
       setSearchStatus(ESearchStatus.done);
 
       // Track search event with per-type breakdown for exposure/reach analysis
-      // Exclude Google search item from result count
-      const resultCount = searchResultSections.reduce((sum, section) => {
-        const count = section.data.filter(
+      // Exclude Google search fallback item from counts
+      const filteredSections = searchResultSections.map((section) => ({
+        type: section.type,
+        count: section.data.filter(
           (item) =>
             !(
               item.type === EUniversalSearchType.Dapp &&
               isGoogleSearchItem(item.payload?.dappId)
             ),
-        ).length;
-        return sum + count;
-      }, 0);
-      const exposedTypes = searchResultSections
-        .map(
-          (section) =>
-            `${getSearchTypeTrackingName(section.type)}:${section.data.length}`,
-        )
+        ).length,
+      }));
+      const resultCount = filteredSections.reduce(
+        (sum, s) => sum + s.count,
+        0,
+      );
+      const exposedTypes = filteredSections
+        .filter((s) => s.count > 0)
+        .map((s) => `${getSearchTypeTrackingName(s.type)}:${s.count}`)
         .join(',');
       defaultLogger.universalSearch.search.universalSearchQuery({
         searchText: input,
