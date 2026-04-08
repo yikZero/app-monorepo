@@ -802,8 +802,12 @@ function SendDataInputContainer() {
       selectedMemo?: string;
       selectedNote?: string;
     }) => {
-      form.setValue('memo', normalizeOptionalRecipientText(selectedMemo));
-      form.setValue('note', normalizeOptionalRecipientText(selectedNote));
+      form.setValue('memo', normalizeOptionalRecipientText(selectedMemo), {
+        shouldValidate: true,
+      });
+      form.setValue('note', normalizeOptionalRecipientText(selectedNote), {
+        shouldValidate: true,
+      });
 
       const currentTo = form.getValues('to') as IAddressInputValue | undefined;
       // Skip resetting when the same address is already resolved,
@@ -1030,7 +1034,11 @@ function SendDataInputContainer() {
             ? ETranslations.send_title
             : ETranslations.select_address__title,
         })}
-        headerRight={renderAddressSecurityHeaderRightButton}
+        headerRight={
+          enableAllowListValidation
+            ? renderAddressSecurityHeaderRightButton
+            : undefined
+        }
       />
       <Page.Body px="$5" testID="send-recipient-amount-form">
         <AccountSelectorProviderMirror
