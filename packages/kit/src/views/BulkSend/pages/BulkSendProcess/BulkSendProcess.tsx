@@ -1035,7 +1035,14 @@ function BulkSendProcessContent({
     } else {
       void popToTabRootScreen();
     }
-  }, [progressState, failedTxCount, skippedTxCount, txStatusMap, navigation, isInModal]);
+  }, [
+    progressState,
+    failedTxCount,
+    skippedTxCount,
+    txStatusMap,
+    navigation,
+    isInModal,
+  ]);
 
   return (
     <Page
