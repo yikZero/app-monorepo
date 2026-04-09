@@ -1030,8 +1030,12 @@ function BulkSendProcessContent({
     // Abort
     isAborted.current = true;
     setProgressState(EBulkSendProgressState.Aborted);
-    navigation.popStack();
-  }, [progressState, failedTxCount, skippedTxCount, txStatusMap, navigation]);
+    if (isInModal) {
+      navigation.popStack();
+    } else {
+      void popToTabRootScreen();
+    }
+  }, [progressState, failedTxCount, skippedTxCount, txStatusMap, navigation, isInModal]);
 
   return (
     <Page
