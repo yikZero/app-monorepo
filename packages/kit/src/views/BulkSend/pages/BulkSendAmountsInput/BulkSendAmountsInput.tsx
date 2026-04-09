@@ -40,6 +40,7 @@ import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
 import {
   EAmountInputMode,
   EBulkSendMode,
+  EIntervalMode,
   type IAmountInputError,
   type IAmountInputValues,
   type IIntervalSettings,
@@ -224,8 +225,12 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       // Mobile non-OneToMany: navigate to interval page first
       const shouldShowInterval = !media.gtMd && !isOneToMany;
       // Desktop: pass interval settings directly to review
+      // OneToMany uses smart contract batch, interval not applicable
+      const effectiveIntervalSettings = isOneToMany
+        ? { mode: EIntervalMode.None, minSeconds: '', maxSeconds: '' }
+        : intervalSettings;
       const reviewParams = media.gtMd
-        ? { ...params, intervalSettings }
+        ? { ...params, intervalSettings: effectiveIntervalSettings }
         : params;
       const intervalInputParams = {
         ...params,
