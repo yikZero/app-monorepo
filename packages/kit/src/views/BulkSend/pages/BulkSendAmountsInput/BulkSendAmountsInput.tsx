@@ -40,7 +40,6 @@ import { validateTokenAmount } from '@onekeyhq/shared/src/utils/tokenUtils';
 import {
   EAmountInputMode,
   EBulkSendMode,
-  EIntervalMode,
   type IAmountInputError,
   type IAmountInputValues,
   type IIntervalSettings,
@@ -53,6 +52,7 @@ import BulkSendContentWrapper from '../../components/BulkSendContentWrapper';
 import BulkSendHeader from '../../components/BulkSendHeader';
 import { useRedirectToBulkSendAddressesInput } from '../../hooks/useRedirectToBulkSendAddressesInput';
 import {
+  DEFAULT_INTERVAL_SETTINGS,
   calculateIsAmountValid,
   calculateTotalAmounts,
   checkSenderInsufficientBalance,
@@ -1000,11 +1000,9 @@ function BulkSendAmountsInputContent({
 
   const [isInsufficientBalance, setIsInsufficientBalance] = useState(false);
 
-  const [intervalSettings, setIntervalSettings] = useState<IIntervalSettings>({
-    mode: EIntervalMode.None,
-    minSeconds: '',
-    maxSeconds: '',
-  });
+  const [intervalSettings, setIntervalSettings] = useState<IIntervalSettings>(
+    DEFAULT_INTERVAL_SETTINGS,
+  );
 
   // Per-sender accountId map (address -> accountId) from route params
   const senderAccountIdMap = useMemo(() => {
