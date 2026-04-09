@@ -59,6 +59,7 @@ import {
   checkSenderInsufficientBalance,
   getBulkSendMinTransferAmount,
   getBulkSendMinTransferDisplayAmount,
+  validateIntervalSettings,
   validateRangeInput,
 } from '../../utils';
 
@@ -562,7 +563,11 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
       return !isAmountValid;
     }
 
-    return !isAmountValid || isInsufficientBalance;
+    // Desktop non-OneToMany: also check interval validity (inline editing has no confirm gate)
+    const hasIntervalError =
+      !isOneToMany && !!validateIntervalSettings(intervalSettings);
+
+    return !isAmountValid || isInsufficientBalance || hasIntervalError;
   }, [
     tokenDetailsState.initialized,
     tokenDetailsState.isRefreshing,
@@ -580,6 +585,7 @@ function BaseBulkSendAmountsInput({ isInModal }: { isInModal?: boolean }) {
     media.gtMd,
     isInPreviewMode,
     amountInputMode,
+    intervalSettings,
   ]);
 
   const confirmButtonText = useMemo(() => {
