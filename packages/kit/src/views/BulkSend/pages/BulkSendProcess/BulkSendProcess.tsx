@@ -1031,13 +1031,7 @@ function BulkSendProcessContent({
     isAborted.current = true;
     setProgressState(EBulkSendProgressState.Aborted);
     navigation.pop();
-  }, [
-    progressState,
-    failedTxCount,
-    skippedTxCount,
-    txStatusMap,
-    navigation,
-  ]);
+  }, [progressState, failedTxCount, skippedTxCount, txStatusMap, navigation]);
 
   return (
     <Page
