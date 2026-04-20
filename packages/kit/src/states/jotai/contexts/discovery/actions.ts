@@ -88,6 +88,11 @@ function isNewTabPositionTop() {
 
 export const homeResettingFlags: Record<string, number> = {};
 
+// Tracks last navigation time per tab id for the 500ms redirect-loop
+// debounce in `onNavigation`. Decoupled from `tab.timestamp` because the
+// latter also drives sidebar sort order (`top` mode freezes it on creation).
+export const lastNavigationFlags: Record<string, number> = {};
+
 function buildWebTabData(tabs: IWebTab[]) {
   const map: Record<string, IWebTab> = {};
   const keys: string[] = [];
@@ -304,9 +309,13 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
           if (key === 'url') {
             // Navigation normally bumps timestamp to Date.now(), which
             // re-sorts the tab to the bottom. Skip when the user chose
-            // 'top' so the tab stays where it was created.
+            // 'top' so the tab stays where it was created. Record the
+            // navigation time separately for the onNavigation debounce.
             if (!isNewTabPositionTop()) {
               tabToModify.timestamp = Date.now();
+            }
+            if (payload.id) {
+              lastNavigationFlags[payload.id] = Date.now();
             }
             if (value === 'about:blank' && payload.id) {
               homeResettingFlags[payload.id] = Date.now();
@@ -1007,7 +1016,8 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
       }
 
       if (isValidNewUrl) {
-        if (tab.timestamp && now - tab.timestamp < 500) {
+        const lastNav = lastNavigationFlags[tab.id];
+        if (lastNav && now - lastNav < 500) {
           // ignore url change if it's too fast to avoid back & forth loop
           return;
         }
