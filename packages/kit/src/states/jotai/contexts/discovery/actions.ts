@@ -25,6 +25,8 @@ import {
   processWebSiteUrl,
   webviewRefs,
 } from '@onekeyhq/kit/src/views/Discovery/utils/explorerUtils';
+import { settingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
+import { jotaiDefaultStore } from '@onekeyhq/kit-bg/src/states/jotai/utils/jotaiDefaultStore';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import {
   EAppEventBusNames,
@@ -62,6 +64,26 @@ function loggerForEmptyData(tabs: IWebTab[], fnName: string) {
     defaultLogger.discovery.browser.setTabsDataFunctionName(fnName);
     defaultLogger.discovery.browser.tabsData(tabs);
   }
+}
+
+// Lowest timestamp among unpinned tabs; callers subtract 1 to sort above them.
+function getMinUnpinnedTimestamp(tabs: IWebTab[], excludeId?: string) {
+  return tabs
+    .filter(
+      (t) => !t.isPinned && t.timestamp && (!excludeId || t.id !== excludeId),
+    )
+    .reduce(
+      (min, t) => Math.min(min, t.timestamp ?? min),
+      Number.MAX_SAFE_INTEGER,
+    );
+}
+
+function isNewTabPositionTop() {
+  return (
+    platformEnv.isDesktop &&
+    jotaiDefaultStore.get(settingsPersistAtom.atom()).newBrowserTabPosition ===
+      'top'
+  );
 }
 
 export const homeResettingFlags: Record<string, number> = {};
@@ -228,7 +250,13 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
     if (!payload.id || payload.id === homeTab.id) {
       payload.id = generateUUID();
     }
-    payload.timestamp = Date.now();
+    if (isNewTabPositionTop()) {
+      const minTs = getMinUnpinnedTimestamp(tabs);
+      payload.timestamp =
+        minTs < Number.MAX_SAFE_INTEGER ? minTs - 1 : Date.now();
+    } else {
+      payload.timestamp = Date.now();
+    }
     this.buildWebTabs.call(set, { data: [...tabs, payload as IWebTab] });
     this.setCurrentWebTab.call(set, payload.id ?? '');
     const endTime = performance.now();
@@ -274,9 +302,14 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
           // @ts-expect-error
           tabToModify[key] = value;
           if (key === 'url') {
-            tabToModify.timestamp = Date.now();
+            // Navigation normally bumps timestamp to Date.now(), which
+            // re-sorts the tab to the bottom. Skip when the user chose
+            // 'top' so the tab stays where it was created.
+            if (!isNewTabPositionTop()) {
+              tabToModify.timestamp = Date.now();
+            }
             if (value === 'about:blank' && payload.id) {
-              homeResettingFlags[payload.id] = tabToModify.timestamp;
+              homeResettingFlags[payload.id] = Date.now();
             }
           }
         }
@@ -466,14 +499,9 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
       // When unpinning, place the tab at the top of the unpinned list
       if (!payload.pinned) {
         const allTabs = get(webTabsAtom())?.tabs ?? [];
-        const minUnpinnedTimestamp = allTabs
-          .filter((t) => !t.isPinned && t.id !== payload.id && t.timestamp)
-          .reduce(
-            (min, t) => Math.min(min, t.timestamp ?? min),
-            Number.MAX_SAFE_INTEGER,
-          );
-        if (minUnpinnedTimestamp < Number.MAX_SAFE_INTEGER) {
-          timestamp = minUnpinnedTimestamp - 1;
+        const minTs = getMinUnpinnedTimestamp(allTabs, payload.id);
+        if (minTs < Number.MAX_SAFE_INTEGER) {
+          timestamp = minTs - 1;
         }
       }
       this.setWebTabData.call(set, {
