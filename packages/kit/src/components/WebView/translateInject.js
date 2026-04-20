@@ -474,6 +474,10 @@
 
             if (isCurrentEntry) {
               applyToNode(entry.node, translated);
+            } else {
+              // Stale entry (node mutated mid-flight). applyToNode skipped,
+              // so clear the spinner explicitly or it will orphan in the DOM.
+              removeLoadingIndicator(entry.node);
             }
           }
         }
