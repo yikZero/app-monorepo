@@ -212,6 +212,10 @@ export function useWebViewTranslate(
   const displayModeRef = useRef(displayMode);
   const dappUrlRef = useRef(dappUrl);
   const handledUnavailableSessionRef = useRef<string | null>(null);
+  // Electron fires did-finish-load / did-stop-loading / did-fail-load for the
+  // same navigation; WebContent.desktop binds all three to the same callback,
+  // so notifyTabNavigationEnd arrives multiple times. Consume once per nav.
+  const navEndConsumedRef = useRef(false);
   // Hold via ref so callers don't have to memoize the callback; otherwise a
   // fresh inline lambda would invalidate the downstream memo chain and
   // re-register nav handlers on every render.
@@ -228,6 +232,7 @@ export function useWebViewTranslate(
       activeSessionIdRef.current = null;
       handledUnavailableSessionRef.current = null;
       hasLoggedSuccessRef.current = false;
+      navEndConsumedRef.current = false;
       if (startTimerRef.current) {
         clearTimeout(startTimerRef.current);
         startTimerRef.current = null;
@@ -442,9 +447,11 @@ export function useWebViewTranslate(
 
   useEffect(() => {
     onTabNavigationEnd(tabId, () => {
+      if (navEndConsumedRef.current) return;
       if (!translatingRef.current) return;
       const targetLang = lastTargetLangRef.current;
       if (!targetLang) return;
+      navEndConsumedRef.current = true;
       // Fresh page — nothing to restore. Skip the bogus restore inject that
       // startTranslate would otherwise fire via its re-entry path.
       translatingRef.current = false;
