@@ -47,6 +47,20 @@ export function notifyTabNavigation(tabId: string) {
   navigationCallbacks[tabId]?.();
 }
 
+const navigationEndCallbacks: Record<string, INavigationCallback> = {};
+
+export function onTabNavigationEnd(tabId: string, cb: INavigationCallback) {
+  navigationEndCallbacks[tabId] = cb;
+}
+
+export function offTabNavigationEnd(tabId: string) {
+  delete navigationEndCallbacks[tabId];
+}
+
+export function notifyTabNavigationEnd(tabId: string) {
+  navigationEndCallbacks[tabId]?.();
+}
+
 export function tryDispatchTranslateMessage(
   tabId: string,
   rawData: string,
