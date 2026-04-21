@@ -23,6 +23,9 @@ import {
   EModalRoutes,
 } from '@onekeyhq/shared/src/routes';
 
+import { mockVerifyCode } from '../mockData';
+import { ERedemptionType } from '../types';
+
 import { showRedemptionSuccessDialog } from './RedemptionSuccessDialog';
 
 interface IRedemptionFormValues {
@@ -66,6 +69,42 @@ function RedemptionCenterDialogContent({
       form.clearErrors('code');
 
       try {
+        if (__DEV__) {
+          const mockResult = await mockVerifyCode(code);
+          if (
+            mockResult.success &&
+            mockResult.data.type === ERedemptionType.BtcReward
+          ) {
+            const { data } = mockResult;
+            const codeInfo = {
+              code: data.code,
+              modelName: data.modelName,
+              usdAmount: data.usdAmount,
+              estimatedBtcAmount: data.estimatedBtcAmount,
+              btcPrice: data.btcPrice,
+            };
+
+            onClose?.();
+
+            if (data.isPreAssociatedOrder) {
+              navigation.pushModal(EModalRoutes.ReferFriendsModal, {
+                screen: EModalReferFriendsRoutes.BtcRewardSelectAddress,
+                params: {
+                  codeInfo,
+                  orderId: data.preAssociatedOrderId,
+                  productName: data.modelName,
+                },
+              });
+            } else {
+              navigation.pushModal(EModalRoutes.ReferFriendsModal, {
+                screen: EModalReferFriendsRoutes.BtcRewardVerifyOrder,
+                params: { codeInfo },
+              });
+            }
+            return;
+          }
+        }
+
         const result = await backgroundApiProxy.serviceReferralCode.redeemCode({
           code,
         });
@@ -114,7 +153,7 @@ function RedemptionCenterDialogContent({
         setIsSubmitting(false);
       }
     },
-    [form, intl, onClose, onSuccess],
+    [form, intl, navigation, onClose, onSuccess],
   );
 
   const handleRedeem = useCallback(
