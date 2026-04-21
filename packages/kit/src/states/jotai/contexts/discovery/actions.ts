@@ -66,7 +66,13 @@ function loggerForEmptyData(tabs: IWebTab[], fnName: string) {
   }
 }
 
-// Lowest timestamp among unpinned tabs; callers subtract 1 to sort above them.
+// Gap between timestamps when placing a tab above the current unpinned min.
+// Must exceed the drag-reorder midpoint precision: `onDragEnd` inserts
+// `Math.round((a + b) / 2)`, so a 1ms gap collapses to the neighbor and
+// produces duplicate timestamps that destabilize sort order.
+const TOP_POSITION_TIMESTAMP_GAP = 1000;
+
+// Lowest timestamp among unpinned tabs; callers subtract a gap to sort above them.
 function getMinUnpinnedTimestamp(tabs: IWebTab[], excludeId?: string) {
   return tabs
     .filter(
@@ -258,7 +264,9 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
     if (isNewTabPositionTop()) {
       const minTs = getMinUnpinnedTimestamp(tabs);
       payload.timestamp =
-        minTs < Number.MAX_SAFE_INTEGER ? minTs - 1 : Date.now();
+        minTs < Number.MAX_SAFE_INTEGER
+          ? minTs - TOP_POSITION_TIMESTAMP_GAP
+          : Date.now();
     } else {
       payload.timestamp = Date.now();
     }
@@ -510,7 +518,7 @@ class ContextJotaiActionsDiscovery extends ContextJotaiActionsBase {
         const allTabs = get(webTabsAtom())?.tabs ?? [];
         const minTs = getMinUnpinnedTimestamp(allTabs, payload.id);
         if (minTs < Number.MAX_SAFE_INTEGER) {
-          timestamp = minTs - 1;
+          timestamp = minTs - TOP_POSITION_TIMESTAMP_GAP;
         }
       }
       this.setWebTabData.call(set, {
