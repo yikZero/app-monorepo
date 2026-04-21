@@ -81,6 +81,31 @@ function DesktopCustomTabBar({ isExpanded }: { isExpanded?: boolean }) {
     useBrowserBookmarkAction().current;
 
   const { reportPopoverOpen } = useBrowserSubmenu();
+  // Guard against unbalanced onOpenChange calls from the ActionList.
+  // Without this, a duplicate open / missing close would leak the popover
+  // count in BrowserSubmenuColumn and the sidebar would never collapse again.
+  const newTabMenuOpenRef = useRef(false);
+  const handleNewTabMenuOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (isOpen && !newTabMenuOpenRef.current) {
+        newTabMenuOpenRef.current = true;
+        reportPopoverOpen(true);
+      } else if (!isOpen && newTabMenuOpenRef.current) {
+        newTabMenuOpenRef.current = false;
+        reportPopoverOpen(false);
+      }
+    },
+    [reportPopoverOpen],
+  );
+  useEffect(
+    () => () => {
+      if (newTabMenuOpenRef.current) {
+        newTabMenuOpenRef.current = false;
+        reportPopoverOpen(false);
+      }
+    },
+    [reportPopoverOpen],
+  );
   const [{ newBrowserTabPosition }] = useSettingsPersistAtom();
   const currentTabPosition = newBrowserTabPosition ?? 'bottom';
   const newTabPositionSections = useMemo<IActionListSection[]>(() => {
@@ -505,7 +530,7 @@ function DesktopCustomTabBar({ isExpanded }: { isExpanded?: boolean }) {
             title=""
             placement="top-end"
             sections={newTabPositionSections}
-            onOpenChange={reportPopoverOpen}
+            onOpenChange={handleNewTabMenuOpenChange}
             renderTrigger={
               <Stack
                 p="$1"
