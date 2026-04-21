@@ -15,16 +15,15 @@ import {
   useForm,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
+import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import { EBtcRewardErrorCode } from '@onekeyhq/shared/src/referralCode/type';
 import {
   EModalReferFriendsRoutes,
   EModalRoutes,
 } from '@onekeyhq/shared/src/routes';
-
-import { mockVerifyCode } from '../mockData';
-import { ERedemptionType } from '../types';
 
 import { showRedemptionSuccessDialog } from './RedemptionSuccessDialog';
 
@@ -43,6 +42,7 @@ function RedemptionCenterDialogContent({
 }: IRedemptionCenterDialogProps) {
   const intl = useIntl();
   const navigation = useAppNavigation();
+  const { isLoggedIn } = useOneKeyAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<IRedemptionFormValues>({
@@ -69,40 +69,47 @@ function RedemptionCenterDialogContent({
       form.clearErrors('code');
 
       try {
-        if (__DEV__) {
-          const mockResult = await mockVerifyCode(code);
-          if (
-            mockResult.success &&
-            mockResult.data.type === ERedemptionType.BtcReward
-          ) {
-            const { data } = mockResult;
-            const codeInfo = {
-              code: data.code,
-              modelName: data.modelName,
-              usdAmount: data.usdAmount,
-              estimatedBtcAmount: data.estimatedBtcAmount,
-              btcPrice: data.btcPrice,
-            };
+        // Client-side dispatch between the two redemption modes (BTC reward vs
+        // legacy rebate level upgrade). Server has no unified endpoint, so we
+        // try btc-reward first and fall back to the legacy redeemCode on
+        // InvalidCode. If this becomes too brittle as more modes are added,
+        // raise with backend to add a discriminator (code prefix or a router
+        // endpoint) rather than stacking more fallback branches here.
+        const btcResult =
+          await backgroundApiProxy.serviceReferralCode.btcRewardVerifyCode({
+            code,
+          });
 
-            onClose?.();
+        if (btcResult.success) {
+          defaultLogger.referral.redemption.redeemSuccess(code);
+          onClose?.();
+          navigation.pushModal(EModalRoutes.ReferFriendsModal, {
+            screen: EModalReferFriendsRoutes.BtcRewardVerifyOrder,
+            params: {
+              codeInfo: {
+                codeId: btcResult.data.codeId,
+                modelLabel: btcResult.data.modelLabel,
+                rewardUsdCents: btcResult.data.rewardUsdCents,
+                activityName: btcResult.data.activityName,
+              },
+            },
+          });
+          return;
+        }
 
-            if (data.isPreAssociatedOrder) {
-              navigation.pushModal(EModalRoutes.ReferFriendsModal, {
-                screen: EModalReferFriendsRoutes.BtcRewardSelectAddress,
-                params: {
-                  codeInfo,
-                  orderId: data.preAssociatedOrderId,
-                  productName: data.modelName,
-                },
-              });
-            } else {
-              navigation.pushModal(EModalRoutes.ReferFriendsModal, {
-                screen: EModalReferFriendsRoutes.BtcRewardVerifyOrder,
-                params: { codeInfo },
-              });
-            }
-            return;
-          }
+        // Only fall back to the legacy path when the user is already logged in
+        // — avoids triggering a login prompt for a plain mistyped/invalid code.
+        if (
+          btcResult.error.code !== EBtcRewardErrorCode.InvalidCode ||
+          !isLoggedIn
+        ) {
+          defaultLogger.referral.redemption.redeemFailed(
+            code,
+            btcResult.error.message,
+          );
+          form.setError('code', { message: btcResult.error.message });
+          preventClose?.();
+          return;
         }
 
         const result = await backgroundApiProxy.serviceReferralCode.redeemCode({
@@ -153,7 +160,7 @@ function RedemptionCenterDialogContent({
         setIsSubmitting(false);
       }
     },
-    [form, intl, navigation, onClose, onSuccess],
+    [form, intl, isLoggedIn, navigation, onClose, onSuccess],
   );
 
   const handleRedeem = useCallback(

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { useRoute } from '@react-navigation/core';
+import { CommonActions, useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 
 import {
@@ -12,13 +12,13 @@ import {
   XStack,
   YStack,
 } from '@onekeyhq/components';
+import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import type { IBtcRewardCodeInfoParam } from '@onekeyhq/shared/src/routes';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 
-import { mockSubmitRedemption } from '../../mockData';
 import { formatUsd } from '../../utils';
 
 import type { RouteProp } from '@react-navigation/core';
@@ -27,10 +27,9 @@ type IRouteParams = RouteProp<
   {
     BtcRewardConfirm: {
       codeInfo: IBtcRewardCodeInfoParam;
-      orderId?: string;
-      productName?: string;
-      address: string;
-      addressLabel: string;
+      shopifyOrderNumber: string;
+      displayTitle: string;
+      walletAddress: string;
     };
   },
   'BtcRewardConfirm'
@@ -40,9 +39,9 @@ function ConfirmRedeemPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, orderId, productName, address, addressLabel } =
+  const { codeInfo, shopifyOrderNumber, displayTitle, walletAddress } =
     route.params;
-  const { code, modelName, usdAmount, estimatedBtcAmount, btcPrice } = codeInfo;
+  const { codeId, rewardUsdCents, activityName } = codeInfo;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -52,22 +51,35 @@ function ConfirmRedeemPage() {
     setSubmitError(null);
 
     try {
-      const result = await mockSubmitRedemption({
-        code,
-        orderId,
-        address,
-      });
+      const result =
+        await backgroundApiProxy.serviceReferralCode.btcRewardCommit({
+          codeId,
+          shopifyOrderNumber,
+          walletAddress,
+        });
 
       if (!result.success) {
-        setSubmitError(result.error);
+        setSubmitError(result.error.message);
         return;
       }
 
-      navigation.push(EModalReferFriendsRoutes.BtcRewardSuccess, {
-        usdAmount,
-        estimatedBtcAmount,
-        address,
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: EModalReferFriendsRoutes.BtcRewardSuccess,
+              params: {
+                codeInfo,
+                walletAddress,
+                btcAmount: result.data.btcAmount,
+                btcPriceUsd: result.data.btcPriceUsd,
+                payoutEligibleAt: result.data.payoutEligibleAt,
+              },
+            },
+          ],
+        }),
+      );
     } catch {
       setSubmitError(
         intl.formatMessage({
@@ -77,7 +89,7 @@ function ConfirmRedeemPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [navigation, code, orderId, address, usdAmount, estimatedBtcAmount, intl]);
+  }, [navigation, codeId, codeInfo, shopifyOrderNumber, walletAddress, intl]);
 
   const handleChangeAddress = useCallback(() => {
     navigation.pop();
@@ -93,33 +105,32 @@ function ConfirmRedeemPage() {
       <Page.Body px="$5" py="$4">
         <YStack gap="$4">
           <YStack alignItems="center" py="$4" gap="$1">
-            <SizableText size="$headingXl" color="$textSubdued">
+            <SizableText size="$bodyLg" color="$textSubdued">
               {intl.formatMessage({
                 id: ETranslations.redemption_btc_confirm_you_will_receive,
               })}
             </SizableText>
             <SizableText size="$heading4xl" color="$text">
-              {formatUsd(usdAmount)}
+              {formatUsd(rewardUsdCents / 100)}
             </SizableText>
             <SizableText size="$bodyMd" color="$textSubdued">
-              {intl.formatMessage(
-                { id: ETranslations.redemption_btc_amount_on_base },
-                { amount: estimatedBtcAmount },
-              )}
+              {intl.formatMessage({
+                id: ETranslations.redemption_btc_confirm_price_lock_hint_desc,
+              })}
             </SizableText>
           </YStack>
 
           <YStack bg="$bgSubdued" borderRadius="$3" p="$4" gap="$2.5">
-            {orderId ? (
-              <XStack justifyContent="space-between">
-                <SizableText size="$bodyMd" color="$textSubdued">
-                  {intl.formatMessage({
-                    id: ETranslations.Limit_order_history_order_id,
-                  })}
-                </SizableText>
-                <SizableText size="$bodyMdMedium">{orderId}</SizableText>
-              </XStack>
-            ) : null}
+            <XStack justifyContent="space-between">
+              <SizableText size="$bodyMd" color="$textSubdued">
+                {intl.formatMessage({
+                  id: ETranslations.Limit_order_history_order_id,
+                })}
+              </SizableText>
+              <SizableText size="$bodyMdMedium">
+                {shopifyOrderNumber}
+              </SizableText>
+            </XStack>
 
             <XStack justifyContent="space-between">
               <SizableText size="$bodyMd" color="$textSubdued">
@@ -127,21 +138,19 @@ function ConfirmRedeemPage() {
                   id: ETranslations.redemption_btc_label_product,
                 })}
               </SizableText>
-              <SizableText size="$bodyMdMedium">
-                {productName ?? modelName}
-              </SizableText>
+              <SizableText size="$bodyMdMedium">{displayTitle}</SizableText>
             </XStack>
 
-            <XStack justifyContent="space-between">
-              <SizableText size="$bodyMd" color="$textSubdued">
-                {intl.formatMessage({
-                  id: ETranslations.redemption_btc_label_btc_price,
-                })}
-              </SizableText>
-              <SizableText size="$bodyMd" color="$textSubdued">
-                {formatUsd(btcPrice)}
-              </SizableText>
-            </XStack>
+            {activityName ? (
+              <XStack justifyContent="space-between">
+                <SizableText size="$bodyMd" color="$textSubdued">
+                  {intl.formatMessage({
+                    id: ETranslations.redemption_btc_label_activity_title,
+                  })}
+                </SizableText>
+                <SizableText size="$bodyMdMedium">{activityName}</SizableText>
+              </XStack>
+            ) : null}
 
             <Divider />
 
@@ -150,13 +159,18 @@ function ConfirmRedeemPage() {
               alignItems="center"
               onPress={handleChangeAddress}
               pressStyle={{ opacity: 0.7 }}
-              cursor="pointer"
+              cursor="default"
+              role="button"
             >
               <Icon name="WalletCryptoSolid" size="$5" color="$icon" />
               <YStack flex={1}>
-                <SizableText size="$bodyMdMedium">{addressLabel}</SizableText>
+                <SizableText size="$bodyMdMedium">
+                  {intl.formatMessage({
+                    id: ETranslations.redemption_btc_success_label_to_address,
+                  })}
+                </SizableText>
                 <SizableText size="$bodySm" color="$textSubdued">
-                  {accountUtils.shortenAddress({ address })}
+                  {accountUtils.shortenAddress({ address: walletAddress })}
                 </SizableText>
               </YStack>
               <XStack gap="$1" alignItems="center">

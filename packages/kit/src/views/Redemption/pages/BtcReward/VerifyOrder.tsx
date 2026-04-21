@@ -13,12 +13,11 @@ import {
   YStack,
   useForm,
 } from '@onekeyhq/components';
+import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import type { IBtcRewardCodeInfoParam } from '@onekeyhq/shared/src/routes';
-
-import { mockVerifyOrder } from '../../mockData';
 
 import type { RouteProp } from '@react-navigation/core';
 
@@ -32,10 +31,10 @@ type IRouteParams = RouteProp<
 >;
 
 interface IFormValues {
-  orderId: string;
+  shopifyOrderNumber: string;
 }
 
-const EXAMPLE_ORDER_ID = 'ORD-2025-00123';
+const EXAMPLE_ORDER_ID = '#1001';
 
 function VerifyOrderPage() {
   const intl = useIntl();
@@ -46,30 +45,35 @@ function VerifyOrderPage() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const form = useForm<IFormValues>({
-    defaultValues: { orderId: '' },
+    defaultValues: { shopifyOrderNumber: '' },
     mode: 'onChange',
   });
 
-  const orderIdValue = form.watch('orderId');
+  const orderNumberValue = form.watch('shopifyOrderNumber');
 
   const handleVerify = useCallback(async () => {
-    const orderId = form.getValues('orderId').trim();
-    if (!orderId) return;
+    const shopifyOrderNumber = form.getValues('shopifyOrderNumber').trim();
+    if (!shopifyOrderNumber) return;
 
     setIsVerifying(true);
-    form.clearErrors('orderId');
+    form.clearErrors('shopifyOrderNumber');
 
     try {
-      const result = await mockVerifyOrder(orderId);
+      const result =
+        await backgroundApiProxy.serviceReferralCode.btcRewardVerifyOrder({
+          codeId: codeInfo.codeId,
+          shopifyOrderNumber,
+        });
       if (!result.success) {
-        form.setError('orderId', { message: result.error });
+        form.setError('shopifyOrderNumber', { message: result.error.message });
         return;
       }
 
       navigation.push(EModalReferFriendsRoutes.BtcRewardSelectAddress, {
         codeInfo,
-        orderId: result.data.orderId,
-        productName: result.data.productName,
+        shopifyOrderNumber: result.data.orderSummary.orderNumber,
+        displayTitle: result.data.orderSummary.displayTitle,
+        quotaRemaining: result.data.quotaRemaining,
       });
     } finally {
       setIsVerifying(false);
@@ -93,7 +97,7 @@ function VerifyOrderPage() {
 
           <Form form={form}>
             <Form.Field
-              name="orderId"
+              name="shopifyOrderNumber"
               label={intl.formatMessage({
                 id: ETranslations.redemption_btc_verify_order_input_label,
               })}
@@ -112,29 +116,20 @@ function VerifyOrderPage() {
           </Form>
 
           <XStack bg="$bgSubdued" borderRadius="$3" p="$3" gap="$2">
-            <Icon name="QuestionmarkOutline" size="$4" color="$iconSubdued" />
+            <Icon name="QuestionmarkOutline" size="$5" color="$iconSubdued" />
             <YStack flex={1} gap="$1">
-              <SizableText size="$bodySmMedium">
+              <SizableText size="$bodyMdMedium">
                 {intl.formatMessage({
                   id: ETranslations.redemption_btc_verify_order_hint_title,
                 })}
               </SizableText>
-              <SizableText size="$bodySm" color="$textSubdued">
+              <SizableText size="$bodyMd" color="$textSubdued">
                 {intl.formatMessage({
                   id: ETranslations.redemption_btc_verify_order_hint_description,
                 })}
               </SizableText>
             </YStack>
           </XStack>
-
-          {__DEV__ ? (
-            <YStack bg="$bgSubdued" borderRadius="$3" p="$3">
-              <SizableText size="$bodySm" color="$textSubdued">
-                Demo: Try "ORD-2025-00123", "ORD-2025-00456", "ORD-2025-00789",
-                or "ORD-REFUND-001"
-              </SizableText>
-            </YStack>
-          ) : null}
         </YStack>
       </Page.Body>
 
@@ -144,7 +139,7 @@ function VerifyOrderPage() {
           id: ETranslations.redemption_btc_verify_order_submit,
         })}
         confirmButtonProps={{
-          disabled: !orderIdValue?.trim() || isVerifying,
+          disabled: !orderNumberValue?.trim() || isVerifying,
           loading: isVerifying,
         }}
       />

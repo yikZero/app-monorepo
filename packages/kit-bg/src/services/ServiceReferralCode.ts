@@ -3,10 +3,20 @@ import {
   backgroundClass,
   backgroundMethod,
 } from '@onekeyhq/shared/src/background/backgroundDecorators';
+import { EBtcRewardErrorCode } from '@onekeyhq/shared/src/referralCode/type';
 import type {
   EExportTimeRange,
   IBatchCheckWalletItem,
   IBatchCheckWalletResponse,
+  IBtcRewardCommitData,
+  IBtcRewardCommitParams,
+  IBtcRewardHistoryParams,
+  IBtcRewardHistoryResponse,
+  IBtcRewardResult,
+  IBtcRewardVerifyCodeData,
+  IBtcRewardVerifyCodeParams,
+  IBtcRewardVerifyOrderData,
+  IBtcRewardVerifyOrderParams,
   IEarnPositionsResponse,
   IEarnRewardResponse,
   IEarnWalletHistory,
@@ -42,6 +52,12 @@ import type { IHyperLiquidSignatureRSV } from '@onekeyhq/shared/types/hyperliqui
 import ServiceBase from './ServiceBase';
 
 import type { IWalletReferralCode } from '../dbs/simple/entity/SimpleDbEntityReferralCode';
+
+const KNOWN_BTC_REWARD_ERROR_CODES = new Set(
+  Object.values(EBtcRewardErrorCode).filter(
+    (v): v is EBtcRewardErrorCode => typeof v === 'number',
+  ),
+);
 
 @backgroundClass()
 class ServiceReferralCode extends ServiceBase {
@@ -846,6 +862,100 @@ class ServiceReferralCode extends ServiceBase {
       }
       throw error;
     }
+  }
+
+  private async btcRewardPost<TData>(
+    path: string,
+    params: unknown,
+  ): Promise<IBtcRewardResult<TData>> {
+    const client = await this.getClient(EServiceEndpointEnum.Rebate);
+    try {
+      const response = await client.post<{ success: true; data: TData }>(
+        path,
+        params,
+        { autoHandleError: false } as any,
+      );
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      return this.normalizeBtcRewardError(error);
+    }
+  }
+
+  private async btcRewardGet<TData>(
+    path: string,
+    params: unknown,
+  ): Promise<IBtcRewardResult<TData>> {
+    const client = await this.getClient(EServiceEndpointEnum.Rebate);
+    try {
+      const response = await client.get<TData>(path, {
+        params,
+        autoHandleError: false,
+      } as any);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return this.normalizeBtcRewardError(error);
+    }
+  }
+
+  @backgroundMethod()
+  async btcRewardVerifyCode(
+    params: IBtcRewardVerifyCodeParams,
+  ): Promise<IBtcRewardResult<IBtcRewardVerifyCodeData>> {
+    return this.btcRewardPost<IBtcRewardVerifyCodeData>(
+      '/rebate/v1/btc-reward/verify-code',
+      params,
+    );
+  }
+
+  @backgroundMethod()
+  async btcRewardVerifyOrder(
+    params: IBtcRewardVerifyOrderParams,
+  ): Promise<IBtcRewardResult<IBtcRewardVerifyOrderData>> {
+    return this.btcRewardPost<IBtcRewardVerifyOrderData>(
+      '/rebate/v1/btc-reward/verify-order',
+      params,
+    );
+  }
+
+  @backgroundMethod()
+  async btcRewardCommit(
+    params: IBtcRewardCommitParams,
+  ): Promise<IBtcRewardResult<IBtcRewardCommitData>> {
+    return this.btcRewardPost<IBtcRewardCommitData>(
+      '/rebate/v1/btc-reward/commit',
+      params,
+    );
+  }
+
+  @backgroundMethod()
+  async btcRewardHistory(
+    params: IBtcRewardHistoryParams,
+  ): Promise<IBtcRewardResult<IBtcRewardHistoryResponse>> {
+    return this.btcRewardGet<IBtcRewardHistoryResponse>(
+      '/rebate/v1/btc-reward/history',
+      params,
+    );
+  }
+
+  private normalizeBtcRewardError<T>(error: unknown): IBtcRewardResult<T> {
+    const axiosError = error as { response?: { data?: unknown } };
+    const errData = axiosError?.response?.data as
+      | { code?: number; message?: string }
+      | undefined;
+    if (
+      errData?.code !== undefined &&
+      typeof errData.message === 'string' &&
+      KNOWN_BTC_REWARD_ERROR_CODES.has(errData.code as EBtcRewardErrorCode)
+    ) {
+      return {
+        success: false,
+        error: {
+          code: errData.code as EBtcRewardErrorCode,
+          message: errData.message,
+        },
+      };
+    }
+    throw error;
   }
 }
 

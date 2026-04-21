@@ -4,23 +4,43 @@ import { useIntl } from 'react-intl';
 
 import { Badge, Empty, Page, Spinner, YStack } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
+import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
+import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
+import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
+import { getNetworkIdsMap } from '@onekeyhq/shared/src/config/networkIds';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
-import type { IRedemptionRecordItem } from '@onekeyhq/shared/src/referralCode/type';
+import { EBtcRewardStatus } from '@onekeyhq/shared/src/referralCode/type';
+import type {
+  IBtcRewardHistoryItem,
+  IRedemptionRecordItem,
+} from '@onekeyhq/shared/src/referralCode/type';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
+import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
-import { mockGetRecords } from '../mockData';
 import { getBtcRewardStatusConfig } from '../utils';
 
-import type { IBtcRewardRecord } from '../types';
+const baseNetworkId = getNetworkIdsMap().base;
+
+const EPOCH = new Date(0);
 
 type IUnifiedRecord =
-  | { kind: 'legacy'; id: string; sortDate: Date; data: IRedemptionRecordItem }
-  | { kind: 'btc'; id: string; sortDate: Date; data: IBtcRewardRecord };
+  | {
+      kind: 'legacy';
+      id: string;
+      sortDate: Date;
+      data: IRedemptionRecordItem;
+    }
+  | {
+      kind: 'btc';
+      id: string;
+      sortDate: Date;
+      data: IBtcRewardHistoryItem;
+    };
 
 function LegacyRecordRow({ item }: { item: IRedemptionRecordItem }) {
   const intl = useIntl();
@@ -51,23 +71,27 @@ function BtcRewardRecordRow({
   onPress,
   statusConfigs,
 }: {
-  record: IBtcRewardRecord;
-  onPress: (recordId: string) => void;
+  record: IBtcRewardHistoryItem;
+  onPress: (item: IBtcRewardHistoryItem) => void;
   statusConfigs: ReturnType<typeof getBtcRewardStatusConfig>;
 }) {
-  const statusConfig = statusConfigs[record.status];
-  const handlePress = useCallback(
-    () => onPress(record.id),
-    [onPress, record.id],
-  );
+  const statusConfig =
+    statusConfigs[record.status] ?? statusConfigs[EBtcRewardStatus.Wait];
+  const handlePress = useCallback(() => onPress(record), [onPress, record]);
+
+  const subtitleParts: string[] = [];
+  if (record.btcAmount) {
+    subtitleParts.push(`~${record.btcAmount} cbBTC`);
+  }
+  if (record.submittedAt) {
+    subtitleParts.push(formatDate(record.submittedAt, { hideSeconds: true }));
+  }
 
   return (
     <ListItem
       icon="TicketOutline"
-      title={record.productName}
-      subtitle={`~${record.btcAmount} cbBTC · ${formatDate(record.createdAt, {
-        hideSeconds: true,
-      })}`}
+      title={record.modelLabel}
+      subtitle={subtitleParts.join(' · ') || record.code}
       drillIn
       onPress={handlePress}
     >
@@ -78,24 +102,65 @@ function BtcRewardRecordRow({
   );
 }
 
-export default function RedemptionHistory() {
+function RedemptionHistoryContent() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const statusConfigs = useMemo(() => getBtcRewardStatusConfig(intl), [intl]);
 
+  const { activeAccount } = useActiveAccount({ num: 0 });
+  const { isLoggedIn } = useOneKeyAuth();
+
+  const indexedAccountId = activeAccount?.indexedAccount?.id;
+  const accountId = activeAccount?.account?.id;
+
+  // TODO: backend to include walletAddress on each HistoryItem. The /history
+  // endpoint also does instance-fallback matching via X-Onekey-Instance-Id, so
+  // one query may legitimately return records across multiple wallet addresses
+  // — without the per-item walletAddress the client can't attribute each row
+  // to the correct receive address.
+  const { result: walletAddress, isLoading: isWalletAddressLoading } =
+    usePromiseResult(
+      async () => {
+        if (!indexedAccountId && !accountId) return undefined;
+        try {
+          const networkAccount =
+            await backgroundApiProxy.serviceAccount.getNetworkAccount({
+              indexedAccountId: indexedAccountId ?? '',
+              networkId: baseNetworkId,
+              deriveType: 'default',
+              accountId: indexedAccountId ? undefined : (accountId ?? ''),
+            });
+          return networkAccount?.address;
+        } catch {
+          return undefined;
+        }
+      },
+      [indexedAccountId, accountId],
+      { watchLoading: true },
+    );
+
   const { result: legacyResult, isLoading: isLegacyLoading } = usePromiseResult(
     async () => {
+      if (!isLoggedIn) return undefined;
       defaultLogger.referral.redemption.loadHistory();
       return backgroundApiProxy.serviceReferralCode.getRedemptionRecords();
     },
-    [],
+    [isLoggedIn],
     { watchLoading: true },
   );
 
-  const { result: btcRecords, isLoading: isBtcLoading } = usePromiseResult(
-    () => mockGetRecords(),
-    [],
-    { watchLoading: true, initResult: [] as IBtcRewardRecord[] },
+  const { result: btcItems, isLoading: isBtcLoading } = usePromiseResult(
+    async () => {
+      if (!walletAddress) return [] as IBtcRewardHistoryItem[];
+      const result =
+        await backgroundApiProxy.serviceReferralCode.btcRewardHistory({
+          walletAddress,
+        });
+      if (!result.success) return [] as IBtcRewardHistoryItem[];
+      return result.data.data;
+    },
+    [walletAddress],
+    { watchLoading: true, initResult: [] as IBtcRewardHistoryItem[] },
   );
 
   const unifiedRecords = useMemo<IUnifiedRecord[]>(() => {
@@ -106,25 +171,30 @@ export default function RedemptionHistory() {
       sortDate: new Date(item.redeemedAt),
       data: item,
     }));
-    const btc = (btcRecords ?? []).map<IUnifiedRecord>((record) => ({
+    const btc = (btcItems ?? []).map<IUnifiedRecord>((record) => ({
       kind: 'btc',
-      id: record.id,
-      sortDate: new Date(record.createdAt),
+      id: record.code,
+      sortDate: record.submittedAt ? new Date(record.submittedAt) : EPOCH,
       data: record,
     }));
     return [...legacy, ...btc].toSorted(
       (a, b) => b.sortDate.getTime() - a.sortDate.getTime(),
     );
-  }, [legacyResult, btcRecords]);
+  }, [legacyResult, btcItems]);
 
   const handleRecordPress = useCallback(
-    (recordId: string) => {
-      navigation.push(EModalReferFriendsRoutes.BtcRewardDetail, { recordId });
+    (item: IBtcRewardHistoryItem) => {
+      if (!walletAddress) return;
+      navigation.push(EModalReferFriendsRoutes.BtcRewardDetail, {
+        item,
+        walletAddress,
+      });
     },
-    [navigation],
+    [navigation, walletAddress],
   );
 
-  const isLoading = isLegacyLoading || isBtcLoading;
+  const isLoading =
+    isWalletAddressLoading || isBtcLoading || (isLoggedIn && isLegacyLoading);
 
   const renderContent = () => {
     if (isLoading) {
@@ -178,5 +248,19 @@ export default function RedemptionHistory() {
       />
       <Page.Body>{renderContent()}</Page.Body>
     </Page>
+  );
+}
+
+export default function RedemptionHistory() {
+  return (
+    <AccountSelectorProviderMirror
+      config={{
+        sceneName: EAccountSelectorSceneName.home,
+        sceneUrl: '',
+      }}
+      enabledNum={[0]}
+    >
+      <RedemptionHistoryContent />
+    </AccountSelectorProviderMirror>
   );
 }

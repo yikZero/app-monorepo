@@ -1,140 +1,158 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 
 import {
   Alert,
-  Empty,
   Icon,
   Page,
-  SearchBar,
   SizableText,
   Stack,
   XStack,
   YStack,
 } from '@onekeyhq/components';
-import type { IKeyOfIcons } from '@onekeyhq/components';
-import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
+import { AccountAvatar } from '@onekeyhq/kit/src/components/AccountAvatar';
+import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
+import { useAccountSelectorTrigger } from '@onekeyhq/kit/src/components/AccountSelector/hooks/useAccountSelectorTrigger';
 import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useAccountSelectorActions } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
 import { getNetworkIdsMap } from '@onekeyhq/shared/src/config/networkIds';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import type { IBtcRewardCodeInfoParam } from '@onekeyhq/shared/src/routes';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
+import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
-import { mockGetLocalWalletAddresses } from '../../mockData';
-
-import type { IBtcRewardWalletAddress } from '../../types';
 import type { RouteProp } from '@react-navigation/core';
 
 type IRouteParams = RouteProp<
   {
     BtcRewardSelectAddress: {
       codeInfo: IBtcRewardCodeInfoParam;
-      orderId?: string;
-      productName?: string;
-      preselectedAddressId?: string;
+      shopifyOrderNumber: string;
+      displayTitle: string;
+      quotaRemaining?: number;
     };
   },
   'BtcRewardSelectAddress'
 >;
 
-const WALLET_TYPE_ICONS: Record<
-  IBtcRewardWalletAddress['walletType'],
-  IKeyOfIcons
-> = {
-  hw: 'OnekeyDeviceCustom',
-  hd: 'WalletCryptoSolid',
-  imported: 'Key2Solid',
-};
+const baseNetworkId = getNetworkIdsMap().base;
 
-const WALLET_TYPE_SECTION_LABEL_KEYS: Record<
-  IBtcRewardWalletAddress['walletType'],
-  ETranslations
-> = {
-  hw: ETranslations.redemption_btc_select_address_section_hw,
-  hd: ETranslations.redemption_btc_select_address_section_hd,
-  imported: ETranslations.redemption_btc_select_address_section_imported,
-};
-
-const WALLET_TYPE_ORDER: IBtcRewardWalletAddress['walletType'][] = [
-  'hw',
-  'hd',
-  'imported',
-];
-
-const SEARCH_THRESHOLD = 4;
-
-function SelectAddressPage() {
+function SelectAddressContent() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, orderId, productName, preselectedAddressId } = route.params;
+  const { codeInfo, shopifyOrderNumber, displayTitle, quotaRemaining } =
+    route.params;
 
-  const addresses = useMemo(() => mockGetLocalWalletAddresses(), []);
-  const [selectedId, setSelectedId] = useState<string | null>(() => {
-    if (
-      preselectedAddressId &&
-      addresses.some((a) => a.id === preselectedAddressId)
-    ) {
-      return preselectedAddressId;
-    }
-    return null;
+  const { activeAccount, showAccountSelector } = useAccountSelectorTrigger({
+    num: 0,
+    linkNetworkId: baseNetworkId,
   });
-  const [searchText, setSearchText] = useState('');
+  const actions = useAccountSelectorActions();
 
-  const baseNetworkId = getNetworkIdsMap().base;
+  useEffect(() => {
+    void actions.current.syncFromScene({
+      from: {
+        sceneName: EAccountSelectorSceneName.home,
+        sceneUrl: '',
+        sceneNum: 0,
+      },
+      num: 0,
+    });
+  }, [actions]);
 
-  const selectedAddress = useMemo(
-    () => addresses.find((a) => a.id === selectedId),
-    [addresses, selectedId],
-  );
-
-  const filteredAddresses = useMemo(() => {
-    const trimmed = searchText.trim().toLowerCase();
-    if (!trimmed) return addresses;
-    return addresses.filter(
-      (a) =>
-        a.label.toLowerCase().includes(trimmed) ||
-        a.address.toLowerCase().includes(trimmed),
-    );
-  }, [addresses, searchText]);
-
-  const groupedAddresses = useMemo(() => {
-    const groups: Record<
-      IBtcRewardWalletAddress['walletType'],
-      IBtcRewardWalletAddress[]
-    > = { hw: [], hd: [], imported: [] };
-    for (const addr of filteredAddresses) {
-      groups[addr.walletType].push(addr);
-    }
-    return WALLET_TYPE_ORDER.filter((type) => groups[type].length > 0).map(
-      (type) => ({ type, items: groups[type] }),
-    );
-  }, [filteredAddresses]);
+  const account = activeAccount?.account;
+  const wallet = activeAccount?.wallet;
+  const indexedAccount = activeAccount?.indexedAccount;
+  const dbAccount = activeAccount?.dbAccount;
+  const walletAddress = account?.address;
 
   const handleNext = useCallback(() => {
-    if (!selectedAddress) return;
-
+    if (!walletAddress) return;
     navigation.push(EModalReferFriendsRoutes.BtcRewardConfirm, {
       codeInfo,
-      orderId,
-      productName,
-      address: selectedAddress.address,
-      addressLabel: selectedAddress.label,
+      shopifyOrderNumber,
+      displayTitle,
+      walletAddress,
     });
-  }, [navigation, selectedAddress, codeInfo, orderId, productName]);
+  }, [navigation, walletAddress, codeInfo, shopifyOrderNumber, displayTitle]);
 
-  const handleCreateWallet = useCallback(() => {
-    navigation.popStack();
-  }, [navigation]);
+  const renderSelectedCard = () => (
+    <XStack
+      role="button"
+      onPress={showAccountSelector}
+      alignItems="center"
+      gap="$3"
+      borderRadius="$3"
+      borderWidth={1}
+      borderColor="$borderSubdued"
+      p="$3"
+      hoverStyle={{ bg: '$bgHover' }}
+      pressStyle={{ bg: '$bgActive' }}
+      userSelect="none"
+    >
+      <AccountAvatar
+        size="small"
+        indexedAccount={indexedAccount}
+        account={account}
+        dbAccount={dbAccount}
+        wallet={wallet}
+      />
+      <YStack flex={1} gap="$0.5">
+        <SizableText size="$bodyMdMedium" numberOfLines={1}>
+          {wallet?.name
+            ? `${wallet.name} / ${account?.name ?? ''}`
+            : (account?.name ?? '')}
+        </SizableText>
+        {walletAddress ? (
+          <XStack alignItems="center" gap="$1.5">
+            <NetworkAvatar networkId={baseNetworkId} size="$4" />
+            <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
+              {accountUtils.shortenAddress({ address: walletAddress })}
+            </SizableText>
+          </XStack>
+        ) : null}
+      </YStack>
+      <Icon name="ChevronDownSmallOutline" size="$5" color="$iconSubdued" />
+    </XStack>
+  );
 
-  const hasNoWallets = addresses.length === 0;
-  const showSearch = addresses.length >= SEARCH_THRESHOLD;
-  const noSearchResults =
-    !hasNoWallets && filteredAddresses.length === 0 && searchText.trim() !== '';
+  const renderPlaceholderCard = () => (
+    <XStack
+      role="button"
+      onPress={showAccountSelector}
+      alignItems="center"
+      gap="$3"
+      borderRadius="$3"
+      borderWidth={1}
+      borderColor="$borderSubdued"
+      borderStyle="dashed"
+      p="$3"
+      hoverStyle={{ bg: '$bgHover' }}
+      pressStyle={{ bg: '$bgActive' }}
+      userSelect="none"
+    >
+      <Stack
+        bg="$bgSubdued"
+        borderRadius="$full"
+        p="$2"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Icon name="WalletOutline" size="$5" color="$iconSubdued" />
+      </Stack>
+      <SizableText flex={1} size="$bodyMdMedium" color="$textSubdued">
+        {intl.formatMessage({ id: ETranslations.global_select_wallet })}
+      </SizableText>
+      <Icon name="ChevronDownSmallOutline" size="$5" color="$iconSubdued" />
+    </XStack>
+  );
+
+  const hasSelection = Boolean(account);
 
   return (
     <Page scrollEnabled>
@@ -143,177 +161,60 @@ function SelectAddressPage() {
           id: ETranslations.redemption_btc_select_address_title,
         })}
       />
-      <Page.Body pb="$4">
-        {hasNoWallets ? (
-          <YStack px="$5" pt="$10">
-            <Empty
-              icon="WalletCryptoOutline"
-              title={intl.formatMessage({
-                id: ETranslations.redemption_btc_select_address_empty_title,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.redemption_btc_select_address_empty_desc,
-              })}
-              buttonProps={{
-                children: intl.formatMessage({
-                  id: ETranslations.global_create_wallet,
-                }),
-                onPress: handleCreateWallet,
-              }}
-            />
-          </YStack>
-        ) : (
-          <>
-            <YStack px="$5" pt="$4" gap="$3">
-              <XStack
-                bg="$bgInfoSubdued"
-                borderRadius="$3"
-                px="$3"
-                py="$2.5"
-                gap="$2.5"
-                alignItems="center"
-              >
-                <NetworkAvatar networkId={baseNetworkId} size="$7" />
-                <YStack flex={1}>
-                  <SizableText size="$bodyMdMedium">
-                    {intl.formatMessage({
-                      id: ETranslations.redemption_btc_select_address_network_title,
-                    })}
-                  </SizableText>
-                  <SizableText size="$bodySm" color="$textSubdued">
-                    {intl.formatMessage({
-                      id: ETranslations.redemption_btc_select_address_network_desc,
-                    })}
-                  </SizableText>
-                </YStack>
-              </XStack>
+      <Page.Body px="$5" py="$4">
+        <YStack gap="$4">
+          {hasSelection ? renderSelectedCard() : renderPlaceholderCard()}
 
-              <Alert
-                type="warning"
-                title={intl.formatMessage({
-                  id: ETranslations.redemption_btc_select_address_alert_title,
-                })}
-                description={intl.formatMessage({
-                  id: ETranslations.redemption_btc_select_address_alert_desc,
-                })}
-              />
-            </YStack>
-
-            {showSearch ? (
-              <Stack px="$5" pt="$3" pb="$1">
-                <SearchBar
-                  placeholder={intl.formatMessage({
-                    id: ETranslations.redemption_btc_select_address_search_placeholder,
-                  })}
-                  value={searchText}
-                  onChangeText={setSearchText}
-                />
-              </Stack>
-            ) : null}
-
-            {noSearchResults ? (
-              <YStack px="$5" pt="$6">
-                <Empty
-                  icon="SearchOutline"
-                  title={intl.formatMessage({
-                    id: ETranslations.global_search_no_results_title,
-                  })}
-                  description={intl.formatMessage({
-                    id: ETranslations.global_search_no_results_desc,
-                  })}
-                />
-              </YStack>
-            ) : (
-              <YStack pt="$2">
-                {groupedAddresses.map(({ type, items }) => (
-                  <YStack key={type}>
-                    <SizableText
-                      size="$headingXs"
-                      color="$textSubdued"
-                      textTransform="uppercase"
-                      px="$5"
-                      pt="$3"
-                      pb="$1"
-                    >
-                      {intl.formatMessage({
-                        id: WALLET_TYPE_SECTION_LABEL_KEYS[type],
-                      })}
-                    </SizableText>
-                    {items.map((addr) => {
-                      const isSelected = selectedId === addr.id;
-                      return (
-                        <ListItem
-                          key={addr.id}
-                          title={addr.label}
-                          subtitle={accountUtils.shortenAddress({
-                            address: addr.address,
-                          })}
-                          renderAvatar={
-                            <Stack position="relative">
-                              <Stack
-                                bg="$bgStrong"
-                                borderRadius="$full"
-                                w="$10"
-                                h="$10"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Icon
-                                  name={WALLET_TYPE_ICONS[addr.walletType]}
-                                  size="$5"
-                                  color="$icon"
-                                />
-                              </Stack>
-                              <Stack
-                                position="absolute"
-                                right={-2}
-                                bottom={-2}
-                                bg="$bgApp"
-                                borderRadius="$full"
-                                p="$0.5"
-                              >
-                                <NetworkAvatar
-                                  networkId={baseNetworkId}
-                                  size="$4"
-                                />
-                              </Stack>
-                            </Stack>
-                          }
-                          onPress={() => setSelectedId(addr.id)}
-                        >
-                          <Icon
-                            name={
-                              isSelected
-                                ? 'CheckRadioSolid'
-                                : 'CirclePlaceholderOnOutline'
-                            }
-                            color={
-                              isSelected ? '$iconSuccess' : '$iconDisabled'
-                            }
-                            size="$5"
-                          />
-                        </ListItem>
-                      );
-                    })}
-                  </YStack>
-                ))}
-              </YStack>
-            )}
-          </>
-        )}
+          <Alert
+            type="warning"
+            title={intl.formatMessage({
+              id: ETranslations.redemption_btc_select_address_alert_title,
+            })}
+            description={intl.formatMessage({
+              id: ETranslations.redemption_btc_select_address_alert_desc,
+            })}
+          />
+        </YStack>
       </Page.Body>
 
-      {!hasNoWallets ? (
-        <Page.Footer
+      <Page.Footer>
+        <Page.FooterActions
           onConfirm={handleNext}
           onConfirmText={intl.formatMessage({ id: ETranslations.global_next })}
-          confirmButtonProps={{
-            disabled: !selectedAddress,
-          }}
-        />
-      ) : null}
+          confirmButtonProps={{ disabled: !walletAddress }}
+        >
+          {quotaRemaining !== undefined ? (
+            <SizableText size="$bodySm" color="$textSubdued">
+              {intl.formatMessage(
+                {
+                  id: ETranslations.redemption_btc_verify_order_quota_remaining_desc,
+                },
+                { count: quotaRemaining },
+              )}
+            </SizableText>
+          ) : null}
+        </Page.FooterActions>
+      </Page.Footer>
     </Page>
   );
 }
 
-export default SelectAddressPage;
+export default function SelectAddressPage() {
+  return (
+    <AccountSelectorProviderMirror
+      config={{
+        sceneName: EAccountSelectorSceneName.addressInput,
+        sceneUrl: '',
+      }}
+      enabledNum={[0]}
+      availableNetworksMap={{
+        0: {
+          networkIds: [baseNetworkId],
+          defaultNetworkId: baseNetworkId,
+        },
+      }}
+    >
+      <SelectAddressContent />
+    </AccountSelectorProviderMirror>
+  );
+}

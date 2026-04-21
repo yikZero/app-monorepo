@@ -4,36 +4,36 @@ import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 
 import {
-  Alert,
   Badge,
   Divider,
-  Empty,
   IconButton,
   Page,
   SizableText,
-  Spinner,
   XStack,
   YStack,
   useClipboard,
 } from '@onekeyhq/components';
-import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
-import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { openTransactionDetailsUrl } from '@onekeyhq/kit/src/utils/explorerUtils';
 import { getNetworkIdsMap } from '@onekeyhq/shared/src/config/networkIds';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import type { IBtcRewardHistoryItem } from '@onekeyhq/shared/src/referralCode/type';
+import { EBtcRewardStatus } from '@onekeyhq/shared/src/referralCode/type';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 
-import { mockGetRecordDetail } from '../../mockData';
-import { EBtcRewardStatus } from '../../types';
-import { formatUsd, getBtcRewardStatusConfig } from '../../utils';
+import {
+  formatUsd,
+  getBtcRewardPayoutDate,
+  getBtcRewardStatusConfig,
+} from '../../utils';
 
 import type { RouteProp } from '@react-navigation/core';
 
 type IRouteParams = RouteProp<
   {
     BtcRewardDetail: {
-      recordId: string;
+      item: IBtcRewardHistoryItem;
+      walletAddress: string;
     };
   },
   'BtcRewardDetail'
@@ -55,15 +55,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function BtcRewardDetailPage() {
   const intl = useIntl();
   const route = useRoute<IRouteParams>();
-  const navigation = useAppNavigation();
-  const { recordId } = route.params;
+  // TODO: backend to include walletAddress on each HistoryItem. Required because
+  // /btc-reward/history also does instance-fallback matching via the
+  // X-Onekey-Instance-Id header, so one query may return records from multiple
+  // wallet addresses; the per-item walletAddress is the only way to show the
+  // real receive address (i.e. the one locked at commit time). Once shipped,
+  // read item.walletAddress instead of route.params.walletAddress.
+  const { item, walletAddress } = route.params;
   const { copyText } = useClipboard();
-
-  const { result: record, isLoading } = usePromiseResult(
-    () => mockGetRecordDetail(recordId),
-    [recordId],
-    { watchLoading: true },
-  );
 
   const statusConfigs = useMemo(() => getBtcRewardStatusConfig(intl), [intl]);
   const title = intl.formatMessage({
@@ -71,133 +70,78 @@ function BtcRewardDetailPage() {
   });
 
   const handleCopyAddress = useCallback(() => {
-    if (record?.address) {
-      copyText(record.address);
-    }
-  }, [record?.address, copyText]);
+    copyText(walletAddress);
+  }, [walletAddress, copyText]);
 
   const handleCopyTxHash = useCallback(() => {
-    if (record?.txHash) {
-      copyText(record.txHash);
+    if (item.txHash) {
+      copyText(item.txHash);
     }
-  }, [record?.txHash, copyText]);
+  }, [item.txHash, copyText]);
 
   const handleViewOnBaseScan = useCallback(() => {
-    if (record?.txHash) {
+    if (item.txHash) {
       void openTransactionDetailsUrl({
         networkId: getNetworkIdsMap().base,
-        txid: record.txHash,
+        txid: item.txHash,
       });
     }
-  }, [record?.txHash]);
+  }, [item.txHash]);
 
-  if (isLoading) {
-    return (
-      <Page>
-        <Page.Header title={title} />
-        <Page.Body>
-          <YStack flex={1} alignItems="center" justifyContent="center" py="$20">
-            <Spinner size="large" />
-          </YStack>
-        </Page.Body>
-      </Page>
-    );
-  }
-
-  if (!record) {
-    return (
-      <Page>
-        <Page.Header title={title} />
-        <Page.Body>
-          <YStack flex={1} justifyContent="center" py="$10">
-            <Empty
-              icon="SearchOutline"
-              title={intl.formatMessage({
-                id: ETranslations.redemption_btc_detail_not_found_title,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.redemption_btc_detail_not_found_desc,
-              })}
-              buttonProps={{
-                children: intl.formatMessage({
-                  id: ETranslations.shortcut_go_back,
-                }),
-                onPress: () => navigation.pop(),
-              }}
-            />
-          </YStack>
-        </Page.Body>
-      </Page>
-    );
-  }
-
-  const statusConfig = statusConfigs[record.status];
-  const isDistributed =
-    record.status === EBtcRewardStatus.Distributed && record.distributedAt;
+  const statusConfig =
+    statusConfigs[item.status] ?? statusConfigs[EBtcRewardStatus.Wait];
+  const isPaid = item.status === EBtcRewardStatus.Paid && item.paidAt;
   const rejectReason =
-    record.status === EBtcRewardStatus.Rejected
-      ? record.rejectReason
-      : undefined;
+    item.status === EBtcRewardStatus.Rejected ? item.rejectReason : null;
 
   return (
     <Page scrollEnabled>
       <Page.Header title={title} />
       <Page.Body px="$5" py="$4">
         <YStack gap="$4">
-          <YStack
-            bg="$bgSubdued"
-            borderRadius="$3"
-            p="$4"
-            alignItems="center"
-            gap="$2"
-          >
+          <YStack alignItems="center" py="$4" gap="$2">
             <Badge badgeType={statusConfig.badgeType} badgeSize="lg">
               <Badge.Text>{statusConfig.label}</Badge.Text>
             </Badge>
             <SizableText size="$heading4xl" textAlign="center" pt="$2">
-              {formatUsd(record.usdAmount)}
+              {formatUsd(item.rewardUsdCents / 100)}
             </SizableText>
-            <SizableText size="$bodyMd" color="$textSubdued" textAlign="center">
-              {intl.formatMessage(
-                { id: ETranslations.redemption_btc_amount_on_base },
-                { amount: record.btcAmount },
-              )}
+            {item.btcAmount ? (
+              <SizableText
+                size="$bodyMd"
+                color="$textSubdued"
+                textAlign="center"
+              >
+                {intl.formatMessage(
+                  { id: ETranslations.redemption_btc_amount_on_base },
+                  { amount: item.btcAmount },
+                )}
+              </SizableText>
+            ) : null}
+            <SizableText
+              size="$bodyMd"
+              color={rejectReason ? '$textCritical' : '$textSubdued'}
+              textAlign="center"
+              pt="$1"
+            >
+              {rejectReason ?? statusConfig.description}
             </SizableText>
           </YStack>
-
-          {rejectReason ? (
-            <Alert
-              type="critical"
-              title={intl.formatMessage({
-                id: ETranslations.redemption_btc_detail_rejected_alert_title,
-              })}
-              description={rejectReason}
-            />
-          ) : (
-            <Alert
-              type={isDistributed ? 'success' : 'info'}
-              icon={
-                isDistributed ? 'CheckRadioSolid' : 'ClockTimeHistoryOutline'
-              }
-              title={statusConfig.label}
-              description={statusConfig.description}
-            />
-          )}
 
           <YStack bg="$bgSubdued" borderRadius="$3" p="$4" gap="$3">
             <DetailRow
               label={intl.formatMessage({
                 id: ETranslations.redemption_btc_label_product,
               })}
-              value={record.productName}
+              value={item.modelLabel}
             />
 
-            {record.orderId ? (
+            {item.activityName ? (
               <DetailRow
                 label={intl.formatMessage({
-                  id: ETranslations.Limit_order_history_order_id,
+                  id: ETranslations.redemption_btc_label_activity_title,
                 })}
-                value={record.orderId}
+                value={item.activityName}
               />
             ) : null}
 
@@ -205,29 +149,49 @@ function BtcRewardDetailPage() {
               label={intl.formatMessage({
                 id: ETranslations.redemption_btc_label_code,
               })}
-              value={record.code}
+              value={item.code}
             />
 
-            <DetailRow
-              label={intl.formatMessage({
-                id: ETranslations.redemption_btc_label_btc_price_locked,
-              })}
-              value={formatUsd(record.btcPrice)}
-            />
+            {item.btcPriceUsd ? (
+              <DetailRow
+                label={intl.formatMessage({
+                  id: ETranslations.redemption_btc_label_btc_price_locked,
+                })}
+                value={formatUsd(item.btcPriceUsd)}
+              />
+            ) : null}
 
-            <DetailRow
-              label={intl.formatMessage({
-                id: ETranslations.redemption_btc_label_submitted,
-              })}
-              value={formatDate(record.createdAt)}
-            />
+            {item.submittedAt ? (
+              <DetailRow
+                label={intl.formatMessage({
+                  id: ETranslations.redemption_btc_label_submitted,
+                })}
+                value={formatDate(item.submittedAt)}
+              />
+            ) : null}
 
-            {isDistributed && record.distributedAt ? (
+            {item.payoutEligibleAt &&
+            item.status !== EBtcRewardStatus.Paid &&
+            item.status !== EBtcRewardStatus.Rejected ? (
+              <DetailRow
+                label={intl.formatMessage({
+                  id: ETranslations.redemption_btc_success_eligible_label_title,
+                })}
+                value={formatDate(
+                  getBtcRewardPayoutDate(item.payoutEligibleAt),
+                  {
+                    hideTimeForever: true,
+                  },
+                )}
+              />
+            ) : null}
+
+            {isPaid && item.paidAt ? (
               <DetailRow
                 label={intl.formatMessage({
                   id: ETranslations.referral_distributed,
                 })}
-                value={formatDate(record.distributedAt)}
+                value={formatDate(item.paidAt)}
               />
             ) : null}
 
@@ -241,7 +205,7 @@ function BtcRewardDetailPage() {
               </SizableText>
               <XStack gap="$1" alignItems="center" flexShrink={1}>
                 <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                  {accountUtils.shortenAddress({ address: record.address })}
+                  {accountUtils.shortenAddress({ address: walletAddress })}
                 </SizableText>
                 <IconButton
                   variant="tertiary"
@@ -255,7 +219,7 @@ function BtcRewardDetailPage() {
               </XStack>
             </XStack>
 
-            {isDistributed && record.txHash ? (
+            {isPaid && item.txHash ? (
               <XStack
                 justifyContent="space-between"
                 alignItems="center"
@@ -263,12 +227,12 @@ function BtcRewardDetailPage() {
               >
                 <SizableText size="$bodyMd" color="$textSubdued">
                   {intl.formatMessage({
-                    id: ETranslations.redemption_btc_label_transaction,
+                    id: ETranslations.global_transaction_id,
                   })}
                 </SizableText>
                 <XStack gap="$1" alignItems="center" flexShrink={1}>
                   <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                    {accountUtils.shortenAddress({ address: record.txHash })}
+                    {accountUtils.shortenAddress({ address: item.txHash })}
                   </SizableText>
                   <IconButton
                     variant="tertiary"

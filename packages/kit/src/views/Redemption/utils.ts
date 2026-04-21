@@ -1,8 +1,7 @@
 import type { IBadgeType } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { EBtcRewardStatus } from '@onekeyhq/shared/src/referralCode/type';
 import { numberFormat } from '@onekeyhq/shared/src/utils/numberUtils';
-
-import { EBtcRewardStatus } from './types';
 
 import type { useIntl } from 'react-intl';
 
@@ -16,7 +15,7 @@ export function getBtcRewardStatusConfig(
   intl: ReturnType<typeof useIntl>,
 ): Record<EBtcRewardStatus, IBtcRewardStatusConfig> {
   return {
-    [EBtcRewardStatus.Waiting]: {
+    [EBtcRewardStatus.Wait]: {
       label: intl.formatMessage({
         id: ETranslations.redemption_btc_status_waiting_label,
       }),
@@ -25,14 +24,14 @@ export function getBtcRewardStatusConfig(
         id: ETranslations.redemption_btc_status_waiting_desc,
       }),
     },
-    [EBtcRewardStatus.PendingDistribution]: {
+    [EBtcRewardStatus.PendingPayout]: {
       label: intl.formatMessage({ id: ETranslations.referral_pending }),
       badgeType: 'info',
       description: intl.formatMessage({
         id: ETranslations.redemption_btc_status_pending_desc,
       }),
     },
-    [EBtcRewardStatus.Distributing]: {
+    [EBtcRewardStatus.PayoutInProgress]: {
       label: intl.formatMessage({
         id: ETranslations.redemption_btc_status_distributing_label,
       }),
@@ -41,7 +40,7 @@ export function getBtcRewardStatusConfig(
         id: ETranslations.redemption_btc_status_distributing_desc,
       }),
     },
-    [EBtcRewardStatus.Distributed]: {
+    [EBtcRewardStatus.Paid]: {
       label: intl.formatMessage({ id: ETranslations.referral_distributed }),
       badgeType: 'success',
       description: intl.formatMessage({
@@ -65,4 +64,18 @@ export function formatUsd(value: number | string): string {
     formatter: 'price',
     formatterOptions: { currency: '$' },
   });
+}
+
+// Payouts happen on the 10th of each month for records that passed the 30-day
+// waiting window. Returns the smallest month-10th date that is on or after
+// the eligibility date.
+export function getBtcRewardPayoutDate(eligibleAtIso: string): Date {
+  const eligibleAt = new Date(eligibleAtIso);
+  const year = eligibleAt.getFullYear();
+  const month = eligibleAt.getMonth();
+  const sameMonth10th = new Date(year, month, 10);
+  if (sameMonth10th.getTime() >= eligibleAt.getTime()) {
+    return sameMonth10th;
+  }
+  return new Date(year, month + 1, 10);
 }

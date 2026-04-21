@@ -1,15 +1,15 @@
 import type {
+  IBtcRewardHistoryItem,
   IEarnWalletHistoryItem,
   IEarnWalletHistoryNetwork,
   IHardwareRecordItem,
 } from '../referralCode/type';
 
 export interface IBtcRewardCodeInfoParam {
-  code: string;
-  modelName: string;
-  usdAmount: number;
-  estimatedBtcAmount: string;
-  btcPrice: number;
+  codeId: string;
+  modelLabel: string;
+  rewardUsdCents: number;
+  activityName?: string;
 }
 
 export enum EModalReferFriendsRoutes {
@@ -87,23 +87,25 @@ export type IModalReferFriendsParamList = {
   };
   [EModalReferFriendsRoutes.BtcRewardSelectAddress]: {
     codeInfo: IBtcRewardCodeInfoParam;
-    orderId?: string;
-    productName?: string;
-    preselectedAddressId?: string;
+    shopifyOrderNumber: string;
+    displayTitle: string;
+    quotaRemaining?: number;
   };
   [EModalReferFriendsRoutes.BtcRewardConfirm]: {
     codeInfo: IBtcRewardCodeInfoParam;
-    orderId?: string;
-    productName?: string;
-    address: string;
-    addressLabel: string;
+    shopifyOrderNumber: string;
+    displayTitle: string;
+    walletAddress: string;
   };
   [EModalReferFriendsRoutes.BtcRewardSuccess]: {
-    usdAmount: number;
-    estimatedBtcAmount: string;
-    address: string;
+    codeInfo: IBtcRewardCodeInfoParam;
+    walletAddress: string;
+    btcAmount: string;
+    btcPriceUsd: string;
+    payoutEligibleAt: string;
   };
   [EModalReferFriendsRoutes.BtcRewardDetail]: {
-    recordId: string;
+    item: IBtcRewardHistoryItem;
+    walletAddress: string;
   };
 };
