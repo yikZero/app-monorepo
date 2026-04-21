@@ -868,7 +868,7 @@ class ServiceReferralCode extends ServiceBase {
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
-    const client = await this.getClient(EServiceEndpointEnum.Rebate);
+    const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Rebate);
     try {
       const response = await client.post<{ success: true; data: TData }>(
         path,
@@ -885,7 +885,7 @@ class ServiceReferralCode extends ServiceBase {
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
-    const client = await this.getClient(EServiceEndpointEnum.Rebate);
+    const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Rebate);
     try {
       const response = await client.get<TData>(path, {
         params,

@@ -69,12 +69,10 @@ function RedemptionCenterDialogContent({
       form.clearErrors('code');
 
       try {
-        // Client-side dispatch between the two redemption modes (BTC reward vs
-        // legacy rebate level upgrade). Server has no unified endpoint, so we
-        // try btc-reward first and fall back to the legacy redeemCode on
-        // InvalidCode. If this becomes too brittle as more modes are added,
-        // raise with backend to add a discriminator (code prefix or a router
-        // endpoint) rather than stacking more fallback branches here.
+        // Server has no unified endpoint, so dispatch between the two
+        // redemption modes (BTC reward vs legacy rebate level upgrade) by
+        // trying btc-reward first and falling back to redeemCode on
+        // InvalidCode.
         const btcResult =
           await backgroundApiProxy.serviceReferralCode.btcRewardVerifyCode({
             code,

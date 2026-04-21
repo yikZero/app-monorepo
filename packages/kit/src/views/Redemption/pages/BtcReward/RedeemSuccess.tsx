@@ -14,7 +14,6 @@ import {
 } from '@onekeyhq/components';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import type { IBtcRewardCodeInfoParam } from '@onekeyhq/shared/src/routes';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
@@ -26,7 +25,7 @@ import type { RouteProp } from '@react-navigation/core';
 type IRouteParams = RouteProp<
   {
     BtcRewardSuccess: {
-      codeInfo: IBtcRewardCodeInfoParam;
+      rewardUsdCents: number;
       walletAddress: string;
       btcAmount: string;
       btcPriceUsd: string;
@@ -40,8 +39,13 @@ function RedeemSuccessPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, walletAddress, btcAmount, btcPriceUsd, payoutEligibleAt } =
-    route.params;
+  const {
+    rewardUsdCents,
+    walletAddress,
+    btcAmount,
+    btcPriceUsd,
+    payoutEligibleAt,
+  } = route.params;
 
   const handleViewHistory = useCallback(() => {
     navigation.dispatch(
@@ -99,7 +103,7 @@ function RedeemSuccessPage() {
                   { id: ETranslations.redemption_btc_success_reward_value },
                   {
                     amount: btcAmount,
-                    usd: formatUsd(codeInfo.rewardUsdCents / 100),
+                    usd: formatUsd(rewardUsdCents / 100),
                   },
                 )}
               </SizableText>

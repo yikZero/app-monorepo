@@ -70,7 +70,7 @@ function ConfirmRedeemPage() {
             {
               name: EModalReferFriendsRoutes.BtcRewardSuccess,
               params: {
-                codeInfo,
+                rewardUsdCents,
                 walletAddress,
                 btcAmount: result.data.btcAmount,
                 btcPriceUsd: result.data.btcPriceUsd,
@@ -89,7 +89,14 @@ function ConfirmRedeemPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [navigation, codeId, codeInfo, shopifyOrderNumber, walletAddress, intl]);
+  }, [
+    navigation,
+    codeId,
+    rewardUsdCents,
+    shopifyOrderNumber,
+    walletAddress,
+    intl,
+  ]);
 
   const handleChangeAddress = useCallback(() => {
     navigation.pop();

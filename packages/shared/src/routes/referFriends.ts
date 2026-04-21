@@ -98,7 +98,7 @@ export type IModalReferFriendsParamList = {
     walletAddress: string;
   };
   [EModalReferFriendsRoutes.BtcRewardSuccess]: {
-    codeInfo: IBtcRewardCodeInfoParam;
+    rewardUsdCents: number;
     walletAddress: string;
     btcAmount: string;
     btcPriceUsd: string;
