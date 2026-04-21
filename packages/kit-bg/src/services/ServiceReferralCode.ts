@@ -864,11 +864,14 @@ class ServiceReferralCode extends ServiceBase {
     }
   }
 
+  // BTC reward endpoints are security: [] in OAS — auth token is optional and
+  // instance fallback goes via X-Onekey-Instance-Id (injected by the shared
+  // interceptor). Use the plain client rather than getOneKeyIdClient.
   private async btcRewardPost<TData>(
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
-    const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Rebate);
+    const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
       const response = await client.post<{ success: true; data: TData }>(
         path,
@@ -885,7 +888,7 @@ class ServiceReferralCode extends ServiceBase {
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
-    const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Rebate);
+    const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
       const response = await client.get<TData>(path, {
         params,
