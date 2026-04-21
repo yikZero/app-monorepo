@@ -75,10 +75,16 @@ function VerifyOrderPage() {
         displayTitle: result.data.orderSummary.displayTitle,
         quotaRemaining: result.data.quotaRemaining,
       });
+    } catch {
+      form.setError('shopifyOrderNumber', {
+        message: intl.formatMessage({
+          id: ETranslations.redemption_btc_confirm_error_desc,
+        }),
+      });
     } finally {
       setIsVerifying(false);
     }
-  }, [form, navigation, codeInfo]);
+  }, [form, navigation, codeInfo, intl]);
 
   return (
     <Page scrollEnabled>
