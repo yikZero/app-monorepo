@@ -308,7 +308,7 @@
     '<path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' +
     '</svg>';
 
-  const loadingSpinners = new WeakMap();
+  let loadingSpinners = new WeakMap();
   let spinnerStylesReady = false;
   let spinnerStylesChecked = false;
 
@@ -390,6 +390,10 @@
     } catch {
       // ignore
     }
+    // WeakMap can't be iterated; reset so re-translate on the same page sees
+    // fresh text nodes (otherwise addLoadingIndicator short-circuits on stale
+    // entries pointing to spans we just removed from the DOM).
+    loadingSpinners = new WeakMap();
   }
 
   function isSpinnerNode(node) {
