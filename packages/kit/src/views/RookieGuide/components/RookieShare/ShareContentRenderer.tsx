@@ -15,6 +15,7 @@ import type { IRookieShareData } from '@onekeyhq/shared/types/rookieGuide';
 import {
   BACKGROUND_GRADIENT_COLORS,
   CANVAS_CONFIG,
+  DEFAULT_DOWNLOAD_LABEL,
   DEFAULT_FOOTER_TEXT,
   DEFAULT_REFERRAL_LABEL,
   ONEKEY_LOGO_URL,
@@ -52,7 +53,7 @@ export function ShareContentRenderer({
 
   const referralLabel = referralCode
     ? `${DEFAULT_REFERRAL_LABEL} ${referralCode}`
-    : DEFAULT_REFERRAL_LABEL;
+    : DEFAULT_DOWNLOAD_LABEL;
 
   return (
     <YStack

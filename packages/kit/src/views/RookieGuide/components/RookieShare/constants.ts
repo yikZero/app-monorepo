@@ -1,3 +1,5 @@
+import { Image } from 'react-native';
+
 // Canvas configuration for Rookie Share image generation
 // Based on Figma design: 640x640 square
 
@@ -97,10 +99,14 @@ export const getCanvasConfig = (currentSize: number = BASE_SIZE) => {
 
 export const DEFAULT_FOOTER_TEXT = 'Open source and easy to use from day one.';
 export const DEFAULT_REFERRAL_LABEL = 'Referral Code:';
+export const DEFAULT_DOWNLOAD_LABEL = 'Download OneKey';
 
-// OneKey logo URL - should be replaced with actual asset
+// Webpack returns a URL string; Metro returns a numeric asset id requiring resolveAssetSource.
+const logoAsset = require('@onekeyhq/kit/assets/logo.png') as number | string;
 export const ONEKEY_LOGO_URL =
-  'https://uni.onekey-asset.com/static/logo/onekey-icon-256.png';
+  typeof logoAsset === 'string'
+    ? logoAsset
+    : Image.resolveAssetSource(logoAsset).uri;
 
 // Background image URL - should be exported from Figma
 // For now, we'll use a gradient fallback
