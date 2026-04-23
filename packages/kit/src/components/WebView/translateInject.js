@@ -309,6 +309,10 @@
     '</svg>';
 
   let loadingSpinners = new WeakMap();
+  // Iterable mirror of in-flight spinner spans. Needed because WeakMap can't
+  // be iterated and querySelectorAll doesn't pierce Shadow DOM — spinners we
+  // inserted next to shadow-root text nodes would otherwise leak on cleanup.
+  const activeSpinners = new Set();
   let spinnerStylesReady = false;
   let spinnerStylesChecked = false;
 
@@ -361,6 +365,7 @@
       span.innerHTML = SPINNER_SVG;
       parent.insertBefore(span, node.nextSibling);
       loadingSpinners.set(node, span);
+      activeSpinners.add(span);
     } catch {
       // ignore insertion failures
     }
@@ -375,24 +380,20 @@
       // ignore
     }
     loadingSpinners.delete(node);
+    activeSpinners.delete(span);
   }
 
   function cleanupAllIndicators() {
-    try {
-      const nodes = document.querySelectorAll(`[${SPINNER_ATTR}]`);
-      for (let i = 0; i < nodes.length; i += 1) {
-        try {
-          nodes[i].remove();
-        } catch {
-          // ignore
-        }
+    activeSpinners.forEach(function (span) {
+      try {
+        span.remove();
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
-    // WeakMap can't be iterated; reset so re-translate on the same page sees
-    // fresh text nodes (otherwise addLoadingIndicator short-circuits on stale
-    // entries pointing to spans we just removed from the DOM).
+    });
+    activeSpinners.clear();
+    // Drop the WeakMap so re-translate on the same page sees fresh text
+    // nodes; otherwise addLoadingIndicator short-circuits on stale entries.
     loadingSpinners = new WeakMap();
   }
 

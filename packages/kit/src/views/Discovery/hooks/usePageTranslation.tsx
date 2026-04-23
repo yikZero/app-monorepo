@@ -517,6 +517,7 @@ export function usePageTranslation(tabId: string) {
           ],
         });
       },
+      resolvedTargetLang,
     );
 
   const logToggle = useCallback(

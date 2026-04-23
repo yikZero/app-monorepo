@@ -200,6 +200,7 @@ export function useWebViewTranslate(
     code: number;
     targetLang: string;
   }) => void,
+  currentTargetLang?: string,
 ) {
   const translatingRef = useRef(false);
   const lastTargetLangRef = useRef<string | null>(null);
@@ -211,6 +212,9 @@ export function useWebViewTranslate(
   const engineRef = useRef(engine);
   const displayModeRef = useRef(displayMode);
   const dappUrlRef = useRef(dappUrl);
+  // Tracks the currently configured target lang so sticky re-translate picks
+  // up user setting changes after the initial startTranslate.
+  const targetLangRef = useRef(currentTargetLang);
   const handledUnavailableSessionRef = useRef<string | null>(null);
   // Electron fires did-finish-load / did-stop-loading / did-fail-load for the
   // same navigation; WebContent.desktop binds all three to the same callback,
@@ -223,6 +227,7 @@ export function useWebViewTranslate(
   engineRef.current = engine;
   displayModeRef.current = displayMode;
   dappUrlRef.current = dappUrl;
+  targetLangRef.current = currentTargetLang;
   onAITranslateUnavailableRef.current = onAITranslateUnavailable;
 
   useEffect(() => () => unregisterTranslateHandler(tabId), [tabId]);
@@ -449,13 +454,16 @@ export function useWebViewTranslate(
     onTabNavigationEnd(tabId, () => {
       if (navEndConsumedRef.current) return;
       if (!translatingRef.current) return;
-      const targetLang = lastTargetLangRef.current;
-      if (!targetLang) return;
+      // Prefer the current resolved target lang so user setting changes made
+      // after translate was enabled take effect on the next page; fall back
+      // to the last explicitly-started lang if no prop is wired in.
+      const nextTargetLang = targetLangRef.current ?? lastTargetLangRef.current;
+      if (!nextTargetLang) return;
       navEndConsumedRef.current = true;
       // Fresh page — nothing to restore. Skip the bogus restore inject that
       // startTranslate would otherwise fire via its re-entry path.
       translatingRef.current = false;
-      startTranslate(targetLang, engineRef.current);
+      startTranslate(nextTargetLang, engineRef.current);
     });
     return () => offTabNavigationEnd(tabId);
   }, [tabId, startTranslate]);
