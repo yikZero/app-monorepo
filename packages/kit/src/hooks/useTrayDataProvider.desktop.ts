@@ -50,6 +50,7 @@ export function useTrayDataProvider() {
   walletRef.current = wallet;
   const accountNameRef = useRef<string>('');
   accountNameRef.current = accountName || '';
+  const prevAccountIdRef = useRef<string | undefined>(undefined);
   const handleTrayDataRequestRef = useRef<(() => void) | undefined>(undefined);
   const pendingTxsClearedRef = useRef(false);
   // Renderer-side inflight guard — main-process `guardedRequest` only
@@ -564,12 +565,38 @@ export function useTrayDataProvider() {
     };
   }, [isTrayActive, handleTrayDataRequest, handleTrayNavigation]);
 
+  // When the active account changes, two things happen in parallel:
+  // 1. Emit an optimistic placeholder immediately so the tray window clears
+  //    the previous account's balance/watchlist/pendingTxs within one frame —
+  //    otherwise the user sees up to 2s of stale numbers (OK-53623).
+  // 2. Fire the gather immediately (no 300ms wait). The inFlight guard in
+  //    handleTrayDataRequest coalesces rapid cascades from ServiceAccountProfile
+  //    refreshing per-network values; the trailing refresh re-runs once the
+  //    burst settles so OK-53610 is also covered here.
   useEffect(() => {
     if (!isTrayActive) return;
-    const timer = setTimeout(() => {
-      handleTrayDataRequestRef.current?.();
-    }, 300);
-    return () => clearTimeout(timer);
+    const currentAccountId = activeAccountValue?.accountId;
+    if (currentAccountId !== prevAccountIdRef.current) {
+      prevAccountIdRef.current = currentAccountId;
+      globalThis.desktopApi?.sendTrayData({
+        accountId: currentAccountId,
+        pendingTxsCleared: false,
+        wallet: {
+          name: walletRef.current?.name || '',
+          emoji: '',
+          avatarImg: '',
+        },
+        account: { name: accountNameRef.current },
+        totalBalance: {
+          amount: '0.00',
+          currency: 'usd',
+          symbol: '$',
+        },
+        watchlist: [],
+        pendingTxs: [],
+      });
+    }
+    handleTrayDataRequestRef.current?.();
   }, [isTrayActive, activeAccountValue]);
 
   useEffect(() => {
