@@ -457,13 +457,14 @@ export function usePageTranslation(tabId: string) {
   }, []);
 
   const { startTranslate, restoreOriginal, toggleTranslate, translatingRef } =
-    useWebViewTranslate(
+    useWebViewTranslate({
       tabId,
       onNavigate,
-      settings.engine,
-      settings.displayMode,
-      tab?.url,
-      ({ targetLang }) => {
+      engine: settings.engine,
+      displayMode: settings.displayMode,
+      dappUrl: tab?.url,
+      currentTargetLang: resolvedTargetLang,
+      onAITranslateUnavailable: ({ targetLang }) => {
         setIsTranslated(false);
 
         const failedPageUrl = tab?.url;
@@ -517,8 +518,7 @@ export function usePageTranslation(tabId: string) {
           ],
         });
       },
-      resolvedTargetLang,
-    );
+    });
 
   const logToggle = useCallback(
     (action: 'enable' | 'disable') => {

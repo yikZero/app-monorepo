@@ -190,20 +190,27 @@ function handleTranslateRequest(
   void handler();
 }
 
-export function useWebViewTranslate(
-  tabId: string,
-  onNavigate?: (stillTranslating: boolean) => void,
-  engine: ETranslateEngine = ETranslateEngine.standard,
-  displayMode: ETranslateDisplayMode = ETranslateDisplayMode.replace,
-  dappUrl?: string,
+export function useWebViewTranslate({
+  tabId,
+  onNavigate,
+  engine = ETranslateEngine.standard,
+  displayMode = ETranslateDisplayMode.replace,
+  dappUrl,
+  onAITranslateUnavailable,
+  currentTargetLang,
+}: {
+  tabId: string;
+  onNavigate?: (stillTranslating: boolean) => void;
+  engine?: ETranslateEngine;
+  displayMode?: ETranslateDisplayMode;
+  dappUrl?: string;
   onAITranslateUnavailable?: (payload: {
     code: number;
     targetLang: string;
-  }) => void,
-  currentTargetLang?: string,
-) {
+  }) => void;
+  currentTargetLang?: string;
+}) {
   const translatingRef = useRef(false);
-  const lastTargetLangRef = useRef<string | null>(null);
   const desktopCleanupRef = useRef<(() => void) | null>(null);
   const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoggedSuccessRef = useRef(false);
@@ -298,7 +305,6 @@ export function useWebViewTranslate(
       handledUnavailableSessionRef.current = null;
       activeSessionIdRef.current = null;
       translatingRef.current = false;
-      lastTargetLangRef.current = null;
     },
     [tabId],
   );
@@ -426,7 +432,6 @@ export function useWebViewTranslate(
         clearTimeout(startTimerRef.current);
       }
       translatingRef.current = true;
-      lastTargetLangRef.current = targetLang;
       startTimerRef.current = setTimeout(() => {
         startTimerRef.current = null;
         injectScript(
@@ -454,10 +459,7 @@ export function useWebViewTranslate(
     onTabNavigationEnd(tabId, () => {
       if (navEndConsumedRef.current) return;
       if (!translatingRef.current) return;
-      // Prefer the current resolved target lang so user setting changes made
-      // after translate was enabled take effect on the next page; fall back
-      // to the last explicitly-started lang if no prop is wired in.
-      const nextTargetLang = targetLangRef.current ?? lastTargetLangRef.current;
+      const nextTargetLang = targetLangRef.current;
       if (!nextTargetLang) return;
       navEndConsumedRef.current = true;
       // Fresh page — nothing to restore. Skip the bogus restore inject that
