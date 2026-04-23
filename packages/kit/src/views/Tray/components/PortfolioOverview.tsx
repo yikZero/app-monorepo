@@ -14,11 +14,13 @@ export function PortfolioOverview({
     amount: string;
     currency: string;
     symbol: string;
-    change24h: number;
+    change24h?: number;
   };
   onPress: () => void;
 }) {
-  const isPositive = totalBalance.change24h >= 0;
+  const change24h = totalBalance.change24h;
+  const hasChange = typeof change24h === 'number';
+  const isPositive = hasChange && change24h >= 0;
   const changeColor = isPositive ? '$textSuccess' : '$textCritical';
   const changePrefix = isPositive ? '+' : '';
 
@@ -74,10 +76,11 @@ export function PortfolioOverview({
         {currencySymbol}
         {formattedAmount}
       </SizableText>
-      <SizableText fontSize="$bodySm" color={changeColor} marginTop="$1">
-        {changePrefix}
-        {totalBalance.change24h.toFixed(2)}%
-      </SizableText>
+      {hasChange ? (
+        <SizableText fontSize="$bodySm" color={changeColor} marginTop="$1">
+          {`${changePrefix}${change24h!.toFixed(2)}%`}
+        </SizableText>
+      ) : null}
     </Stack>
   );
 }

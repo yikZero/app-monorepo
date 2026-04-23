@@ -81,7 +81,6 @@ export function useTrayDataProvider() {
         amount: '0.00',
         currency: 'USD',
         symbol: '$',
-        change24h: 0,
       },
       watchlist: [],
       pendingTxs: [],
@@ -127,7 +126,6 @@ export function useTrayDataProvider() {
           amount: '0.00',
           currency: displayCurrency,
           symbol: displaySymbol,
-          change24h: 0,
         },
         watchlist: [],
         pendingTxs: [],
@@ -206,7 +204,6 @@ export function useTrayDataProvider() {
             amount: new BigNumber(total).toFixed(2),
             currency: displayCurrency,
             symbol: displaySymbol,
-            change24h: 0,
           };
         } catch (e) {
           defaultLogger.app.error.log(
@@ -435,7 +432,6 @@ export function useTrayDataProvider() {
           amount: '0.00',
           currency: 'USD',
           symbol: '$',
-          change24h: 0,
         },
         watchlist: [],
         pendingTxs: [],
