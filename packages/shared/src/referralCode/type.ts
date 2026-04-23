@@ -742,10 +742,8 @@ export interface IBtcRewardHistoryItem {
   paidAt?: string | null;
   txHash?: string | null;
   rejectReason?: string | null;
-  // Not yet returned by the server; hidden on the detail page until shipped.
-  // /history uses instance-fallback, so a single query can return records
-  // across multiple wallet addresses — the per-item value is the only way
-  // to show the real receive address locked at commit time.
+  // Required for display: /history uses X-Onekey-Instance-Id fallback, so
+  // records across multiple addresses can be returned in one query.
   walletAddress?: string | null;
 }
 

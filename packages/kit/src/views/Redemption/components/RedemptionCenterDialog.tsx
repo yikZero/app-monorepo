@@ -17,6 +17,7 @@ import {
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { PrimeLoginDialogCancelError } from '@onekeyhq/shared/src/errors';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EBtcRewardErrorCode } from '@onekeyhq/shared/src/referralCode/type';
@@ -111,10 +112,12 @@ function RedemptionCenterDialogContent({
         if (!isLoggedIn) {
           try {
             await loginOneKeyId();
-          } catch {
-            form.setError('code', { message: btcResult.error.message });
-            preventClose?.();
-            return;
+          } catch (loginError) {
+            if (loginError instanceof PrimeLoginDialogCancelError) {
+              preventClose?.();
+              return;
+            }
+            throw loginError;
           }
         }
 
