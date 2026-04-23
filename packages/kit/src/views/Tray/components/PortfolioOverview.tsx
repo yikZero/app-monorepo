@@ -85,7 +85,7 @@ export function PortfolioOverview({
       </SizableText>
       {hasChange ? (
         <SizableText fontSize="$bodySm" color={changeColor} marginTop="$1">
-          {`${changePrefix}${change24h!.toFixed(2)}%`}
+          {`${changePrefix}${change24h.toFixed(2)}%`}
         </SizableText>
       ) : null}
     </Stack>
