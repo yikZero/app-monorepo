@@ -25,6 +25,7 @@ import {
   TRAY_IPC,
 } from '@onekeyhq/shared/src/types/desktop/tray';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
+import { formatTrayPendingTxAmount } from '@onekeyhq/shared/src/utils/trayDataUtils';
 import { calculateAccountTotalValue } from '@onekeyhq/shared/src/utils/tokenUtils';
 import { EDecodedTxStatus } from '@onekeyhq/shared/types/tx';
 
@@ -360,26 +361,17 @@ export function useTrayDataProvider() {
               txType = 'send';
             }
 
-            // BigNumber preserves precision for 18-decimal tokens that
-            // a raw JS Number would collapse to 0.
-            let amount = '';
             const firstSend = transfer?.sends?.[0];
-            if (firstSend) {
-              const bn = new BigNumber(firstSend.amount ?? '');
-              let formatted: string;
-              if (bn.isNaN()) {
-                formatted = firstSend.amount;
-              } else if (bn.abs().lt('0.01')) {
-                formatted = bn.toPrecision(3);
-              } else {
-                formatted = bn.toFixed(4).replace(/\.?0+$/, '');
-              }
-              amount = `${formatted} ${firstSend.symbol}`;
-            } else if (decodedTx?.totalFeeFiatValue) {
-              amount = `${displaySymbol}${new BigNumber(
-                decodedTx.totalFeeFiatValue,
-              ).toFixed(2)}`;
-            }
+            // NEVER fall back to totalFeeFiatValue here (OK-53607): gas fee is
+            // not the tx amount and displaying it misleads users into thinking
+            // they transferred cents when they actually approved or called a
+            // contract.
+            const amount = formatTrayPendingTxAmount({
+              firstSend: firstSend
+                ? { amount: firstSend.amount, symbol: firstSend.symbol }
+                : undefined,
+              txType,
+            });
 
             const to = firstSend?.to || decodedTx?.to || '';
 
