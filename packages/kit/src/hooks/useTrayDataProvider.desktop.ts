@@ -37,7 +37,7 @@ export function useTrayDataProvider() {
   const [appIsLocked] = useAppIsLockedAtom();
   const [{ enableMenuBarTray }] = useSettingsPersistAtom();
   const {
-    activeAccount: { wallet },
+    activeAccount: { wallet, accountName },
   } = useActiveAccount({ num: 0 });
   // Guard every effect on this predicate so flipping the setting tears
   // down IPC/event subscriptions and re-subscribes without remounting.
@@ -48,6 +48,8 @@ export function useTrayDataProvider() {
   appIsLockedRef.current = appIsLocked;
   const walletRef = useRef(wallet);
   walletRef.current = wallet;
+  const accountNameRef = useRef<string>('');
+  accountNameRef.current = accountName || '';
   const handleTrayDataRequestRef = useRef<(() => void) | undefined>(undefined);
   const pendingTxsClearedRef = useRef(false);
   // Renderer-side inflight guard — main-process `guardedRequest` only
@@ -77,6 +79,7 @@ export function useTrayDataProvider() {
       accountId: activeAccountId,
       pendingTxsCleared: pendingTxsClearedRef.current,
       wallet: { name: '', emoji: '', avatarImg: '' },
+      account: { name: accountNameRef.current },
       totalBalance: {
         amount: '0.00',
         currency: 'USD',
@@ -122,6 +125,7 @@ export function useTrayDataProvider() {
         accountId: activeAccountId,
         pendingTxsCleared: pendingTxsClearedRef.current,
         wallet: { name: '', emoji: '', avatarImg: '' },
+        account: { name: accountNameRef.current },
         totalBalance: {
           amount: '0.00',
           currency: displayCurrency,
@@ -428,6 +432,7 @@ export function useTrayDataProvider() {
         accountId: activeAccountId,
         pendingTxsCleared: pendingTxsClearedRef.current,
         wallet: { name: 'Wallet', emoji: '', avatarImg: '' },
+        account: { name: accountNameRef.current },
         totalBalance: {
           amount: '0.00',
           currency: 'USD',

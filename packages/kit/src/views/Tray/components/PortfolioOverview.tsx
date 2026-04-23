@@ -6,10 +6,12 @@ import type { IAllWalletAvatarImageNamesWithoutDividers } from '@onekeyhq/shared
 
 export function PortfolioOverview({
   wallet,
+  account,
   totalBalance,
   onPress,
 }: {
   wallet: { name: string; emoji: string; avatarImg: string };
+  account: { name: string };
   totalBalance: {
     amount: string;
     currency: string;
@@ -72,6 +74,11 @@ export function PortfolioOverview({
           {wallet.name}
         </SizableText>
       </Stack>
+      {account.name ? (
+        <SizableText fontSize="$bodySm" color="$textSubdued" marginBottom="$1">
+          {account.name}
+        </SizableText>
+      ) : null}
       <SizableText fontSize="$headingXl" color="$text" fontWeight="600">
         {currencySymbol}
         {formattedAmount}

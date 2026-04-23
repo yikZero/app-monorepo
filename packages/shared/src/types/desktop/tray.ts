@@ -41,6 +41,11 @@ export interface ITrayData {
     emoji: string;
     avatarImg: string;
   };
+  // Active account's display name (e.g. "Account 1"); wallet.name covers
+  // the wallet/HD identity only. Empty string when unavailable (cold start).
+  account: {
+    name: string;
+  };
   totalBalance: {
     amount: string;
     currency: string;
