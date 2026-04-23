@@ -42,7 +42,7 @@ function RedemptionCenterDialogContent({
 }: IRedemptionCenterDialogProps) {
   const intl = useIntl();
   const navigation = useAppNavigation();
-  const { isLoggedIn } = useOneKeyAuth();
+  const { isLoggedIn, loginOneKeyId } = useOneKeyAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<IRedemptionFormValues>({
@@ -95,12 +95,7 @@ function RedemptionCenterDialogContent({
           return;
         }
 
-        // Only fall back to the legacy path when the user is already logged in
-        // — avoids triggering a login prompt for a plain mistyped/invalid code.
-        if (
-          btcResult.error.code !== EBtcRewardErrorCode.InvalidCode ||
-          !isLoggedIn
-        ) {
+        if (btcResult.error.code !== EBtcRewardErrorCode.InvalidCode) {
           defaultLogger.referral.redemption.redeemFailed(
             code,
             btcResult.error.message,
@@ -108,6 +103,19 @@ function RedemptionCenterDialogContent({
           form.setError('code', { message: btcResult.error.message });
           preventClose?.();
           return;
+        }
+
+        // legacy redeemCode requires OneKey ID auth; prompt login before the
+        // fallback so logged-out users can still redeem a legacy rebate code
+        // (the redemption center entry no longer gates on login).
+        if (!isLoggedIn) {
+          try {
+            await loginOneKeyId();
+          } catch {
+            form.setError('code', { message: btcResult.error.message });
+            preventClose?.();
+            return;
+          }
         }
 
         const result = await backgroundApiProxy.serviceReferralCode.redeemCode({
@@ -158,7 +166,7 @@ function RedemptionCenterDialogContent({
         setIsSubmitting(false);
       }
     },
-    [form, intl, isLoggedIn, navigation, onClose, onSuccess],
+    [form, intl, isLoggedIn, loginOneKeyId, navigation, onClose, onSuccess],
   );
 
   const handleRedeem = useCallback(

@@ -33,7 +33,6 @@ type IRouteParams = RouteProp<
   {
     BtcRewardDetail: {
       item: IBtcRewardHistoryItem;
-      walletAddress: string;
     };
   },
   'BtcRewardDetail'
@@ -55,14 +54,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function BtcRewardDetailPage() {
   const intl = useIntl();
   const route = useRoute<IRouteParams>();
-  // TODO: backend to include walletAddress on each HistoryItem. Required because
-  // /btc-reward/history also does instance-fallback matching via the
-  // X-Onekey-Instance-Id header, so one query may return records from multiple
-  // wallet addresses; the per-item walletAddress is the only way to show the
-  // real receive address (i.e. the one locked at commit time). Once shipped,
-  // read item.walletAddress instead of route.params.walletAddress.
-  const { item, walletAddress } = route.params;
+  const { item } = route.params;
   const { copyText } = useClipboard();
+
+  // Only shown when the server returns the per-item address. /history uses
+  // instance-fallback matching, so the active wallet address is not a safe
+  // proxy for the address this record was committed against.
+  const walletAddress = item.walletAddress ?? null;
 
   const statusConfigs = useMemo(() => getBtcRewardStatusConfig(intl), [intl]);
   const title = intl.formatMessage({
@@ -70,7 +68,9 @@ function BtcRewardDetailPage() {
   });
 
   const handleCopyAddress = useCallback(() => {
-    copyText(walletAddress);
+    if (walletAddress) {
+      copyText(walletAddress);
+    }
   }, [walletAddress, copyText]);
 
   const handleCopyTxHash = useCallback(() => {
@@ -195,29 +195,35 @@ function BtcRewardDetailPage() {
               />
             ) : null}
 
-            <Divider />
+            {walletAddress || (isPaid && item.txHash) ? <Divider /> : null}
 
-            <XStack justifyContent="space-between" alignItems="center" gap="$2">
-              <SizableText size="$bodyMd" color="$textSubdued">
-                {intl.formatMessage({
-                  id: ETranslations.referral_reward_received_address,
-                })}
-              </SizableText>
-              <XStack gap="$1" alignItems="center" flexShrink={1}>
-                <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                  {accountUtils.shortenAddress({ address: walletAddress })}
-                </SizableText>
-                <IconButton
-                  variant="tertiary"
-                  size="small"
-                  icon="Copy3Outline"
-                  onPress={handleCopyAddress}
-                  title={intl.formatMessage({
-                    id: ETranslations.global_copy_address,
+            {walletAddress ? (
+              <XStack
+                justifyContent="space-between"
+                alignItems="center"
+                gap="$2"
+              >
+                <SizableText size="$bodyMd" color="$textSubdued">
+                  {intl.formatMessage({
+                    id: ETranslations.referral_reward_received_address,
                   })}
-                />
+                </SizableText>
+                <XStack gap="$1" alignItems="center" flexShrink={1}>
+                  <SizableText size="$bodyMdMedium" numberOfLines={1}>
+                    {accountUtils.shortenAddress({ address: walletAddress })}
+                  </SizableText>
+                  <IconButton
+                    variant="tertiary"
+                    size="small"
+                    icon="Copy3Outline"
+                    onPress={handleCopyAddress}
+                    title={intl.formatMessage({
+                      id: ETranslations.global_copy_address,
+                    })}
+                  />
+                </XStack>
               </XStack>
-            </XStack>
+            ) : null}
 
             {isPaid && item.txHash ? (
               <XStack

@@ -184,13 +184,9 @@ function RedemptionHistoryContent() {
 
   const handleRecordPress = useCallback(
     (item: IBtcRewardHistoryItem) => {
-      if (!walletAddress) return;
-      navigation.push(EModalReferFriendsRoutes.BtcRewardDetail, {
-        item,
-        walletAddress,
-      });
+      navigation.push(EModalReferFriendsRoutes.BtcRewardDetail, { item });
     },
-    [navigation, walletAddress],
+    [navigation],
   );
 
   const isLoading =

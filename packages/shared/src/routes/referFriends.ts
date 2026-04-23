@@ -106,6 +106,5 @@ export type IModalReferFriendsParamList = {
   };
   [EModalReferFriendsRoutes.BtcRewardDetail]: {
     item: IBtcRewardHistoryItem;
-    walletAddress: string;
   };
 };
