@@ -27,3 +27,10 @@ export function formatTrayPendingTxAmount(
   if (txType === 'contract') return 'Contract';
   return '—';
 }
+
+// Placeholder for the account-level 24h change calculator. Returns undefined
+// so callers (and the UI) handle the "no data" branch uniformly. Replace the
+// body when a backend source becomes available. See OK-53612.
+export function composeTrayAccountChange24h(): number | undefined {
+  return undefined;
+}

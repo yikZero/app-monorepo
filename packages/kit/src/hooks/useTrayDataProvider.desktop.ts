@@ -25,7 +25,10 @@ import {
   TRAY_IPC,
 } from '@onekeyhq/shared/src/types/desktop/tray';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
-import { formatTrayPendingTxAmount } from '@onekeyhq/shared/src/utils/trayDataUtils';
+import {
+  composeTrayAccountChange24h,
+  formatTrayPendingTxAmount,
+} from '@onekeyhq/shared/src/utils/trayDataUtils';
 import { calculateAccountTotalValue } from '@onekeyhq/shared/src/utils/tokenUtils';
 import { EDecodedTxStatus } from '@onekeyhq/shared/types/tx';
 
@@ -209,6 +212,7 @@ export function useTrayDataProvider() {
             amount: new BigNumber(total).toFixed(2),
             currency: displayCurrency,
             symbol: displaySymbol,
+            change24h: composeTrayAccountChange24h(),
           };
         } catch (e) {
           defaultLogger.app.error.log(

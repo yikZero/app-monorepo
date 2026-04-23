@@ -1,4 +1,7 @@
-import { formatTrayPendingTxAmount } from './trayDataUtils';
+import {
+  composeTrayAccountChange24h,
+  formatTrayPendingTxAmount,
+} from './trayDataUtils';
 
 describe('formatTrayPendingTxAmount', () => {
   test('formats asset transfer with standard amount and symbol', () => {
@@ -72,5 +75,13 @@ describe('formatTrayPendingTxAmount', () => {
       txType: 'send',
     });
     expect(result).toBe('not-a-number ETH');
+  });
+});
+
+describe('composeTrayAccountChange24h', () => {
+  test('returns undefined until a real 24h source is wired', () => {
+    // Documents the deliberate gap left by OK-53612 partial fix. When a
+    // backend feed arrives, replace this test with the new behavior.
+    expect(composeTrayAccountChange24h()).toBeUndefined();
   });
 });
