@@ -964,12 +964,15 @@ class ProviderApiPrivate extends ProviderApiBase {
       );
     }
 
-    const [myReferralCode, devSettings] = await Promise.all([
-      this.backgroundApi.serviceReferralCode
-        .getMyReferralCode()
-        .catch(() => ''),
+    const [isLoggedIn, devSettings] = await Promise.all([
+      this.backgroundApi.servicePrime.isLoggedIn().catch(() => false),
       devSettingsPersistAtom.get(),
     ]);
+    const myReferralCode = isLoggedIn
+      ? await this.backgroundApi.serviceReferralCode
+          .getMyReferralCode()
+          .catch(() => '')
+      : '';
     const env: IEndpointEnv =
       devSettings.enabled && devSettings.settings?.enableTestEndpoint
         ? 'test'

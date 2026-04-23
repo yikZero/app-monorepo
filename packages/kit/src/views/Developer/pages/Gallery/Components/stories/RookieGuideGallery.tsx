@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { Button, Page, SizableText, YStack } from '@onekeyhq/components';
+import { DOWNLOAD_URL } from '@onekeyhq/shared/src/config/appConfig';
 import {
   EAppEventBusNames,
   appEventBus,
@@ -11,19 +12,18 @@ import type { IRookieShareData } from '@onekeyhq/shared/types/rookieGuide';
 const ROOKIE_GUIDE_URL = 'http://localhost:3002';
 
 const MOCK_SHARE_DATA: IRookieShareData = {
-  imageUrl: 'https://uni.onekey-asset.com/static/logo/onekey-icon-256.png',
+  imageUrl: 'https://uni.onekey-asset.com/static/logo/onekey.png',
   title: 'How to deposit? Your first step on-chain',
   subtitle: 'Every step brings you closer to Web3',
-  footerText: 'Open source and easy to use from day one.',
   referralCode: 'ONEKEY123',
   referralUrl: 'https://onekey.so/r/ONEKEY123/app',
 };
 
 const MOCK_SHARE_DATA_NO_REFERRAL: IRookieShareData = {
-  imageUrl: 'https://uni.onekey-asset.com/static/logo/onekey-icon-256.png',
+  imageUrl: 'https://uni.onekey-asset.com/static/logo/onekey.png',
   title: 'How to deposit? Your first step on-chain',
   subtitle: 'Every step brings you closer to Web3',
-  footerText: 'Open source and easy to use from day one.',
+  referralUrl: DOWNLOAD_URL,
 };
 
 export default function RookieGuideGallery() {
