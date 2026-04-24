@@ -725,9 +725,7 @@ export interface IBtcRewardCommitData {
 }
 
 export interface IBtcRewardHistoryParams {
-  // Server scopes by X-Onekey-Instance-Id header; walletAddress narrows
-  // further if provided. Empty string is treated as omitted.
-  walletAddress?: string;
+  walletAddress: string;
   current?: number;
   pageSize?: number;
   status?: EBtcRewardStatus;
@@ -746,8 +744,8 @@ export interface IBtcRewardHistoryItem {
   paidAt?: string | null;
   txHash?: string | null;
   rejectReason?: string | null;
-  // Required for display: /history uses X-Onekey-Instance-Id fallback, so
-  // records across multiple addresses can be returned in one query.
+  // Not returned by server; attached client-side from the history query's
+  // walletAddress so the detail page can show the receive address.
   walletAddress?: string | null;
 }
 
