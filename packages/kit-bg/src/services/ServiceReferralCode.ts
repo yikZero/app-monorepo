@@ -936,7 +936,7 @@ class ServiceReferralCode extends ServiceBase {
     return {
       success: true,
       data: {
-        total: result.data.total,
+        ...result.data,
         data: result.data.data.map((item) => ({
           ...item,
           walletAddress: params.walletAddress,

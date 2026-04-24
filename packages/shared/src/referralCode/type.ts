@@ -746,7 +746,7 @@ export interface IBtcRewardHistoryItem {
   rejectReason?: string | null;
   // Not returned by server; attached client-side from the history query's
   // walletAddress so the detail page can show the receive address.
-  walletAddress?: string | null;
+  walletAddress: string;
 }
 
 export interface IBtcRewardHistoryResponse {
