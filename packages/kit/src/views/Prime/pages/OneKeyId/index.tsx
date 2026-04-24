@@ -1,11 +1,11 @@
 import { useCallback, useRef } from 'react';
 
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
   Badge,
   Icon,
-  LinearGradient,
   Page,
   SizableText,
   Stack,
@@ -19,8 +19,10 @@ import {
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
+import { useEditPrimeProfileDialog } from '@onekeyhq/kit/src/components/RenameDialog';
 import { useReferFriends } from '@onekeyhq/kit/src/hooks/useReferFriends';
 import { useRouteIsFocused } from '@onekeyhq/kit/src/hooks/useRouteIsFocused';
+import { OneKeyIdAvatar } from '@onekeyhq/kit/src/views/Setting/pages/OneKeyId';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -36,7 +38,8 @@ function OneKeyIdPage() {
   const intl = useIntl();
   const { toInviteRewardPage } = useReferFriends();
   const { isPrimeAvailable } = usePrimeAvailable();
-  const { isLoggedIn, logout } = useOneKeyAuth();
+  const { isLoggedIn, logout, user } = useOneKeyAuth();
+  const showEditPrimeProfileDialog = useEditPrimeProfileDialog();
   const logoutRef = useRef<() => Promise<void>>(logout);
   const isFocused = useRouteIsFocused();
   const isExplicitLogoutRef = useRef(false);
@@ -102,25 +105,40 @@ function OneKeyIdPage() {
       <Page.Header title="OneKey ID" />
       <Page.Body>
         <YStack>
-          <YStack p="$5" ai="center" jc="center">
-            <LinearGradient
-              bg="$bgInverse"
-              borderRadius="$3"
-              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0)']}
-              width={56}
-              height={56}
-              jc="center"
+          {isLoggedIn && user ? (
+            <YStack
+              p="$5"
               ai="center"
+              jc="center"
+              onPress={showEditPrimeProfileDialog}
+              hoverStyle={{ bg: '$bgHover' }}
+              pressStyle={{ bg: '$bgActive' }}
+              borderRadius="$3"
+              userSelect="none"
             >
-              <Icon size="$8" name="PeopleSolid" color="$iconInverse" />
-            </LinearGradient>
-            <SizableText pt="$5" pb="$2" size="$heading2xl">
-              OneKey ID
-            </SizableText>
-            <SizableText color="$textSubdued" size="$bodyLg">
-              {intl.formatMessage({ id: ETranslations.id_desc })}
-            </SizableText>
-          </YStack>
+              <Stack position="relative">
+                <OneKeyIdAvatar size="$20" />
+                <XStack
+                  bg="$bg"
+                  w={30}
+                  h={30}
+                  jc="center"
+                  ai="center"
+                  borderRadius="$full"
+                  position="absolute"
+                  borderWidth={StyleSheet.hairlineWidth}
+                  borderColor="$bgApp"
+                  right={0}
+                  bottom={0}
+                >
+                  <Icon name="EditOutline" size="$4" color="$icon" />
+                </XStack>
+              </Stack>
+              <SizableText pt="$5" pb="$2" size="$heading2xl" numberOfLines={1}>
+                {user.nickname ?? 'OneKey ID'}
+              </SizableText>
+            </YStack>
+          ) : null}
           <Stack p="$5">
             <PrimeUserInfo
               onBeforeLogout={handleBeforeLogout}

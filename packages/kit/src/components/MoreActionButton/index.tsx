@@ -88,7 +88,6 @@ import useScanQrCode from '../../views/ScanQrCode/hooks/useScanQrCode';
 import { OneKeyIdAvatar } from '../../views/Setting/pages/OneKeyId';
 import { ESettingsTabNames } from '../../views/Setting/pages/Tab/config';
 import { AccountSelectorProviderMirror } from '../AccountSelector';
-import { useEditPrimeProfileDialog } from '../RenameDialog';
 import { UpdateReminder } from '../UpdateReminder';
 import {
   isShowAppUpdateUIWhenUpdating,
@@ -551,16 +550,6 @@ function MoreActionOneKeyId() {
   }, [isLoggedIn, user?.displayEmail, intl]);
 
   const navigation = useAppNavigation();
-  const showEditPrimeProfileDialog = useEditPrimeProfileDialog();
-
-  const handleAvatarPress = useCallback(
-    async (e: GestureResponderEvent) => {
-      e.stopPropagation();
-      await closePopover?.();
-      await showEditPrimeProfileDialog();
-    },
-    [closePopover, showEditPrimeProfileDialog],
-  );
 
   const handleNavigateToOneKeyId = useCallback(async () => {
     await closePopover?.();
@@ -667,9 +656,7 @@ function MoreActionOneKeyId() {
       }}
     >
       <XStack alignItems="center" gap="$3" flex={1}>
-        <Stack onPress={handleAvatarPress}>
-          <OneKeyIdAvatar size="$14" />
-        </Stack>
+        <OneKeyIdAvatar size="$14" />
 
         <YStack flex={1} gap="$1">
           <XStack
