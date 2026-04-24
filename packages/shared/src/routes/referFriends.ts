@@ -26,7 +26,7 @@ export enum EModalReferFriendsRoutes {
   ReferralLevel = 'ReferralLevel',
   RedemptionHistory = 'RedemptionHistory',
   PerpsReward = 'PerpsReward',
-  BtcRewardVerifyOrder = 'BtcRewardVerifyOrder',
+  BtcRewardVerifyVoucher = 'BtcRewardVerifyVoucher',
   BtcRewardSelectAddress = 'BtcRewardSelectAddress',
   BtcRewardConfirm = 'BtcRewardConfirm',
   BtcRewardSuccess = 'BtcRewardSuccess',
@@ -82,18 +82,18 @@ export type IModalReferFriendsParamList = {
   [EModalReferFriendsRoutes.ReferralLevel]: undefined;
   [EModalReferFriendsRoutes.RedemptionHistory]: undefined;
   [EModalReferFriendsRoutes.PerpsReward]: undefined;
-  [EModalReferFriendsRoutes.BtcRewardVerifyOrder]: {
+  [EModalReferFriendsRoutes.BtcRewardVerifyVoucher]: {
     codeInfo: IBtcRewardCodeInfoParam;
   };
   [EModalReferFriendsRoutes.BtcRewardSelectAddress]: {
     codeInfo: IBtcRewardCodeInfoParam;
-    shopifyOrderNumber: string;
+    voucherCode: string;
     displayTitle: string;
     quotaRemaining?: number;
   };
   [EModalReferFriendsRoutes.BtcRewardConfirm]: {
     codeInfo: IBtcRewardCodeInfoParam;
-    shopifyOrderNumber: string;
+    voucherCode: string;
     displayTitle: string;
     walletAddress: string;
   };

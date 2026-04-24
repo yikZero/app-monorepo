@@ -27,8 +27,8 @@ const RedemptionHistory = LazyLoadPage(
 );
 const PerpsReward = LazyLoadPage(() => import('../pages/PerpsReward'));
 
-const BtcRewardVerifyOrder = LazyLoadPage(
-  () => import('../../Redemption/pages/BtcReward/VerifyOrder'),
+const BtcRewardVerifyVoucher = LazyLoadPage(
+  () => import('../../Redemption/pages/BtcReward/VerifyVoucher'),
 );
 const BtcRewardSelectAddress = LazyLoadPage(
   () => import('../../Redemption/pages/BtcReward/SelectAddress'),
@@ -100,8 +100,8 @@ export const ReferFriendsRouter: IModalFlowNavigatorConfig<
     component: PerpsReward,
   },
   {
-    name: EModalReferFriendsRoutes.BtcRewardVerifyOrder,
-    component: BtcRewardVerifyOrder,
+    name: EModalReferFriendsRoutes.BtcRewardVerifyVoucher,
+    component: BtcRewardVerifyVoucher,
   },
   {
     name: EModalReferFriendsRoutes.BtcRewardSelectAddress,

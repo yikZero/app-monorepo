@@ -15,8 +15,8 @@ import type {
   IBtcRewardResult,
   IBtcRewardVerifyCodeData,
   IBtcRewardVerifyCodeParams,
-  IBtcRewardVerifyOrderData,
-  IBtcRewardVerifyOrderParams,
+  IBtcRewardVerifyVoucherData,
+  IBtcRewardVerifyVoucherParams,
   IEarnPositionsResponse,
   IEarnRewardResponse,
   IEarnWalletHistory,
@@ -911,11 +911,11 @@ class ServiceReferralCode extends ServiceBase {
   }
 
   @backgroundMethod()
-  async btcRewardVerifyOrder(
-    params: IBtcRewardVerifyOrderParams,
-  ): Promise<IBtcRewardResult<IBtcRewardVerifyOrderData>> {
-    return this.btcRewardPost<IBtcRewardVerifyOrderData>(
-      '/rebate/v1/btc-reward/verify-order',
+  async btcRewardVerifyVoucher(
+    params: IBtcRewardVerifyVoucherParams,
+  ): Promise<IBtcRewardResult<IBtcRewardVerifyVoucherData>> {
+    return this.btcRewardPost<IBtcRewardVerifyVoucherData>(
+      '/rebate/v1/btc-reward/verify-voucher',
       params,
     );
   }

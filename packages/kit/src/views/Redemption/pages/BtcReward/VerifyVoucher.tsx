@@ -23,20 +23,20 @@ import type { RouteProp } from '@react-navigation/core';
 
 type IRouteParams = RouteProp<
   {
-    BtcRewardVerifyOrder: {
+    BtcRewardVerifyVoucher: {
       codeInfo: IBtcRewardCodeInfoParam;
     };
   },
-  'BtcRewardVerifyOrder'
+  'BtcRewardVerifyVoucher'
 >;
 
 interface IFormValues {
-  shopifyOrderNumber: string;
+  voucherCode: string;
 }
 
-const EXAMPLE_ORDER_ID = '#1001';
+const EXAMPLE_VOUCHER = '#1001';
 
-function VerifyOrderPage() {
+function VerifyVoucherPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
@@ -45,38 +45,38 @@ function VerifyOrderPage() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const form = useForm<IFormValues>({
-    defaultValues: { shopifyOrderNumber: '' },
+    defaultValues: { voucherCode: '' },
     mode: 'onChange',
   });
 
-  const orderNumberValue = form.watch('shopifyOrderNumber');
+  const voucherCodeValue = form.watch('voucherCode');
 
   const handleVerify = useCallback(async () => {
-    const shopifyOrderNumber = form.getValues('shopifyOrderNumber').trim();
-    if (!shopifyOrderNumber) return;
+    const voucherCode = form.getValues('voucherCode').trim();
+    if (!voucherCode) return;
 
     setIsVerifying(true);
-    form.clearErrors('shopifyOrderNumber');
+    form.clearErrors('voucherCode');
 
     try {
       const result =
-        await backgroundApiProxy.serviceReferralCode.btcRewardVerifyOrder({
+        await backgroundApiProxy.serviceReferralCode.btcRewardVerifyVoucher({
           codeId: codeInfo.codeId,
-          shopifyOrderNumber,
+          voucherCode,
         });
       if (!result.success) {
-        form.setError('shopifyOrderNumber', { message: result.error.message });
+        form.setError('voucherCode', { message: result.error.message });
         return;
       }
 
       navigation.push(EModalReferFriendsRoutes.BtcRewardSelectAddress, {
         codeInfo,
-        shopifyOrderNumber: result.data.orderSummary.orderNumber,
+        voucherCode: result.data.orderSummary.orderNumber,
         displayTitle: result.data.orderSummary.displayTitle,
         quotaRemaining: result.data.quotaRemaining,
       });
     } catch {
-      form.setError('shopifyOrderNumber', {
+      form.setError('voucherCode', {
         message: intl.formatMessage({
           id: ETranslations.redemption_btc_confirm_error_desc,
         }),
@@ -103,7 +103,7 @@ function VerifyOrderPage() {
 
           <Form form={form}>
             <Form.Field
-              name="shopifyOrderNumber"
+              name="voucherCode"
               label={intl.formatMessage({
                 id: ETranslations.redemption_btc_verify_order_input_label,
               })}
@@ -114,7 +114,7 @@ function VerifyOrderPage() {
                   {
                     id: ETranslations.redemption_btc_verify_order_input_placeholder,
                   },
-                  { example: EXAMPLE_ORDER_ID },
+                  { example: EXAMPLE_VOUCHER },
                 )}
                 autoCorrect={false}
               />
@@ -145,7 +145,7 @@ function VerifyOrderPage() {
           id: ETranslations.redemption_btc_verify_order_submit,
         })}
         confirmButtonProps={{
-          disabled: !orderNumberValue?.trim() || isVerifying,
+          disabled: !voucherCodeValue?.trim() || isVerifying,
           loading: isVerifying,
         }}
       />
@@ -153,4 +153,4 @@ function VerifyOrderPage() {
   );
 }
 
-export default VerifyOrderPage;
+export default VerifyVoucherPage;

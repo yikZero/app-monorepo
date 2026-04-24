@@ -27,7 +27,7 @@ type IRouteParams = RouteProp<
   {
     BtcRewardConfirm: {
       codeInfo: IBtcRewardCodeInfoParam;
-      shopifyOrderNumber: string;
+      voucherCode: string;
       displayTitle: string;
       walletAddress: string;
     };
@@ -39,8 +39,7 @@ function ConfirmRedeemPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, shopifyOrderNumber, displayTitle, walletAddress } =
-    route.params;
+  const { codeInfo, voucherCode, displayTitle, walletAddress } = route.params;
   const { codeId, rewardUsdCents, activityName } = codeInfo;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +53,7 @@ function ConfirmRedeemPage() {
       const result =
         await backgroundApiProxy.serviceReferralCode.btcRewardCommit({
           codeId,
-          shopifyOrderNumber,
+          voucherCode,
           walletAddress,
         });
 
@@ -89,14 +88,7 @@ function ConfirmRedeemPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [
-    navigation,
-    codeId,
-    rewardUsdCents,
-    shopifyOrderNumber,
-    walletAddress,
-    intl,
-  ]);
+  }, [navigation, codeId, rewardUsdCents, voucherCode, walletAddress, intl]);
 
   const handleChangeAddress = useCallback(() => {
     navigation.pop();
@@ -134,9 +126,7 @@ function ConfirmRedeemPage() {
                   id: ETranslations.Limit_order_history_order_id,
                 })}
               </SizableText>
-              <SizableText size="$bodyMdMedium">
-                {shopifyOrderNumber}
-              </SizableText>
+              <SizableText size="$bodyMdMedium">{voucherCode}</SizableText>
             </XStack>
 
             <XStack justifyContent="space-between">

@@ -31,7 +31,7 @@ type IRouteParams = RouteProp<
   {
     BtcRewardSelectAddress: {
       codeInfo: IBtcRewardCodeInfoParam;
-      shopifyOrderNumber: string;
+      voucherCode: string;
       displayTitle: string;
       quotaRemaining?: number;
     };
@@ -45,8 +45,7 @@ function SelectAddressContent() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, shopifyOrderNumber, displayTitle, quotaRemaining } =
-    route.params;
+  const { codeInfo, voucherCode, displayTitle, quotaRemaining } = route.params;
 
   const { activeAccount, showAccountSelector } = useAccountSelectorTrigger({
     num: 0,
@@ -75,11 +74,11 @@ function SelectAddressContent() {
     if (!walletAddress) return;
     navigation.push(EModalReferFriendsRoutes.BtcRewardConfirm, {
       codeInfo,
-      shopifyOrderNumber,
+      voucherCode,
       displayTitle,
       walletAddress,
     });
-  }, [navigation, walletAddress, codeInfo, shopifyOrderNumber, displayTitle]);
+  }, [navigation, walletAddress, codeInfo, voucherCode, displayTitle]);
 
   const renderSelectedCard = () => (
     <XStack

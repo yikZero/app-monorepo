@@ -83,7 +83,7 @@ function RedemptionCenterDialogContent({
           defaultLogger.referral.redemption.redeemSuccess(code);
           onClose?.();
           navigation.pushModal(EModalRoutes.ReferFriendsModal, {
-            screen: EModalReferFriendsRoutes.BtcRewardVerifyOrder,
+            screen: EModalReferFriendsRoutes.BtcRewardVerifyVoucher,
             params: {
               codeInfo: {
                 codeId: btcResult.data.codeId,

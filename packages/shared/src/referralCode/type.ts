@@ -696,12 +696,14 @@ export interface IBtcRewardVerifyCodeData {
   rewardUsdCents: number;
 }
 
-export interface IBtcRewardVerifyOrderParams {
+export interface IBtcRewardVerifyVoucherParams {
   codeId: string;
-  shopifyOrderNumber: string;
+  // Shopify order number (# prefix) or offline / dealer voucher code.
+  // Server dispatches by prefix.
+  voucherCode: string;
 }
 
-export interface IBtcRewardVerifyOrderData {
+export interface IBtcRewardVerifyVoucherData {
   orderSummary: {
     orderNumber: string;
     displayTitle: string;
@@ -711,7 +713,7 @@ export interface IBtcRewardVerifyOrderData {
 
 export interface IBtcRewardCommitParams {
   codeId: string;
-  shopifyOrderNumber: string;
+  voucherCode: string;
   walletAddress: string;
 }
 
@@ -723,7 +725,9 @@ export interface IBtcRewardCommitData {
 }
 
 export interface IBtcRewardHistoryParams {
-  walletAddress: string;
+  // Server scopes by X-Onekey-Instance-Id header; walletAddress narrows
+  // further if provided. Empty string is treated as omitted.
+  walletAddress?: string;
   current?: number;
   pageSize?: number;
   status?: EBtcRewardStatus;
