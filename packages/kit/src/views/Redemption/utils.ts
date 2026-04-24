@@ -68,14 +68,15 @@ export function formatUsd(value: number | string): string {
 
 // Payouts happen on the 10th of each month for records that passed the 30-day
 // waiting window. Returns the smallest month-10th date that is on or after
-// the eligibility date.
+// the eligibility date. UTC-based so the result is deterministic regardless of
+// the viewer's timezone.
 export function getBtcRewardPayoutDate(eligibleAtIso: string): Date {
   const eligibleAt = new Date(eligibleAtIso);
-  const year = eligibleAt.getFullYear();
-  const month = eligibleAt.getMonth();
-  const sameMonth10th = new Date(year, month, 10);
+  const year = eligibleAt.getUTCFullYear();
+  const month = eligibleAt.getUTCMonth();
+  const sameMonth10th = new Date(Date.UTC(year, month, 10));
   if (sameMonth10th.getTime() >= eligibleAt.getTime()) {
     return sameMonth10th;
   }
-  return new Date(year, month + 1, 10);
+  return new Date(Date.UTC(year, month + 1, 10));
 }

@@ -3,8 +3,8 @@ import {
   backgroundClass,
   backgroundMethod,
 } from '@onekeyhq/shared/src/background/backgroundDecorators';
-import { EBtcRewardErrorCode } from '@onekeyhq/shared/src/referralCode/type';
 import type {
+  EBtcRewardErrorCode,
   EExportTimeRange,
   IBatchCheckWalletItem,
   IBatchCheckWalletResponse,
@@ -52,12 +52,6 @@ import type { IHyperLiquidSignatureRSV } from '@onekeyhq/shared/types/hyperliqui
 import ServiceBase from './ServiceBase';
 
 import type { IWalletReferralCode } from '../dbs/simple/entity/SimpleDbEntityReferralCode';
-
-const KNOWN_BTC_REWARD_ERROR_CODES = new Set(
-  Object.values(EBtcRewardErrorCode).filter(
-    (v): v is EBtcRewardErrorCode => typeof v === 'number',
-  ),
-);
 
 @backgroundClass()
 class ServiceReferralCode extends ServiceBase {
@@ -945,11 +939,7 @@ class ServiceReferralCode extends ServiceBase {
     const errData = axiosError?.response?.data as
       | { code?: number; message?: string }
       | undefined;
-    if (
-      errData?.code !== undefined &&
-      typeof errData.message === 'string' &&
-      KNOWN_BTC_REWARD_ERROR_CODES.has(errData.code as EBtcRewardErrorCode)
-    ) {
+    if (errData?.code !== undefined && typeof errData.message === 'string') {
       return {
         success: false,
         error: {
