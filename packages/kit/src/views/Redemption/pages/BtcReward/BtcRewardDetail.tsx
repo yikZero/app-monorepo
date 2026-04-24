@@ -85,7 +85,7 @@ function BtcRewardDetailPage() {
 
   const statusConfig =
     statusConfigs[item.status] ?? statusConfigs[EBtcRewardStatus.Wait];
-  const isPaid = item.status === EBtcRewardStatus.Paid && item.paidAt;
+  const isPaid = item.status === EBtcRewardStatus.Paid;
   const rejectReason =
     item.status === EBtcRewardStatus.Rejected ? item.rejectReason : null;
 

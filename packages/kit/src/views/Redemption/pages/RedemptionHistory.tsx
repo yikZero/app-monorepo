@@ -125,10 +125,10 @@ function RedemptionHistoryContent() {
         try {
           const networkAccount =
             await backgroundApiProxy.serviceAccount.getNetworkAccount({
-              indexedAccountId: indexedAccountId ?? '',
+              indexedAccountId,
+              accountId: indexedAccountId ? undefined : accountId,
               networkId: baseNetworkId,
               deriveType: 'default',
-              accountId: indexedAccountId ? undefined : (accountId ?? ''),
             });
           return networkAccount?.address;
         } catch {
