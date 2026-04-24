@@ -157,12 +157,12 @@ function RedeemSuccessPage() {
       </Page.Body>
 
       <Page.Footer
-        onConfirm={handleViewHistory}
-        onConfirmText={intl.formatMessage({
+        onConfirm={handleDone}
+        onConfirmText={intl.formatMessage({ id: ETranslations.global_done })}
+        onCancel={handleViewHistory}
+        onCancelText={intl.formatMessage({
           id: ETranslations.redemption_btc_success_view_history,
         })}
-        onCancel={handleDone}
-        onCancelText={intl.formatMessage({ id: ETranslations.global_done })}
       />
     </Page>
   );

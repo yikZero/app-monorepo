@@ -183,7 +183,7 @@ function SelectAddressContent() {
           confirmButtonProps={{ disabled: !walletAddress }}
         >
           {quotaRemaining !== undefined ? (
-            <SizableText size="$bodySm" color="$textSubdued">
+            <SizableText size="$bodySm" color="$textSubdued" pb="$2">
               {intl.formatMessage(
                 {
                   id: ETranslations.redemption_btc_verify_order_quota_remaining_desc,

@@ -103,7 +103,7 @@ function ConfirmRedeemPage() {
       />
       <Page.Body px="$5" py="$4">
         <YStack gap="$4">
-          <YStack alignItems="center" py="$4" gap="$1">
+          <YStack alignItems="center" pb="$4" gap="$1">
             <SizableText size="$bodyLg" color="$textSubdued">
               {intl.formatMessage({
                 id: ETranslations.redemption_btc_confirm_you_will_receive,
@@ -112,7 +112,7 @@ function ConfirmRedeemPage() {
             <SizableText size="$heading4xl" color="$text">
               {formatUsd(rewardUsdCents / 100)}
             </SizableText>
-            <SizableText size="$bodyMd" color="$textSubdued">
+            <SizableText size="$bodyMd" color="$textSubdued" textAlign="center">
               {intl.formatMessage({
                 id: ETranslations.redemption_btc_confirm_price_lock_hint_desc,
               })}
@@ -161,12 +161,12 @@ function ConfirmRedeemPage() {
             >
               <Icon name="WalletCryptoSolid" size="$5" color="$icon" />
               <YStack flex={1}>
-                <SizableText size="$bodyMdMedium">
+                <SizableText size="$bodySm" color="$textSubdued">
                   {intl.formatMessage({
                     id: ETranslations.redemption_btc_success_label_to_address,
                   })}
                 </SizableText>
-                <SizableText size="$bodySm" color="$textSubdued">
+                <SizableText size="$bodyMdMedium">
                   {accountUtils.shortenAddress({ address: walletAddress })}
                 </SizableText>
               </YStack>
