@@ -130,9 +130,14 @@ function VerifyVoucherPage() {
                 })}
               </SizableText>
               <SizableText size="$bodyMd" color="$textSubdued">
-                {intl.formatMessage({
-                  id: ETranslations.redemption_btc_verify_order_hint_description,
-                })}
+                {`• ${intl.formatMessage({
+                  id: ETranslations.redemption_btc_verify_order_hint_shopify,
+                })}`}
+              </SizableText>
+              <SizableText size="$bodyMd" color="$textSubdued">
+                {`• ${intl.formatMessage({
+                  id: ETranslations.redemption_btc_verify_order_hint_offline,
+                })}`}
               </SizableText>
             </YStack>
           </XStack>
