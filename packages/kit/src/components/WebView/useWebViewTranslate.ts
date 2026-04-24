@@ -287,32 +287,24 @@ export function useWebViewTranslate({
     [],
   );
 
-  const teardownTranslate = useCallback(
-    (command: 'stop' | 'restore') => {
-      if (startTimerRef.current) {
-        clearTimeout(startTimerRef.current);
-        startTimerRef.current = null;
-      }
-      injectScript(
-        tabId,
-        createMessageInjectedScript({
-          type: TRANSLATE_COMMAND_TYPE,
-          command,
-        }),
-      );
-      unregisterTranslateHandler(tabId);
-      desktopCleanupRef.current?.();
-      handledUnavailableSessionRef.current = null;
-      activeSessionIdRef.current = null;
-      translatingRef.current = false;
-    },
-    [tabId],
-  );
-
-  const restoreOriginal = useCallback(
-    () => teardownTranslate('restore'),
-    [teardownTranslate],
-  );
+  const restoreOriginal = useCallback(() => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+    injectScript(
+      tabId,
+      createMessageInjectedScript({
+        type: TRANSLATE_COMMAND_TYPE,
+        command: 'restore',
+      }),
+    );
+    unregisterTranslateHandler(tabId);
+    desktopCleanupRef.current?.();
+    handledUnavailableSessionRef.current = null;
+    activeSessionIdRef.current = null;
+    translatingRef.current = false;
+  }, [tabId]);
 
   const handleTranslateUnavailable = useCallback(
     ({
