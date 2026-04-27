@@ -670,6 +670,7 @@ export enum EBtcRewardStatus {
 }
 
 export enum EBtcRewardErrorCode {
+  Unknown = -1,
   InvalidCode = 100_300,
   InvalidOrder = 100_301,
   InvalidAddress = 100_302,

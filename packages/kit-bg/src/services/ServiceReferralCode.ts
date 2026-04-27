@@ -3,13 +3,14 @@ import {
   backgroundClass,
   backgroundMethod,
 } from '@onekeyhq/shared/src/background/backgroundDecorators';
+import { EBtcRewardErrorCode } from '@onekeyhq/shared/src/referralCode/type';
 import type {
-  EBtcRewardErrorCode,
   EExportTimeRange,
   IBatchCheckWalletItem,
   IBatchCheckWalletResponse,
   IBtcRewardCommitData,
   IBtcRewardCommitParams,
+  IBtcRewardError,
   IBtcRewardHistoryParams,
   IBtcRewardHistoryResponse,
   IBtcRewardResult,
@@ -932,8 +933,10 @@ class ServiceReferralCode extends ServiceBase {
     );
   }
 
-  // POST envelope: { success: true, data: T } | { success: false, code, message }
-  // GET envelope (flat): { success: true, ...T }     | { success: false, code, message }
+  private toBtcRewardError(code: number, message: string): IBtcRewardError {
+    return { code: code as EBtcRewardErrorCode, message };
+  }
+
   private unwrapBtcRewardEnvelope<TData>(
     envelope: unknown,
     options?: { flat?: boolean },
@@ -950,18 +953,15 @@ class ServiceReferralCode extends ServiceBase {
     if (typeof body?.code === 'number' && typeof body.message === 'string') {
       return {
         success: false,
-        error: {
-          code: body.code as EBtcRewardErrorCode,
-          message: body.message,
-        },
+        error: this.toBtcRewardError(body.code, body.message),
       };
     }
     return {
       success: false,
-      error: {
-        code: -1 as EBtcRewardErrorCode,
-        message: 'Unknown BTC reward error',
-      },
+      error: this.toBtcRewardError(
+        EBtcRewardErrorCode.Unknown,
+        'Unknown BTC reward error',
+      ),
     };
   }
 
@@ -973,10 +973,7 @@ class ServiceReferralCode extends ServiceBase {
     if (errData?.code !== undefined && typeof errData.message === 'string') {
       return {
         success: false,
-        error: {
-          code: errData.code as EBtcRewardErrorCode,
-          message: errData.message,
-        },
+        error: this.toBtcRewardError(errData.code, errData.message),
       };
     }
     throw error;
