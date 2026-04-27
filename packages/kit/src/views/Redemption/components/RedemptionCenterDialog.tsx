@@ -80,7 +80,8 @@ function RedemptionCenterDialogContent({
           });
 
         if (btcResult.success) {
-          defaultLogger.referral.redemption.redeemSuccess(code);
+          // verify-code only validates the code; the actual redemption is the
+          // commit at the end of the BTC reward flow. Log success there.
           onClose?.();
           navigation.pushModal(EModalRoutes.ReferFriendsModal, {
             screen: EModalReferFriendsRoutes.BtcRewardVerifyVoucher,

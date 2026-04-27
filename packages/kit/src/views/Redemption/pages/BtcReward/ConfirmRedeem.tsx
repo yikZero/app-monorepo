@@ -15,6 +15,7 @@ import {
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EModalReferFriendsRoutes } from '@onekeyhq/shared/src/routes';
 import type { IBtcRewardCodeInfoParam } from '@onekeyhq/shared/src/routes';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
@@ -65,9 +66,15 @@ function ConfirmRedeemPage() {
         });
 
       if (!result.success) {
+        defaultLogger.referral.redemption.redeemFailed(
+          codeId,
+          result.error.message,
+        );
         setSubmitError(result.error.message);
         return;
       }
+
+      defaultLogger.referral.redemption.redeemSuccess(codeId);
 
       navigation.dispatch(
         CommonActions.reset({
