@@ -867,12 +867,10 @@ class ServiceReferralCode extends ServiceBase {
   ): Promise<IBtcRewardResult<TData>> {
     const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
-      const response = await client.post<{ success: true; data: TData }>(
-        path,
-        params,
-        { autoHandleError: false } as any,
-      );
-      return { success: true, data: response.data.data };
+      const response = await client.post<unknown>(path, params, {
+        autoHandleError: false,
+      } as any);
+      return this.unwrapBtcRewardEnvelope<TData>(response.data);
     } catch (error) {
       return this.normalizeBtcRewardError(error);
     }
@@ -884,11 +882,11 @@ class ServiceReferralCode extends ServiceBase {
   ): Promise<IBtcRewardResult<TData>> {
     const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
-      const response = await client.get<TData>(path, {
+      const response = await client.get<unknown>(path, {
         params,
         autoHandleError: false,
       } as any);
-      return { success: true, data: response.data };
+      return this.unwrapBtcRewardEnvelope<TData>(response.data, { flat: true });
     } catch (error) {
       return this.normalizeBtcRewardError(error);
     }
@@ -932,6 +930,39 @@ class ServiceReferralCode extends ServiceBase {
       '/rebate/v1/btc-reward/history',
       params,
     );
+  }
+
+  // POST envelope: { success: true, data: T } | { success: false, code, message }
+  // GET envelope (flat): { success: true, ...T }     | { success: false, code, message }
+  private unwrapBtcRewardEnvelope<TData>(
+    envelope: unknown,
+    options?: { flat?: boolean },
+  ): IBtcRewardResult<TData> {
+    const body = envelope as
+      | { success?: boolean; data?: TData; code?: number; message?: string }
+      | undefined;
+    if (body?.success === true) {
+      return {
+        success: true,
+        data: (options?.flat ? body : body.data) as TData,
+      };
+    }
+    if (typeof body?.code === 'number' && typeof body.message === 'string') {
+      return {
+        success: false,
+        error: {
+          code: body.code as EBtcRewardErrorCode,
+          message: body.message,
+        },
+      };
+    }
+    return {
+      success: false,
+      error: {
+        code: -1 as EBtcRewardErrorCode,
+        message: 'Unknown BTC reward error',
+      },
+    };
   }
 
   private normalizeBtcRewardError<T>(error: unknown): IBtcRewardResult<T> {

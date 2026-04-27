@@ -49,6 +49,7 @@ function SelectAddressContent() {
 
   const { activeAccount, showAccountSelector } = useAccountSelectorTrigger({
     num: 0,
+    linkNetwork: true,
     linkNetworkId: baseNetworkId,
   });
   const actions = useAccountSelectorActions();
