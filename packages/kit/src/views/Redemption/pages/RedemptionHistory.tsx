@@ -113,11 +113,11 @@ function RedemptionHistoryContent() {
   const indexedAccountId = activeAccount?.indexedAccount?.id;
   const accountId = activeAccount?.account?.id;
 
-  // TODO: backend to include walletAddress on each HistoryItem. The /history
-  // endpoint also does instance-fallback matching via X-Onekey-Instance-Id, so
-  // one query may legitimately return records across multiple wallet addresses
-  // — without the per-item walletAddress the client can't attribute each row
-  // to the correct receive address.
+  // /history accepts a walletAddress query param and also performs
+  // instance-fallback matching via X-Onekey-Instance-Id, so one query may
+  // return records across multiple receive addresses. The server has not yet
+  // returned walletAddress per item, so the detail page hides the receive
+  // address row instead of attributing the query param to every record.
   const { result: walletAddress, isLoading: isWalletAddressLoading } =
     usePromiseResult(
       async () => {

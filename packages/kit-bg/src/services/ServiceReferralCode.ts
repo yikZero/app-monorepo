@@ -928,21 +928,10 @@ class ServiceReferralCode extends ServiceBase {
   async btcRewardHistory(
     params: IBtcRewardHistoryParams,
   ): Promise<IBtcRewardResult<IBtcRewardHistoryResponse>> {
-    const result = await this.btcRewardGet<IBtcRewardHistoryResponse>(
+    return this.btcRewardGet<IBtcRewardHistoryResponse>(
       '/rebate/v1/btc-reward/history',
       params,
     );
-    if (!result.success) return result;
-    return {
-      success: true,
-      data: {
-        ...result.data,
-        data: result.data.data.map((item) => ({
-          ...item,
-          walletAddress: params.walletAddress,
-        })),
-      },
-    };
   }
 
   private normalizeBtcRewardError<T>(error: unknown): IBtcRewardResult<T> {

@@ -744,9 +744,10 @@ export interface IBtcRewardHistoryItem {
   paidAt?: string | null;
   txHash?: string | null;
   rejectReason?: string | null;
-  // Not returned by server; attached client-side from the history query's
-  // walletAddress so the detail page can show the receive address.
-  walletAddress: string;
+  // Optional: server returns per-item walletAddress only after the field lands.
+  // Until then, the detail page hides the receive address row to avoid
+  // showing the wrong address when /history falls back across instances.
+  walletAddress?: string;
 }
 
 export interface IBtcRewardHistoryResponse {

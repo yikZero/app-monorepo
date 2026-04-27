@@ -70,15 +70,32 @@ function SelectAddressContent() {
   const dbAccount = activeAccount?.dbAccount;
   const walletAddress = account?.address;
 
+  // cbBTC reward locks to the address at commit time and cannot be changed.
+  // Watching / external wallets cannot sign or be proven controlled, so block
+  // them here to avoid sending a one-shot reward to an address the user
+  // cannot access.
+  const walletId = wallet?.id;
+  const isUnsupportedWalletType = walletId
+    ? accountUtils.isWatchingWallet({ walletId }) ||
+      accountUtils.isExternalWallet({ walletId })
+    : false;
+
   const handleNext = useCallback(() => {
-    if (!walletAddress) return;
+    if (!walletAddress || isUnsupportedWalletType) return;
     navigation.push(EModalReferFriendsRoutes.BtcRewardConfirm, {
       codeInfo,
       voucherCode,
       displayTitle,
       walletAddress,
     });
-  }, [navigation, walletAddress, codeInfo, voucherCode, displayTitle]);
+  }, [
+    navigation,
+    walletAddress,
+    isUnsupportedWalletType,
+    codeInfo,
+    voucherCode,
+    displayTitle,
+  ]);
 
   const renderSelectedCard = () => (
     <XStack
@@ -164,15 +181,24 @@ function SelectAddressContent() {
         <YStack gap="$4">
           {hasSelection ? renderSelectedCard() : renderPlaceholderCard()}
 
-          <Alert
-            type="warning"
-            title={intl.formatMessage({
-              id: ETranslations.redemption_btc_select_address_alert_title,
-            })}
-            description={intl.formatMessage({
-              id: ETranslations.redemption_btc_select_address_alert_desc,
-            })}
-          />
+          {isUnsupportedWalletType ? (
+            <Alert
+              type="critical"
+              title={intl.formatMessage({
+                id: ETranslations.wallet_bulk_send_error_watching_account,
+              })}
+            />
+          ) : (
+            <Alert
+              type="warning"
+              title={intl.formatMessage({
+                id: ETranslations.redemption_btc_select_address_alert_title,
+              })}
+              description={intl.formatMessage({
+                id: ETranslations.redemption_btc_select_address_alert_desc,
+              })}
+            />
+          )}
         </YStack>
       </Page.Body>
 
@@ -180,7 +206,9 @@ function SelectAddressContent() {
         <Page.FooterActions
           onConfirm={handleNext}
           onConfirmText={intl.formatMessage({ id: ETranslations.global_next })}
-          confirmButtonProps={{ disabled: !walletAddress }}
+          confirmButtonProps={{
+            disabled: !walletAddress || isUnsupportedWalletType,
+          }}
         >
           {quotaRemaining !== undefined ? (
             <SizableText size="$bodySm" color="$textSubdued" pb="$2">

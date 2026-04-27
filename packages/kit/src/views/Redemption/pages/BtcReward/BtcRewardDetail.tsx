@@ -63,7 +63,9 @@ function BtcRewardDetailPage() {
   });
 
   const handleCopyAddress = useCallback(() => {
-    copyText(item.walletAddress);
+    if (item.walletAddress) {
+      copyText(item.walletAddress);
+    }
   }, [item.walletAddress, copyText]);
 
   const handleCopyTxHash = useCallback(() => {
@@ -188,30 +190,38 @@ function BtcRewardDetailPage() {
               />
             ) : null}
 
-            <Divider />
-            <XStack justifyContent="space-between" alignItems="center" gap="$2">
-              <SizableText size="$bodyMd" color="$textSubdued">
-                {intl.formatMessage({
-                  id: ETranslations.referral_reward_received_address,
-                })}
-              </SizableText>
-              <XStack gap="$1" alignItems="center" flexShrink={1}>
-                <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                  {accountUtils.shortenAddress({
-                    address: item.walletAddress,
-                  })}
-                </SizableText>
-                <IconButton
-                  variant="tertiary"
-                  size="small"
-                  icon="Copy3Outline"
-                  onPress={handleCopyAddress}
-                  title={intl.formatMessage({
-                    id: ETranslations.global_copy_address,
-                  })}
-                />
-              </XStack>
-            </XStack>
+            {item.walletAddress ? (
+              <>
+                <Divider />
+                <XStack
+                  justifyContent="space-between"
+                  alignItems="center"
+                  gap="$2"
+                >
+                  <SizableText size="$bodyMd" color="$textSubdued">
+                    {intl.formatMessage({
+                      id: ETranslations.referral_reward_received_address,
+                    })}
+                  </SizableText>
+                  <XStack gap="$1" alignItems="center" flexShrink={1}>
+                    <SizableText size="$bodyMdMedium" numberOfLines={1}>
+                      {accountUtils.shortenAddress({
+                        address: item.walletAddress,
+                      })}
+                    </SizableText>
+                    <IconButton
+                      variant="tertiary"
+                      size="small"
+                      icon="Copy3Outline"
+                      onPress={handleCopyAddress}
+                      title={intl.formatMessage({
+                        id: ETranslations.global_copy_address,
+                      })}
+                    />
+                  </XStack>
+                </XStack>
+              </>
+            ) : null}
 
             {isPaid && item.txHash ? (
               <XStack
