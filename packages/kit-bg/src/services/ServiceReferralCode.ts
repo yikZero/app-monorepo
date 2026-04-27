@@ -961,7 +961,11 @@ class ServiceReferralCode extends ServiceBase {
     const body = envelope as
       | { success?: boolean; data?: TData; code?: number; message?: string }
       | undefined;
-    if (body?.success === true && body.data != null) {
+    if (
+      body?.success === true &&
+      body.data !== null &&
+      body.data !== undefined
+    ) {
       return { success: true, data: body.data };
     }
     return this.toBtcRewardFailure<TData>(body);
