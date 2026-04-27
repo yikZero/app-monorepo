@@ -103,10 +103,18 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
       throw new OneKeyLocalError('PrimeAuth Not ready');
     }
 
-    const offerings = await Purchases.getSharedInstance().getOfferings();
+    const { isSandboxKey } = await getPrimePaymentApiKey({
+      apiKeyType: 'web',
+    });
+    const offerings = await Purchases.getSharedInstance().getOfferings(
+      isSandboxKey ? { currency: 'USD' } : undefined,
+    );
+    const targetOffering =
+      (isSandboxKey ? offerings.all.Sandbox_testing : null) ??
+      offerings.current;
 
     const packages: IPackage[] =
-      offerings?.current?.availablePackages?.map((p) => {
+      targetOffering?.availablePackages?.map((p) => {
         const { normalPeriodDuration, currentPrice } = p.rcBillingProduct;
 
         const currencyCode = currentPrice.currency || '';
@@ -142,6 +150,8 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
     console.log('userPrimePaymentMethods >>>>>> WebPackages', {
       packages,
       offerings,
+      offeringId: targetOffering?.identifier,
+      isSandboxKey,
     });
 
     return packages;
@@ -174,17 +184,27 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         //   }),
         // });
 
+        const { isSandboxKey } = await getPrimePaymentApiKey({
+          apiKeyType: 'web',
+        });
         const offerings = await Purchases.getSharedInstance().getOfferings(
-          currency ? { currency } : undefined,
+          isSandboxKey
+            ? { currency: 'USD' }
+            : currency
+            ? { currency }
+            : undefined,
         );
+        const targetOffering =
+          (isSandboxKey ? offerings.all.Sandbox_testing : null) ??
+          offerings.current;
 
-        if (!offerings.current) {
+        if (!targetOffering) {
           throw new OneKeyLocalError(
             'purchasePaywallPackage ERROR: No offerings',
           );
         }
 
-        const paywallPackage = offerings.current.availablePackages.find(
+        const paywallPackage = targetOffering.availablePackages.find(
           (p) => p.rcBillingProduct.normalPeriodDuration === subscriptionPeriod,
         );
 
