@@ -70,10 +70,7 @@ function SelectAddressContent() {
   const dbAccount = activeAccount?.dbAccount;
   const walletAddress = account?.address;
 
-  // cbBTC reward locks to the address at commit time and cannot be changed.
-  // Watching / external wallets cannot sign or be proven controlled, so block
-  // them here to avoid sending a one-shot reward to an address the user
-  // cannot access.
+  // The address is locked at commit time, so reject wallets that cannot sign.
   const walletId = wallet?.id;
   const isUnsupportedWalletType = walletId
     ? accountUtils.isWatchingWallet({ walletId }) ||

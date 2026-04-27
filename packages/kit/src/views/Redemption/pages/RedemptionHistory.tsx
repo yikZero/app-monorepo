@@ -113,11 +113,6 @@ function RedemptionHistoryContent() {
   const indexedAccountId = activeAccount?.indexedAccount?.id;
   const accountId = activeAccount?.account?.id;
 
-  // /history accepts a walletAddress query param and also performs
-  // instance-fallback matching via X-Onekey-Instance-Id, so one query may
-  // return records across multiple receive addresses. The server has not yet
-  // returned walletAddress per item, so the detail page hides the receive
-  // address row instead of attributing the query param to every record.
   const { result: walletAddress, isLoading: isWalletAddressLoading } =
     usePromiseResult(
       async () => {
