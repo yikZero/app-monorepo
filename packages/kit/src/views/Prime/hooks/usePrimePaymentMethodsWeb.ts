@@ -22,7 +22,6 @@ import primePaymentUtils from './primePaymentUtils';
 
 import type {
   IPackage,
-  IPackageFreeTrial,
   ISubscriptionPeriod,
   IUsePrimePayment,
 } from './usePrimePaymentTypes';
@@ -39,9 +38,14 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
   const isReady = isAuthReady;
 
   const initSdk = useCallback(
-    async ({ loginRequired }: { loginRequired?: boolean } = {}) => {
+    async ({
+      loginRequired,
+    }: { loginRequired?: boolean } = {}): Promise<{
+      apiKey: string;
+      isSandboxKey: boolean;
+    }> => {
       console.log('initSdk');
-      const { apiKey } = await getPrimePaymentApiKey({
+      const { apiKey, isSandboxKey } = await getPrimePaymentApiKey({
         apiKeyType: 'web',
       });
       if (!isReady) {
@@ -64,6 +68,7 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         apiKey,
         user?.onekeyUserId || Purchases.generateRevenueCatAnonymousAppUserId(),
       );
+      return { apiKey, isSandboxKey };
     },
     [isReady, user?.onekeyUserId],
   );
@@ -98,15 +103,12 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
   }, [initSdk, setPrimePersistAtom, user?.onekeyUserId]);
 
   const getPackagesWeb = useCallback(async () => {
-    await initSdk();
-
     if (!isReady) {
       throw new OneKeyLocalError('PrimeAuth Not ready');
     }
 
-    const { isSandboxKey } = await getPrimePaymentApiKey({
-      apiKeyType: 'web',
-    });
+    const { isSandboxKey } = await initSdk();
+
     const offerings = await Purchases.getSharedInstance().getOfferings(
       isSandboxKey ? { currency: 'USD' } : undefined,
     );
@@ -129,21 +131,6 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         const pricePerMonth = pricePerMonthBN.toNumber();
         const pricePerYear = pricePerMonthBN.times(12).toNumber();
 
-        let freeTrial: IPackageFreeTrial | undefined;
-        const trialPhase = defaultSubscriptionOption?.trial;
-        if (
-          trialPhase &&
-          trialPhase.price === null &&
-          trialPhase.period &&
-          trialPhase.periodDuration
-        ) {
-          freeTrial = {
-            periodIso: trialPhase.periodDuration,
-            periodNumber: trialPhase.period.number,
-            periodUnit: trialPhase.period.unit,
-          };
-        }
-
         return {
           subscriptionPeriod: normalPeriodDuration as ISubscriptionPeriod,
           currencyCode,
@@ -161,7 +148,9 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
             pricePerYear,
             currencyCode,
           ),
-          freeTrial,
+          freeTrial: primePaymentUtils.extractWebFreeTrial(
+            defaultSubscriptionOption?.trial,
+          ),
         };
       }) || [];
 
@@ -189,7 +178,7 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
       currency?: string;
       featureName?: EPrimeFeatures;
     }) => {
-      await initSdk({ loginRequired: true });
+      const { isSandboxKey } = await initSdk({ loginRequired: true });
       try {
         if (!isReady) {
           throw new OneKeyLocalError('PrimeAuth Not ready');
@@ -202,15 +191,14 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         //   }),
         // });
 
-        const { isSandboxKey } = await getPrimePaymentApiKey({
-          apiKeyType: 'web',
-        });
+        let getOfferingsParams: { currency: string } | undefined;
+        if (isSandboxKey) {
+          getOfferingsParams = { currency: 'USD' };
+        } else if (currency) {
+          getOfferingsParams = { currency };
+        }
         const offerings = await Purchases.getSharedInstance().getOfferings(
-          isSandboxKey
-            ? { currency: 'USD' }
-            : currency
-            ? { currency }
-            : undefined,
+          getOfferingsParams,
         );
         const targetOffering =
           (isSandboxKey ? offerings.all.Sandbox_testing : null) ??

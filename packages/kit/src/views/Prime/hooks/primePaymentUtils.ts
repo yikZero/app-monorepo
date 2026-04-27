@@ -10,11 +10,31 @@ const FREE_TRIAL_PERIOD_UNITS: ReadonlySet<IPackageFreeTrial['periodUnit']> =
 
 function normalizeFreeTrialPeriodUnit(
   unit: string | undefined,
-): IPackageFreeTrial['periodUnit'] {
+): IPackageFreeTrial['periodUnit'] | undefined {
   const lower = (unit || '').toLowerCase();
   return FREE_TRIAL_PERIOD_UNITS.has(lower as IPackageFreeTrial['periodUnit'])
     ? (lower as IPackageFreeTrial['periodUnit'])
-    : 'day';
+    : undefined;
+}
+
+type IWebTrialPhase = {
+  price: { amountMicros: number } | null;
+  period: { number: number; unit: IPackageFreeTrial['periodUnit'] } | null;
+  periodDuration: string | null;
+} | null
+  | undefined;
+
+function extractWebFreeTrial(
+  trial: IWebTrialPhase,
+): IPackageFreeTrial | undefined {
+  if (!trial || trial.price !== null || !trial.period || !trial.periodDuration) {
+    return undefined;
+  }
+  return {
+    periodIso: trial.periodDuration,
+    periodNumber: trial.period.number,
+    periodUnit: trial.period.unit,
+  };
 }
 
 function extractCurrencySymbol(
@@ -92,6 +112,7 @@ const primePaymentUtils = {
   trackPrimeSubscriptionSuccess,
   formatPriceString,
   normalizeFreeTrialPeriodUnit,
+  extractWebFreeTrial,
 };
 
 export default primePaymentUtils;

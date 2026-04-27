@@ -19,6 +19,17 @@ import type {
   ISubscriptionPeriod,
 } from '../../hooks/usePrimePaymentTypes';
 
+const AUTO_RENEW_TEXT_IDS = {
+  trial: {
+    month: ETranslations.prime_subscription_auto_renew_price_after_trial_month,
+    year: ETranslations.prime_subscription_auto_renew_price_after_trial_year,
+  },
+  normal: {
+    month: ETranslations.prime_subscription_auto_renew_price_month,
+    year: ETranslations.prime_subscription_auto_renew_price_year,
+  },
+} as const;
+
 function PrimeSubscriptionPlanItem({
   selected,
   periodDuration,
@@ -119,16 +130,10 @@ export function PrimeSubscriptionPlans({
     const price = isMonthly
       ? selectedPackage?.pricePerMonthString
       : selectedPackage?.pricePerYearString;
-    let id: ETranslations;
-    if (hasFreeTrial) {
-      id = isMonthly
-        ? ETranslations.prime_subscription_auto_renew_price_after_trial_month
-        : ETranslations.prime_subscription_auto_renew_price_after_trial_year;
-    } else {
-      id = isMonthly
-        ? ETranslations.prime_subscription_auto_renew_price_month
-        : ETranslations.prime_subscription_auto_renew_price_year;
-    }
+    const id =
+      AUTO_RENEW_TEXT_IDS[hasFreeTrial ? 'trial' : 'normal'][
+        isMonthly ? 'month' : 'year'
+      ];
     return (
       <SizableText size="$bodyMd" color="$textSubdued">
         {intl.formatMessage({ id }, { price })}

@@ -195,13 +195,16 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         introPrice.price === 0 &&
         introPrice.periodNumberOfUnits > 0
       ) {
-        freeTrial = {
-          periodIso: introPrice.period,
-          periodNumber: introPrice.periodNumberOfUnits,
-          periodUnit: primePaymentUtils.normalizeFreeTrialPeriodUnit(
-            introPrice.periodUnit,
-          ),
-        };
+        const periodUnit = primePaymentUtils.normalizeFreeTrialPeriodUnit(
+          introPrice.periodUnit,
+        );
+        if (periodUnit) {
+          freeTrial = {
+            periodIso: introPrice.period,
+            periodNumber: introPrice.periodNumberOfUnits,
+            periodUnit,
+          };
+        }
       }
 
       packages.push({
