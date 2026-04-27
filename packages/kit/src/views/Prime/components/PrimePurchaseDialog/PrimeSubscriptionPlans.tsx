@@ -115,27 +115,23 @@ export function PrimeSubscriptionPlans({
       (p) => p.subscriptionPeriod === selectedSubscriptionPeriod,
     );
     const isMonthly = selectedPackage?.subscriptionPeriod === 'P1M';
-    let text = intl.formatMessage(
-      {
-        id: ETranslations.prime_subscription_auto_renew_price_year,
-      },
-      {
-        price: selectedPackage?.pricePerYearString,
-      },
-    );
-    if (isMonthly) {
-      text = intl.formatMessage(
-        {
-          id: ETranslations.prime_subscription_auto_renew_price_month,
-        },
-        {
-          price: selectedPackage?.pricePerMonthString,
-        },
-      );
+    const hasFreeTrial = Boolean(selectedPackage?.freeTrial);
+    const price = isMonthly
+      ? selectedPackage?.pricePerMonthString
+      : selectedPackage?.pricePerYearString;
+    let id: ETranslations;
+    if (hasFreeTrial) {
+      id = isMonthly
+        ? ETranslations.prime_subscription_auto_renew_price_after_trial_month
+        : ETranslations.prime_subscription_auto_renew_price_after_trial_year;
+    } else {
+      id = isMonthly
+        ? ETranslations.prime_subscription_auto_renew_price_month
+        : ETranslations.prime_subscription_auto_renew_price_year;
     }
     return (
       <SizableText size="$bodyMd" color="$textSubdued">
-        {text}
+        {intl.formatMessage({ id }, { price })}
       </SizableText>
     );
   }, [intl, packages, selectedSubscriptionPeriod]);

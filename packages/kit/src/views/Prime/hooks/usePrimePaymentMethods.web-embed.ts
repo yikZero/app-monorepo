@@ -19,6 +19,7 @@ import primePaymentUtils from './primePaymentUtils';
 
 import type {
   IPackage,
+  IPackageFreeTrial,
   ISubscriptionPeriod,
   IUsePrimePayment,
 } from './usePrimePaymentTypes';
@@ -114,7 +115,8 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
 
     const packages: IPackage[] =
       offerings?.current?.availablePackages?.map((p) => {
-        const { normalPeriodDuration, currentPrice } = p.rcBillingProduct;
+        const { normalPeriodDuration, currentPrice, defaultSubscriptionOption } =
+          p.rcBillingProduct;
 
         const currencyCode = currentPrice.currency || '';
 
@@ -126,6 +128,21 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         const pricePerMonth = pricePerMonthBN.toFixed(2);
         const pricePerYear = pricePerMonthBN.times(12).toFixed(2);
 
+        let freeTrial: IPackageFreeTrial | undefined;
+        const trialPhase = defaultSubscriptionOption?.trial;
+        if (
+          trialPhase &&
+          trialPhase.price === null &&
+          trialPhase.period &&
+          trialPhase.periodDuration
+        ) {
+          freeTrial = {
+            periodIso: trialPhase.periodDuration,
+            periodNumber: trialPhase.period.number,
+            periodUnit: trialPhase.period.unit,
+          };
+        }
+
         return {
           subscriptionPeriod: normalPeriodDuration as ISubscriptionPeriod,
           currencyCode,
@@ -134,6 +151,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
           pricePerMonth: Number(pricePerMonth),
           pricePerMonthString: `${pricePerMonth} ${currencyCode}`,
           priceTotalPerYearString: `${pricePerYear} ${currencyCode}`,
+          freeTrial,
         };
       }) || [];
 

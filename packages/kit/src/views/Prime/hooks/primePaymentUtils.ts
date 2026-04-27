@@ -3,6 +3,20 @@ import { BigNumber } from 'bignumber.js';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 
+import type { IPackageFreeTrial } from './usePrimePaymentTypes';
+
+const FREE_TRIAL_PERIOD_UNITS: ReadonlySet<IPackageFreeTrial['periodUnit']> =
+  new Set(['day', 'week', 'month', 'year']);
+
+function normalizeFreeTrialPeriodUnit(
+  unit: string | undefined,
+): IPackageFreeTrial['periodUnit'] {
+  const lower = (unit || '').toLowerCase();
+  return FREE_TRIAL_PERIOD_UNITS.has(lower as IPackageFreeTrial['periodUnit'])
+    ? (lower as IPackageFreeTrial['periodUnit'])
+    : 'day';
+}
+
 function extractCurrencySymbol(
   priceString: string | undefined,
   {
@@ -77,6 +91,7 @@ const primePaymentUtils = {
   extractCurrencySymbol,
   trackPrimeSubscriptionSuccess,
   formatPriceString,
+  normalizeFreeTrialPeriodUnit,
 };
 
 export default primePaymentUtils;
