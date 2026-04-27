@@ -71,7 +71,8 @@ function VerifyVoucherPage() {
 
       navigation.push(EModalReferFriendsRoutes.BtcRewardSelectAddress, {
         codeInfo,
-        voucherCode: result.data.orderSummary.orderNumber,
+        voucherCode,
+        displayOrderNumber: result.data.orderSummary.orderNumber,
         displayTitle: result.data.orderSummary.displayTitle,
         quotaRemaining: result.data.quotaRemaining,
       });

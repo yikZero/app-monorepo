@@ -88,12 +88,14 @@ export type IModalReferFriendsParamList = {
   [EModalReferFriendsRoutes.BtcRewardSelectAddress]: {
     codeInfo: IBtcRewardCodeInfoParam;
     voucherCode: string;
+    displayOrderNumber: string;
     displayTitle: string;
     quotaRemaining?: number;
   };
   [EModalReferFriendsRoutes.BtcRewardConfirm]: {
     codeInfo: IBtcRewardCodeInfoParam;
     voucherCode: string;
+    displayOrderNumber: string;
     displayTitle: string;
     walletAddress: string;
   };

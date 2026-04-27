@@ -984,13 +984,7 @@ class ServiceReferralCode extends ServiceBase {
     const errData = axiosError?.response?.data as
       | { code?: number; message?: string }
       | undefined;
-    if (errData?.code !== undefined && typeof errData.message === 'string') {
-      return {
-        success: false,
-        error: this.toBtcRewardError(errData.code, errData.message),
-      };
-    }
-    throw error;
+    return this.toBtcRewardFailure<T>(errData);
   }
 }
 

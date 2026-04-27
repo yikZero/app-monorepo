@@ -32,6 +32,7 @@ type IRouteParams = RouteProp<
     BtcRewardSelectAddress: {
       codeInfo: IBtcRewardCodeInfoParam;
       voucherCode: string;
+      displayOrderNumber: string;
       displayTitle: string;
       quotaRemaining?: number;
     };
@@ -45,7 +46,13 @@ function SelectAddressContent() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, voucherCode, displayTitle, quotaRemaining } = route.params;
+  const {
+    codeInfo,
+    voucherCode,
+    displayOrderNumber,
+    displayTitle,
+    quotaRemaining,
+  } = route.params;
 
   const { activeAccount, showAccountSelector } = useAccountSelectorTrigger({
     num: 0,
@@ -55,14 +62,26 @@ function SelectAddressContent() {
   const actions = useAccountSelectorActions();
 
   useEffect(() => {
-    void actions.current.syncFromScene({
-      from: {
-        sceneName: EAccountSelectorSceneName.home,
-        sceneUrl: '',
-        sceneNum: 0,
-      },
-      num: 0,
-    });
+    void (async () => {
+      await actions.current.syncFromScene({
+        from: {
+          sceneName: EAccountSelectorSceneName.home,
+          sceneUrl: '',
+          sceneNum: 0,
+        },
+        num: 0,
+        availableNetworks: {
+          networkIds: [baseNetworkId],
+          defaultNetworkId: baseNetworkId,
+        },
+      });
+      // Pin network to Base regardless of any cached network from the
+      // addressInput scene (e.g. user previously sent on a non-Base chain).
+      await actions.current.updateSelectedAccountNetwork({
+        num: 0,
+        networkId: baseNetworkId,
+      });
+    })();
   }, [actions]);
 
   const account = activeAccount?.account;
@@ -78,20 +97,29 @@ function SelectAddressContent() {
       accountUtils.isExternalWallet({ walletId })
     : false;
 
+  // Until syncFromScene + updateSelectedAccountNetwork settle, the active
+  // network can still be whatever the addressInput scene last held; gate the
+  // Next button so a fast click cannot commit a non-Base address.
+  const isBaseNetwork = activeAccount?.network?.id === baseNetworkId;
+  const canProceed =
+    !!walletAddress && !isUnsupportedWalletType && isBaseNetwork;
+
   const handleNext = useCallback(() => {
-    if (!walletAddress || isUnsupportedWalletType) return;
+    if (!canProceed || !walletAddress) return;
     navigation.push(EModalReferFriendsRoutes.BtcRewardConfirm, {
       codeInfo,
       voucherCode,
+      displayOrderNumber,
       displayTitle,
       walletAddress,
     });
   }, [
     navigation,
+    canProceed,
     walletAddress,
-    isUnsupportedWalletType,
     codeInfo,
     voucherCode,
+    displayOrderNumber,
     displayTitle,
   ]);
 
@@ -204,9 +232,7 @@ function SelectAddressContent() {
         <Page.FooterActions
           onConfirm={handleNext}
           onConfirmText={intl.formatMessage({ id: ETranslations.global_next })}
-          confirmButtonProps={{
-            disabled: !walletAddress || isUnsupportedWalletType,
-          }}
+          confirmButtonProps={{ disabled: !canProceed }}
         >
           {quotaRemaining !== undefined ? (
             <SizableText size="$bodySm" color="$textSubdued" pb="$2">

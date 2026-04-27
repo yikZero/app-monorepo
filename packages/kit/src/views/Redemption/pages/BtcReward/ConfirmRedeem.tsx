@@ -28,6 +28,7 @@ type IRouteParams = RouteProp<
     BtcRewardConfirm: {
       codeInfo: IBtcRewardCodeInfoParam;
       voucherCode: string;
+      displayOrderNumber: string;
       displayTitle: string;
       walletAddress: string;
     };
@@ -39,7 +40,13 @@ function ConfirmRedeemPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const route = useRoute<IRouteParams>();
-  const { codeInfo, voucherCode, displayTitle, walletAddress } = route.params;
+  const {
+    codeInfo,
+    voucherCode,
+    displayOrderNumber,
+    displayTitle,
+    walletAddress,
+  } = route.params;
   const { codeId, rewardUsdCents, activityName } = codeInfo;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +133,9 @@ function ConfirmRedeemPage() {
                   id: ETranslations.Limit_order_history_order_id,
                 })}
               </SizableText>
-              <SizableText size="$bodyMdMedium">{voucherCode}</SizableText>
+              <SizableText size="$bodyMdMedium">
+                {displayOrderNumber}
+              </SizableText>
             </XStack>
 
             <XStack justifyContent="space-between">

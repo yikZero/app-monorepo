@@ -96,7 +96,13 @@ function RedemptionCenterDialogContent({
           return;
         }
 
-        if (btcResult.error.code !== EBtcRewardErrorCode.InvalidCode) {
+        // Treat InvalidCode (this isn't a BTC code) and Unknown (BTC service
+        // unreachable / unexpected envelope) as fallback triggers — otherwise
+        // a BTC reward outage would block legacy redemption codes too.
+        const shouldFallbackToLegacy =
+          btcResult.error.code === EBtcRewardErrorCode.InvalidCode ||
+          btcResult.error.code === EBtcRewardErrorCode.Unknown;
+        if (!shouldFallbackToLegacy) {
           defaultLogger.referral.redemption.redeemFailed(
             code,
             btcResult.error.message,
