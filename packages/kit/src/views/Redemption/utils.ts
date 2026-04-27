@@ -66,15 +66,18 @@ export function formatUsd(value: number | string): string {
   });
 }
 
-// Payouts run on the 10th of each month, UTC, so eligibleAt rounds up to the
-// next month-10th.
+// Payouts run on the 10th UTC; consumers render with formatDate (local
+// timezone). Pick the target month in UTC, but return a local-midnight Date
+// for that 10th so the displayed day stays "10th" in every timezone — UTC
+// midnight would render as the 9th in the Americas and as the 11th east of
+// UTC+12.
 export function getBtcRewardPayoutDate(eligibleAtIso: string): Date {
   const eligibleAt = new Date(eligibleAtIso);
   const year = eligibleAt.getUTCFullYear();
   const month = eligibleAt.getUTCMonth();
-  const sameMonth10th = new Date(Date.UTC(year, month, 10));
-  if (sameMonth10th.getTime() >= eligibleAt.getTime()) {
-    return sameMonth10th;
+  const sameMonth10thUtc = Date.UTC(year, month, 10);
+  if (sameMonth10thUtc >= eligibleAt.getTime()) {
+    return new Date(year, month, 10);
   }
-  return new Date(Date.UTC(year, month + 1, 10));
+  return new Date(year, month + 1, 10);
 }
