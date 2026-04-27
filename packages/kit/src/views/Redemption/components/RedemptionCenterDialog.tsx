@@ -33,7 +33,7 @@ interface IRedemptionFormValues {
 }
 
 export interface IRedemptionCenterDialogProps {
-  onClose?: () => void;
+  onClose?: () => Promise<void> | void;
   onSuccess?: () => void;
 }
 
@@ -55,8 +55,8 @@ function RedemptionCenterDialogContent({
 
   const codeValue = form.watch('code');
 
-  const handleHistoryPress = useCallback(() => {
-    onClose?.();
+  const handleHistoryPress = useCallback(async () => {
+    await onClose?.();
     navigation.pushModal(EModalRoutes.ReferFriendsModal, {
       screen: EModalReferFriendsRoutes.RedemptionHistory,
     });
@@ -82,7 +82,7 @@ function RedemptionCenterDialogContent({
         if (btcResult.success) {
           // verify-code only validates the code; the actual redemption is the
           // commit at the end of the BTC reward flow. Log success there.
-          onClose?.();
+          await onClose?.();
           navigation.pushModal(EModalRoutes.ReferFriendsModal, {
             screen: EModalReferFriendsRoutes.BtcRewardVerifyVoucher,
             params: {
@@ -97,18 +97,20 @@ function RedemptionCenterDialogContent({
           return;
         }
 
-        // Treat InvalidCode (this isn't a BTC code) and Unknown (BTC service
-        // unreachable / unexpected envelope) as fallback triggers — otherwise
-        // a BTC reward outage would block legacy redemption codes too.
-        const shouldFallbackToLegacy =
-          btcResult.error.code === EBtcRewardErrorCode.InvalidCode ||
-          btcResult.error.code === EBtcRewardErrorCode.Unknown;
-        if (!shouldFallbackToLegacy) {
-          defaultLogger.referral.redemption.redeemFailed(
-            code,
-            btcResult.error.message,
-          );
-          form.setError('code', { message: btcResult.error.message });
+        // Only the server-confirmed "this isn't a BTC code" signal triggers
+        // the legacy fallback. Transport / envelope failures normalize to
+        // Unknown — those keep the user on the BTC path with a retryable
+        // error, otherwise a real BTC code during a BTC outage would be
+        // routed to legacy and surface as "invalid code".
+        if (btcResult.error.code !== EBtcRewardErrorCode.InvalidCode) {
+          const message =
+            btcResult.error.code === EBtcRewardErrorCode.Unknown
+              ? intl.formatMessage({
+                  id: ETranslations.redemption_btc_confirm_error_desc,
+                })
+              : btcResult.error.message;
+          defaultLogger.referral.redemption.redeemFailed(code, message);
+          form.setError('code', { message });
           preventClose?.();
           return;
         }
@@ -150,7 +152,7 @@ function RedemptionCenterDialogContent({
 
         defaultLogger.referral.redemption.redeemSuccess(code);
 
-        onClose?.();
+        await onClose?.();
         showRedemptionSuccessDialog({
           upgradeInfo: result.upgradeInfo,
         });
