@@ -5,6 +5,9 @@ import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 
 import type { IPackageFreeTrial } from './usePrimePaymentTypes';
+import type { Offerings, Purchases } from '@revenuecat/purchases-js';
+
+const SANDBOX_OFFERING_ID = 'Sandbox_testing';
 
 const FREE_TRIAL_PERIOD_UNITS: ReadonlySet<IPackageFreeTrial['periodUnit']> =
   new Set(['day', 'week', 'month', 'year']);
@@ -106,6 +109,32 @@ function extractNativeFreeTrial(
   return undefined;
 }
 
+async function fetchWebTargetOffering({
+  purchases,
+  isSandboxKey,
+  currency,
+}: {
+  purchases: Purchases;
+  isSandboxKey: boolean;
+  currency?: string;
+}): Promise<{
+  offerings: Offerings;
+  targetOffering: Offerings['current'];
+  getOfferingsParams: { currency: string } | undefined;
+}> {
+  let getOfferingsParams: { currency: string } | undefined;
+  if (isSandboxKey) {
+    getOfferingsParams = { currency: 'USD' };
+  } else if (currency) {
+    getOfferingsParams = { currency };
+  }
+  const offerings = await purchases.getOfferings(getOfferingsParams);
+  const targetOffering =
+    (isSandboxKey ? offerings.all[SANDBOX_OFFERING_ID] : null) ??
+    offerings.current;
+  return { offerings, targetOffering, getOfferingsParams };
+}
+
 function extractCurrencySymbol(
   priceString: string | undefined,
   {
@@ -183,6 +212,7 @@ const primePaymentUtils = {
   normalizeFreeTrialPeriodUnit,
   extractWebFreeTrial,
   extractNativeFreeTrial,
+  fetchWebTargetOffering,
 };
 
 export default primePaymentUtils;

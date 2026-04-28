@@ -102,6 +102,7 @@ export function usePrimeRequirements() {
             Toast.error({
               title: 'Your account is not eligible for sandbox payment',
             });
+            return;
           }
           if (selectedSubscriptionPeriod) {
             await purchase({

@@ -38,9 +38,7 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
   const isReady = isAuthReady;
 
   const initSdk = useCallback(
-    async ({
-      loginRequired,
-    }: { loginRequired?: boolean } = {}): Promise<{
+    async ({ loginRequired }: { loginRequired?: boolean } = {}): Promise<{
       apiKey: string;
       isSandboxKey: boolean;
     }> => {
@@ -109,17 +107,19 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
 
     const { isSandboxKey } = await initSdk();
 
-    const offerings = await Purchases.getSharedInstance().getOfferings(
-      isSandboxKey ? { currency: 'USD' } : undefined,
-    );
-    const targetOffering =
-      (isSandboxKey ? offerings.all.Sandbox_testing : null) ??
-      offerings.current;
+    const { offerings, targetOffering } =
+      await primePaymentUtils.fetchWebTargetOffering({
+        purchases: Purchases.getSharedInstance(),
+        isSandboxKey,
+      });
 
     const packages: IPackage[] =
       targetOffering?.availablePackages?.map((p) => {
-        const { normalPeriodDuration, currentPrice, defaultSubscriptionOption } =
-          p.rcBillingProduct;
+        const {
+          normalPeriodDuration,
+          currentPrice,
+          defaultSubscriptionOption,
+        } = p.rcBillingProduct;
 
         const currencyCode = currentPrice.currency || '';
 
@@ -191,18 +191,13 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         //   }),
         // });
 
-        let getOfferingsParams: { currency: string } | undefined;
-        if (isSandboxKey) {
-          getOfferingsParams = { currency: 'USD' };
-        } else if (currency) {
-          getOfferingsParams = { currency };
-        }
-        const offerings = await Purchases.getSharedInstance().getOfferings(
-          getOfferingsParams,
+        const { targetOffering } = await primePaymentUtils.fetchWebTargetOffering(
+          {
+            purchases: Purchases.getSharedInstance(),
+            isSandboxKey,
+            currency,
+          },
         );
-        const targetOffering =
-          (isSandboxKey ? offerings.all.Sandbox_testing : null) ??
-          offerings.current;
 
         if (!targetOffering) {
           throw new OneKeyLocalError(
