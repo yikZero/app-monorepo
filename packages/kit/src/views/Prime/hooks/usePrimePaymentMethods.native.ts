@@ -27,7 +27,6 @@ import primePaymentUtils from './primePaymentUtils';
 
 import type {
   IPackage,
-  IPackageFreeTrial,
   ISubscriptionPeriod,
   IUsePrimePayment,
 } from './usePrimePaymentTypes';
@@ -188,24 +187,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
 
       const currencyCode = p.product.currencyCode || '';
 
-      let freeTrial: IPackageFreeTrial | undefined;
-      const introPrice = p.product.introPrice;
-      if (
-        introPrice &&
-        introPrice.price === 0 &&
-        introPrice.periodNumberOfUnits > 0
-      ) {
-        const periodUnit = primePaymentUtils.normalizeFreeTrialPeriodUnit(
-          introPrice.periodUnit,
-        );
-        if (periodUnit) {
-          freeTrial = {
-            periodIso: introPrice.period,
-            periodNumber: introPrice.periodNumberOfUnits,
-            periodUnit,
-          };
-        }
-      }
+      const freeTrial = primePaymentUtils.extractNativeFreeTrial(p.product);
 
       packages.push({
         subscriptionPeriod: subscriptionPeriod as ISubscriptionPeriod,

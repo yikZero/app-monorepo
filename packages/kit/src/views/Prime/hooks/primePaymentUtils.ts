@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 
 import type { IPackageFreeTrial } from './usePrimePaymentTypes';
@@ -17,17 +18,24 @@ function normalizeFreeTrialPeriodUnit(
     : undefined;
 }
 
-type IWebTrialPhase = {
-  price: { amountMicros: number } | null;
-  period: { number: number; unit: IPackageFreeTrial['periodUnit'] } | null;
-  periodDuration: string | null;
-} | null
+type IWebTrialPhase =
+  | {
+      price: { amountMicros: number } | null;
+      period: { number: number; unit: IPackageFreeTrial['periodUnit'] } | null;
+      periodDuration: string | null;
+    }
+  | null
   | undefined;
 
 function extractWebFreeTrial(
   trial: IWebTrialPhase,
 ): IPackageFreeTrial | undefined {
-  if (!trial || trial.price !== null || !trial.period || !trial.periodDuration) {
+  if (
+    !trial ||
+    trial.price !== null ||
+    !trial.period ||
+    !trial.periodDuration
+  ) {
     return undefined;
   }
   return {
@@ -35,6 +43,67 @@ function extractWebFreeTrial(
     periodNumber: trial.period.number,
     periodUnit: trial.period.unit,
   };
+}
+
+type INativeProductForTrial = {
+  introPrice:
+    | {
+        price: number;
+        period: string;
+        periodUnit: string;
+        periodNumberOfUnits: number;
+      }
+    | null
+    | undefined;
+  defaultOption?: {
+    freePhase:
+      | {
+          price: { amountMicros: number };
+          billingPeriod: { unit: string; value: number; iso8601: string };
+        }
+      | null;
+  } | null;
+};
+
+function extractNativeFreeTrial(
+  product: INativeProductForTrial,
+): IPackageFreeTrial | undefined {
+  const introPrice = product.introPrice;
+  if (
+    introPrice &&
+    introPrice.price === 0 &&
+    introPrice.periodNumberOfUnits > 0
+  ) {
+    const periodUnit = normalizeFreeTrialPeriodUnit(introPrice.periodUnit);
+    if (periodUnit) {
+      return {
+        periodIso: introPrice.period,
+        periodNumber: introPrice.periodNumberOfUnits,
+        periodUnit,
+      };
+    }
+  }
+  // Google Play offers don't always bridge to introPrice — read freePhase directly.
+  if (platformEnv.isNativeAndroid) {
+    const freePhase = product.defaultOption?.freePhase;
+    if (
+      freePhase &&
+      freePhase.price.amountMicros === 0 &&
+      freePhase.billingPeriod.value > 0
+    ) {
+      const periodUnit = normalizeFreeTrialPeriodUnit(
+        freePhase.billingPeriod.unit,
+      );
+      if (periodUnit) {
+        return {
+          periodIso: freePhase.billingPeriod.iso8601,
+          periodNumber: freePhase.billingPeriod.value,
+          periodUnit,
+        };
+      }
+    }
+  }
+  return undefined;
 }
 
 function extractCurrencySymbol(
@@ -113,6 +182,7 @@ const primePaymentUtils = {
   formatPriceString,
   normalizeFreeTrialPeriodUnit,
   extractWebFreeTrial,
+  extractNativeFreeTrial,
 };
 
 export default primePaymentUtils;
