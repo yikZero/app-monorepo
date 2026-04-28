@@ -1,5 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 
+import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
@@ -127,10 +128,24 @@ async function fetchWebTargetOffering({
     getOfferingsParams = { currency };
   }
   const offerings = await purchases.getOfferings(getOfferingsParams);
-  const targetOffering =
-    (isSandboxKey ? offerings.all[SANDBOX_OFFERING_ID] : null) ??
-    offerings.current;
-  return { offerings, targetOffering, getOfferingsParams };
+  if (isSandboxKey) {
+    const sandboxOffering = offerings.all[SANDBOX_OFFERING_ID];
+    if (!sandboxOffering) {
+      throw new OneKeyLocalError(
+        `Sandbox offering not found: ${SANDBOX_OFFERING_ID}`,
+      );
+    }
+    return {
+      offerings,
+      targetOffering: sandboxOffering,
+      getOfferingsParams,
+    };
+  }
+  return {
+    offerings,
+    targetOffering: offerings.current,
+    getOfferingsParams,
+  };
 }
 
 function extractCurrencySymbol(
