@@ -59,12 +59,10 @@ type INativeProductForTrial = {
     | null
     | undefined;
   defaultOption?: {
-    freePhase:
-      | {
-          price: { amountMicros: number };
-          billingPeriod: { unit: string; value: number; iso8601: string };
-        }
-      | null;
+    freePhase: {
+      price: { amountMicros: number };
+      billingPeriod: { unit: string; value: number; iso8601: string };
+    } | null;
   } | null;
 };
 

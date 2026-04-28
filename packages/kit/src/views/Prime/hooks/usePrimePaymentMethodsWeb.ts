@@ -191,13 +191,12 @@ export function usePrimePaymentMethodsWeb(): IUsePrimePayment {
         //   }),
         // });
 
-        const { targetOffering } = await primePaymentUtils.fetchWebTargetOffering(
-          {
+        const { targetOffering } =
+          await primePaymentUtils.fetchWebTargetOffering({
             purchases: Purchases.getSharedInstance(),
             isSandboxKey,
             currency,
-          },
-        );
+          });
 
         if (!targetOffering) {
           throw new OneKeyLocalError(
