@@ -337,13 +337,13 @@ export default function PrimeDashboard({
     if (!selectedPackage) {
       return intl.formatMessage({ id: ETranslations.prime_subscribe });
     }
+    if (selectedPackage.freeTrial?.periodUnit === 'day') {
+      return intl.formatMessage(
+        { id: ETranslations.prime_start_free_trial_days },
+        { count: selectedPackage.freeTrial.periodNumber },
+      );
+    }
     if (selectedPackage.freeTrial) {
-      if (selectedPackage.freeTrial.periodUnit === 'day') {
-        return intl.formatMessage(
-          { id: ETranslations.prime_start_free_trial_days },
-          { count: selectedPackage.freeTrial.periodNumber },
-        );
-      }
       return intl.formatMessage({
         id: ETranslations.prime_start_free_trial,
       });
