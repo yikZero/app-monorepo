@@ -128,24 +128,15 @@ async function fetchWebTargetOffering({
     getOfferingsParams = { currency };
   }
   const offerings = await purchases.getOfferings(getOfferingsParams);
-  if (isSandboxKey) {
-    const sandboxOffering = offerings.all[SANDBOX_OFFERING_ID];
-    if (!sandboxOffering) {
-      throw new OneKeyLocalError(
-        `Sandbox offering not found: ${SANDBOX_OFFERING_ID}`,
-      );
-    }
-    return {
-      offerings,
-      targetOffering: sandboxOffering,
-      getOfferingsParams,
-    };
+  const targetOffering = isSandboxKey
+    ? offerings.all[SANDBOX_OFFERING_ID]
+    : offerings.current;
+  if (isSandboxKey && !targetOffering) {
+    throw new OneKeyLocalError(
+      `Sandbox offering not found: ${SANDBOX_OFFERING_ID}`,
+    );
   }
-  return {
-    offerings,
-    targetOffering: offerings.current,
-    getOfferingsParams,
-  };
+  return { offerings, targetOffering, getOfferingsParams };
 }
 
 function extractCurrencySymbol(
