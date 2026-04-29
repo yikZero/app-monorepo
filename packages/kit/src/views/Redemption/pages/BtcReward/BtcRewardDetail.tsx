@@ -51,6 +51,51 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function HashRow({
+  label,
+  value,
+  onCopy,
+  copyTitle,
+  onOpenExplorer,
+  openExplorerTitle,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+  copyTitle: string;
+  onOpenExplorer?: () => void;
+  openExplorerTitle?: string;
+}) {
+  return (
+    <XStack justifyContent="space-between" alignItems="center" gap="$2">
+      <SizableText size="$bodyMd" color="$textSubdued">
+        {label}
+      </SizableText>
+      <XStack gap="$1" alignItems="center" flexShrink={1}>
+        <SizableText size="$bodyMdMedium" numberOfLines={1}>
+          {accountUtils.shortenAddress({ address: value })}
+        </SizableText>
+        <IconButton
+          variant="tertiary"
+          size="small"
+          icon="Copy3Outline"
+          onPress={onCopy}
+          title={copyTitle}
+        />
+        {onOpenExplorer ? (
+          <IconButton
+            variant="tertiary"
+            size="small"
+            icon="OpenOutline"
+            onPress={onOpenExplorer}
+            title={openExplorerTitle}
+          />
+        ) : null}
+      </XStack>
+    </XStack>
+  );
+}
+
 function BtcRewardDetailPage() {
   const intl = useIntl();
   const route = useRoute<IRouteParams>();
@@ -176,65 +221,32 @@ function BtcRewardDetailPage() {
             ) : null}
 
             <Divider />
-            <XStack justifyContent="space-between" alignItems="center" gap="$2">
-              <SizableText size="$bodyMd" color="$textSubdued">
-                {intl.formatMessage({
-                  id: ETranslations.referral_reward_received_address,
-                })}
-              </SizableText>
-              <XStack gap="$1" alignItems="center" flexShrink={1}>
-                <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                  {accountUtils.shortenAddress({
-                    address: item.walletAddress,
-                  })}
-                </SizableText>
-                <IconButton
-                  variant="tertiary"
-                  size="small"
-                  icon="Copy3Outline"
-                  onPress={handleCopyAddress}
-                  title={intl.formatMessage({
-                    id: ETranslations.global_copy_address,
-                  })}
-                />
-              </XStack>
-            </XStack>
+            <HashRow
+              label={intl.formatMessage({
+                id: ETranslations.referral_reward_received_address,
+              })}
+              value={item.walletAddress}
+              onCopy={handleCopyAddress}
+              copyTitle={intl.formatMessage({
+                id: ETranslations.global_copy_address,
+              })}
+            />
 
             {isPaid && item.txHash ? (
-              <XStack
-                justifyContent="space-between"
-                alignItems="center"
-                gap="$2"
-              >
-                <SizableText size="$bodyMd" color="$textSubdued">
-                  {intl.formatMessage({
-                    id: ETranslations.global_transaction_id,
-                  })}
-                </SizableText>
-                <XStack gap="$1" alignItems="center" flexShrink={1}>
-                  <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                    {accountUtils.shortenAddress({ address: item.txHash })}
-                  </SizableText>
-                  <IconButton
-                    variant="tertiary"
-                    size="small"
-                    icon="Copy3Outline"
-                    onPress={handleCopyTxHash}
-                    title={intl.formatMessage({
-                      id: ETranslations.redemption_btc_detail_copy_tx_hash,
-                    })}
-                  />
-                  <IconButton
-                    variant="tertiary"
-                    size="small"
-                    icon="OpenOutline"
-                    onPress={handleViewOnBaseScan}
-                    title={intl.formatMessage({
-                      id: ETranslations.global_view_in_blockchain_explorer,
-                    })}
-                  />
-                </XStack>
-              </XStack>
+              <HashRow
+                label={intl.formatMessage({
+                  id: ETranslations.global_transaction_id,
+                })}
+                value={item.txHash}
+                onCopy={handleCopyTxHash}
+                copyTitle={intl.formatMessage({
+                  id: ETranslations.redemption_btc_detail_copy_tx_hash,
+                })}
+                onOpenExplorer={handleViewOnBaseScan}
+                openExplorerTitle={intl.formatMessage({
+                  id: ETranslations.global_view_in_blockchain_explorer,
+                })}
+              />
             ) : null}
           </YStack>
         </YStack>
