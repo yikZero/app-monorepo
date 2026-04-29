@@ -145,6 +145,7 @@ function RedemptionHistoryContent() {
       const result =
         await backgroundApiProxy.serviceReferralCode.btcRewardHistory({
           walletAddress,
+          pageSize: 100,
         });
       if (!result.success) return [] as IBtcRewardHistoryItem[];
       return result.data.data;

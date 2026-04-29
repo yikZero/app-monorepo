@@ -1174,39 +1174,26 @@ class ServiceReferralCode extends ServiceBase {
   // interceptor). Use the plain client rather than getOneKeyIdClient.
   // autoHandleError: false keeps the interceptor from throwing on non-zero
   // codes so we can route InvalidCode to the legacy redeem fallback.
-  private async btcRewardPost<TData>(
+  private async btcRewardRequest<TData>(
+    method: 'get' | 'post',
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
     const client = await this.getClient(EServiceEndpointEnum.Rebate);
+    const opts = { autoHandleError: false } as any;
     try {
-      const response = await client.post<{
-        code: number;
-        message: string;
-        data: TData;
-      }>(path, params, {
-        autoHandleError: false,
-      } as any);
-      return this.toBtcRewardResult<TData>(response.data);
-    } catch (error) {
-      return this.normalizeBtcRewardError(error);
-    }
-  }
-
-  private async btcRewardGet<TData>(
-    path: string,
-    params: unknown,
-  ): Promise<IBtcRewardResult<TData>> {
-    const client = await this.getClient(EServiceEndpointEnum.Rebate);
-    try {
-      const response = await client.get<{
-        code: number;
-        message: string;
-        data: TData;
-      }>(path, {
-        params,
-        autoHandleError: false,
-      } as any);
+      const response =
+        method === 'post'
+          ? await client.post<{
+              code: number;
+              message: string;
+              data: TData;
+            }>(path, params, opts)
+          : await client.get<{
+              code: number;
+              message: string;
+              data: TData;
+            }>(path, { ...opts, params });
       return this.toBtcRewardResult<TData>(response.data);
     } catch (error) {
       return this.normalizeBtcRewardError(error);
@@ -1217,7 +1204,8 @@ class ServiceReferralCode extends ServiceBase {
   async btcRewardVerifyCode(
     params: IBtcRewardVerifyCodeParams,
   ): Promise<IBtcRewardResult<IBtcRewardVerifyCodeData>> {
-    return this.btcRewardPost<IBtcRewardVerifyCodeData>(
+    return this.btcRewardRequest<IBtcRewardVerifyCodeData>(
+      'post',
       '/rebate/v1/btc-reward/verify-code',
       params,
     );
@@ -1227,7 +1215,8 @@ class ServiceReferralCode extends ServiceBase {
   async btcRewardVerifyVoucher(
     params: IBtcRewardVerifyVoucherParams,
   ): Promise<IBtcRewardResult<IBtcRewardVerifyVoucherData>> {
-    return this.btcRewardPost<IBtcRewardVerifyVoucherData>(
+    return this.btcRewardRequest<IBtcRewardVerifyVoucherData>(
+      'post',
       '/rebate/v1/btc-reward/verify-voucher',
       params,
     );
@@ -1237,7 +1226,8 @@ class ServiceReferralCode extends ServiceBase {
   async btcRewardCommit(
     params: IBtcRewardCommitParams,
   ): Promise<IBtcRewardResult<IBtcRewardCommitData>> {
-    return this.btcRewardPost<IBtcRewardCommitData>(
+    return this.btcRewardRequest<IBtcRewardCommitData>(
+      'post',
       '/rebate/v1/btc-reward/commit',
       params,
     );
@@ -1247,7 +1237,8 @@ class ServiceReferralCode extends ServiceBase {
   async btcRewardHistory(
     params: IBtcRewardHistoryParams,
   ): Promise<IBtcRewardResult<IBtcRewardHistoryResponse>> {
-    return this.btcRewardGet<IBtcRewardHistoryResponse>(
+    return this.btcRewardRequest<IBtcRewardHistoryResponse>(
+      'get',
       '/rebate/v1/btc-reward/history',
       params,
     );
@@ -1288,7 +1279,7 @@ class ServiceReferralCode extends ServiceBase {
       success: false,
       error: this.toBtcRewardError(
         EBtcRewardErrorCode.Unknown,
-        'Unknown BTC reward error',
+        error instanceof Error ? error.message : 'Unknown BTC reward error',
       ),
     };
   }
