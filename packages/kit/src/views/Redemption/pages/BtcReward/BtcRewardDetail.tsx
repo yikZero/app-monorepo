@@ -112,6 +112,13 @@ function BtcRewardDetailPage() {
 
             <DetailRow
               label={intl.formatMessage({
+                id: ETranslations.redemption_btc_verify_order_input_label,
+              })}
+              value={item.voucherCode}
+            />
+
+            <DetailRow
+              label={intl.formatMessage({
                 id: ETranslations.redemption_btc_label_btc_price_locked,
               })}
               value={formatUsd(item.btcPriceUsd)}
