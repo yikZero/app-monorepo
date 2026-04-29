@@ -1172,16 +1172,22 @@ class ServiceReferralCode extends ServiceBase {
   // BTC reward endpoints are security: [] in OAS — auth token is optional and
   // instance fallback goes via X-Onekey-Instance-Id (injected by the shared
   // interceptor). Use the plain client rather than getOneKeyIdClient.
+  // autoHandleError: false keeps the interceptor from throwing on non-zero
+  // codes so we can route InvalidCode to the legacy redeem fallback.
   private async btcRewardPost<TData>(
     path: string,
     params: unknown,
   ): Promise<IBtcRewardResult<TData>> {
     const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
-      const response = await client.post<unknown>(path, params, {
+      const response = await client.post<{
+        code: number;
+        message: string;
+        data: TData;
+      }>(path, params, {
         autoHandleError: false,
       } as any);
-      return this.unwrapBtcRewardPostEnvelope<TData>(response.data);
+      return this.toBtcRewardResult<TData>(response.data);
     } catch (error) {
       return this.normalizeBtcRewardError(error);
     }
@@ -1193,11 +1199,15 @@ class ServiceReferralCode extends ServiceBase {
   ): Promise<IBtcRewardResult<TData>> {
     const client = await this.getClient(EServiceEndpointEnum.Rebate);
     try {
-      const response = await client.get<unknown>(path, {
+      const response = await client.get<{
+        code: number;
+        message: string;
+        data: TData;
+      }>(path, {
         params,
         autoHandleError: false,
       } as any);
-      return this.unwrapBtcRewardFlatEnvelope<TData>(response.data);
+      return this.toBtcRewardResult<TData>(response.data);
     } catch (error) {
       return this.normalizeBtcRewardError(error);
     }
@@ -1247,13 +1257,31 @@ class ServiceReferralCode extends ServiceBase {
     return { code: code as EBtcRewardErrorCode, message };
   }
 
-  private toBtcRewardFailure<T>(
-    body: { code?: number; message?: string } | undefined,
-  ): IBtcRewardResult<T> {
-    if (typeof body?.code === 'number' && typeof body.message === 'string') {
+  private toBtcRewardResult<TData>(envelope: {
+    code: number;
+    message: string;
+    data: TData;
+  }): IBtcRewardResult<TData> {
+    if (envelope.code !== 0) {
       return {
         success: false,
-        error: this.toBtcRewardError(body.code, body.message),
+        error: this.toBtcRewardError(envelope.code, envelope.message),
+      };
+    }
+    return { success: true, data: envelope.data };
+  }
+
+  private normalizeBtcRewardError<T>(error: unknown): IBtcRewardResult<T> {
+    const errData = (error as { response?: { data?: unknown } })?.response
+      ?.data as { code?: number; message?: string } | undefined;
+    if (
+      typeof errData?.code === 'number' &&
+      errData.code !== 0 &&
+      typeof errData.message === 'string'
+    ) {
+      return {
+        success: false,
+        error: this.toBtcRewardError(errData.code, errData.message),
       };
     }
     return {
@@ -1263,42 +1291,6 @@ class ServiceReferralCode extends ServiceBase {
         'Unknown BTC reward error',
       ),
     };
-  }
-
-  private unwrapBtcRewardPostEnvelope<TData>(
-    envelope: unknown,
-  ): IBtcRewardResult<TData> {
-    const body = envelope as
-      | { success?: boolean; data?: TData; code?: number; message?: string }
-      | undefined;
-    if (
-      body?.success === true &&
-      body.data !== null &&
-      body.data !== undefined
-    ) {
-      return { success: true, data: body.data };
-    }
-    return this.toBtcRewardFailure<TData>(body);
-  }
-
-  private unwrapBtcRewardFlatEnvelope<TData>(
-    envelope: unknown,
-  ): IBtcRewardResult<TData> {
-    const body = envelope as
-      | (TData & { success?: boolean; code?: number; message?: string })
-      | undefined;
-    if (body?.success === true) {
-      return { success: true, data: body };
-    }
-    return this.toBtcRewardFailure<TData>(body);
-  }
-
-  private normalizeBtcRewardError<T>(error: unknown): IBtcRewardResult<T> {
-    const axiosError = error as { response?: { data?: unknown } };
-    const errData = axiosError?.response?.data as
-      | { code?: number; message?: string }
-      | undefined;
-    return this.toBtcRewardFailure<T>(errData);
   }
 }
 
