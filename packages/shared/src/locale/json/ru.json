@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "После 30-дневного периода ожидания подходящие награды выплачиваются 10-го числа каждого месяца. Отслеживайте прогресс в Истории.",
   "redemption.btc_success_description": "Ваша награда cbBTC обрабатывается.",
   "redemption.btc_success_eligible_label_title": "Ожидаемая выплата",
+  "redemption.btc_success_eligible_label_tooltip": "После завершения 30-дневного периода возврата снимок наград создаётся 1-го числа каждого месяца, а выплаты производятся 10-го числа. Если ваша награда не попала в снимок этого месяца, выплата будет перенесена на следующий месяц.",
   "redemption.btc_success_label_to_address": "Адрес получателя",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Запрос на выплату отправлен!",

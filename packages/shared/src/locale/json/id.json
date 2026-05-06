@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "Setelah periode tunggu 30 hari, hadiah yang memenuhi syarat dibayarkan pada tanggal 10 setiap bulan. Pantau progres di Riwayat.",
   "redemption.btc_success_description": "Hadiah cbBTC Anda sedang diproses.",
   "redemption.btc_success_eligible_label_title": "Pembayaran yang diharapkan",
+  "redemption.btc_success_eligible_label_tooltip": "Setelah periode retur 30 hari berakhir, reward direkam dalam snapshot pada tanggal 1 setiap bulan dan dibayarkan pada tanggal 10. Jika reward Anda tidak termasuk dalam snapshot bulan ini, pembayaran akan ditangguhkan ke bulan berikutnya.",
   "redemption.btc_success_label_to_address": "Alamat tujuan",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Penukaran berhasil diajukan!",

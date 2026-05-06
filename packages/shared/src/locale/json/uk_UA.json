@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "Після 30-денного періоду очікування відповідні винагороди виплачуються 10-го числа кожного місяця. Відстежуйте прогрес в Історії.",
   "redemption.btc_success_description": "Ваша винагорода cbBTC обробляється.",
   "redemption.btc_success_eligible_label_title": "Очікувана виплата",
+  "redemption.btc_success_eligible_label_tooltip": "Після закінчення 30-денного періоду повернення знімок винагород створюється 1-го числа кожного місяця, а виплати здійснюються 10-го числа. Якщо вашу винагороду не включено до знімка цього місяця, виплату буде перенесено на наступний місяць.",
   "redemption.btc_success_label_to_address": "Адреса одержувача",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Запит на виплату надіслано!",

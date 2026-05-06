@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "30 दिन की प्रतीक्षा अवधि के बाद, पात्र पुरस्कार हर महीने की 10 तारीख को वितरित किए जाते हैं। इतिहास में प्रगति ट्रैक करें।",
   "redemption.btc_success_description": "आपका cbBTC रिवॉर्ड प्रोसेस किया जा रहा है।",
   "redemption.btc_success_eligible_label_title": "अपेक्षित भुगतान",
+  "redemption.btc_success_eligible_label_tooltip": "30 दिन की वापसी अवधि समाप्त होने के बाद, पुरस्कारों का स्नैपशॉट हर महीने की 1 तारीख को लिया जाता है और 10 तारीख को भुगतान किया जाता है। यदि आपका पुरस्कार इस महीने के स्नैपशॉट में शामिल नहीं है, तो भुगतान अगले महीने तक स्थगित कर दिया जाएगा।",
   "redemption.btc_success_label_to_address": "प्राप्तकर्ता का पता",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "रिडेम्पशन सबमिट हो गया!",

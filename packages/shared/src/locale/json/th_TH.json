@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "หลังช่วงรอ 30 วัน รางวัลที่ผ่านเกณฑ์จะจ่ายในวันที่ 10 ของทุกเดือน ติดตามความคืบหน้าได้ในประวัติ",
   "redemption.btc_success_description": "รางวัล cbBTC ของคุณกำลังได้รับการประมวลผล",
   "redemption.btc_success_eligible_label_title": "วันจ่ายที่คาดไว้",
+  "redemption.btc_success_eligible_label_tooltip": "หลังสิ้นสุดช่วงคืนสินค้า 30 วัน ระบบจะบันทึกสแนปช็อตของรางวัลในวันที่ 1 ของทุกเดือนและจ่ายเงินในวันที่ 10 หากรางวัลของคุณไม่ได้รวมอยู่ในสแนปช็อตของเดือนนี้ การจ่ายเงินจะถูกเลื่อนไปยังเดือนถัดไป",
   "redemption.btc_success_label_to_address": "ที่อยู่ปลายทาง",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "ส่งคำขอแลกรับแล้ว!",

@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "Tras el período de espera de 30 días, las recompensas elegibles se pagan el día 10 de cada mes. Sigue el progreso en Historial.",
   "redemption.btc_success_description": "Tu recompensa cbBTC está siendo procesada.",
   "redemption.btc_success_eligible_label_title": "Pago previsto",
+  "redemption.btc_success_eligible_label_tooltip": "Tras el cierre del período de devolución de 30 días, las recompensas se capturan en una instantánea el día 1 de cada mes y se pagan el día 10. Si tu recompensa no se incluye en la instantánea de este mes, el pago se aplazará al mes siguiente.",
   "redemption.btc_success_label_to_address": "Dirección de destino",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "¡Canje enviado!",

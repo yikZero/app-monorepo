@@ -3501,6 +3501,7 @@ export enum ETranslations {
   redemption_btc_success_alert_desc = 'redemption.btc_success_alert_desc',
   redemption_btc_success_description = 'redemption.btc_success_description',
   redemption_btc_success_eligible_label_title = 'redemption.btc_success_eligible_label_title',
+  redemption_btc_success_eligible_label_tooltip = 'redemption.btc_success_eligible_label_tooltip',
   redemption_btc_success_label_to_address = 'redemption.btc_success_label_to_address',
   redemption_btc_success_reward_value = 'redemption.btc_success_reward_value',
   redemption_btc_success_title = 'redemption.btc_success_title',

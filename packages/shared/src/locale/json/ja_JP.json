@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "30 日間の待機期間後、条件を満たした報酬は毎月 10 日にまとめて発行されます。進捗は履歴で追跡できます。",
   "redemption.btc_success_description": "cbBTC の報酬を処理中です。",
   "redemption.btc_success_eligible_label_title": "支給予定日",
+  "redemption.btc_success_eligible_label_tooltip": "30 日間の返品期間が終了した後、報酬は毎月1日にスナップショットを取得し、毎月10日に支払われます。今月のスナップショットに報酬が含まれていない場合、支払いは翌月に繰り越されます。",
   "redemption.btc_success_label_to_address": "送付先アドレス",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "換金を申請しました！",

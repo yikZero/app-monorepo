@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "Nach Ablauf der 30-tägigen Wartezeit werden berechtigte Prämien am 10. jedes Monats ausgezahlt. Fortschritt im Verlauf verfolgen.",
   "redemption.btc_success_description": "Deine cbBTC-Prämie wird verarbeitet.",
   "redemption.btc_success_eligible_label_title": "Voraussichtliche Auszahlung",
+  "redemption.btc_success_eligible_label_tooltip": "Nach Ablauf der 30-tägigen Rückgabefrist werden Belohnungen am 1. jedes Monats erfasst und am 10. ausgezahlt. Wenn Ihre Belohnung nicht in der Momentaufnahme dieses Monats enthalten ist, wird die Auszahlung auf den Folgemonat verschoben.",
   "redemption.btc_success_label_to_address": "Empfängeradresse",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Einlösung eingereicht!",

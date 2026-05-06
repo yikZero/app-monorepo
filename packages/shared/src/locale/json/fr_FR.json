@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "À l'issue de la période d'attente de 30 jours, les récompenses éligibles sont versées le 10 de chaque mois. Suivez la progression dans l'Historique.",
   "redemption.btc_success_description": "Votre récompense cbBTC est en cours de traitement.",
   "redemption.btc_success_eligible_label_title": "Paiement prévu",
+  "redemption.btc_success_eligible_label_tooltip": "À l'issue de la période de retour de 30 jours, les récompenses font l'objet d'un instantané le 1er de chaque mois et sont versées le 10. Si votre récompense n'est pas incluse dans l'instantané de ce mois-ci, le paiement sera reporté au mois suivant.",
   "redemption.btc_success_label_to_address": "Adresse de destination",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Demande de remboursement envoyée !",

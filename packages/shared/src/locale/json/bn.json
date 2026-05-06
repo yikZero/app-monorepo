@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "৩০ দিনের অপেক্ষার সময় শেষ হওয়ার পর, যোগ্য পুরস্কারগুলি প্রতি মাসের ১০ তারিখে প্রদান করা হয়। ইতিহাসে অগ্রগতি ট্র্যাক করুন।",
   "redemption.btc_success_description": "আপনার cbBTC পুরস্কার প্রক্রিয়া করা হচ্ছে।",
   "redemption.btc_success_eligible_label_title": "প্রত্যাশিত পেমেন্ট",
+  "redemption.btc_success_eligible_label_tooltip": "৩০ দিনের রিটার্ন উইন্ডো শেষ হওয়ার পর, প্রতি মাসের ১ তারিখে পুরস্কারের স্ন্যাপশট নেওয়া হয় এবং ১০ তারিখে পরিশোধ করা হয়। যদি আপনার পুরস্কার এই মাসের স্ন্যাপশটে অন্তর্ভুক্ত না হয়, তবে পরিশোধ পরবর্তী মাসে স্থগিত করা হবে।",
   "redemption.btc_success_label_to_address": "প্রাপক ঠিকানা",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "রিডেম্পশন জমা দেওয়া হয়েছে!",

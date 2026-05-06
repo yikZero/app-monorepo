@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "After the 30-day waiting period, eligible rewards are paid out on the 10th of each month. Track progress in history.",
   "redemption.btc_success_description": "Your cbBTC reward is being processed.",
   "redemption.btc_success_eligible_label_title": "Expected payout",
+  "redemption.btc_success_eligible_label_tooltip": "After the 30-day return window closes, rewards are snapshotted on the 1st of each month and paid out on the 10th. If your reward isn't included in this month's snapshot, the payout will be deferred to the following month.",
   "redemption.btc_success_label_to_address": "To address",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Redemption submitted!",

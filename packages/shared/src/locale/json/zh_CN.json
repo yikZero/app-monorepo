@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "30 天等待期结束后，奖励将在每月 10 日统一发放。可在历史记录中追踪进度。",
   "redemption.btc_success_description": "您的 cbBTC 奖励正在处理中。",
   "redemption.btc_success_eligible_label_title": "预计发放日",
+  "redemption.btc_success_eligible_label_tooltip": "30 天退换货期结束后，我们会在每月 1 日对符合条件的奖励生成快照，并于每月 10 日发放。若您的奖励未包含在本月快照中，发放将顺延至下月。",
   "redemption.btc_success_label_to_address": "收款地址",
   "redemption.btc_success_reward_value": "~{amount} cbBTC（{usd}）",
   "redemption.btc_success_title": "兑换已提交！",

@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "Dopo il periodo di attesa di 30 giorni, i premi idonei vengono pagati il 10 di ogni mese. Monitora i progressi nella Cronologia.",
   "redemption.btc_success_description": "Il tuo premio cbBTC è in fase di elaborazione.",
   "redemption.btc_success_eligible_label_title": "Pagamento previsto",
+  "redemption.btc_success_eligible_label_tooltip": "Al termine del periodo di reso di 30 giorni, le ricompense vengono acquisite tramite snapshot il 1° di ogni mese e pagate il 10. Se la tua ricompensa non è inclusa nello snapshot di questo mese, il pagamento sarà rinviato al mese successivo.",
   "redemption.btc_success_label_to_address": "Indirizzo destinatario",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "Riscatto inviato!",

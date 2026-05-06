@@ -3496,6 +3496,7 @@
   "redemption.btc_success_alert_desc": "30일 대기 기간 후, 적격 보상은 매월 10일에 일괄 지급됩니다. 내역에서 진행 상황을 확인하세요.",
   "redemption.btc_success_description": "cbBTC 리워드가 처리 중입니다.",
   "redemption.btc_success_eligible_label_title": "예상 지급일",
+  "redemption.btc_success_eligible_label_tooltip": "30일 반품 기간이 종료된 후, 보상은 매월 1일에 스냅샷이 생성되며 10일에 지급됩니다. 보상이 이번 달 스냅샷에 포함되지 않은 경우, 지급은 다음 달로 연기됩니다.",
   "redemption.btc_success_label_to_address": "받는 주소",
   "redemption.btc_success_reward_value": "~{amount} cbBTC ({usd})",
   "redemption.btc_success_title": "상환이 제출되었습니다!",
