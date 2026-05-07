@@ -73,17 +73,18 @@ const MODAL_OPEN_DELAY_MS = 1500;
 // Using location.href with a raw custom scheme (onekey-wallet://) on Android
 // navigates to an ERR_UNKNOWN_URL_SCHEME error page, destroying the JS context
 // and any fallback timers.
-function buildAndroidIntentUrl(
-  deepLinkUrl: string,
-  fallbackUrl: string,
-): string {
+function buildAndroidIntentUrl(deepLinkUrl: string): string {
   const schemeEnd = deepLinkUrl.indexOf('://');
   if (schemeEnd === -1) {
-    return fallbackUrl;
+    return deepLinkUrl;
   }
   const scheme = deepLinkUrl.slice(0, schemeEnd);
   const rest = deepLinkUrl.slice(schemeEnd + 3);
-  return `intent://${rest}#Intent;scheme=${scheme};package=${ANDROID_PACKAGE_NAME};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+  // Intentionally omit S.browser_fallback_url. With a fallback URL, Chrome
+  // navigates to it on miss and reloads the page, killing our 1.5s "app not
+  // detected" toast timer. Without one, Chrome stays on the current page and
+  // the timer fires correctly. Step 1 still has the explicit download CTA.
+  return `intent://${rest}#Intent;scheme=${scheme};package=${ANDROID_PACKAGE_NAME};end`;
 }
 
 const waitForNavigationReady = async (until = 3000): Promise<boolean> => {
@@ -170,14 +171,7 @@ function redirectToStore() {
 function openAppViaDeepLink(deepLinkUrl: string) {
   if (!deepLinkUrl) return;
   if (platformEnv.isWebMobileAndroid) {
-    // Fall back to the current URL so an unhandled scheme just no-ops
-    // instead of throwing ERR_UNKNOWN_URL_SCHEME. Step 1 holds the explicit
-    // download CTA, so we don't auto-redirect to Play Store on miss.
-    const intentUrl = buildAndroidIntentUrl(
-      deepLinkUrl,
-      globalThis.location.href,
-    );
-    globalThis.location.href = intentUrl;
+    globalThis.location.href = buildAndroidIntentUrl(deepLinkUrl);
     return;
   }
   // iOS / desktop web: navigate to the custom scheme directly. iOS 17+ Safari
@@ -203,13 +197,14 @@ function ReferralLandingPage() {
   const page = routeParams?.page;
   const fromDeepLink = routeParams?.fromDeepLink;
 
-  // /r/invite?code=XXX → extract code from URL query params
+  // /r/invite?code=XXX → extract code from URL query params.
+  // When the query is missing, return undefined (not the literal "invite") so
+  // Step 2 renders the "------" placeholder and disables copy/bind/deep-link.
   const code = useMemo(() => {
     if (routeCode !== 'invite' || !platformEnv.isWeb) return routeCode;
-    const queryCode = new URL(globalThis?.location.href).searchParams.get(
-      'code',
+    return (
+      new URL(globalThis?.location.href).searchParams.get('code') ?? undefined
     );
-    return queryCode ?? routeCode;
   }, [routeCode]);
 
   const isWeb = platformEnv.isWeb;
