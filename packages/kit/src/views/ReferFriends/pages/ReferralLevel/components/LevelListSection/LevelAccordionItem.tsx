@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from 'react';
 
-import { useIntl, type IntlShape } from 'react-intl';
+import { type IntlShape, useIntl } from 'react-intl';
 
 import {
   Accordion,
