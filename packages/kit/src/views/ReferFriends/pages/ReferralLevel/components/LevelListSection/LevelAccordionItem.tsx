@@ -1,7 +1,6 @@
 import { Fragment, useMemo } from 'react';
 
-import { useIntl } from 'react-intl';
-import type { IntlShape } from 'react-intl';
+import { useIntl, type IntlShape } from 'react-intl';
 
 import {
   Accordion,
@@ -33,7 +32,7 @@ function getDisplayLabel(
 ): string {
   if (labelKey) {
     return intl.formatMessage({
-      id: labelKey as any,
+      id: labelKey as ETranslations,
       defaultMessage: fallback,
     });
   }
@@ -89,7 +88,7 @@ export function LevelAccordionItem({
     if (!isHighestLevel) {
       for (const condition of level.upgradeConditions) {
         map.set(condition.subject, {
-          ...(map.get(condition.subject) ?? {}),
+          ...map.get(condition.subject),
           upgrade: condition,
         });
       }
@@ -97,7 +96,7 @@ export function LevelAccordionItem({
     if (!isLowestLevel && retentionConditions) {
       for (const condition of retentionConditions) {
         map.set(condition.subject, {
-          ...(map.get(condition.subject) ?? {}),
+          ...map.get(condition.subject),
           retention: condition,
         });
       }
@@ -215,23 +214,19 @@ export function LevelAccordionItem({
             {subjectGroups.length > 0 ? (
               <YStack gap="$3">
                 {headerNode}
-                <XStack
-                  gap="$2"
-                  ai="stretch"
-                  $md={{ flexDirection: 'column' }}
-                >
+                <XStack gap="$2" ai="stretch" $md={{ flexDirection: 'column' }}>
                   {subjectGroups.map(
                     ({ subject, milestones, subjectLabel }, index) => (
                       <Fragment key={subject}>
                         <SubjectMilestoneCard
                           subjectLabel={subjectLabel}
                           milestones={milestones}
-                          isHighestLevel={isHighestLevel}
-                          isLowestLevel={isLowestLevel}
                           nextLevelLabel={nextLevelLabel}
                           optionIndex={isMultiSubject ? index + 1 : undefined}
                         />
-                        {index < subjectGroups.length - 1 ? <OrDivider /> : null}
+                        {index < subjectGroups.length - 1 ? (
+                          <OrDivider />
+                        ) : null}
                       </Fragment>
                     ),
                   )}

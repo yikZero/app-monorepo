@@ -1,6 +1,5 @@
 import { BigNumber } from 'bignumber.js';
 import { useIntl } from 'react-intl';
-
 import { StyleSheet } from 'react-native';
 
 import { SizableText, Stack, XStack, YStack } from '@onekeyhq/components';
@@ -17,14 +16,12 @@ interface ISubjectMilestones {
 interface ISubjectMilestoneCardProps {
   subjectLabel: string;
   milestones: ISubjectMilestones;
-  isHighestLevel: boolean;
-  isLowestLevel: boolean;
   nextLevelLabel?: string;
   optionIndex?: number;
 }
 
 function formatFiatCompact(value: BigNumber) {
-  return numberFormat(value.toFixed(), { formatter: 'marketCap' }) as string;
+  return numberFormat(value.toFixed(), { formatter: 'marketCap' });
 }
 
 function formatFiatExact(value: BigNumber) {
@@ -79,13 +76,7 @@ function ProgressBarWithMilestones({
 }) {
   const clampedCurrent = clampPct(currentPct);
   return (
-    <Stack
-      h={6}
-      bg="$neutral5"
-      borderRadius="$full"
-      position="relative"
-      jc="center"
-    >
+    <Stack h={6} bg="$neutral5" borderRadius="$full" position="relative">
       <Stack
         position="absolute"
         left={0}
@@ -139,8 +130,6 @@ function ProgressBarWithMilestones({
 export function SubjectMilestoneCard({
   subjectLabel,
   milestones,
-  isHighestLevel,
-  isLowestLevel,
   nextLevelLabel,
   optionIndex,
 }: ISubjectMilestoneCardProps) {
@@ -152,24 +141,19 @@ export function SubjectMilestoneCard({
   if (!reference) return null;
 
   const current = new BigNumber(reference.currentFiatValue ?? 0);
-  const maintain =
-    !isLowestLevel && milestones.retention
-      ? new BigNumber(milestones.retention.thresholdFiatValue ?? 0)
-      : null;
-  const upgrade =
-    !isHighestLevel && milestones.upgrade
-      ? new BigNumber(milestones.upgrade.thresholdFiatValue ?? 0)
-      : null;
+  const maintain = milestones.retention
+    ? new BigNumber(milestones.retention.thresholdFiatValue ?? 0)
+    : null;
+  const upgrade = milestones.upgrade
+    ? new BigNumber(milestones.upgrade.thresholdFiatValue ?? 0)
+    : null;
 
   const upperBound = upgrade ?? maintain ?? current;
   const safeUpper = upperBound.isZero()
     ? new BigNumber(1)
     : BigNumber.maximum(upperBound, current);
 
-  const currentPct = current
-    .dividedBy(safeUpper)
-    .multipliedBy(100)
-    .toNumber();
+  const currentPct = current.dividedBy(safeUpper).multipliedBy(100).toNumber();
   const maintainPct = maintain
     ? maintain.dividedBy(safeUpper).multipliedBy(100).toNumber()
     : null;
