@@ -1,6 +1,14 @@
-// Web / desktop / extension fallback: @revenuecat/purchases-js is configured
-// per-call via Purchases.configure(apiKey, userId), so it has no cross-user
-// SDK state to clear on logout.
+import { Purchases } from '@revenuecat/purchases-js';
+
 export async function logoutPurchasesSdk() {
-  // no-op
+  try {
+    if (!Purchases.isConfigured()) {
+      return;
+    }
+    await Purchases.getSharedInstance().changeUser(
+      Purchases.generateRevenueCatAnonymousAppUserId(),
+    );
+  } catch (e) {
+    console.error('[Prime] Purchases.changeUser anonymous error:', e);
+  }
 }

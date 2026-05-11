@@ -66,11 +66,6 @@ export function useOneKeyAuthMethods() {
       // do nothing
     }
     try {
-      await logoutPurchasesSdk();
-    } catch {
-      // do nothing
-    }
-    try {
       await supabaseSignOut();
     } catch {
       // do nothing
@@ -82,12 +77,22 @@ export function useOneKeyAuthMethods() {
     }
   }, [apiLogout, supabaseSignOut]);
 
+  const logoutWithPurchasesSdk: () => Promise<void> = useCallback(async () => {
+    await logout();
+    try {
+      await logoutPurchasesSdk();
+    } catch {
+      // do nothing
+    }
+  }, [logout]);
+
   return useMemo(() => {
     return {
       isLoggedIn: user?.isLoggedIn && user?.isLoggedInOnServer,
       isPrimeSubscriptionActive: user?.primeSubscription?.isActive,
       user,
       logout,
+      logoutWithPurchasesSdk,
       // apiLogout,
       // sdkLogout,
       getAccessToken,
@@ -105,6 +110,7 @@ export function useOneKeyAuthMethods() {
     isReady,
     isSupabaseLoggedIn,
     logout,
+    logoutWithPurchasesSdk,
     user,
     supabaseUser,
     supabaseSignInWithOtp,
