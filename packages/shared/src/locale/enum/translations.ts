@@ -3840,6 +3840,8 @@ export enum ETranslations {
   referral_wallet_code_title = 'referral.wallet_code_title',
   referral_wallet_code_wallet = 'referral.wallet_code_wallet',
   referral_wallet_edit_code = 'referral.wallet_edit_code',
+  referral_web_landing_subtitle_defi = 'referral.web_landing_subtitle_defi',
+  referral_web_landing_subtitle_perps = 'referral.web_landing_subtitle_perps',
   referral_your_code = 'referral.your_code',
   referral_your_referred = 'referral.your_referred',
   referral_your_referred_wallets_1address = 'referral.your_referred_wallets_1address',
