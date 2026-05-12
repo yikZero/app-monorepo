@@ -64,6 +64,8 @@ const IOS_STORE_WEB_FALLBACK_DELAY_MS = 300;
 // and skip the web fallback.
 const IOS_STORE_ELAPSED_THRESHOLD_MS = 1500;
 
+const DEEP_LINK_DOWNLOAD_HINT_DELAY_MS = 5000;
+
 // Delay before opening the InvitedByFriend modal after tab navigation.
 // Gives the target tab enough time to mount and render before the modal overlay.
 const MODAL_OPEN_DELAY_MS = 1500;
@@ -82,9 +84,9 @@ function buildAndroidIntentUrl(deepLinkUrl: string): string {
   const scheme = deepLinkUrl.slice(0, schemeEnd);
   const rest = deepLinkUrl.slice(schemeEnd + 3);
   // Intentionally omit S.browser_fallback_url. With a fallback URL, Chrome
-  // navigates to it on miss and reloads the page, killing our 1.5s "app not
-  // detected" toast timer. Without one, Chrome stays on the current page and
-  // the timer fires correctly. Step 1 still has the explicit download CTA.
+  // navigates to it on miss and reloads the page, killing the inline download
+  // hint timer. Without one, Chrome stays on the current page and the hint can
+  // appear under Step 2. Step 1 still has the explicit download CTA.
   return `intent://${rest}#Intent;scheme=${scheme};package=${ANDROID_PACKAGE_NAME};end`;
 }
 
@@ -291,12 +293,59 @@ function ReferralLandingPage() {
     redirectToStore();
   }, [logEnter, logReferralLandingButton]);
 
+  const [isDownloadHintVisible, setIsDownloadHintVisible] = useState(false);
+  const downloadHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const downloadHintVisibilityCleanupRef = useRef<(() => void) | null>(null);
+  const clearDownloadHintTimer = useCallback(() => {
+    clearTimeout(downloadHintTimerRef.current ?? undefined);
+    downloadHintTimerRef.current = null;
+    downloadHintVisibilityCleanupRef.current?.();
+    downloadHintVisibilityCleanupRef.current = null;
+  }, []);
+  const scheduleDownloadHint = useCallback(() => {
+    clearDownloadHintTimer();
+    setIsDownloadHintVisible(false);
+
+    if (typeof globalThis.document === 'undefined') return;
+
+    let didLeavePage = globalThis.document.visibilityState === 'hidden';
+    const handleVisibilityChange = () => {
+      if (globalThis.document.visibilityState === 'hidden') {
+        didLeavePage = true;
+        clearDownloadHintTimer();
+      }
+    };
+
+    globalThis.document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    );
+    downloadHintVisibilityCleanupRef.current = () => {
+      globalThis.document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+    };
+
+    downloadHintTimerRef.current = setTimeout(() => {
+      clearDownloadHintTimer();
+      if (!didLeavePage && globalThis.document.visibilityState !== 'hidden') {
+        setIsDownloadHintVisible(true);
+      }
+    }, DEEP_LINK_DOWNLOAD_HINT_DELAY_MS);
+  }, [clearDownloadHintTimer]);
+
   const launchViaDeepLink = useCallback(
     (utmSource: IReferralUtmSource) => {
       logEnter(utmSource);
-      openAppViaDeepLink(buildDeepLink());
+      const deepLink = buildDeepLink();
+      if (!deepLink) return;
+      scheduleDownloadHint();
+      openAppViaDeepLink(deepLink);
     },
-    [logEnter, buildDeepLink],
+    [buildDeepLink, logEnter, scheduleDownloadHint],
   );
 
   const { isOneKeyInstalled } = useOneKeyWalletDetection();
@@ -350,8 +399,9 @@ function ReferralLandingPage() {
   useEffect(
     () => () => {
       clearTimeout(highlightTimerRef.current ?? undefined);
+      clearDownloadHintTimer();
     },
-    [],
+    [clearDownloadHintTimer],
   );
   const handleScrollToBind = useCallback(() => {
     const bindMethod = code ? getBindMethod() : undefined;
@@ -513,6 +563,7 @@ function ReferralLandingPage() {
             onBind={handleBind}
             onTrade={handleTrade}
             isStep2Highlighted={isStep2Highlighted}
+            isDownloadHintVisible={isDownloadHintVisible}
           />
         </Page.Body>
       </Page>

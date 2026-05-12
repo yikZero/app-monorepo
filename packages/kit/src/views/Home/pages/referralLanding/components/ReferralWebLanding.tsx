@@ -349,6 +349,33 @@ function Step2BindCode({
   );
 }
 
+function Step2DownloadHint({ onDownload }: { onDownload: () => void }) {
+  const intl = useIntl();
+  return (
+    <XStack
+      bg="$bgSubdued"
+      borderRadius="$3"
+      px="$4"
+      py="$3"
+      gap="$2"
+      alignItems="center"
+      justifyContent="center"
+      flexWrap="wrap"
+    >
+      <SizableText size="$bodyMdMedium" color="$textSubdued">
+        {intl.formatMessage({
+          id: ETranslations.referral_web_landing_app_open_hint,
+        })}
+      </SizableText>
+      <Button size="small" variant="tertiary" onPress={onDownload}>
+        {intl.formatMessage({
+          id: ETranslations.referral_web_landing_step1_title,
+        })}
+      </Button>
+    </XStack>
+  );
+}
+
 function Step3Trade({
   variant,
   discount,
@@ -395,6 +422,7 @@ export interface IReferralWebLandingProps {
   onBind: () => void;
   onTrade: () => void;
   isStep2Highlighted?: boolean;
+  isDownloadHintVisible?: boolean;
 }
 
 export function ReferralWebLanding({
@@ -407,6 +435,7 @@ export function ReferralWebLanding({
   onBind,
   onTrade,
   isStep2Highlighted = false,
+  isDownloadHintVisible = false,
 }: IReferralWebLandingProps) {
   return (
     <YStack flex={1}>
@@ -462,6 +491,9 @@ export function ReferralWebLanding({
               onBind={onBind}
             />
           </Stack>
+          {isDownloadHintVisible ? (
+            <Step2DownloadHint onDownload={onDownload} />
+          ) : null}
           <Step3Trade
             variant={variant}
             discount={inviteeDiscount}
