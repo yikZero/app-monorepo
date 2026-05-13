@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "Richiesta di Prelievo Inviata",
   "dapp_connect_address_risk": "Indirizzo rischio",
   "dapp_connect_address_risk__title": "Rischio indirizzo",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "Nome dell'applicazione",
   "dapp_connect_derive_context_hash_context__title": "Contesto (Esadecimale)",
   "dapp_connect_derive_context_hash_request__title": "Autorizza la derivazione della chiave",
   "dapp_connect_derive_context_hash_warning__desc": "Questo non è una firma. Un valore deterministico sarà derivato da questo account BTC utilizzando il nome dell'applicazione e il contesto. Chiunque abbia gli stessi materiali di chiave, nome dell'applicazione e contesto, sulla stessa rete, può produrre lo stesso valore.",

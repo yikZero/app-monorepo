@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "Yêu cầu rút tiền đã được gửi",
   "dapp_connect_address_risk": "Rủi ro địa chỉ",
   "dapp_connect_address_risk__title": "Rủi ro địa chỉ",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "Tên ứng dụng",
   "dapp_connect_derive_context_hash_context__title": "Ngữ cảnh (Hex)",
   "dapp_connect_derive_context_hash_request__title": "Ủy quyền cho việc phát sinh khóa",
   "dapp_connect_derive_context_hash_warning__desc": "Đây không phải là chữ ký. Một giá trị xác định sẽ được rút ra từ tài khoản BTC này bằng cách sử dụng tên ứng dụng và ngữ cảnh. Bất kỳ ai có cùng vật liệu khóa, tên ứng dụng và ngữ cảnh, trên cùng một mạng, có thể tạo ra cùng một giá trị.",

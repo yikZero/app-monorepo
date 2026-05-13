@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "Abhebungsanfrage gesendet",
   "dapp_connect_address_risk": "Adresse Risiko",
   "dapp_connect_address_risk__title": "Adressrisiko",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "Anwendungsname",
   "dapp_connect_derive_context_hash_context__title": "Kontext (Hex)",
   "dapp_connect_derive_context_hash_request__title": "Autorisieren der Schlüsselableitung",
   "dapp_connect_derive_context_hash_warning__desc": "Dies ist keine Signatur. Ein deterministischer Wert wird aus diesem BTC-Konto unter Verwendung des Anwendungsnamens und des Kontexts abgeleitet. Jeder mit demselben Schlüsselmaterial, Anwendungsnamen und Kontext im selben Netzwerk kann denselben Wert erzeugen.",

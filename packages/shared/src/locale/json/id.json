@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "Permintaan Penarikan Dikirim",
   "dapp_connect_address_risk": "Alamat Risiko",
   "dapp_connect_address_risk__title": "Risiko Alamat",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "Nama Aplikasi",
   "dapp_connect_derive_context_hash_context__title": "Konteks (Hex)",
   "dapp_connect_derive_context_hash_request__title": "Otorisasi Derivasi Kunci",
   "dapp_connect_derive_context_hash_warning__desc": "Ini bukan tanda tangan. Nilai deterministik akan diambil dari akun BTC ini menggunakan nama aplikasi dan konteks. Siapa pun dengan bahan kunci yang sama, nama aplikasi, dan konteks, di jaringan yang sama, dapat menghasilkan nilai yang sama.",

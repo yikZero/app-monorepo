@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "विनियोग अनुरोध भेजा गया",
   "dapp_connect_address_risk": "पता जोखिम",
   "dapp_connect_address_risk__title": "पता जोखिम",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "ऐप्लिकेशन नाम",
   "dapp_connect_derive_context_hash_context__title": "संदर्भ (हैक्स)",
   "dapp_connect_derive_context_hash_request__title": "अधिकारित कुंजी व्युत्पत्ति",
   "dapp_connect_derive_context_hash_warning__desc": "यह एक हस्ताक्षर नहीं है। इस BTC खाते से एप्लिकेशन नाम और संदर्भ का उपयोग करके एक निर्धारक मान निकाला जाएगा। किसी भी व्यक्ति के पास समान कुंजी सामग्री, एप्लिकेशन नाम, और संदर्भ होने पर, उसी नेटवर्क पर, वही मान उत्पन्न कर सकता है।",

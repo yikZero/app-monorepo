@@ -525,7 +525,7 @@
   "dapp_connect.withdraw_request_sent": "出金リクエスト送信済み",
   "dapp_connect_address_risk": "アドレスリスク",
   "dapp_connect_address_risk__title": "アドレスリスク",
-  "dapp_connect_derive_context_hash_app_name__title": "Application Name",
+  "dapp_connect_derive_context_hash_app_name__title": "アプリケーション名",
   "dapp_connect_derive_context_hash_context__title": "コンテキスト (Hex)",
   "dapp_connect_derive_context_hash_request__title": "キー導出を承認する",
   "dapp_connect_derive_context_hash_warning__desc": "これは署名ではありません。このBTCアカウントからアプリケーション名とコンテキストを使用して決定論的な値が導出されます。同じキー素材、アプリケーション名、コンテキストを持つ誰でも、同じネットワーク上で同じ値を生成できます。",
