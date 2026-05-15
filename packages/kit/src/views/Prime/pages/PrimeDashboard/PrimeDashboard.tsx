@@ -470,6 +470,10 @@ export default function PrimeDashboard({
     user?.isLoggedInOnServer ||
     isLoggedIn;
 
+  const handleLogoutSuccess = useCallback(async () => {
+    setServerUserInfo(undefined);
+  }, []);
+
   // const shouldShowIOSAppStoreHint = useMemo(() => {
   //   // return true;
   //   return isPrimeSubscriptionActive && platformEnv.isNativeIOS;
@@ -559,7 +563,9 @@ export default function PrimeDashboard({
             >
               <PrimeLottieAnimation />
               <PrimeBanner isPrimeActive={isPrimeSubscriptionActive} />
-              {isLoggedInMaybe ? <PrimeUserInfo /> : null}
+              {isLoggedInMaybe ? (
+                <PrimeUserInfo onLogoutSuccess={handleLogoutSuccess} />
+              ) : null}
             </Stack>
 
             {shouldShowSubscriptionPlans ? (

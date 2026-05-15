@@ -11,7 +11,14 @@ import { PrimeUserBadge } from '../../components/PrimeUserBadge';
 
 import { PrimeUserInfoMoreButton } from './PrimeUserInfoMoreButton';
 
-export function PrimeUserInfo(stackProps: ComponentProps<typeof XStack>) {
+export function PrimeUserInfo({
+  onBeforeLogout,
+  onLogoutSuccess,
+  ...stackProps
+}: {
+  onBeforeLogout?: () => void;
+  onLogoutSuccess?: () => Promise<void>;
+} & ComponentProps<typeof XStack>) {
   const { user } = useOneKeyAuth();
   return (
     <XStack
@@ -41,7 +48,10 @@ export function PrimeUserInfo(stackProps: ComponentProps<typeof XStack>) {
         {user?.displayEmail}
       </SizableText>
       <PrimeUserBadge showFreeStatus={false} showIcon={false} />
-      <PrimeUserInfoMoreButton />
+      <PrimeUserInfoMoreButton
+        onBeforeLogout={onBeforeLogout}
+        onLogoutSuccess={onLogoutSuccess}
+      />
     </XStack>
   );
 }

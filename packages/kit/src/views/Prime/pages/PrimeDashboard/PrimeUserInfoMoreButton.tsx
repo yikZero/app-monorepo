@@ -17,6 +17,7 @@ import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKey
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useDevSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes/modal';
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { formatDateFns } from '@onekeyhq/shared/src/utils/dateUtils';
@@ -28,10 +29,14 @@ import { PrimeTestIDs } from '../../testIDs';
 
 function PrimeUserInfoMoreButtonDropDownMenu({
   handleActionListClose,
+  onBeforeLogout,
+  onLogoutSuccess,
 }: {
   handleActionListClose: () => void;
+  onBeforeLogout?: () => void;
+  onLogoutSuccess?: () => Promise<void>;
 }) {
-  const { user } = useOneKeyAuth();
+  const { logoutWithPurchasesSdk, user } = useOneKeyAuth();
   const isPrime = user?.primeSubscription?.isActive;
   const primeExpiredAt = user?.primeSubscription?.expiresAt;
   const { getCustomerInfo } = usePrimePayment();
@@ -159,11 +164,47 @@ function PrimeUserInfoMoreButtonDropDownMenu({
           });
         }}
       />
+
+      <ActionList.Item
+        label={intl.formatMessage({
+          id: ETranslations.prime_log_out,
+        })}
+        icon="LogoutOutline"
+        onClose={handleActionListClose}
+        onPress={() => {
+          Dialog.show({
+            icon: 'InfoCircleOutline',
+            title: intl.formatMessage({
+              id: ETranslations.prime_onekeyid_log_out,
+            }),
+            description: intl.formatMessage({
+              id: ETranslations.prime_onekeyid_log_out_description,
+            }),
+            onConfirmText: intl.formatMessage({
+              id: ETranslations.prime_log_out,
+            }),
+            onConfirm: async () => {
+              onBeforeLogout?.();
+              defaultLogger.prime.subscription.onekeyIdLogout({
+                reason: 'PrimeUserInfoMoreButton Logout Button',
+              });
+              await logoutWithPurchasesSdk();
+              await onLogoutSuccess?.();
+            },
+          });
+        }}
+      />
     </>
   );
 }
 
-export function PrimeUserInfoMoreButton() {
+export function PrimeUserInfoMoreButton({
+  onBeforeLogout,
+  onLogoutSuccess,
+}: {
+  onBeforeLogout?: () => void;
+  onLogoutSuccess?: () => Promise<void>;
+}) {
   const renderItems = useCallback(
     ({
       handleActionListClose,
@@ -173,9 +214,11 @@ export function PrimeUserInfoMoreButton() {
     }) => (
       <PrimeUserInfoMoreButtonDropDownMenu
         handleActionListClose={handleActionListClose}
+        onBeforeLogout={onBeforeLogout}
+        onLogoutSuccess={onLogoutSuccess}
       />
     ),
-    [],
+    [onBeforeLogout, onLogoutSuccess],
   );
   return (
     <ActionList
