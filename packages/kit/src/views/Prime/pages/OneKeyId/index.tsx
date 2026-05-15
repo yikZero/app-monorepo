@@ -454,6 +454,7 @@ function OneKeyIdPage() {
   const isFocused = useRouteIsFocused();
   const isExplicitLogoutRef = useRef(false);
   const isKeylessWalletEnabled = useKeylessWalletFeatureIsEnabled();
+  const shouldShowKeylessWallet = isLoggedIn && isKeylessWalletEnabled;
   const isPrime = user?.primeSubscription?.isActive;
   const subscriptionManageUrl = user?.subscriptionManageUrl;
 
@@ -643,7 +644,7 @@ function OneKeyIdPage() {
                 gap: '$5',
               }}
             >
-              {isKeylessWalletEnabled ? (
+              {shouldShowKeylessWallet ? (
                 <OneKeyIdSection
                   title={intl.formatMessage({
                     id: ETranslations.global_account,
