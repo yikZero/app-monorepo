@@ -47,7 +47,7 @@ export function PrimeUserInfo({
       >
         {user?.displayEmail}
       </SizableText>
-      <PrimeUserBadge showIcon={false} />
+      <PrimeUserBadge showFreeStatus={false} showIcon={false} />
       <PrimeUserInfoMoreButton
         onBeforeLogout={onBeforeLogout}
         onLogoutSuccess={onLogoutSuccess}
