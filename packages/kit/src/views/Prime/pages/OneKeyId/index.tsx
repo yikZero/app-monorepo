@@ -26,7 +26,6 @@ import {
   useUpdateEffect,
 } from '@onekeyhq/components';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
-import { useKeylessWalletFeatureIsEnabled } from '@onekeyhq/kit/src/components/KeylessWallet/useKeylessWallet';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import { OneKeyIdAvatar } from '@onekeyhq/kit/src/components/OneKeyIdAvatar';
@@ -453,8 +452,6 @@ function OneKeyIdPage() {
   const logoutRef = useRef<() => Promise<void>>(logout);
   const isFocused = useRouteIsFocused();
   const isExplicitLogoutRef = useRef(false);
-  const isKeylessWalletEnabled = useKeylessWalletFeatureIsEnabled();
-  const shouldShowKeylessWallet = isLoggedIn && isKeylessWalletEnabled;
   const isPrime = user?.primeSubscription?.isActive;
   const subscriptionManageUrl = user?.subscriptionManageUrl;
 
@@ -462,10 +459,6 @@ function OneKeyIdPage() {
 
   const handleEditProfile = useCallback(() => {
     navigation.push(EPrimePages.OneKeyIdProfileEdit);
-  }, [navigation]);
-
-  const handleKeylessWallet = useCallback(() => {
-    navigation.push(EPrimePages.KeylessWallet);
   }, [navigation]);
 
   const handleDeviceManagement = useCallback(() => {
@@ -644,22 +637,6 @@ function OneKeyIdPage() {
                 gap: '$5',
               }}
             >
-              {shouldShowKeylessWallet ? (
-                <OneKeyIdSection
-                  title={intl.formatMessage({
-                    id: ETranslations.global_account,
-                  })}
-                >
-                  <OneKeyIdActionItem
-                    icon="WalletCryptoOutline"
-                    title={intl.formatMessage({
-                      id: ETranslations.keyless_wallet,
-                    })}
-                    onPress={handleKeylessWallet}
-                  />
-                </OneKeyIdSection>
-              ) : null}
-
               <OneKeyIdSection
                 title={intl.formatMessage({
                   id: ETranslations.prime_manage_service,
