@@ -7,6 +7,7 @@ import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKey
 
 interface IOneKeyIdAvatarProps {
   size?: IImageProps['width'];
+  source?: IImageProps['source'];
 }
 
 export function OneKeyIdFallbackAvatar({ size = '$10', ...rest }: IImageProps) {
@@ -19,22 +20,20 @@ export function OneKeyIdFallbackAvatar({ size = '$10', ...rest }: IImageProps) {
       {...rest}
     >
       <Image size={size} source={avatarFallback} />
-      <InnerStroke
-        borderRadius="$full"
-        borderColor="$borderSubdued"
-        opacity={0.6}
-      />
     </Image.Fallback>
   );
 }
 
 function BasicOneKeyIdAvatar({
   size = '$10',
+  source: sourceOverride,
   ...rest
 }: IOneKeyIdAvatarProps & IImageProps) {
   const { user, isLoggedIn } = useOneKeyAuth();
   const avatarUrl = user.avatar;
-  const source = isLoggedIn && avatarUrl ? { uri: avatarUrl } : avatarFallback;
+  const source =
+    sourceOverride ??
+    (isLoggedIn && avatarUrl ? { uri: avatarUrl } : avatarFallback);
 
   return (
     <Stack

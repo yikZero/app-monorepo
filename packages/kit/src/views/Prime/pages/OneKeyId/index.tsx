@@ -8,7 +8,6 @@ import type { ColorTokens, IKeyOfIcons } from '@onekeyhq/components';
 import {
   ActionList,
   Button,
-  Dialog,
   Divider,
   IconButton,
   NavCloseButton,
@@ -27,6 +26,7 @@ import {
 } from '@onekeyhq/components';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
+import { useConfirmOneKeyIdLogout } from '@onekeyhq/kit/src/components/OneKeyAuth/useConfirmOneKeyIdLogout';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import { OneKeyIdAvatar } from '@onekeyhq/kit/src/components/OneKeyIdAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
@@ -448,7 +448,7 @@ function OneKeyIdPage() {
   const media = useMedia();
   const { toInviteRewardPage } = useReferFriends();
   const { isPrimeAvailable } = usePrimeAvailable();
-  const { isLoggedIn, logout, logoutWithPurchasesSdk, user } = useOneKeyAuth();
+  const { isLoggedIn, logout, user } = useOneKeyAuth();
   const logoutRef = useRef<() => Promise<void>>(logout);
   const isFocused = useRouteIsFocused();
   const isExplicitLogoutRef = useRef(false);
@@ -530,29 +530,20 @@ function OneKeyIdPage() {
     void handleLoggedOutWhileFocused();
   }, [handleLoggedOutWhileFocused]);
 
-  const handleLogout = useCallback(() => {
-    Dialog.show({
-      icon: 'InfoCircleOutline',
-      title: intl.formatMessage({
-        id: ETranslations.prime_onekeyid_log_out,
-      }),
-      description: intl.formatMessage({
-        id: ETranslations.prime_onekeyid_log_out_description,
-      }),
-      onConfirmText: intl.formatMessage({
-        id: ETranslations.prime_log_out,
-      }),
-      onConfirm: async () => {
-        isExplicitLogoutRef.current = true;
-        defaultLogger.prime.subscription.onekeyIdLogout({
-          reason: 'OneKeyIdPage Logout Button',
-        });
-        await logoutWithPurchasesSdk();
-        defaultLogger.referral.page.logoutOneKeyIDResult();
-        resetPrimeModal();
-      },
-    });
-  }, [intl, logoutWithPurchasesSdk]);
+  const handleBeforeLogout = useCallback(() => {
+    isExplicitLogoutRef.current = true;
+  }, []);
+
+  const handleLogoutSuccess = useCallback(() => {
+    defaultLogger.referral.page.logoutOneKeyIDResult();
+    resetPrimeModal();
+  }, []);
+
+  const handleLogout = useConfirmOneKeyIdLogout({
+    reason: 'OneKeyIdPage Logout Button',
+    onBeforeLogout: handleBeforeLogout,
+    onSuccess: handleLogoutSuccess,
+  });
 
   const manageServiceActions: IOneKeyIdAction[] = [];
   if (isPrimeAvailable) {

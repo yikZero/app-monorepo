@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useIntl } from 'react-intl';
 
@@ -6,7 +6,6 @@ import type { UseFormReturn } from '@onekeyhq/components';
 import {
   Form,
   Icon,
-  Image,
   ImageCrop,
   Input,
   Page,
@@ -14,13 +13,18 @@ import {
   Toast,
   XStack,
   YStack,
+  resetPrimeModal,
   useForm,
+  useUpdateEffect,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
-import { OneKeyIdFallbackAvatar } from '@onekeyhq/kit/src/components/OneKeyIdAvatar';
+import { OneKeyIdAvatar } from '@onekeyhq/kit/src/components/OneKeyIdAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useRouteIsFocused } from '@onekeyhq/kit/src/hooks/useRouteIsFocused';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
 import { PrimeTestIDs } from '../../testIDs';
 
@@ -44,7 +48,40 @@ function isImagePickerCancelled(error: unknown) {
 function ProfileEditPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
-  const { user } = useOneKeyAuth();
+  const { isLoggedIn, logout, user } = useOneKeyAuth();
+  const isFocused = useRouteIsFocused();
+  const isMountedRef = useRef(true);
+  const isFocusedRef = useRef(isFocused);
+  const logoutRef = useRef<() => Promise<void>>(logout);
+
+  isFocusedRef.current = isFocused;
+  logoutRef.current = logout;
+
+  useEffect(
+    () => () => {
+      isMountedRef.current = false;
+    },
+    [],
+  );
+
+  const handleLoggedOutWhileFocused = useCallback(async () => {
+    if (!isLoggedIn && isFocused) {
+      await timerUtils.wait(300);
+      if (!isMountedRef.current || !isFocusedRef.current) {
+        return;
+      }
+      resetPrimeModal();
+      defaultLogger.prime.subscription.onekeyIdLogout({
+        reason:
+          'OneKeyIdProfileEditPage: is focused and primePersistAtom is not logged in',
+      });
+      void logoutRef.current();
+    }
+  }, [isFocused, isLoggedIn]);
+
+  useUpdateEffect(() => {
+    void handleLoggedOutWhileFocused();
+  }, [handleLoggedOutWhileFocused]);
 
   const formOption = useMemo(
     () => ({
@@ -69,6 +106,9 @@ function ProfileEditPage() {
             });
 
           if (!success) {
+            if (!isMountedRef.current || !isFocusedRef.current) {
+              return;
+            }
             Toast.error({
               title: intl.formatMessage({
                 id: ETranslations.global_update_failed,
@@ -77,6 +117,9 @@ function ProfileEditPage() {
             return;
           }
 
+          if (!isMountedRef.current || !isFocusedRef.current) {
+            return;
+          }
           Toast.success({
             title: intl.formatMessage({
               id: ETranslations.feedback_change_saved,
@@ -84,6 +127,9 @@ function ProfileEditPage() {
           });
           navigation.pop();
         } catch {
+          if (!isMountedRef.current || !isFocusedRef.current) {
+            return;
+          }
           Toast.error({
             title: intl.formatMessage({
               id: ETranslations.global_update_failed,
@@ -140,13 +186,9 @@ function ProfileEditPage() {
             <YStack gap="$6">
               <XStack jc="center">
                 <Stack position="relative" onPress={handlePickAvatar}>
-                  <Image
+                  <OneKeyIdAvatar
                     size="$20"
-                    borderRadius="$full"
-                    borderWidth={1}
-                    borderColor="$neutral3"
                     source={userAvatar ? { uri: userAvatar } : undefined}
-                    fallback={<OneKeyIdFallbackAvatar size="$20" />}
                   />
                   <XStack
                     bg="$bg"
