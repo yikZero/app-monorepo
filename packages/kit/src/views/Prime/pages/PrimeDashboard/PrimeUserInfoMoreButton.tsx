@@ -14,12 +14,9 @@ import {
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { MultipleClickStack } from '@onekeyhq/kit/src/components/MultipleClickStack';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
-import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useDevSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
-import { EModalRoutes } from '@onekeyhq/shared/src/routes/modal';
-import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { formatDateFns } from '@onekeyhq/shared/src/utils/dateUtils';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
 
@@ -41,7 +38,6 @@ function PrimeUserInfoMoreButtonDropDownMenu({
   const primeExpiredAt = user?.primeSubscription?.expiresAt;
   const { getCustomerInfo } = usePrimePayment();
   const [devSettings] = useDevSettingsPersistAtom();
-  const navigation = useAppNavigation();
   const intl = useIntl();
   const { purchase } = usePrimePurchaseCallback();
 
@@ -151,19 +147,6 @@ function PrimeUserInfoMoreButtonDropDownMenu({
           ) : null}
         </>
       ) : null}
-
-      <ActionList.Item
-        label={intl.formatMessage({
-          id: ETranslations.prime_device_management,
-        })}
-        icon="MultipleDevicesOutline"
-        onClose={handleActionListClose}
-        onPress={() => {
-          navigation.pushModal(EModalRoutes.PrimeModal, {
-            screen: EPrimePages.PrimeDeviceLimit,
-          });
-        }}
-      />
 
       <ActionList.Item
         label={intl.formatMessage({
