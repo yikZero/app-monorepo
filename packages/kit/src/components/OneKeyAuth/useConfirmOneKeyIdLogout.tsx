@@ -6,7 +6,7 @@ import { Dialog } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 
-import { useOneKeyAuth } from './useOneKeyAuth';
+import { useOneKeyAuthMethods } from './useOneKeyAuth';
 
 type IUseConfirmOneKeyIdLogoutOptions = {
   reason: string;
@@ -20,7 +20,7 @@ export function useConfirmOneKeyIdLogout({
   onSuccess,
 }: IUseConfirmOneKeyIdLogoutOptions) {
   const intl = useIntl();
-  const { logoutWithPurchasesSdk } = useOneKeyAuth();
+  const { logoutWithPurchasesSdk } = useOneKeyAuthMethods();
 
   return useCallback(() => {
     Dialog.show({
