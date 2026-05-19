@@ -89,7 +89,10 @@ import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import perfUtils, {
   EPerformanceTimerLogNames,
 } from '@onekeyhq/shared/src/utils/debug/perfUtils';
-import { buildTokenSelectorDappTokenFilterParams } from '@onekeyhq/shared/src/utils/tokenSelectorFilterUtils';
+import {
+  TOKEN_SELECTOR_LP_TOKEN_FILTER_ENABLED,
+  buildTokenSelectorDappTokenFilterParams,
+} from '@onekeyhq/shared/src/utils/tokenSelectorFilterUtils';
 import {
   buildAggregateTokenListData,
   buildLocalAggregateTokenMapKey,
@@ -185,7 +188,9 @@ function TokenListBlock({
   const [shouldAlwaysFetch, setShouldAlwaysFetch] = useState(false);
   const [tokenSelectorFilter, setTokenSelectorFilter] =
     useTokenSelectorFilterPersistAtom();
-  const showLpTokensOnly = tokenSelectorFilter.homeShowLpTokensOnly;
+  const showLpTokensOnly = TOKEN_SELECTOR_LP_TOKEN_FILTER_ENABLED
+    ? tokenSelectorFilter.homeShowLpTokensOnly
+    : false;
   const [scopedLpTokenList, setScopedLpTokenList] =
     useState<IScopedActiveTokenList>({
       tokens: [],
@@ -249,6 +254,7 @@ function TokenListBlock({
   const refreshWalletTokenListRef = useRef<
     ((options?: { forceWalletTokenMode?: boolean }) => void) | undefined
   >(undefined);
+  const forceWalletTokenModeRef = useRef(false);
   const syncTokenFilterToOverview = true;
 
   const accountTokensValue = useMemo(() => {
@@ -417,8 +423,10 @@ function TokenListBlock({
         });
         tokenListRefreshEventStarted = false;
       };
-      const requestTokenSelectorFilterMode =
-        latestTokenSelectorFilterModeRef.current;
+      const forceWalletTokenMode = forceWalletTokenModeRef.current;
+      const requestTokenSelectorFilterMode = forceWalletTokenMode
+        ? 'wallet-token'
+        : latestTokenSelectorFilterModeRef.current;
       try {
         if (requestTokenSelectorFilterMode !== 'wallet-token') {
           return;
@@ -527,8 +535,9 @@ function TokenListBlock({
           });
 
           if (
+            !forceWalletTokenMode &&
             latestTokenSelectorFilterModeRef.current !==
-            requestTokenSelectorFilterMode
+              requestTokenSelectorFilterMode
           ) {
             return;
           }
@@ -564,8 +573,9 @@ function TokenListBlock({
             .plus(r.smallBalanceTokens.fiatValue ?? '0');
 
           if (
+            !forceWalletTokenMode &&
             latestTokenSelectorFilterModeRef.current !==
-            requestTokenSelectorFilterMode
+              requestTokenSelectorFilterMode
           ) {
             return;
           }
@@ -635,17 +645,17 @@ function TokenListBlock({
               tokens: mergedTokens,
             });
           }
-
-          perfTokenListView.markEnd(
-            'tokenListRefreshing_tokenListContainerRefreshList',
-          );
-          updateTokenListState({
-            initialized: true,
-            isRefreshing: false,
-          });
-
-          endTokenListRefreshEvent();
         }
+
+        perfTokenListView.markEnd(
+          'tokenListRefreshing_tokenListContainerRefreshList',
+        );
+        updateTokenListState({
+          initialized: true,
+          isRefreshing: false,
+        });
+
+        endTokenListRefreshEvent();
       } catch (e) {
         endTokenListRefreshEvent();
         if (e instanceof CanceledError) {
@@ -654,6 +664,9 @@ function TokenListBlock({
           throw e;
         }
       } finally {
+        if (forceWalletTokenMode) {
+          forceWalletTokenModeRef.current = false;
+        }
         endTokenListRefreshEvent();
         setIsHeaderRefreshing(false);
       }
@@ -791,6 +804,7 @@ function TokenListBlock({
     setScopedLpTokenListMap({});
     // Persisted DeFi-token mode can mount before tab focus settles; make the
     // initial clear and initial fetch atomic so loading always resolves.
+    refreshWalletTokenListRef.current?.({ forceWalletTokenMode: true });
     void runLpTokenList({ alwaysSetState: true });
   }, [
     account?.id,
@@ -851,7 +865,12 @@ function TokenListBlock({
       allNetworkDataInit?: boolean;
       isSingleRequest?: boolean;
     }) => {
-      if (latestTokenSelectorFilterModeRef.current !== 'wallet-token') {
+      const forceWalletTokenMode = forceWalletTokenModeRef.current;
+      const requestTokenSelectorFilterMode = forceWalletTokenMode
+        ? 'wallet-token'
+        : latestTokenSelectorFilterModeRef.current;
+
+      if (requestTokenSelectorFilterMode !== 'wallet-token') {
         isAllNetworkManualRefresh.current = false;
         return undefined;
       }
@@ -878,12 +897,14 @@ function TokenListBlock({
       );
       const r: IAllNetworkTokenListResp = {
         ...response,
-        tokenSelectorFilterMode,
+        tokenSelectorFilterMode: requestTokenSelectorFilterMode,
         syncTokenFilterToOverview,
       };
 
       if (
-        latestTokenSelectorFilterModeRef.current !== tokenSelectorFilterMode
+        !forceWalletTokenMode &&
+        latestTokenSelectorFilterModeRef.current !==
+          requestTokenSelectorFilterMode
       ) {
         isAllNetworkManualRefresh.current = false;
         return r;
@@ -911,7 +932,9 @@ function TokenListBlock({
       ]);
 
       if (
-        latestTokenSelectorFilterModeRef.current !== tokenSelectorFilterMode
+        !forceWalletTokenMode &&
+        latestTokenSelectorFilterModeRef.current !==
+          requestTokenSelectorFilterMode
       ) {
         isAllNetworkManualRefresh.current = false;
         return r;
@@ -1146,7 +1169,6 @@ function TokenListBlock({
       updateAccountWorth,
       updateAllNetworkData,
       updateTokenListState,
-      tokenSelectorFilterMode,
       syncTokenFilterToOverview,
       walletTokenFilterParams,
     ],
@@ -1215,6 +1237,7 @@ function TokenListBlock({
       accountId?: string;
       networkId?: string;
     }) => {
+      forceWalletTokenModeRef.current = false;
       appEventBus.emit(EAppEventBusNames.TabListStateUpdate, {
         isRefreshing: false,
         type: EHomeTab.TOKENS,
@@ -1235,7 +1258,10 @@ function TokenListBlock({
       networkId?: string;
       hasCache: boolean;
     }) => {
-      if (latestTokenSelectorFilterModeRef.current !== 'wallet-token') {
+      if (
+        !forceWalletTokenModeRef.current &&
+        latestTokenSelectorFilterModeRef.current !== 'wallet-token'
+      ) {
         return;
       }
       if (!syncTokenFilterToOverview) {
@@ -1282,7 +1308,10 @@ function TokenListBlock({
       localTokensRawData.current = l ?? undefined;
       aggregateTokenRawData.current = a ?? undefined;
 
-      if (latestTokenSelectorFilterModeRef.current !== 'wallet-token') {
+      if (
+        !forceWalletTokenModeRef.current &&
+        latestTokenSelectorFilterModeRef.current !== 'wallet-token'
+      ) {
         return;
       }
 
@@ -1320,7 +1349,10 @@ function TokenListBlock({
       xpub?: string;
       accountAddress: string;
     }) => {
-      if (latestTokenSelectorFilterModeRef.current !== 'wallet-token') {
+      if (
+        !forceWalletTokenModeRef.current &&
+        latestTokenSelectorFilterModeRef.current !== 'wallet-token'
+      ) {
         return null;
       }
 
@@ -1389,6 +1421,7 @@ function TokenListBlock({
       networkId: string;
     }) => {
       if (
+        !forceWalletTokenModeRef.current &&
         latestTokenSelectorFilterModeRef.current !== tokenSelectorFilterMode
       ) {
         return;
@@ -1649,10 +1682,6 @@ function TokenListBlock({
   });
 
   const updateAllNetworksTokenList = useCallback(async () => {
-    if (tokenSelectorFilterMode !== 'wallet-token') {
-      return;
-    }
-
     const tokenList: {
       tokens: IAccountToken[];
       keys: string;
@@ -1708,7 +1737,7 @@ function TokenListBlock({
           result.tokenSelectorFilterMode !== resultTokenSelectorFilterMode,
       );
       if (
-        resultTokenSelectorFilterMode !== tokenSelectorFilterMode ||
+        resultTokenSelectorFilterMode !== 'wallet-token' ||
         hasMixedTokenSelectorFilterResult
       ) {
         return;
@@ -1815,13 +1844,6 @@ function TokenListBlock({
             .plus(r.tokens.fiatValue ?? '0')
             .plus(r.smallBalanceTokens.fiatValue ?? '0');
         }
-      }
-
-      if (
-        latestTokenSelectorFilterModeRef.current !==
-        resultTokenSelectorFilterMode
-      ) {
-        return;
       }
 
       if (shouldSyncTokenFilterToOverview) {
@@ -1964,7 +1986,6 @@ function TokenListBlock({
     mergeDeriveAddressData,
     allNetworksResult,
     network?.id,
-    tokenSelectorFilterMode,
     refreshAllTokenList,
     refreshAllTokenListMap,
     refreshAggregateTokensListMap,
@@ -2440,6 +2461,7 @@ function TokenListBlock({
   useEffect(() => {
     if (isHeaderRefreshing) {
       if (showLpTokensOnly) {
+        refreshWalletTokenListRef.current?.({ forceWalletTokenMode: true });
         void runLpTokenList({ alwaysSetState: true });
         return;
       }
@@ -2482,6 +2504,7 @@ function TokenListBlock({
 
   const handleRefreshAllNetworkData = useCallback(() => {
     if (showLpTokensOnly) {
+      refreshWalletTokenListRef.current?.({ forceWalletTokenMode: true });
       void runLpTokenList({ alwaysSetState: true });
       return;
     }
@@ -2494,12 +2517,16 @@ function TokenListBlock({
   }, [runAllNetworksRequests, runLpTokenList, showLpTokensOnly]);
 
   refreshWalletTokenListRef.current = (options) => {
+    if (options?.forceWalletTokenMode) {
+      forceWalletTokenModeRef.current = true;
+    }
     if (network?.isAllNetworks) {
       if (options?.forceWalletTokenMode) {
         isAllNetworkManualRefresh.current = true;
         void runAllNetworksRequests({
           alwaysSetState: true,
           skipAccountsCache: true,
+          ignoreDisabled: true,
         });
         return;
       }
@@ -2518,6 +2545,7 @@ function TokenListBlock({
     lastVisibilityRefreshAtRef.current = now;
 
     if (showLpTokensOnly) {
+      refreshWalletTokenListRef.current?.({ forceWalletTokenMode: true });
       void runLpTokenList({ alwaysSetState: true });
       return;
     }
@@ -2719,12 +2747,12 @@ function TokenListBlock({
   ]);
 
   const renderHeaderActions = useCallback(() => {
-    const filterSwitch = (
+    const filterSwitch = TOKEN_SELECTOR_LP_TOKEN_FILTER_ENABLED ? (
       <TokenSelectorLpTokenSwitch
         value={showLpTokensOnly}
         onChange={handleLpTokenFilterChange}
       />
-    );
+    ) : null;
 
     if (manageTokenEnabled && tableLayout) {
       return (
