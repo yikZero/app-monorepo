@@ -49,10 +49,12 @@ function ProfileEditPage() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const { isLoggedIn, logout, user } = useOneKeyAuth();
+  const profileUserId = user?.onekeyUserId || user?.email || '';
   const isFocused = useRouteIsFocused();
   const isMountedRef = useRef(true);
   const isFocusedRef = useRef(isFocused);
   const logoutRef = useRef<() => Promise<void>>(logout);
+  const profileUserIdRef = useRef(profileUserId);
 
   isFocusedRef.current = isFocused;
   logoutRef.current = logout;
@@ -101,7 +103,7 @@ function ProfileEditPage() {
         try {
           const success =
             await backgroundApiProxy.servicePrime.updatePrimeUserProfile({
-              avatar: formValues.avatar ?? '',
+              avatar: formValues.avatar ?? user?.avatar ?? '',
               nickname,
             });
 
@@ -143,7 +145,23 @@ function ProfileEditPage() {
 
   const form = useForm<IPrimeProfileFormValues>(formOption);
   const userAvatar = form.watch('avatar');
+  const profileAvatar = userAvatar ?? user?.avatar;
   const nicknameLength = form.watch('nickname')?.length || 0;
+
+  useEffect(() => {
+    const isProfileUserChanged = profileUserIdRef.current !== profileUserId;
+    profileUserIdRef.current = profileUserId;
+
+    form.reset(
+      {
+        avatar: user?.avatar,
+        nickname: user?.nickname,
+      },
+      {
+        keepDirtyValues: !isProfileUserChanged,
+      },
+    );
+  }, [form, profileUserId, user?.avatar, user?.nickname]);
 
   const handlePickAvatar = useCallback(async () => {
     try {
@@ -188,7 +206,7 @@ function ProfileEditPage() {
                 <Stack position="relative" onPress={handlePickAvatar}>
                   <OneKeyIdAvatar
                     size="$20"
-                    source={userAvatar ? { uri: userAvatar } : undefined}
+                    source={profileAvatar ? { uri: profileAvatar } : undefined}
                   />
                   <XStack
                     bg="$bg"
