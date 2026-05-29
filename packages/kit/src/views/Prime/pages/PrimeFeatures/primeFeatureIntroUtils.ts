@@ -48,6 +48,15 @@ export type IPrimeFeatureIntroCtaKind =
   | 'comingSoon'
   | 'none';
 
+const PRIME_FEATURE_VIDEO_CDN_BASE_URL =
+  'https://asset.onekey-asset.com/app-monorepo/bb7a4e71aba56b405faf9278776d57d73b829708/static/media';
+
+function getPrimeFeatureVideoSource(fileName: string): ReactVideoSource {
+  return {
+    uri: `${PRIME_FEATURE_VIDEO_CDN_BASE_URL}/${fileName}`,
+  };
+}
+
 export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
   {
     id: EPrimeFeatures.BulkSend,
@@ -57,7 +66,7 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     media: {
       type: 'video',
       getSource: () =>
-        require('@onekeyhq/kit/assets/prime/bulk_send.mp4') as ReactVideoSource,
+        getPrimeFeatureVideoSource('prime-feature-bulk-send-20260529.mp4'),
       getPosterSource: () =>
         require('@onekeyhq/kit/assets/prime/bulk_send_poster.png') as ImageSourcePropType,
     },
@@ -89,7 +98,7 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     media: {
       type: 'video',
       getSource: () =>
-        require('@onekeyhq/kit/assets/prime/bulk_revoke.mp4') as ReactVideoSource,
+        getPrimeFeatureVideoSource('prime-feature-bulk-revoke-20260529.mp4'),
       getPosterSource: () =>
         require('@onekeyhq/kit/assets/prime/bulk_revoke_poster.png') as ImageSourcePropType,
     },
@@ -116,7 +125,9 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     media: {
       type: 'video',
       getSource: () =>
-        require('@onekeyhq/kit/assets/prime/bulk_copy_addresses.mp4') as ReactVideoSource,
+        getPrimeFeatureVideoSource(
+          'prime-feature-bulk-copy-addresses-20260529.mp4',
+        ),
       getPosterSource: () =>
         require('@onekeyhq/kit/assets/prime/bulk_copy_addresses_poster.png') as ImageSourcePropType,
     },
@@ -148,7 +159,7 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     media: {
       type: 'video',
       getSource: () =>
-        require('@onekeyhq/kit/assets/prime/ai_translation.mp4') as ReactVideoSource,
+        getPrimeFeatureVideoSource('prime-feature-ai-translation-20260529.mp4'),
       getPosterSource: () =>
         require('@onekeyhq/kit/assets/prime/ai_translation_poster.png') as ImageSourcePropType,
     },
@@ -175,7 +186,7 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     media: {
       type: 'video',
       getSource: () =>
-        require('@onekeyhq/kit/assets/prime/dapp_security.mp4') as ReactVideoSource,
+        getPrimeFeatureVideoSource('prime-feature-dapp-security-20260529.mp4'),
       getPosterSource: () =>
         require('@onekeyhq/kit/assets/prime/dapp_security_poster.png') as ImageSourcePropType,
     },
