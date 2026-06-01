@@ -412,8 +412,8 @@ function MoreActionContentGridItem({
     onPress();
   }, [closePopover, onPress, trackID]);
 
-  const { user, isPrimeActive } = useOneKeyAuth();
-  const isPrimeUser = isPrimeActive && user?.onekeyUserId;
+  const { isPrimeSubscriptionActive } = useOneKeyAuth();
+  const isPrimeUser = !!isPrimeSubscriptionActive;
   const themeVariant = useThemeVariant();
 
   if (isPrimeFeature && !isPrimeAvailable) {
@@ -950,14 +950,14 @@ const MoreActionWalletGrid = () => {
     });
   }, [navigation]);
 
-  const { user, isPrimeActive } = useOneKeyAuth();
-  const isPrimeUser = isPrimeActive && user?.onekeyUserId;
+  const { isPrimeActive, isPrimeSubscriptionActive } = useOneKeyAuth();
+  const isPrimeUser = !!isPrimeSubscriptionActive;
   const {
     activeAccount: { account, network, wallet, indexedAccount },
   } = useActiveAccount({ num: 0 });
   const checkIsPrimeUser = useCallback(
     (showFeature: EPrimeFeatures) => {
-      if (isPrimeActive && user?.onekeyUserId) {
+      if (isPrimeSubscriptionActive) {
         return true;
       }
       navigation.pushFullModal(EModalRoutes.PrimeModal, {
@@ -969,7 +969,7 @@ const MoreActionWalletGrid = () => {
       });
       return false;
     },
-    [isPrimeActive, navigation, network?.id, user?.onekeyUserId],
+    [isPrimeSubscriptionActive, navigation, network?.id],
   );
   const openBulkCopyAddressesModule = useCallback(async () => {
     const networkId = networkUtils.toNetworkIdFallback({

@@ -263,16 +263,16 @@ export function getPrimeFeatureIntro(featureId: EPrimeFeatures | undefined) {
 
 export function getPrimeFeatureIntroCtaKind({
   featureId,
-  isPrimeActive,
+  isPrimeSubscriptionActive,
 }: {
   featureId: EPrimeFeatures | undefined;
-  isPrimeActive: boolean;
+  isPrimeSubscriptionActive: boolean;
 }): IPrimeFeatureIntroCtaKind {
   const feature = getPrimeFeatureIntro(featureId);
   if (!feature) {
     return 'none';
   }
-  if (!isPrimeActive) {
+  if (!isPrimeSubscriptionActive) {
     return 'subscribe';
   }
   if (feature.isComingSoon) {

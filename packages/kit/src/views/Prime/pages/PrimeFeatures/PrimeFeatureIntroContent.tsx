@@ -377,7 +377,7 @@ export function PrimeFeatureIntroContent({
   const navigation = useAppNavigation();
   const { gtMd } = useMedia();
   const { bottom: safeAreaBottom } = useSafeAreaInsets();
-  const { isLoggedIn, isPrimeActive } = useOneKeyAuth();
+  const { isLoggedIn, isPrimeSubscriptionActive } = useOneKeyAuth();
   const {
     activeAccount: { wallet, account, network, indexedAccount },
   } = useActiveAccount({ num: 0 });
@@ -427,7 +427,7 @@ export function PrimeFeatureIntroContent({
 
   const ctaKind = getPrimeFeatureIntroCtaKind({
     featureId: activeFeature?.id,
-    isPrimeActive,
+    isPrimeSubscriptionActive: !!isPrimeSubscriptionActive,
   });
   const isComingSoon = !!activeFeature?.isComingSoon;
   const shouldUseSubscribeCta = ctaKind === 'subscribe';

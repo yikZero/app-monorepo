@@ -65,7 +65,7 @@ function WalletEditButtonView({
   const [devSettings] = useDevSettingsPersistAtom();
 
   const { isPrimeAvailable } = usePrimeAvailable();
-  const { user, isPrimeActive } = useOneKeyAuth();
+  const { isPrimeActive, isPrimeSubscriptionActive } = useOneKeyAuth();
   const { goToOneKeyIDLoginPageForKeylessWallet } = useKeylessWallet();
   const { verifyKeylessPinChecking } = useVerifyKeylessPinChecking();
 
@@ -73,8 +73,8 @@ function WalletEditButtonView({
   const [isVerifyPinLoading, _setIsVerifyPinLoading] = useState(false);
 
   const isPrimeUser = useMemo(() => {
-    return isPrimeActive && user?.onekeyUserId;
-  }, [isPrimeActive, user?.onekeyUserId]);
+    return !!isPrimeSubscriptionActive;
+  }, [isPrimeSubscriptionActive]);
 
   // True when the wallet is bound to a third-party hardware vendor (e.g. Ledger).
   // Used to hide OneKey-specific entries that don't apply to non-OneKey devices:

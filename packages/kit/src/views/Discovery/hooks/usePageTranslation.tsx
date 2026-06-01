@@ -245,12 +245,9 @@ export function TranslatePopoverContent({
   onShowSettingsChange: (show: boolean) => void;
 }) {
   const intl = useIntl();
-  const { user, isPrimeActive } = useOneKeyAuth();
+  const { isPrimeActive, isPrimeSubscriptionActive } = useOneKeyAuth();
   const navigation = useAppNavigation();
-  const isPrimeUser = useMemo(
-    () => !!(user?.primeSubscription?.isActive && user?.onekeyUserId),
-    [user?.primeSubscription?.isActive, user?.onekeyUserId],
-  );
+  const isPrimeUser = !!isPrimeSubscriptionActive;
   const themeVariant = useThemeVariant();
   const targetLanguageLabel = useTargetLanguageLabel();
 
