@@ -22,8 +22,8 @@ export function WalletActionBulkSend({ onClose }: { onClose: () => void }) {
   const { activeAccount } = useActiveAccount({ num: 0 });
   const { network, account, indexedAccount } = activeAccount;
 
-  const { isPrimeActive, isPrimeSubscriptionActive } = useOneKeyAuth();
-  const isPrimeUser = !!isPrimeSubscriptionActive;
+  const { user, isPrimeActive } = useOneKeyAuth();
+  const isPrimeUser = isPrimeActive && user?.onekeyUserId;
   const { isPrimeAvailable } = usePrimeAvailable();
 
   const navigateToBulkSend = useNavigateToBulkSend();
