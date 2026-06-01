@@ -52,6 +52,7 @@ import {
 import { useTradingCalculationsForSide } from '../../hooks/useTradingCalculationsForSide';
 import { useTradingPrice } from '../../hooks/useTradingPrice';
 import { PerpTestIDs } from '../../testIDs';
+import { shouldPreserveColdStartButtonVisualState } from '../../utils/accountScopedData';
 import { shouldApplyMinimumOrderGuard } from '../../utils/minimumOrderGuard';
 import {
   type IPerpsMobileLayoutTraceRect,
@@ -267,6 +268,32 @@ function SideButtonInternal({
       shouldEnableTradingBeforeOrder,
     ],
   );
+
+  const hasNonColdStartDisabledReason = useMemo(
+    () =>
+      Boolean(
+        (!shouldAutoEnableTrading && isNoEnoughMargin) ||
+        (!perpsAccountStatus.canTrade && !shouldEnableTradingBeforeOrder) ||
+        isSubmitting ||
+        priceError === 'bbo_unavailable' ||
+        isServerActionDisabled,
+      ),
+    [
+      perpsAccountStatus.canTrade,
+      isNoEnoughMargin,
+      isServerActionDisabled,
+      isSubmitting,
+      priceError,
+      shouldAutoEnableTrading,
+      shouldEnableTradingBeforeOrder,
+    ],
+  );
+
+  const shouldPreserveDisabledButtonStyle =
+    shouldPreserveColdStartButtonVisualState({
+      isLiveStatusPending,
+      hasNonColdStartDisabledReason,
+    });
 
   const buttonDisabled = useMemo(() => {
     return shouldDisablePerpsOrderPanelTradingButton({
@@ -842,16 +869,6 @@ function SideButtonInternal({
       }
 
       const latestOrderPanelState = latestOrderPanelStateRef.current;
-      if (
-        !validateOrderPanelState({
-          orderPanelState: latestOrderPanelState,
-          validationSide: side,
-          shouldValidateBboPriceError: !shouldEnableTradingBeforeOrder,
-        })
-      ) {
-        return;
-      }
-
       const latestPerpsCustomSettings =
         latestOrderPanelState.perpsCustomSettings;
 
@@ -885,59 +902,10 @@ function SideButtonInternal({
             perpsAccountKeyRef.current !== enableTradingAccountKey,
           );
 
-        if (!latestPerpsCustomSettings.skipOrderConfirm) {
-          showOrderConfirmDialog({
-            overrideSide: side,
-            intl,
-            enableTradingAccountKey,
-            enableTradingBeforeConfirm: async ({
-              closeDialog,
-              shouldIgnoreResult,
-            }) => {
-              const result = await requestOrderPanelEnableTrading({
-                beforeDeposit: closeDialog,
-                shouldIgnoreResult,
-                showLoadingToast: false,
-              });
-              const postEnableState = latestOrderPanelStateRef.current;
-              const postEnableTradingResult =
-                getPerpsOrderPanelPostEnableTradingResult({
-                  enableTradingShouldContinue: result.shouldContinue,
-                  shouldIgnoreEnableTradingResult: shouldIgnoreResult(),
-                  isOrderContextChanged:
-                    postEnableState.side !== enableTradingSide ||
-                    postEnableState.orderContextKey !==
-                      enableTradingOrderContextKey,
-                  isNoEnoughMargin: postEnableState.isNoEnoughMargin,
-                });
-              if (postEnableTradingResult === 'stop') {
-                return { ...result, shouldContinue: false };
-              }
-              if (postEnableTradingResult === 'noEnoughMargin') {
-                Toast.message({
-                  title: intl.formatMessage({
-                    id: postEnableState.isSpot
-                      ? ETranslations.dexmarket_insufficient_balance
-                      : ETranslations.perp_trading_button_no_enough_margin,
-                  }),
-                });
-                return { ...result, shouldContinue: false };
-              }
-              if (
-                !validateOrderPanelState({
-                  orderPanelState: postEnableState,
-                  validationSide: side,
-                  shouldValidateBboPriceError: true,
-                })
-              ) {
-                return { ...result, shouldContinue: false };
-              }
-              return result;
-            },
-          });
-          return;
-        }
-
+        // Enable trading MUST run before the order confirm dialog: the order
+        // panel first resolves the trading-enabled state (auto-enable or the
+        // hardware steps dialog), then shows the order confirmation. Do not
+        // defer this into the confirm dialog's pre-confirm hook.
         const result = await requestOrderPanelEnableTrading({
           shouldIgnoreResult: shouldIgnoreEnableTradingResult,
           showLoadingToast: shouldAutoEnableTrading,
@@ -965,16 +933,23 @@ function SideButtonInternal({
           });
           return;
         }
+      }
 
-        if (
-          !validateOrderPanelState({
-            orderPanelState: postEnableState,
-            validationSide: side,
-            shouldValidateBboPriceError: true,
-          })
-        ) {
-          return;
-        }
+      // Validate the order only AFTER trading is enabled (matching the
+      // original flow): a not-yet-enabled account has no margin/leverage data
+      // yet, so computedSizeForSide is 0 and a pre-enable size check would
+      // wrongly raise the "minimum $10" toast and swallow the enable-trading
+      // dialog. Running validation here covers both the just-enabled path and
+      // accounts that can already trade.
+      const validationState = latestOrderPanelStateRef.current;
+      if (
+        !validateOrderPanelState({
+          orderPanelState: validationState,
+          validationSide: side,
+          shouldValidateBboPriceError: true,
+        })
+      ) {
+        return;
       }
 
       if (latestPerpsCustomSettings.skipOrderConfirm) {
@@ -1163,6 +1138,9 @@ function SideButtonInternal({
             !buttonDisabled ? { bg: buttonStyles.pressBg } : undefined
           }
           disabled={buttonDisabled}
+          disabledStyle={
+            shouldPreserveDisabledButtonStyle ? { opacity: 1 } : undefined
+          }
           loading={shouldShowButtonLoading || isSubmitting}
           onPress={handlePress}
           h={36}
@@ -1207,6 +1185,9 @@ function SideButtonInternal({
         hoverStyle={!buttonDisabled ? { bg: buttonStyles.hoverBg } : undefined}
         pressStyle={!buttonDisabled ? { bg: buttonStyles.pressBg } : undefined}
         disabled={buttonDisabled}
+        disabledStyle={
+          shouldPreserveDisabledButtonStyle ? { opacity: 1 } : undefined
+        }
         loading={shouldShowButtonLoading || isSubmitting}
         onPress={handlePress}
         h={36}
