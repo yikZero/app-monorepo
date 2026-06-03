@@ -10,7 +10,16 @@ import { NavBackButton, NavCloseButton } from '../Navigation';
 
 import type { IIconButtonProps } from '../../actions';
 
-type IPageBackButtonProps = Omit<IIconButtonProps, 'icon' | 'testID'>;
+type IPageBackButtonProps = Omit<
+  IIconButtonProps,
+  | 'icon'
+  | 'testID'
+  | 'onPress'
+  | 'onLongPress'
+  | 'disabled'
+  | 'loading'
+  | 'allowPressWhenDisabled'
+>;
 
 export function PageClose({
   children,
