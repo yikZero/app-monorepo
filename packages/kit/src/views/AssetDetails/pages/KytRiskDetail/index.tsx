@@ -240,7 +240,7 @@ function KytRiskDetail() {
             <YStack flex={1} gap="$0.5" minWidth={0}>
               <SizableText
                 size="$heading2xl"
-                color={LEVEL_TEXT_COLOR[riskDetail.level]}
+                color={LEVEL_TEXT_COLOR[riskDetail.level] ?? '$text'}
                 numberOfLines={1}
               >
                 {intl.formatMessage({ id: content.title })}
