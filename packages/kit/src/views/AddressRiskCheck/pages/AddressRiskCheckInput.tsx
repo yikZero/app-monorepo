@@ -42,7 +42,7 @@ function AddressRiskCheckInput() {
   const openChainSelector = useConfigurableChainSelector();
   const { getClipboard } = useClipboard();
   const { isChecking, checkRisk } = useCheckAddressRisk();
-  const { items: recentChecks, networkNameMap } = useRecentChecks({ limit: 3 });
+  const { items: recentChecks, networkNameMap } = useRecentChecks({ limit: 5 });
 
   const route =
     useRoute<
