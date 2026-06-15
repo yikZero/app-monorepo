@@ -5,10 +5,10 @@ import { useIntl } from 'react-intl';
 
 import {
   Badge,
-  Button,
   Divider,
   Icon,
   SizableText,
+  Spinner,
   Stack,
   Toast,
   XStack,
@@ -287,15 +287,33 @@ export function AddressRiskMoreAnalysis({
 
   if (!details) {
     return (
-      <Button
+      <XStack
+        role="button"
         testID="address-risk-check-more-analysis"
-        variant="tertiary"
-        size="large"
-        loading={isLoading}
+        ai="center"
+        jc="space-between"
+        gap="$2"
+        px="$4"
+        height={50}
+        borderWidth={1}
+        borderColor="$borderSubdued"
+        borderRadius="$3"
+        disabled={isLoading}
+        hoverStyle={{ bg: '$bgHover' }}
+        pressStyle={{ bg: '$bgActive' }}
         onPress={handleLoad}
       >
-        {ARC_TEXTS.moreAnalysis}
-      </Button>
+        <SizableText size="$bodyLgMedium">{ARC_TEXTS.moreAnalysis}</SizableText>
+        {isLoading ? (
+          <Spinner size="small" />
+        ) : (
+          <Icon
+            name="ChevronRightSmallOutline"
+            size="$5"
+            color="$iconSubdued"
+          />
+        )}
+      </XStack>
     );
   }
 

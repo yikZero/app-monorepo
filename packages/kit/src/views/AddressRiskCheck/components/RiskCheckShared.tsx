@@ -8,6 +8,8 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
+import { ARC_TEXTS } from '../texts';
+
 // Risk level → text color. Mirrors the receive-KYT detail page so both surfaces
 // share a consistent visual language.
 export const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
@@ -73,7 +75,7 @@ export function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
   if (factor.exposureType) {
     rows.push({
       label: intl.formatMessage({
-        id: ETranslations.kyt_risk_factor_exposure_type__title,
+        id: ETranslations.kyt_risk_factor_exposure__title,
       }),
       value: factor.exposureType,
     });
@@ -89,6 +91,7 @@ export function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
       ),
     });
   }
+  // Exposure amount and share are shown together on one "Exposure / Share" row.
   const amountText =
     factor.amountUsd !== undefined
       ? `$${new BigNumber(factor.amountUsd).toFormat(2)}`
@@ -97,20 +100,13 @@ export function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
     factor.percent !== undefined
       ? `${new BigNumber(factor.percent).toFixed(2)}%`
       : undefined;
-  if (amountText) {
+  const exposureShareValue = [amountText, percentText]
+    .filter(Boolean)
+    .join(' / ');
+  if (exposureShareValue) {
     rows.push({
-      label: intl.formatMessage({
-        id: ETranslations.kyt_risk_factor_exposure_amount__title,
-      }),
-      value: amountText,
-    });
-  }
-  if (percentText) {
-    rows.push({
-      label: intl.formatMessage({
-        id: ETranslations.kyt_risk_factor_share__title,
-      }),
-      value: percentText,
+      label: ARC_TEXTS.exposureShare,
+      value: exposureShareValue,
     });
   }
 

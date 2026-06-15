@@ -24,6 +24,7 @@ export const ARC_TEXTS = {
     'This removes all locally saved address risk checks from this device.',
   lastChecked: 'Last checked',
   moreAnalysis: 'More address analysis',
+  exposureShare: 'Exposure / Share',
   // Address activity
   addressActivity: 'Address activity',
   firstActive: 'First active',
