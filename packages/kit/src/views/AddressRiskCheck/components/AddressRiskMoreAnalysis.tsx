@@ -72,7 +72,9 @@ function ActivityCell({
 }) {
   return (
     <XStack
-      flex={1}
+      flexGrow={1}
+      flexShrink={1}
+      flexBasis={0}
       ai="center"
       gap="$2"
       px="$3"
@@ -204,7 +206,8 @@ function PlatformProfileBlock({
   platformProfile: IAddressRiskCheckDetails['platformProfile'];
 }) {
   const { exchanges, dex, mixer, nft } = platformProfile;
-  const noOtherSignals = dex.count === 0 && mixer.count === 0 && nft.count === 0;
+  const noOtherSignals =
+    dex.count === 0 && mixer.count === 0 && nft.count === 0;
 
   return (
     <YStack gap="$2.5">
@@ -292,7 +295,9 @@ export function AddressRiskMoreAnalysis({
 }) {
   const intl = useIntl();
   const [isLoading, setIsLoading] = useState(false);
-  const [details, setDetails] = useState<IAddressRiskCheckDetails | undefined>();
+  const [details, setDetails] = useState<
+    IAddressRiskCheckDetails | undefined
+  >();
 
   const handleLoad = useCallback(async () => {
     setIsLoading(true);
