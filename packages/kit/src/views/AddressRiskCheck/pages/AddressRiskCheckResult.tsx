@@ -26,6 +26,7 @@ import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 import { openUrlExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
 
+import { AddressRiskMoreAnalysis } from '../components/AddressRiskMoreAnalysis';
 import {
   CardRow,
   LEVEL_HEADING,
@@ -196,6 +197,11 @@ function AddressRiskCheckResult() {
                 })}
               </Button>
             ) : null}
+
+            <AddressRiskMoreAnalysis
+              networkId={result.networkId}
+              address={result.address}
+            />
           </YStack>
         </ScrollView>
       </Page.Body>
