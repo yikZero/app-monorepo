@@ -22,8 +22,9 @@ class ServiceAddressRiskCheck extends ServiceBase {
 
   // Server-driven allowlist of networks (OneKey networkId + display name). The
   // client never hardcodes the MistTrack coin mapping. Cached briefly since the
-  // list rarely changes within a session.
-  getSupportedNetworks = memoizee(
+  // list rarely changes within a session. Internal — reach it through the
+  // background-routed apiGetSupportedNetworks below.
+  private getSupportedNetworks = memoizee(
     async (): Promise<IAddressRiskCheckNetwork[]> => {
       const client = await this.getOneKeyIdClient(EServiceEndpointEnum.Prime);
       const res = await client.get<

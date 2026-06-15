@@ -163,10 +163,6 @@ function AddressRiskCheckInput() {
     }
   }, [getClipboard]);
 
-  const handleChangeAddress = useCallback((text: string) => {
-    setAddress(text);
-  }, []);
-
   const handleOpenHistory = useCallback(() => {
     navigation.push(EModalAddressRiskCheckRoutes.AddressRiskCheckHistory);
   }, [navigation]);
@@ -262,7 +258,7 @@ function AddressRiskCheckInput() {
                 <TextArea
                   testID="address-risk-check-address-input"
                   value={address}
-                  onChangeText={handleChangeAddress}
+                  onChangeText={setAddress}
                   placeholder={ARC_TEXTS.enterAddress}
                   error={isAddressInvalid}
                   numberOfLines={3}

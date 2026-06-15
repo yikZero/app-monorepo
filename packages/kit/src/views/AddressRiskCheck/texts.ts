@@ -6,6 +6,8 @@
  * generated `ETranslations` member and delete the corresponding entry here.
  * Existing reusable strings already use `ETranslations.*` directly in the code.
  */
+import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
+
 export const ARC_TEXTS = {
   title: 'Address risk check',
   intro:
@@ -46,21 +48,26 @@ export const ARC_TEXTS = {
     theft: 'Theft',
     laundering: 'Laundering',
   } as Record<string, string>,
-  // Address-context result heading (figure 5/6 wording).
+  // Address-context result heading (figure 5/6 wording). Keyed by the risk
+  // level enum so a renamed level fails at compile time instead of silently
+  // falling back to '' at runtime.
   levelHeading: {
-    none: 'No significant risk detected',
-    low: 'Low risk detected',
-    moderate: 'Moderate risk detected',
-    high: 'High risk detected',
-    severe: 'Severe risk detected',
-  } as Record<string, string>,
+    [EKytRiskLevel.None]: 'No significant risk detected',
+    [EKytRiskLevel.Low]: 'Low risk detected',
+    [EKytRiskLevel.Moderate]: 'Moderate risk detected',
+    [EKytRiskLevel.High]: 'High risk detected',
+    [EKytRiskLevel.Severe]: 'Severe risk detected',
+  } as Partial<Record<EKytRiskLevel, string>>,
   // Address-context level descriptions (figure 5/6 wording).
   levelDescription: {
-    none: 'No significant risk was found for this address on the selected network.',
-    low: 'No clear high-risk sources found for this address.',
-    moderate: 'This address has some risk exposure on the selected network.',
-    high: 'This address is linked to high-risk entities on the selected network.',
-    severe:
+    [EKytRiskLevel.None]:
+      'No significant risk was found for this address on the selected network.',
+    [EKytRiskLevel.Low]: 'No clear high-risk sources found for this address.',
+    [EKytRiskLevel.Moderate]:
+      'This address has some risk exposure on the selected network.',
+    [EKytRiskLevel.High]:
+      'This address is linked to high-risk entities on the selected network.',
+    [EKytRiskLevel.Severe]:
       'This address is linked to severe-risk entities on the selected network.',
-  } as Record<string, string>,
+  } as Partial<Record<EKytRiskLevel, string>>,
 };
