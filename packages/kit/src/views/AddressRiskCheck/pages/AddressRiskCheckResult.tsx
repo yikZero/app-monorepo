@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
   Button,
@@ -83,10 +84,10 @@ function AddressRiskCheckResult() {
       <Page.Header title={ARC_TEXTS.title} />
       <Page.Body>
         <ScrollView>
-          <YStack px="$5" py="$4" gap="$4">
-            <YStack gap="$1">
+          <YStack px="$5" py="$3" gap="$4">
+            <YStack gap="$1.5">
               <SizableText
-                size="$heading2xl"
+                size="$headingXl"
                 color={LEVEL_TEXT_COLOR[result.level] ?? '$text'}
               >
                 {ARC_TEXTS.levelHeading[result.level] ?? ''}
@@ -97,7 +98,7 @@ function AddressRiskCheckResult() {
             </YStack>
 
             <YStack
-              borderWidth={1}
+              borderWidth={StyleSheet.hairlineWidth}
               borderColor="$borderSubdued"
               borderRadius="$3"
               overflow="hidden"
@@ -135,6 +136,7 @@ function AddressRiskCheckResult() {
                     testID="address-risk-check-copy-address"
                     variant="tertiary"
                     size="small"
+                    iconSize="$4"
                     icon="Copy3Outline"
                     onPress={handleCopyAddress}
                   />

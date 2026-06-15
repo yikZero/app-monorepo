@@ -1,5 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import type { ColorTokens } from '@onekeyhq/components';
 import { Divider, SizableText, XStack, YStack } from '@onekeyhq/components';
@@ -112,7 +113,7 @@ export function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
 
   return (
     <YStack
-      borderWidth={1}
+      borderWidth={StyleSheet.hairlineWidth}
       borderColor="$borderSubdued"
       borderRadius="$3"
       overflow="hidden"

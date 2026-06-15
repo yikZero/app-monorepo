@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 
 import BigNumber from 'bignumber.js';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
-  Badge,
   Divider,
   Icon,
   SizableText,
@@ -33,10 +33,12 @@ function formatActiveDate(seconds: number) {
 
 function SectionHeader({ title, extra }: { title: string; extra?: string }) {
   return (
-    <XStack ai="center" jc="space-between">
-      <SizableText size="$headingSm">{title}</SizableText>
+    <XStack ai="center" jc="space-between" gap="$3">
+      <SizableText size="$headingSm" color="$textSubdued">
+        {title}
+      </SizableText>
       {extra ? (
-        <SizableText size="$bodyMd" color="$textSubdued">
+        <SizableText size="$bodyMdMedium" color="$textSubdued">
           {extra}
         </SizableText>
       ) : null}
@@ -47,7 +49,7 @@ function SectionHeader({ title, extra }: { title: string; extra?: string }) {
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <YStack
-      borderWidth={1}
+      borderWidth={StyleSheet.hairlineWidth}
       borderColor="$borderSubdued"
       borderRadius="$3"
       overflow="hidden"
@@ -61,20 +63,33 @@ function ActivityCell({
   icon,
   label,
   value,
+  withDivider,
 }: {
   icon: IKeyOfIcons;
   label: string;
   value: string;
+  withDivider?: boolean;
 }) {
   return (
-    <XStack flex={1} ai="center" gap="$2" px="$3" py="$2.5" minWidth={0}>
+    <XStack
+      flex={1}
+      ai="center"
+      gap="$2"
+      px="$3"
+      py="$2.5"
+      minWidth={0}
+      {...(withDivider && {
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderRightColor: '$borderSubdued',
+      })}
+    >
       <Stack
         w={30}
         h={30}
         ai="center"
         jc="center"
-        borderRadius="$2"
-        bg="$bgSubdued"
+        borderRadius="$full"
+        bg="$bgStrong"
       >
         <Icon name={icon} size="$5" color="$iconSubdued" />
       </Stack>
@@ -102,14 +117,15 @@ function AddressActivityBlock({
   const sentPercentText = `${new BigNumber(sentPercent).toFixed(1)}%`;
 
   return (
-    <YStack gap="$3">
+    <YStack gap="$2.5">
       <SectionHeader
         title={ARC_TEXTS.addressActivity}
         extra={ARC_TEXTS.txsLabel(activity.totalTxs)}
       />
       <Card>
-        <XStack>
+        <XStack ai="stretch">
           <ActivityCell
+            withDivider
             icon="CalendarOutline"
             label={ARC_TEXTS.firstActive}
             value={formatActiveDate(activity.firstActiveAt)}
@@ -121,8 +137,9 @@ function AddressActivityBlock({
           />
         </XStack>
         <Divider />
-        <XStack>
+        <XStack ai="stretch">
           <ActivityCell
+            withDivider
             icon="SwitchVerOutline"
             label={ARC_TEXTS.receivedSent}
             value={`${activity.receivedTxs} / ${activity.sentTxs}`}
@@ -134,30 +151,50 @@ function AddressActivityBlock({
           />
         </XStack>
         <Divider />
-        <YStack px="$4" py="$2.5" gap="$1.5">
+        <YStack px="$3" pt="$2.5" pb="$4" gap="$0.5">
           <XStack jc="space-between">
-            <SizableText size="$bodySm" color="$textSuccess">
+            <SizableText size="$bodySmMedium" color="$textSuccess">
               {`${ARC_TEXTS.received} ${receivedPercentText}`}
             </SizableText>
-            <SizableText size="$bodySm" color="$textInfo">
+            <SizableText size="$bodySmMedium" color="$textInfo">
               {`${ARC_TEXTS.sent} ${sentPercentText}`}
             </SizableText>
           </XStack>
-          <XStack height={6} gap={2}>
+          <XStack height={6} gap="$0.5">
             <Stack
               flexGrow={receivedPercent}
-              bg="$bgSuccessStrong"
-              borderRadius="$full"
+              bg="$iconSuccess"
+              borderTopLeftRadius="$full"
+              borderBottomLeftRadius="$full"
             />
             <Stack
               flexGrow={sentPercent}
-              bg="$bgInfoStrong"
-              borderRadius="$full"
+              bg="$iconInfo"
+              borderTopRightRadius="$full"
+              borderBottomRightRadius="$full"
             />
           </XStack>
         </YStack>
       </Card>
     </YStack>
+  );
+}
+
+function ExchangeChip({ name }: { name: string }) {
+  return (
+    <XStack
+      ai="center"
+      jc="center"
+      minWidth={36}
+      px="$2"
+      py="$1"
+      bg="$bgStrong"
+      borderWidth={StyleSheet.hairlineWidth}
+      borderColor="$borderSubdued"
+      borderRadius="$full"
+    >
+      <SizableText size="$bodySmMedium">{name}</SizableText>
+    </XStack>
   );
 }
 
@@ -167,27 +204,24 @@ function PlatformProfileBlock({
   platformProfile: IAddressRiskCheckDetails['platformProfile'];
 }) {
   const { exchanges, dex, mixer, nft } = platformProfile;
-  const noOtherSignals =
-    dex.count === 0 && mixer.count === 0 && nft.count === 0;
+  const noOtherSignals = dex.count === 0 && mixer.count === 0 && nft.count === 0;
 
   return (
-    <YStack gap="$3">
+    <YStack gap="$2.5">
       <SectionHeader
         title={ARC_TEXTS.platformProfile}
         extra={ARC_TEXTS.exchangesLabel(exchanges.count)}
       />
       <Card>
-        <YStack px="$4" py="$3" gap="$3">
+        <YStack px="$4" py="$3" gap="$2">
           {exchanges.list.length ? (
             <XStack flexWrap="wrap" gap="$2">
               {exchanges.list.map((name) => (
-                <Badge key={name} badgeType="default" badgeSize="lg">
-                  <Badge.Text>{name}</Badge.Text>
-                </Badge>
+                <ExchangeChip key={name} name={name} />
               ))}
             </XStack>
           ) : null}
-          <XStack ai="center" gap="$2">
+          <XStack ai="center" gap="$1.5">
             <Stack w={6} h={6} borderRadius="$full" bg="$iconSubdued" />
             <SizableText size="$bodyMd" color="$textSubdued">
               {noOtherSignals
@@ -218,7 +252,7 @@ function RiskIntelligenceBlock({
   }
 
   return (
-    <YStack gap="$3">
+    <YStack gap="$2.5">
       <SectionHeader
         title={ARC_TEXTS.riskIntelligence}
         extra={ARC_TEXTS.signalsLabel(totalSignals)}
@@ -227,18 +261,18 @@ function RiskIntelligenceBlock({
         {entries.map((item, index) => (
           <YStack key={item.key}>
             {index > 0 ? <Divider /> : null}
-            <XStack px="$4" py="$3" ai="center" jc="space-between" gap="$2">
-              <YStack flex={1} gap="$0.5">
+            <XStack px="$4" py="$2.5" ai="center" jc="space-between" gap="$2">
+              <YStack gap="$0.5" minWidth={0}>
                 <SizableText size="$bodyMdMedium">
                   {ARC_TEXTS.riskIntelligenceCategory[item.key] ?? item.key}
                 </SizableText>
                 {item.list.length ? (
-                  <SizableText size="$bodySm" color="$textSubdued">
+                  <SizableText size="$bodyMd" color="$textSubdued">
                     {item.list.join(', ')}
                   </SizableText>
                 ) : null}
               </YStack>
-              <SizableText size="$bodyMdMedium">
+              <SizableText size="$bodyMdMedium" textAlign="right">
                 {ARC_TEXTS.signalsLabel(item.count)}
               </SizableText>
             </XStack>
@@ -258,9 +292,7 @@ export function AddressRiskMoreAnalysis({
 }) {
   const intl = useIntl();
   const [isLoading, setIsLoading] = useState(false);
-  const [details, setDetails] = useState<
-    IAddressRiskCheckDetails | undefined
-  >();
+  const [details, setDetails] = useState<IAddressRiskCheckDetails | undefined>();
 
   const handleLoad = useCallback(async () => {
     setIsLoading(true);
@@ -295,7 +327,7 @@ export function AddressRiskMoreAnalysis({
         gap="$2"
         px="$4"
         height={50}
-        borderWidth={1}
+        borderWidth={StyleSheet.hairlineWidth}
         borderColor="$borderSubdued"
         borderRadius="$3"
         disabled={isLoading}
