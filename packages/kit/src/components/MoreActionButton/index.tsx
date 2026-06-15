@@ -59,6 +59,7 @@ import {
   EModalSettingRoutes,
   ERootRoutes,
 } from '@onekeyhq/shared/src/routes';
+import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
 import { EModalBulkCopyAddressesRoutes } from '@onekeyhq/shared/src/routes/bulkCopyAddresses';
 import {
   EActionCenterPages,
@@ -77,6 +78,7 @@ import { useOnLock } from '../../hooks/useOnLock';
 import { usePromiseResult } from '../../hooks/usePromiseResult';
 import { useReferFriends } from '../../hooks/useReferFriends';
 import { useThemeVariant } from '../../hooks/useThemeVariant';
+import { ARC_TEXTS } from '../../views/AddressRiskCheck/texts';
 import { useBulkSendModeDialog } from '../../views/BulkSend/hooks/useBulkSendModeDialog';
 import { useNavigateToBulkSend } from '../../views/BulkSend/hooks/useNavigateToBulkSend';
 import { useDeviceManagerNavigation } from '../../views/DeviceManagement/hooks/useDeviceManagerNavigation';
@@ -1050,6 +1052,15 @@ const MoreActionWalletGrid = () => {
     checkIsPrimeUser,
   ]);
 
+  const openAddressRiskCheckModule = useCallback(() => {
+    if (!checkIsPrimeUser(EPrimeFeatures.AddressRiskCheck)) {
+      return;
+    }
+    navigation.pushModal(EModalRoutes.AddressRiskCheckModal, {
+      screen: EModalAddressRiskCheckRoutes.AddressRiskCheckInput,
+    });
+  }, [checkIsPrimeUser, navigation]);
+
   const items = useMemo(() => {
     return [
       platformEnv.isWebDappMode
@@ -1127,6 +1138,24 @@ const MoreActionWalletGrid = () => {
             trackID: 'bulk-send-in-more-action',
             isPrimeFeature: true,
           },
+      platformEnv.isWebDappMode
+        ? undefined
+        : {
+            title: ARC_TEXTS.title,
+            icon: 'ShieldKeyholeOutline' as const,
+            onPress: () => {
+              if (!isPrimeUser) {
+                defaultLogger.prime.subscription.primeEntryClick({
+                  featureName: EPrimeFeatures.AddressRiskCheck,
+                  entryPoint: 'moreActions',
+                  isPrimeActive,
+                });
+              }
+              openAddressRiskCheckModule();
+            },
+            trackID: 'address-risk-check-in-more-action',
+            isPrimeFeature: true,
+          },
     ].filter(Boolean);
   }, [
     handleAddressBook,
@@ -1139,6 +1168,7 @@ const MoreActionWalletGrid = () => {
     isPrimeUser,
     openBulkCopyAddressesModule,
     openBulkSendModule,
+    openAddressRiskCheckModule,
   ]);
   return (
     <BaseMoreActionGrid

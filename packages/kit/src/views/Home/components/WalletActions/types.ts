@@ -14,7 +14,6 @@ export type IWalletActionType =
   | 'addressList'
   | 'coins'
   | 'bulkSend'
-  | 'addressRiskCheck'
   | 'sign'
   | 'reward'
   | 'export'

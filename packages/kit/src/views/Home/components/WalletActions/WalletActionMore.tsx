@@ -28,7 +28,6 @@ import { HomeTokenListProviderMirrorWrapper } from '../HomeTokenListProvider';
 import { RawActions } from './RawActions';
 import { useWalletActionConfig } from './useWalletActionConfig';
 import { WalletActionAddressList } from './WalletActionAddressList';
-import { WalletActionAddressRiskCheck } from './WalletActionAddressRiskCheck';
 import { WalletActionApprovals } from './WalletActionApprovals';
 import { WalletActionBulkSend } from './WalletActionBulkSend';
 import { WalletActionBuy } from './WalletActionBuy';
@@ -235,13 +234,6 @@ export function WalletActionMore({ iconOnly }: { iconOnly?: boolean } = {}) {
               return (
                 <WalletActionBulkSend
                   key="bulkSend"
-                  onClose={handleActionListClose}
-                />
-              );
-            case 'addressRiskCheck':
-              return (
-                <WalletActionAddressRiskCheck
-                  key="addressRiskCheck"
                   onClose={handleActionListClose}
                 />
               );
