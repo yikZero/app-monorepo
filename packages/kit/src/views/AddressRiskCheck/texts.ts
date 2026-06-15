@@ -48,18 +48,23 @@ export const ARC_TEXTS = {
     theft: 'Theft',
     laundering: 'Laundering',
   } as Record<string, string>,
-  // Address-context result heading (figure 5/6 wording). Keyed by the risk
-  // level enum so a renamed level fails at compile time instead of silently
-  // falling back to '' at runtime.
+  // Address-context result heading (figure 5/6 wording). Typed as a full
+  // `Record<EKytRiskLevel, string>` via `satisfies` so that adding a new level
+  // (or the non-terminal `Checking`/`Failed` states) fails at compile time
+  // instead of silently rendering an empty title at runtime.
   levelHeading: {
+    [EKytRiskLevel.Checking]: 'Checking address risk',
     [EKytRiskLevel.None]: 'No significant risk detected',
     [EKytRiskLevel.Low]: 'Low risk detected',
     [EKytRiskLevel.Moderate]: 'Moderate risk detected',
     [EKytRiskLevel.High]: 'High risk detected',
     [EKytRiskLevel.Severe]: 'Severe risk detected',
-  } as Partial<Record<EKytRiskLevel, string>>,
+    [EKytRiskLevel.Failed]: 'Risk check unavailable',
+  } satisfies Record<EKytRiskLevel, string>,
   // Address-context level descriptions (figure 5/6 wording).
   levelDescription: {
+    [EKytRiskLevel.Checking]:
+      'We are still analyzing this address. Please check back in a moment.',
     [EKytRiskLevel.None]:
       'No significant risk was found for this address on the selected network.',
     [EKytRiskLevel.Low]: 'No clear high-risk sources found for this address.',
@@ -69,5 +74,7 @@ export const ARC_TEXTS = {
       'This address is linked to high-risk entities on the selected network.',
     [EKytRiskLevel.Severe]:
       'This address is linked to severe-risk entities on the selected network.',
-  } as Partial<Record<EKytRiskLevel, string>>,
+    [EKytRiskLevel.Failed]:
+      'We could not complete the risk check for this address. Please try again later.',
+  } satisfies Record<EKytRiskLevel, string>,
 };

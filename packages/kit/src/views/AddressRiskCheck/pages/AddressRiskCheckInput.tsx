@@ -78,23 +78,41 @@ function AddressRiskCheckInput() {
     [supportedNetworks],
   );
 
-  // Real-time, debounced address validation against the selected network.
-  const { result: validateStatus, isLoading: isValidating } = usePromiseResult(
+  // Identifies the {network, address} combination the latest validation refers
+  // to. Recomputed synchronously from current state, so it flips the instant
+  // the user switches network — unlike the async re-validation below.
+  const validationKey =
+    networkId && debouncedAddress ? `${networkId}:${debouncedAddress}` : '';
+
+  // Real-time, debounced address validation against the selected network. The
+  // result carries the key it was validated against so a stale verdict (e.g.
+  // right after switching networks without editing the address) can be
+  // detected and ignored.
+  const { result: validation, isLoading: isValidating } = usePromiseResult(
     async () => {
       if (!networkId || !debouncedAddress) {
-        return 'idle' as const;
+        return { key: '', status: 'idle' as const };
       }
-      return backgroundApiProxy.serviceValidator.validateAddress({
+      const status = await backgroundApiProxy.serviceValidator.validateAddress({
         networkId,
         address: debouncedAddress,
       });
+      return { key: `${networkId}:${debouncedAddress}`, status };
     },
     [networkId, debouncedAddress],
-    { initResult: 'idle' as const, watchLoading: true },
+    { initResult: { key: '', status: 'idle' as const }, watchLoading: true },
   );
 
   // Pending while the debounce hasn't caught up with the latest input.
   const isPendingValidation = trimmedAddress !== debouncedAddress;
+  // `usePromiseResult` keeps the previous result while re-running, and schedules
+  // its re-run asynchronously in an effect — so when only the network changes
+  // (address unchanged), `isValidating` can still be false for one render frame
+  // while `validation` still holds the previous network's verdict. Treat the
+  // status as `idle` until its key matches the current {network, address}, so
+  // `canCheck` never trusts a verdict computed for a different network.
+  const validateStatus =
+    validation.key === validationKey ? validation.status : 'idle';
   // Only surface the error once validation has settled, so it doesn't flash a
   // stale "invalid" while the user is still editing.
   const isAddressInvalid =
