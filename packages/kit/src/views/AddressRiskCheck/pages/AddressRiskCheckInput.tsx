@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 
 import {
@@ -20,15 +21,19 @@ import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
-
+import {
+  EModalAddressRiskCheckRoutes,
+  type IModalAddressRiskCheckParamList,
+} from '@onekeyhq/shared/src/routes/addressRiskCheck';
 import type { IAddressRiskCheckRecentItem } from '@onekeyhq/shared/types/addressRiskCheck';
+
 import useConfigurableChainSelector from '../../ChainSelector/hooks/useChainSelector';
 import { RecentCheckItem } from '../components/RecentCheckItem';
 import { useCheckAddressRisk } from '../hooks/useCheckAddressRisk';
 import { useRecentChecks } from '../hooks/useRecentChecks';
 import { ARC_TEXTS } from '../texts';
 
+import type { RouteProp } from '@react-navigation/core';
 
 function AddressRiskCheckInput() {
   const intl = useIntl();
@@ -37,6 +42,15 @@ function AddressRiskCheckInput() {
   const { getClipboard } = useClipboard();
   const { isChecking, checkRisk } = useCheckAddressRisk();
   const { items: recentChecks, networkNameMap } = useRecentChecks({ limit: 3 });
+
+  const route =
+    useRoute<
+      RouteProp<
+        IModalAddressRiskCheckParamList,
+        EModalAddressRiskCheckRoutes.AddressRiskCheckInput
+      >
+    >();
+  const activeNetworkId = route.params?.networkId;
 
   const [selectedNetwork, setSelectedNetwork] = useState<
     { id: string; name: string } | undefined
@@ -54,6 +68,25 @@ function AddressRiskCheckInput() {
     () => supportedNetworks.map((n) => n.networkId),
     [supportedNetworks],
   );
+
+  // Pre-select the active network once, if it is supported.
+  const didPreselectRef = useRef(false);
+  useEffect(() => {
+    if (
+      didPreselectRef.current ||
+      !activeNetworkId ||
+      !supportedNetworks.length
+    ) {
+      return;
+    }
+    const matched = supportedNetworks.find(
+      (n) => n.networkId === activeNetworkId,
+    );
+    if (matched) {
+      didPreselectRef.current = true;
+      setSelectedNetwork({ id: matched.networkId, name: matched.networkName });
+    }
+  }, [activeNetworkId, supportedNetworks]);
 
   const handleSelectNetwork = useCallback(() => {
     openChainSelector({

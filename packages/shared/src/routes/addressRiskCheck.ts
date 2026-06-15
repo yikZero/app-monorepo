@@ -7,7 +7,12 @@ export enum EModalAddressRiskCheckRoutes {
 }
 
 export type IModalAddressRiskCheckParamList = {
-  [EModalAddressRiskCheckRoutes.AddressRiskCheckInput]: undefined;
+  [EModalAddressRiskCheckRoutes.AddressRiskCheckInput]:
+    | {
+        // Active network when the modal was opened; pre-selected if supported.
+        networkId?: string;
+      }
+    | undefined;
   [EModalAddressRiskCheckRoutes.AddressRiskCheckResult]: {
     result: IAddressRiskCheckResult;
   };

@@ -1058,8 +1058,9 @@ const MoreActionWalletGrid = () => {
     }
     navigation.pushModal(EModalRoutes.AddressRiskCheckModal, {
       screen: EModalAddressRiskCheckRoutes.AddressRiskCheckInput,
+      params: { networkId: network?.id },
     });
-  }, [checkIsPrimeUser, navigation]);
+  }, [checkIsPrimeUser, navigation, network?.id]);
 
   const items = useMemo(() => {
     return [
