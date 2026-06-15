@@ -91,6 +91,9 @@ function AddressRiskCheckInput() {
   const handleSelectNetwork = useCallback(() => {
     openChainSelector({
       networkIds: supportedNetworkIds.length ? supportedNetworkIds : undefined,
+      // Only group networks once the list grows beyond 10; a short list reads
+      // better as a flat list.
+      grouped: supportedNetworkIds.length > 10,
       defaultNetworkId: selectedNetwork?.id,
       onSelect: (network) => {
         setSelectedNetwork({ id: network.id, name: network.name });
