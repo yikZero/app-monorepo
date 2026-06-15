@@ -1142,7 +1142,7 @@ const MoreActionWalletGrid = () => {
         ? undefined
         : {
             title: ARC_TEXTS.title,
-            icon: 'ShieldKeyholeOutline' as const,
+            icon: 'ChecklistBoxSearchOutline' as const,
             onPress: () => {
               if (!isPrimeUser) {
                 defaultLogger.prime.subscription.primeEntryClick({
