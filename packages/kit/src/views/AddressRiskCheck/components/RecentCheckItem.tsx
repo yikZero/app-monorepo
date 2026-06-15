@@ -45,7 +45,7 @@ export function RecentCheckItem({
       onPress={handlePress}
     >
       <AccountAvatar
-        size="small"
+        size="default"
         address={item.address}
         networkId={item.networkId}
       />
@@ -64,7 +64,9 @@ export function RecentCheckItem({
           </Badge.Text>
         </Badge>
         <SizableText size="$bodySm" color="$textSubdued">
-          {formatDate(new Date(item.checkedAt * 1000), { hideSeconds: true })}
+          {formatDate(new Date(item.checkedAt * 1000), {
+            formatTemplate: 'MMM d, yyyy HH:mm',
+          })}
         </SizableText>
       </YStack>
       {onDelete ? (

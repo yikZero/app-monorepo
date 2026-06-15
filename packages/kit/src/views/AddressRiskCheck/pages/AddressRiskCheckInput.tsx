@@ -168,23 +168,26 @@ function AddressRiskCheckInput() {
               <XStack
                 role="button"
                 alignItems="center"
-                gap="$2"
-                px="$3"
-                py="$3"
+                minHeight={46}
                 borderWidth={1}
                 borderColor="$borderStrong"
                 borderRadius="$3"
+                overflow="hidden"
                 hoverStyle={{ bg: '$bgHover' }}
                 pressStyle={{ bg: '$bgActive' }}
                 onPress={handleSelectNetwork}
               >
-                {selectedNetwork ? (
-                  <NetworkAvatar networkId={selectedNetwork.id} size="$6" />
-                ) : (
-                  <Icon name="GlobusOutline" size="$6" color="$iconSubdued" />
-                )}
+                <Stack pl="$3">
+                  {selectedNetwork ? (
+                    <NetworkAvatar networkId={selectedNetwork.id} size="$7" />
+                  ) : (
+                    <Icon name="GlobusOutline" size="$7" color="$iconSubdued" />
+                  )}
+                </Stack>
                 <SizableText
                   flex={1}
+                  px="$3.5"
+                  py="$2.5"
                   size="$bodyLg"
                   color={selectedNetwork ? '$text' : '$textSubdued'}
                   numberOfLines={1}
@@ -193,11 +196,13 @@ function AddressRiskCheckInput() {
                     ? selectedNetwork.name
                     : ARC_TEXTS.selectNetwork}
                 </SizableText>
-                <Icon
-                  name="ChevronGrabberVerOutline"
-                  size="$5"
-                  color="$iconSubdued"
-                />
+                <Stack px="$2.5">
+                  <Icon
+                    name="ChevronGrabberVerOutline"
+                    size="$6"
+                    color="$iconSubdued"
+                  />
+                </Stack>
               </XStack>
             </YStack>
 
