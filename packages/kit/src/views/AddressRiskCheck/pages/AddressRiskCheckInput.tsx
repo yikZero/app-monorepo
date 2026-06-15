@@ -22,9 +22,13 @@ import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
 
+import type { IAddressRiskCheckRecentItem } from '@onekeyhq/shared/types/addressRiskCheck';
 import useConfigurableChainSelector from '../../ChainSelector/hooks/useChainSelector';
+import { RecentCheckItem } from '../components/RecentCheckItem';
 import { useCheckAddressRisk } from '../hooks/useCheckAddressRisk';
+import { useRecentChecks } from '../hooks/useRecentChecks';
 import { ARC_TEXTS } from '../texts';
+
 
 function AddressRiskCheckInput() {
   const intl = useIntl();
@@ -32,6 +36,7 @@ function AddressRiskCheckInput() {
   const openChainSelector = useConfigurableChainSelector();
   const { getClipboard } = useClipboard();
   const { isChecking, checkRisk } = useCheckAddressRisk();
+  const { items: recentChecks, networkNameMap } = useRecentChecks({ limit: 3 });
 
   const [selectedNetwork, setSelectedNetwork] = useState<
     { id: string; name: string } | undefined
@@ -77,6 +82,13 @@ function AddressRiskCheckInput() {
   const handleOpenHistory = useCallback(() => {
     navigation.push(EModalAddressRiskCheckRoutes.AddressRiskCheckHistory);
   }, [navigation]);
+
+  const handleRecentPress = useCallback(
+    (item: IAddressRiskCheckRecentItem) => {
+      void checkRisk({ networkId: item.networkId, address: item.address });
+    },
+    [checkRisk],
+  );
 
   const handleCheck = useCallback(async () => {
     const networkId = selectedNetwork?.id;
@@ -190,6 +202,32 @@ function AddressRiskCheckInput() {
               ) : null}
             </YStack>
           </YStack>
+
+          {recentChecks.length ? (
+            <YStack pb="$4">
+              <XStack px="$5" py="$2" ai="center" jc="space-between">
+                <SizableText size="$headingSm" color="$textSubdued">
+                  {ARC_TEXTS.recentChecks}
+                </SizableText>
+                <SizableText
+                  size="$bodyMdMedium"
+                  color="$textSubdued"
+                  cursor="pointer"
+                  onPress={handleOpenHistory}
+                >
+                  {intl.formatMessage({ id: ETranslations.global_history })}
+                </SizableText>
+              </XStack>
+              {recentChecks.map((item) => (
+                <RecentCheckItem
+                  key={`${item.networkId}_${item.address}`}
+                  item={item}
+                  networkName={networkNameMap[item.networkId]}
+                  onPress={handleRecentPress}
+                />
+              ))}
+            </YStack>
+          ) : null}
         </ScrollView>
       </Page.Body>
       <Page.Footer

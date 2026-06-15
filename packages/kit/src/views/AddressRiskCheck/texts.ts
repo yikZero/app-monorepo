@@ -16,6 +16,9 @@ export const ARC_TEXTS = {
   invalidAddress: 'Invalid address',
   recentChecks: 'Recent checks',
   historyTitle: 'Risk check history',
+  historyEmptyTitle: 'No checks yet',
+  historyEmptyDescription:
+    'Addresses you check will appear here, saved only on this device.',
   clearHistoryTitle: 'Clear all history?',
   clearHistoryDescription:
     'This removes all locally saved address risk checks from this device.',

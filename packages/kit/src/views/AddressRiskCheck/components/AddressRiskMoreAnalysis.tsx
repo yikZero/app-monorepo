@@ -15,8 +15,8 @@ import {
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import type { IAddressRiskCheckDetails } from '@onekeyhq/shared/types/addressRiskCheck';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
+import type { IAddressRiskCheckDetails } from '@onekeyhq/shared/types/addressRiskCheck';
 
 import { ARC_TEXTS } from '../texts';
 
@@ -205,7 +205,9 @@ export function AddressRiskMoreAnalysis({
 }) {
   const intl = useIntl();
   const [isLoading, setIsLoading] = useState(false);
-  const [details, setDetails] = useState<IAddressRiskCheckDetails | undefined>();
+  const [details, setDetails] = useState<
+    IAddressRiskCheckDetails | undefined
+  >();
 
   const handleLoad = useCallback(async () => {
     setIsLoading(true);
