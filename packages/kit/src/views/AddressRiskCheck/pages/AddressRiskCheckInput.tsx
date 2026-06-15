@@ -19,6 +19,7 @@ import HeaderIconButton from '@onekeyhq/components/src/layouts/Navigation/Header
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useDebounce } from '@onekeyhq/kit/src/hooks/useDebounce';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import {
@@ -56,7 +57,10 @@ function AddressRiskCheckInput() {
     { id: string; name: string } | undefined
   >();
   const [address, setAddress] = useState('');
-  const [addressError, setAddressError] = useState('');
+
+  const networkId = selectedNetwork?.id;
+  const trimmedAddress = address.trim();
+  const debouncedAddress = useDebounce(trimmedAddress, 400);
 
   const { result: supportedNetworks } = usePromiseResult(
     () => backgroundApiProxy.serviceAddressRiskCheck.apiGetSupportedNetworks(),
@@ -68,6 +72,37 @@ function AddressRiskCheckInput() {
     () => supportedNetworks.map((n) => n.networkId),
     [supportedNetworks],
   );
+
+  // Real-time, debounced address validation against the selected network.
+  const { result: validateStatus, isLoading: isValidating } = usePromiseResult(
+    async () => {
+      if (!networkId || !debouncedAddress) {
+        return 'idle' as const;
+      }
+      return backgroundApiProxy.serviceValidator.validateAddress({
+        networkId,
+        address: debouncedAddress,
+      });
+    },
+    [networkId, debouncedAddress],
+    { initResult: 'idle' as const, watchLoading: true },
+  );
+
+  // Pending while the debounce hasn't caught up with the latest input.
+  const isPendingValidation = trimmedAddress !== debouncedAddress;
+  // Only surface the error once validation has settled, so it doesn't flash a
+  // stale "invalid" while the user is still editing.
+  const isAddressInvalid =
+    Boolean(trimmedAddress) &&
+    !isPendingValidation &&
+    !isValidating &&
+    validateStatus === 'invalid';
+  const canCheck =
+    Boolean(networkId) &&
+    Boolean(trimmedAddress) &&
+    !isPendingValidation &&
+    !isValidating &&
+    (validateStatus === 'valid' || validateStatus === 'unknown');
 
   // Pre-select the active network once, if it is supported.
   const didPreselectRef = useRef(false);
@@ -97,7 +132,6 @@ function AddressRiskCheckInput() {
       defaultNetworkId: selectedNetwork?.id,
       onSelect: (network) => {
         setSelectedNetwork({ id: network.id, name: network.name });
-        setAddressError('');
       },
     });
   }, [openChainSelector, supportedNetworkIds, selectedNetwork?.id]);
@@ -106,13 +140,11 @@ function AddressRiskCheckInput() {
     const text = await getClipboard();
     if (text) {
       setAddress(text);
-      setAddressError('');
     }
   }, [getClipboard]);
 
   const handleChangeAddress = useCallback((text: string) => {
     setAddress(text);
-    setAddressError('');
   }, []);
 
   const handleOpenHistory = useCallback(() => {
@@ -126,23 +158,12 @@ function AddressRiskCheckInput() {
     [checkRisk],
   );
 
-  const handleCheck = useCallback(async () => {
-    const networkId = selectedNetwork?.id;
-    const trimmed = address.trim();
-    if (!networkId || !trimmed) {
-      setAddressError(ARC_TEXTS.invalidAddress);
+  const handleCheck = useCallback(() => {
+    if (!networkId || !canCheck) {
       return;
     }
-    const status = await backgroundApiProxy.serviceValidator.validateAddress({
-      networkId,
-      address: trimmed,
-    });
-    if (status === 'invalid') {
-      setAddressError(ARC_TEXTS.invalidAddress);
-      return;
-    }
-    await checkRisk({ networkId, address: trimmed });
-  }, [selectedNetwork?.id, address, checkRisk]);
+    void checkRisk({ networkId, address: trimmedAddress });
+  }, [networkId, canCheck, trimmedAddress, checkRisk]);
 
   const headerRight = useCallback(
     () => (
@@ -219,7 +240,7 @@ function AddressRiskCheckInput() {
                   value={address}
                   onChangeText={handleChangeAddress}
                   placeholder={ARC_TEXTS.enterAddress}
-                  error={Boolean(addressError)}
+                  error={isAddressInvalid}
                   numberOfLines={3}
                   pb="$12"
                 />
@@ -236,9 +257,9 @@ function AddressRiskCheckInput() {
                   {intl.formatMessage({ id: ETranslations.menu_paste })}
                 </Button>
               </Stack>
-              {addressError ? (
+              {isAddressInvalid ? (
                 <SizableText size="$bodyMd" color="$textCritical">
-                  {addressError}
+                  {ARC_TEXTS.invalidAddress}
                 </SizableText>
               ) : null}
             </YStack>
@@ -273,7 +294,7 @@ function AddressRiskCheckInput() {
       </Page.Body>
       <Page.Footer
         onConfirmText={ARC_TEXTS.checkRisk}
-        confirmButtonProps={{ loading: isChecking }}
+        confirmButtonProps={{ loading: isChecking, disabled: !canCheck }}
         onConfirm={handleCheck}
       />
     </Page>
