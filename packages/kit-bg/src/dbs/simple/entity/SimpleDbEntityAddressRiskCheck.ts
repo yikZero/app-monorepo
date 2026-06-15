@@ -32,18 +32,24 @@ export class SimpleDbEntityAddressRiskCheck extends SimpleDbEntityBase<IAddressR
     const rawData = await this.getRawData();
     const recentChecks = rawData?.recentChecks ?? {};
     return Object.values(recentChecks)
-      .toSorted((a, b) => b.checkedAt - a.checkedAt)
+      .toSorted((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, limit);
   }
 
   @backgroundMethod()
-  async addCheck(item: IAddressRiskCheckRecentItem) {
+  async addCheck(item: Omit<IAddressRiskCheckRecentItem, 'updatedAt'>) {
+    // Stamp the local query time so re-checking an existing address bumps it
+    // back to the top of the list, independent of the server's checkedAt.
+    const record: IAddressRiskCheckRecentItem = {
+      ...item,
+      updatedAt: Date.now(),
+    };
     await this.setRawData((rawData) => {
       const recentChecks = rawData?.recentChecks ?? {};
-      recentChecks[buildKey(item)] = item;
-      // Trim to the most recent N records by checkedAt.
+      recentChecks[buildKey(record)] = record;
+      // Trim to the most recent N records by local query time.
       const trimmed = Object.entries(recentChecks)
-        .toSorted(([, a], [, b]) => b.checkedAt - a.checkedAt)
+        .toSorted(([, a], [, b]) => b.updatedAt - a.updatedAt)
         .slice(0, RECENT_CHECKS_CAP);
       return { recentChecks: Object.fromEntries(trimmed) };
     });

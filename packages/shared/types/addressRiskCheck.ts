@@ -66,5 +66,9 @@ export type IAddressRiskCheckRecentItem = {
   networkId: string;
   address: string;
   level: EKytRiskLevel;
+  // Server-reported check time (may be a cached timestamp); shown in the row.
   checkedAt: number;
+  // Local timestamp of the user's most recent query; used for list ordering so
+  // re-checking an address moves it back to the top regardless of server cache.
+  updatedAt: number;
 };
