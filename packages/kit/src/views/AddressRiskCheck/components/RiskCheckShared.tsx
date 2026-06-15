@@ -42,18 +42,6 @@ export const LEVEL_TITLE: Record<EKytRiskLevel, ETranslations> = {
   [EKytRiskLevel.Severe]: ETranslations.kyt_risk_level_severe__title,
 };
 
-// Big result heading (e.g. "Severe risk"). Reuses the receive-KYT detected
-// titles; the address-context description lives in ARC_TEXTS.levelDescription.
-export const LEVEL_HEADING: Record<EKytRiskLevel, ETranslations> = {
-  [EKytRiskLevel.None]: ETranslations.kyt_no_significant_risk_detected__title,
-  [EKytRiskLevel.Checking]: ETranslations.kyt_risk_level_checking__title,
-  [EKytRiskLevel.Failed]: ETranslations.kyt_risk_check_failed__title,
-  [EKytRiskLevel.Low]: ETranslations.kyt_low_risk_detected__title,
-  [EKytRiskLevel.Moderate]: ETranslations.kyt_moderate_risk_detected__title,
-  [EKytRiskLevel.High]: ETranslations.kyt_high_risk_detected__title,
-  [EKytRiskLevel.Severe]: ETranslations.kyt_severe_risk_detected__title,
-};
-
 export function CardRow({
   label,
   children,

@@ -29,7 +29,6 @@ import { openUrlExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
 import { AddressRiskMoreAnalysis } from '../components/AddressRiskMoreAnalysis';
 import {
   CardRow,
-  LEVEL_HEADING,
   LEVEL_TEXT_COLOR,
   LEVEL_TITLE,
   RiskFactorCard,
@@ -90,7 +89,7 @@ function AddressRiskCheckResult() {
                 size="$heading2xl"
                 color={LEVEL_TEXT_COLOR[result.level] ?? '$text'}
               >
-                {intl.formatMessage({ id: LEVEL_HEADING[result.level] })}
+                {ARC_TEXTS.levelHeading[result.level] ?? ''}
               </SizableText>
               <SizableText size="$bodyLg" color="$textSubdued">
                 {ARC_TEXTS.levelDescription[result.level] ?? ''}
@@ -120,7 +119,7 @@ function AddressRiskCheckResult() {
                 label={intl.formatMessage({ id: ETranslations.global_network })}
               >
                 <XStack ai="center" gap="$1.5">
-                  <NetworkAvatar networkId={result.networkId} size="$5" />
+                  <NetworkAvatar networkId={result.networkId} size="$4" />
                   <SizableText size="$bodyMdMedium">
                     {network?.name ?? ''}
                   </SizableText>

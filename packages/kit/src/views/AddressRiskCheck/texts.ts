@@ -45,6 +45,14 @@ export const ARC_TEXTS = {
     theft: 'Theft',
     laundering: 'Laundering',
   } as Record<string, string>,
+  // Address-context result heading (figure 5/6 wording).
+  levelHeading: {
+    none: 'No significant risk detected',
+    low: 'Low risk detected',
+    moderate: 'Moderate risk detected',
+    high: 'High risk detected',
+    severe: 'Severe risk detected',
+  } as Record<string, string>,
   // Address-context level descriptions (figure 5/6 wording).
   levelDescription: {
     none: 'No significant risk was found for this address on the selected network.',
