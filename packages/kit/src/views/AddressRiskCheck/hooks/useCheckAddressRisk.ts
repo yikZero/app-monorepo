@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
@@ -16,6 +16,9 @@ export function useCheckAddressRisk() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const [isChecking, setIsChecking] = useState(false);
+  // Synchronous guard so overlapping taps (footer button + recent/history rows)
+  // can't fire concurrent checks and race a stale result onto the stack.
+  const isCheckingRef = useRef(false);
 
   const checkRisk = useCallback(
     async ({
@@ -25,6 +28,10 @@ export function useCheckAddressRisk() {
       networkId: string;
       address: string;
     }): Promise<IAddressRiskCheckResult | undefined> => {
+      if (isCheckingRef.current) {
+        return undefined;
+      }
+      isCheckingRef.current = true;
       setIsChecking(true);
       try {
         const result =
@@ -32,12 +39,18 @@ export function useCheckAddressRisk() {
             networkId,
             address,
           });
-        await backgroundApiProxy.simpleDb.addressRiskCheck.addCheck({
-          networkId: result.networkId,
-          address: result.address,
-          level: result.level,
-          checkedAt: result.checkedAt,
-        });
+        // Best-effort local history write — a storage failure must never hide a
+        // successful risk result from the user.
+        try {
+          await backgroundApiProxy.simpleDb.addressRiskCheck.addCheck({
+            networkId: result.networkId,
+            address: result.address,
+            level: result.level,
+            checkedAt: result.checkedAt,
+          });
+        } catch {
+          // ignore local persistence failures
+        }
         navigation.push(EModalAddressRiskCheckRoutes.AddressRiskCheckResult, {
           result,
         });
@@ -56,6 +69,7 @@ export function useCheckAddressRisk() {
         return undefined;
       } finally {
         setIsChecking(false);
+        isCheckingRef.current = false;
       }
     },
     [intl, navigation],

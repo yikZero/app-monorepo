@@ -9,6 +9,7 @@ import {
   Page,
   ScrollView,
   SizableText,
+  Spinner,
   Stack,
   TextArea,
   XStack,
@@ -62,10 +63,14 @@ function AddressRiskCheckInput() {
   const trimmedAddress = address.trim();
   const debouncedAddress = useDebounce(trimmedAddress, 400);
 
-  const { result: supportedNetworks } = usePromiseResult(
+  const {
+    result: supportedNetworks,
+    isLoading: isLoadingNetworks,
+    run: reloadSupportedNetworks,
+  } = usePromiseResult(
     () => backgroundApiProxy.serviceAddressRiskCheck.apiGetSupportedNetworks(),
     [],
-    { initResult: [] },
+    { initResult: [], watchLoading: true },
   );
 
   const supportedNetworkIds = useMemo(
@@ -124,8 +129,17 @@ function AddressRiskCheckInput() {
   }, [activeNetworkId, supportedNetworks]);
 
   const handleSelectNetwork = useCallback(() => {
+    // Never fall back to "all networks" when the supported list isn't ready —
+    // that would let the user pick an unsupported network and only fail later at
+    // the check call. Retry a failed/empty load instead of opening the selector.
+    if (!supportedNetworkIds.length) {
+      if (!isLoadingNetworks) {
+        void reloadSupportedNetworks();
+      }
+      return;
+    }
     openChainSelector({
-      networkIds: supportedNetworkIds.length ? supportedNetworkIds : undefined,
+      networkIds: supportedNetworkIds,
       // Only group networks once the list grows beyond 10; a short list reads
       // better as a flat list.
       grouped: supportedNetworkIds.length > 10,
@@ -134,7 +148,13 @@ function AddressRiskCheckInput() {
         setSelectedNetwork({ id: network.id, name: network.name });
       },
     });
-  }, [openChainSelector, supportedNetworkIds, selectedNetwork?.id]);
+  }, [
+    openChainSelector,
+    supportedNetworkIds,
+    selectedNetwork?.id,
+    isLoadingNetworks,
+    reloadSupportedNetworks,
+  ]);
 
   const handlePaste = useCallback(async () => {
     const text = await getClipboard();
@@ -221,11 +241,15 @@ function AddressRiskCheckInput() {
                     : ARC_TEXTS.selectNetwork}
                 </SizableText>
                 <Stack px="$2.5">
-                  <Icon
-                    name="ChevronGrabberVerOutline"
-                    size="$6"
-                    color="$iconSubdued"
-                  />
+                  {isLoadingNetworks && !supportedNetworkIds.length ? (
+                    <Spinner size="small" />
+                  ) : (
+                    <Icon
+                      name="ChevronGrabberVerOutline"
+                      size="$6"
+                      color="$iconSubdued"
+                    />
+                  )}
                 </Stack>
               </XStack>
             </YStack>

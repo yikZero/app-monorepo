@@ -26,6 +26,7 @@ import type {
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 import { openUrlExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
+import uriUtils from '@onekeyhq/shared/src/utils/uriUtils';
 
 import { AddressRiskMoreAnalysis } from '../components/AddressRiskMoreAnalysis';
 import {
@@ -69,11 +70,21 @@ function AddressRiskCheckResult() {
   const shortAddress = accountUtils.shortenAddress({ address: result.address });
   const checkedAtText = formatDate(new Date(result.checkedAt * 1000));
 
+  // Only trust HTTPS report links from the backend — defense in depth against a
+  // tampered/compromised response opening a deep link or phishing page.
+  const canViewReport = useMemo(
+    () =>
+      Boolean(result.reportUrl) &&
+      uriUtils.parseUrl(result.reportUrl ?? '')?.urlSchema === 'https',
+    [result.reportUrl],
+  );
+
   const handleViewReport = useCallback(() => {
-    if (result.reportUrl) {
-      openUrlExternal(result.reportUrl);
+    if (!canViewReport || !result.reportUrl) {
+      return;
     }
-  }, [result.reportUrl]);
+    openUrlExternal(result.reportUrl);
+  }, [canViewReport, result.reportUrl]);
 
   const handleCopyAddress = useCallback(() => {
     copyText(result.address);
@@ -185,7 +196,7 @@ function AddressRiskCheckResult() {
               </YStack>
             ) : null}
 
-            {result.reportUrl ? (
+            {canViewReport ? (
               <Button
                 testID="address-risk-check-view-report"
                 variant="secondary"

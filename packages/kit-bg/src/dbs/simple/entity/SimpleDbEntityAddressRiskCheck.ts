@@ -1,4 +1,5 @@
 import { backgroundMethod } from '@onekeyhq/shared/src/background/backgroundDecorators';
+import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import type { IAddressRiskCheckRecentItem } from '@onekeyhq/shared/types/addressRiskCheck';
 
 import { SimpleDbEntityBase } from '../base/SimpleDbEntityBase';
@@ -17,7 +18,13 @@ function buildKey({
   networkId: string;
   address: string;
 }) {
-  return `${networkId}_${address.toLowerCase()}`;
+  // EVM addresses are case-insensitive (checksum casing is cosmetic), so
+  // normalize them to dedupe re-checks of the same address. Other chains
+  // (Solana, Tron, Cardano, …) are case-sensitive — keep the original casing.
+  const normalizedAddress = networkUtils.isEvmNetwork({ networkId })
+    ? address.toLowerCase()
+    : address;
+  return `${networkId}_${normalizedAddress}`;
 }
 
 export class SimpleDbEntityAddressRiskCheck extends SimpleDbEntityBase<IAddressRiskCheckDBStruct> {
