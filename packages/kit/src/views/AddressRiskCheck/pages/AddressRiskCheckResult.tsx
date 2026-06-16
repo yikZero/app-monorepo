@@ -38,28 +38,38 @@ import {
 
 import type { RouteProp } from '@react-navigation/core';
 
-const ADDRESS_RISK_LEVEL_TITLE: Record<EKytRiskLevel, ETranslations> = {
-  [EKytRiskLevel.None]: ETranslations.address_risk_check_level_none__title,
-  [EKytRiskLevel.Checking]:
-    ETranslations.address_risk_check_level_checking__title,
-  [EKytRiskLevel.Failed]: ETranslations.address_risk_check_level_failed__title,
-  [EKytRiskLevel.Low]: ETranslations.address_risk_check_level_low__title,
-  [EKytRiskLevel.Moderate]:
-    ETranslations.address_risk_check_level_moderate__title,
-  [EKytRiskLevel.High]: ETranslations.address_risk_check_level_high__title,
-  [EKytRiskLevel.Severe]: ETranslations.address_risk_check_level_severe__title,
-};
-
-const ADDRESS_RISK_LEVEL_DESCRIPTION: Record<EKytRiskLevel, ETranslations> = {
-  [EKytRiskLevel.None]: ETranslations.address_risk_check_level_none__desc,
-  [EKytRiskLevel.Checking]:
-    ETranslations.address_risk_check_level_checking__desc,
-  [EKytRiskLevel.Failed]: ETranslations.address_risk_check_level_failed__desc,
-  [EKytRiskLevel.Low]: ETranslations.address_risk_check_level_low__desc,
-  [EKytRiskLevel.Moderate]:
-    ETranslations.address_risk_check_level_moderate__desc,
-  [EKytRiskLevel.High]: ETranslations.address_risk_check_level_high__desc,
-  [EKytRiskLevel.Severe]: ETranslations.address_risk_check_level_severe__desc,
+const ADDRESS_RISK_LEVEL_CONTENT: Record<
+  EKytRiskLevel,
+  { title: ETranslations; description: ETranslations }
+> = {
+  [EKytRiskLevel.None]: {
+    title: ETranslations.address_risk_check_level_none__title,
+    description: ETranslations.address_risk_check_level_none__desc,
+  },
+  [EKytRiskLevel.Checking]: {
+    title: ETranslations.address_risk_check_level_checking__title,
+    description: ETranslations.address_risk_check_level_checking__desc,
+  },
+  [EKytRiskLevel.Failed]: {
+    title: ETranslations.address_risk_check_level_failed__title,
+    description: ETranslations.address_risk_check_level_failed__desc,
+  },
+  [EKytRiskLevel.Low]: {
+    title: ETranslations.address_risk_check_level_low__title,
+    description: ETranslations.address_risk_check_level_low__desc,
+  },
+  [EKytRiskLevel.Moderate]: {
+    title: ETranslations.address_risk_check_level_moderate__title,
+    description: ETranslations.address_risk_check_level_moderate__desc,
+  },
+  [EKytRiskLevel.High]: {
+    title: ETranslations.address_risk_check_level_high__title,
+    description: ETranslations.address_risk_check_level_high__desc,
+  },
+  [EKytRiskLevel.Severe]: {
+    title: ETranslations.address_risk_check_level_severe__title,
+    description: ETranslations.address_risk_check_level_severe__desc,
+  },
 };
 
 function AddressRiskCheckResult() {
@@ -86,6 +96,7 @@ function AddressRiskCheckResult() {
 
   const shortAddress = accountUtils.shortenAddress({ address: result.address });
   const checkedAtText = formatDate(new Date(result.checkedAt * 1000));
+  const levelContent = ADDRESS_RISK_LEVEL_CONTENT[result.level];
   const visibleFactors = showAllFactors
     ? result.reasons
     : result.reasons.slice(0, 3);
@@ -129,7 +140,7 @@ function AddressRiskCheckResult() {
                   numberOfLines={2}
                 >
                   {intl.formatMessage({
-                    id: ADDRESS_RISK_LEVEL_TITLE[result.level],
+                    id: levelContent.title,
                   })}
                 </SizableText>
                 <SizableText
@@ -138,7 +149,7 @@ function AddressRiskCheckResult() {
                   numberOfLines={2}
                 >
                   {intl.formatMessage({
-                    id: ADDRESS_RISK_LEVEL_DESCRIPTION[result.level],
+                    id: levelContent.description,
                   })}
                 </SizableText>
               </YStack>
