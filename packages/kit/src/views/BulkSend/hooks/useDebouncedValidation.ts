@@ -29,13 +29,18 @@ export function useDebouncedValidation<T extends string>(
     }
   }, []);
 
-  // Invalidate pending work when the validation context changes or unmounts.
+  useEffect(() => {
+    validationVersionRef.current += 1;
+    cancel(false);
+  }, [cancel, validateFn, delay]);
+
+  // Clean up pending validation on unmount.
   useEffect(
     () => () => {
       validationVersionRef.current += 1;
-      cancel(true);
+      cancel();
     },
-    [cancel, validateFn, delay],
+    [cancel],
   );
 
   const validate = useCallback(

@@ -3921,7 +3921,6 @@ export enum ETranslations {
   referral_web_landing_step3_perps_cta = 'referral.web_landing_step3_perps_cta',
   referral_web_landing_step3_perps_title = 'referral.web_landing_step3_perps_title',
   referral_web_landing_subtitle = 'referral.web_landing_subtitle',
-  referral_web_landing_subtitle_perps = 'referral.web_landing_subtitle_perps',
   referral_web_landing_title_defi = 'referral.web_landing_title_defi',
   referral_web_landing_title_perps = 'referral.web_landing_title_perps',
   referral_accept = 'referral.accept',
