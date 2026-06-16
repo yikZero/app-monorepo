@@ -18,7 +18,11 @@ function AddressRiskCheckHistory() {
 
   const handlePress = useCallback(
     (item: IAddressRiskCheckRecentItem) => {
-      void checkRisk({ networkId: item.networkId, address: item.address });
+      void checkRisk({
+        networkId: item.networkId,
+        address: item.address,
+        entryPoint: 'historyList',
+      });
     },
     [checkRisk],
   );
