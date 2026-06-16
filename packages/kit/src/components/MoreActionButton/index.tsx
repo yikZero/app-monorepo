@@ -78,7 +78,6 @@ import { useOnLock } from '../../hooks/useOnLock';
 import { usePromiseResult } from '../../hooks/usePromiseResult';
 import { useReferFriends } from '../../hooks/useReferFriends';
 import { useThemeVariant } from '../../hooks/useThemeVariant';
-import { ARC_TEXTS } from '../../views/AddressRiskCheck/texts';
 import { useBulkSendModeDialog } from '../../views/BulkSend/hooks/useBulkSendModeDialog';
 import { useNavigateToBulkSend } from '../../views/BulkSend/hooks/useNavigateToBulkSend';
 import { useDeviceManagerNavigation } from '../../views/DeviceManagement/hooks/useDeviceManagerNavigation';
@@ -1142,7 +1141,9 @@ const MoreActionWalletGrid = () => {
       platformEnv.isWebDappMode
         ? undefined
         : {
-            title: ARC_TEXTS.title,
+            title: intl.formatMessage({
+              id: ETranslations.address_risk_check__title,
+            }),
             icon: 'ChecklistBoxSearchOutline' as const,
             onPress: () => {
               if (!isPrimeUser) {
