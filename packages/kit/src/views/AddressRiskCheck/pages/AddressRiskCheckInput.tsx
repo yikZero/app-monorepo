@@ -33,7 +33,6 @@ import useConfigurableChainSelector from '../../ChainSelector/hooks/useChainSele
 import { RecentCheckItem } from '../components/RecentCheckItem';
 import { useCheckAddressRisk } from '../hooks/useCheckAddressRisk';
 import { useRecentChecks } from '../hooks/useRecentChecks';
-import { ARC_TEXTS } from '../texts';
 
 import type { RouteProp } from '@react-navigation/core';
 
@@ -187,7 +186,11 @@ function AddressRiskCheckInput() {
 
   const handleRecentPress = useCallback(
     (item: IAddressRiskCheckRecentItem) => {
-      void checkRisk({ networkId: item.networkId, address: item.address });
+      void checkRisk({
+        networkId: item.networkId,
+        address: item.address,
+        entryPoint: 'inputRecentList',
+      });
     },
     [checkRisk],
   );
@@ -196,7 +199,11 @@ function AddressRiskCheckInput() {
     if (!networkId || !canCheck) {
       return;
     }
-    void checkRisk({ networkId, address: trimmedAddress });
+    void checkRisk({
+      networkId,
+      address: trimmedAddress,
+      entryPoint: 'inputManual',
+    });
   }, [networkId, canCheck, trimmedAddress, checkRisk]);
 
   const headerRight = useCallback(
@@ -211,12 +218,19 @@ function AddressRiskCheckInput() {
 
   return (
     <Page>
-      <Page.Header title={ARC_TEXTS.title} headerRight={headerRight} />
+      <Page.Header
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check__title,
+        })}
+        headerRight={headerRight}
+      />
       <Page.Body>
         <ScrollView>
           <YStack px="$5" py="$4" gap="$5">
             <SizableText size="$bodyMd" color="$textSubdued">
-              {ARC_TEXTS.intro}
+              {intl.formatMessage({
+                id: ETranslations.address_risk_check_intro__desc,
+              })}
             </SizableText>
 
             <YStack gap="$1.5">
@@ -252,7 +266,9 @@ function AddressRiskCheckInput() {
                 >
                   {selectedNetwork
                     ? selectedNetwork.name
-                    : ARC_TEXTS.selectNetwork}
+                    : intl.formatMessage({
+                        id: ETranslations.global_select_network,
+                      })}
                 </SizableText>
                 <Stack px="$2.5">
                   {isLoadingNetworks && !supportedNetworkIds.length ? (
@@ -277,7 +293,9 @@ function AddressRiskCheckInput() {
                   testID="address-risk-check-address-input"
                   value={address}
                   onChangeText={setAddress}
-                  placeholder={ARC_TEXTS.enterAddress}
+                  placeholder={intl.formatMessage({
+                    id: ETranslations.wallet_track_any_address_placeholder,
+                  })}
                   error={isAddressInvalid}
                   numberOfLines={3}
                   pb="$12"
@@ -297,7 +315,9 @@ function AddressRiskCheckInput() {
               </Stack>
               {isAddressInvalid ? (
                 <SizableText size="$bodyMd" color="$textCritical">
-                  {ARC_TEXTS.invalidAddress}
+                  {intl.formatMessage({
+                    id: ETranslations.form_address_error_invalid,
+                  })}
                 </SizableText>
               ) : null}
             </YStack>
@@ -307,12 +327,15 @@ function AddressRiskCheckInput() {
             <YStack pb="$4">
               <XStack px="$5" py="$2" ai="center" jc="space-between">
                 <SizableText size="$headingSm" color="$textSubdued">
-                  {ARC_TEXTS.recentChecks}
+                  {intl.formatMessage({
+                    id: ETranslations.address_risk_check_recent_checks__title,
+                  })}
                 </SizableText>
                 <SizableText
                   size="$bodyMdMedium"
                   color="$textSubdued"
-                  cursor="pointer"
+                  cursor="default"
+                  userSelect="none"
                   onPress={handleOpenHistory}
                 >
                   {intl.formatMessage({ id: ETranslations.global_history })}
@@ -331,7 +354,9 @@ function AddressRiskCheckInput() {
         </ScrollView>
       </Page.Body>
       <Page.Footer
-        onConfirmText={ARC_TEXTS.checkRisk}
+        onConfirmText={intl.formatMessage({
+          id: ETranslations.address_risk_check_check_risk__action,
+        })}
         confirmButtonProps={{ loading: isChecking, disabled: !canCheck }}
         onConfirm={handleCheck}
       />

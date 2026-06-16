@@ -20,8 +20,6 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { formatDate } from '@onekeyhq/shared/src/utils/dateUtils';
 import type { IAddressRiskCheckDetails } from '@onekeyhq/shared/types/addressRiskCheck';
 
-import { ARC_TEXTS } from '../texts';
-
 function formatActiveDate(seconds: number) {
   if (!seconds) {
     return '-';
@@ -107,11 +105,21 @@ function ActivityCell({
   );
 }
 
+const RISK_INTELLIGENCE_CATEGORY_TITLE: Partial<
+  Record<keyof IAddressRiskCheckDetails['riskIntelligence'], ETranslations>
+> = {
+  phishing: ETranslations.address_risk_check_phishing__title,
+  ransom: ETranslations.address_risk_check_ransom__title,
+  theft: ETranslations.address_risk_check_theft__title,
+  laundering: ETranslations.address_risk_check_laundering__title,
+};
+
 function AddressActivityBlock({
   activity,
 }: {
   activity: IAddressRiskCheckDetails['activity'];
 }) {
+  const intl = useIntl();
   const total = activity.receivedTxs + activity.sentTxs;
   const receivedPercent = total > 0 ? (activity.receivedTxs / total) * 100 : 0;
   const sentPercent = total > 0 ? 100 - receivedPercent : 0;
@@ -121,20 +129,29 @@ function AddressActivityBlock({
   return (
     <YStack gap="$2.5">
       <SectionHeader
-        title={ARC_TEXTS.addressActivity}
-        extra={ARC_TEXTS.txsLabel(activity.totalTxs)}
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check_address_activity__title,
+        })}
+        extra={intl.formatMessage(
+          { id: ETranslations.address_risk_check_txs__msg },
+          { count: activity.totalTxs },
+        )}
       />
       <Card>
         <XStack ai="stretch">
           <ActivityCell
             withDivider
             icon="CalendarOutline"
-            label={ARC_TEXTS.firstActive}
+            label={intl.formatMessage({
+              id: ETranslations.address_risk_check_first_active__title,
+            })}
             value={formatActiveDate(activity.firstActiveAt)}
           />
           <ActivityCell
             icon="CalendarOutline"
-            label={ARC_TEXTS.lastActive}
+            label={intl.formatMessage({
+              id: ETranslations.address_risk_check_last_active__title,
+            })}
             value={formatActiveDate(activity.lastActiveAt)}
           />
         </XStack>
@@ -143,12 +160,14 @@ function AddressActivityBlock({
           <ActivityCell
             withDivider
             icon="SwitchVerOutline"
-            label={ARC_TEXTS.receivedSent}
+            label={intl.formatMessage({
+              id: ETranslations.address_risk_check_received_sent__title,
+            })}
             value={`${activity.receivedTxs} / ${activity.sentTxs}`}
           />
           <ActivityCell
             icon="CoinsOutline"
-            label="Balance"
+            label={intl.formatMessage({ id: ETranslations.global_balance })}
             value={`${activity.balance} ${activity.balanceSymbol}`}
           />
         </XStack>
@@ -156,10 +175,14 @@ function AddressActivityBlock({
         <YStack px="$3" pt="$2.5" pb="$4" gap="$0.5">
           <XStack jc="space-between">
             <SizableText size="$bodySmMedium" color="$textSuccess">
-              {`${ARC_TEXTS.received} ${receivedPercentText}`}
+              {`${intl.formatMessage({
+                id: ETranslations.address_risk_check_received__title,
+              })} ${receivedPercentText}`}
             </SizableText>
             <SizableText size="$bodySmMedium" color="$textInfo">
-              {`${ARC_TEXTS.sent} ${sentPercentText}`}
+              {`${intl.formatMessage({
+                id: ETranslations.address_risk_check_sent__title,
+              })} ${sentPercentText}`}
             </SizableText>
           </XStack>
           <XStack height={6} gap="$0.5">
@@ -205,6 +228,7 @@ function PlatformProfileBlock({
 }: {
   platformProfile: IAddressRiskCheckDetails['platformProfile'];
 }) {
+  const intl = useIntl();
   const { exchanges, dex, mixer, nft } = platformProfile;
   const noOtherSignals =
     dex.count === 0 && mixer.count === 0 && nft.count === 0;
@@ -212,8 +236,13 @@ function PlatformProfileBlock({
   return (
     <YStack gap="$2.5">
       <SectionHeader
-        title={ARC_TEXTS.platformProfile}
-        extra={ARC_TEXTS.exchangesLabel(exchanges.count)}
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check_platform_profile__title,
+        })}
+        extra={intl.formatMessage(
+          { id: ETranslations.address_risk_check_exchanges__msg },
+          { count: exchanges.count },
+        )}
       />
       <Card>
         <YStack px="$4" py="$3" gap="$2">
@@ -228,8 +257,19 @@ function PlatformProfileBlock({
             <Stack w={6} h={6} borderRadius="$full" bg="$iconSubdued" />
             <SizableText size="$bodyMd" color="$textSubdued">
               {noOtherSignals
-                ? ARC_TEXTS.noPlatformSignals
-                : `DEX ${dex.count} · Mixer ${mixer.count} · NFT ${nft.count}`}
+                ? intl.formatMessage({
+                    id: ETranslations.address_risk_check_no_platform_signals__desc,
+                  })
+                : intl.formatMessage(
+                    {
+                      id: ETranslations.address_risk_check_platform_signals__msg,
+                    },
+                    {
+                      dexCount: dex.count,
+                      mixerCount: mixer.count,
+                      nftCount: nft.count,
+                    },
+                  )}
             </SizableText>
           </XStack>
         </YStack>
@@ -243,12 +283,19 @@ function RiskIntelligenceBlock({
 }: {
   riskIntelligence: IAddressRiskCheckDetails['riskIntelligence'];
 }) {
+  const intl = useIntl();
   const entries = (
     Object.keys(riskIntelligence) as Array<keyof typeof riskIntelligence>
   )
     .map((key) => ({ key, ...riskIntelligence[key] }))
     .filter((item) => item.count > 0);
   const totalSignals = entries.reduce((sum, item) => sum + item.count, 0);
+  const getCategoryTitle = (
+    key: keyof IAddressRiskCheckDetails['riskIntelligence'],
+  ) => {
+    const titleId = RISK_INTELLIGENCE_CATEGORY_TITLE[key];
+    return titleId ? intl.formatMessage({ id: titleId }) : key;
+  };
 
   if (!entries.length) {
     return null;
@@ -257,8 +304,13 @@ function RiskIntelligenceBlock({
   return (
     <YStack gap="$2.5">
       <SectionHeader
-        title={ARC_TEXTS.riskIntelligence}
-        extra={ARC_TEXTS.signalsLabel(totalSignals)}
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check_risk_intelligence__title,
+        })}
+        extra={intl.formatMessage(
+          { id: ETranslations.address_risk_check_signals__msg },
+          { count: totalSignals },
+        )}
       />
       <Card>
         {entries.map((item, index) => (
@@ -267,7 +319,7 @@ function RiskIntelligenceBlock({
             <XStack px="$4" py="$2.5" ai="center" jc="space-between" gap="$2">
               <YStack gap="$0.5" minWidth={0}>
                 <SizableText size="$bodyMdMedium">
-                  {ARC_TEXTS.riskIntelligenceCategory[item.key] ?? item.key}
+                  {getCategoryTitle(item.key)}
                 </SizableText>
                 {item.list.length ? (
                   <SizableText size="$bodyMd" color="$textSubdued">
@@ -276,7 +328,10 @@ function RiskIntelligenceBlock({
                 ) : null}
               </YStack>
               <SizableText size="$bodyMdMedium" textAlign="right">
-                {ARC_TEXTS.signalsLabel(item.count)}
+                {intl.formatMessage(
+                  { id: ETranslations.address_risk_check_signals__msg },
+                  { count: item.count },
+                )}
               </SizableText>
             </XStack>
           </YStack>
@@ -340,7 +395,11 @@ export function AddressRiskMoreAnalysis({
         pressStyle={{ bg: '$bgActive' }}
         onPress={handleLoad}
       >
-        <SizableText size="$bodyLgMedium">{ARC_TEXTS.moreAnalysis}</SizableText>
+        <SizableText size="$bodyLgMedium">
+          {intl.formatMessage({
+            id: ETranslations.address_risk_check_more_analysis__action,
+          })}
+        </SizableText>
         {isLoading ? (
           <Spinner size="small" />
         ) : (

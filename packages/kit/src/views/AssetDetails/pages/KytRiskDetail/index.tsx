@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRoute } from '@react-navigation/core';
 import BigNumber from 'bignumber.js';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
   Button,
@@ -15,6 +16,7 @@ import {
 } from '@onekeyhq/components';
 import type { ColorTokens } from '@onekeyhq/components';
 import HeaderIconButton from '@onekeyhq/components/src/layouts/Navigation/Header/HeaderIconButton';
+import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { RECEIVE_RISK_MONITORING_HELP_LINK } from '@onekeyhq/shared/src/config/appConfig';
@@ -152,7 +154,7 @@ function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
 
   return (
     <YStack
-      borderWidth={1}
+      borderWidth={StyleSheet.hairlineWidth}
       borderColor="$borderSubdued"
       borderRadius="$3"
       overflow="hidden"
@@ -236,12 +238,12 @@ function KytRiskDetail() {
       />
       <Page.Body>
         <ScrollView>
-          <XStack alignItems="flex-start" gap="$6" padding="$5">
-            <YStack flex={1} gap="$0.5" minWidth={0}>
+          <YStack gap="$4" padding="$5">
+            <YStack gap="$0.5">
               <SizableText
                 size="$heading2xl"
                 color={LEVEL_TEXT_COLOR[riskDetail.level] ?? '$text'}
-                numberOfLines={1}
+                numberOfLines={2}
               >
                 {intl.formatMessage({ id: content.title })}
               </SizableText>
@@ -252,42 +254,94 @@ function KytRiskDetail() {
               >
                 {intl.formatMessage({ id: content.description })}
               </SizableText>
-              {riskDetail.checkedAt ? (
-                <XStack ai="center" gap="$1" flexWrap="wrap">
-                  <SizableText size="$bodyMd" color="$textSubdued">
-                    {intl.formatMessage({
-                      id: ETranslations.kyt_last_checked__title,
+            </YStack>
+
+            <YStack
+              borderWidth={StyleSheet.hairlineWidth}
+              borderColor="$borderSubdued"
+              borderRadius="$3"
+              overflow="hidden"
+            >
+              {riskDetail.asset.networkName ? (
+                <>
+                  <CardRow
+                    label={intl.formatMessage({
+                      id: ETranslations.global_network,
                     })}
-                  </SizableText>
-                  <SizableText size="$bodyMd" color="$textSubdued">
-                    {riskDetail.checkedAt}
+                  >
+                    <XStack
+                      ai="center"
+                      jc="flex-end"
+                      gap="$1.5"
+                      maxWidth="70%"
+                      flexShrink={1}
+                    >
+                      <NetworkAvatar
+                        networkId={riskDetail.asset.networkId}
+                        size="$5"
+                      />
+                      <SizableText
+                        size="$bodyMdMedium"
+                        textAlign="right"
+                        numberOfLines={1}
+                        flexShrink={1}
+                      >
+                        {riskDetail.asset.networkName}
+                      </SizableText>
+                    </XStack>
+                  </CardRow>
+                  <Divider />
+                </>
+              ) : null}
+
+              <CardRow
+                label={intl.formatMessage({
+                  id: ETranslations.global_asset,
+                })}
+              >
+                <XStack
+                  ai="center"
+                  jc="flex-end"
+                  gap="$1.5"
+                  maxWidth="70%"
+                  flexShrink={1}
+                >
+                  <Token
+                    size="sm"
+                    tokenImageUri={riskDetail.asset.tokenImageUri}
+                  />
+                  <SizableText
+                    size="$bodyMdMedium"
+                    textAlign="right"
+                    numberOfLines={1}
+                    flexShrink={1}
+                  >
+                    {riskDetail.transferAmount || riskDetail.asset.symbol}
                   </SizableText>
                 </XStack>
+              </CardRow>
+
+              {riskDetail.checkedAt ? (
+                <>
+                  <Divider />
+                  <CardRow
+                    label={intl.formatMessage({
+                      id: ETranslations.kyt_last_checked__title,
+                    })}
+                  >
+                    <SizableText
+                      size="$bodyMdMedium"
+                      textAlign="right"
+                      numberOfLines={1}
+                      flexShrink={1}
+                    >
+                      {riskDetail.checkedAt}
+                    </SizableText>
+                  </CardRow>
+                </>
               ) : null}
             </YStack>
-            <YStack ai="flex-end" gap="$0.5" flexShrink={0}>
-              <XStack ai="center" gap="$1.5">
-                <Token
-                  size="sm"
-                  tokenImageUri={riskDetail.asset.tokenImageUri}
-                />
-                <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                  {riskDetail.transferAmount || riskDetail.asset.symbol}
-                </SizableText>
-              </XStack>
-              <YStack ai="flex-end">
-                {riskDetail.asset.networkName ? (
-                  <SizableText
-                    size="$bodyMd"
-                    color="$textSubdued"
-                    numberOfLines={1}
-                  >
-                    {riskDetail.asset.networkName}
-                  </SizableText>
-                ) : null}
-              </YStack>
-            </YStack>
-          </XStack>
+          </YStack>
 
           {riskDetail.factors.length > 0 ? (
             <>

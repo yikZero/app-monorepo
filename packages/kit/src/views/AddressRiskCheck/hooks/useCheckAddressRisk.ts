@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
@@ -6,8 +6,12 @@ import { Toast } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import type { IPrimeAddressRiskCheckEntryPoint } from '@onekeyhq/shared/src/logger/scopes/prime/types';
 import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
 import type { IAddressRiskCheckResult } from '@onekeyhq/shared/types/addressRiskCheck';
+
+let isAddressRiskCheckInFlight = false;
 
 // Shared entry for running a check: calls the server, records the success into
 // local "Recent checks" (failures are never recorded), and navigates to the
@@ -16,22 +20,22 @@ export function useCheckAddressRisk() {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const [isChecking, setIsChecking] = useState(false);
-  // Synchronous guard so overlapping taps (footer button + recent/history rows)
-  // can't fire concurrent checks and race a stale result onto the stack.
-  const isCheckingRef = useRef(false);
 
   const checkRisk = useCallback(
     async ({
       networkId,
       address,
+      entryPoint,
     }: {
       networkId: string;
       address: string;
+      entryPoint: IPrimeAddressRiskCheckEntryPoint;
     }): Promise<IAddressRiskCheckResult | undefined> => {
-      if (isCheckingRef.current) {
+      // Module-level guard covers separate hook instances across input/history.
+      if (isAddressRiskCheckInFlight) {
         return undefined;
       }
-      isCheckingRef.current = true;
+      isAddressRiskCheckInFlight = true;
       setIsChecking(true);
       try {
         const result =
@@ -39,6 +43,13 @@ export function useCheckAddressRisk() {
             networkId,
             address,
           });
+        defaultLogger.prime.usage.addressRiskCheckSuccess({
+          entryPoint,
+          network: result.networkId,
+          riskLevel: result.level,
+          riskFactorsCount: result.reasons.length,
+          cached: result.cached,
+        });
         // Best-effort local history write — a storage failure must never hide a
         // successful risk result from the user.
         try {
@@ -69,7 +80,7 @@ export function useCheckAddressRisk() {
         return undefined;
       } finally {
         setIsChecking(false);
-        isCheckingRef.current = false;
+        isAddressRiskCheckInFlight = false;
       }
     },
     [intl, navigation],

@@ -9,8 +9,6 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
-import { ARC_TEXTS } from '../texts';
-
 // Risk level → text color. Mirrors the receive-KYT detail page so both surfaces
 // share a consistent visual language.
 export const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
@@ -106,7 +104,9 @@ export function RiskFactorCard({ factor }: { factor: IKytRiskFactor }) {
     .join(' / ');
   if (exposureShareValue) {
     rows.push({
-      label: ARC_TEXTS.exposureShare,
+      label: intl.formatMessage({
+        id: ETranslations.address_risk_check_exposure_share__title,
+      }),
       value: exposureShareValue,
     });
   }
