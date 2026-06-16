@@ -117,6 +117,7 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     title: ETranslations.address_risk_check__title,
     description: ETranslations.address_risk_check_intro__desc,
     media: {
+      // TODO: Replace icon media with the Prime intro video and poster once assets are ready.
       type: 'icon',
       icon: 'ChecklistBoxSearchSolid',
     },

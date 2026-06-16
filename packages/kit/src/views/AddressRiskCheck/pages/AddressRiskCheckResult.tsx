@@ -2,9 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
 
 import {
   Button,
+  Divider,
   IconButton,
   Page,
   ScrollView,
@@ -14,6 +16,7 @@ import {
 } from '@onekeyhq/components';
 import { useClipboard } from '@onekeyhq/components/src/hooks/useClipboard';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
+import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import type {
@@ -28,6 +31,7 @@ import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 
 import { AddressRiskMoreAnalysis } from '../components/AddressRiskMoreAnalysis';
 import {
+  CardRow,
   LEVEL_TEXT_COLOR,
   RiskFactorCard,
 } from '../components/RiskCheckShared';
@@ -117,12 +121,12 @@ function AddressRiskCheckResult() {
       <Page.Body>
         <ScrollView>
           <YStack gap="$4" pb="$5">
-            <XStack alignItems="flex-start" gap="$6" padding="$5">
-              <YStack flex={1} gap="$0.5" minWidth={0}>
+            <YStack gap="$4" padding="$5">
+              <YStack gap="$0.5">
                 <SizableText
                   size="$heading2xl"
                   color={LEVEL_TEXT_COLOR[result.level] ?? '$text'}
-                  numberOfLines={1}
+                  numberOfLines={2}
                 >
                   {intl.formatMessage({
                     id: ADDRESS_RISK_LEVEL_TITLE[result.level],
@@ -137,44 +141,91 @@ function AddressRiskCheckResult() {
                     id: ADDRESS_RISK_LEVEL_DESCRIPTION[result.level],
                   })}
                 </SizableText>
-                <XStack ai="center" gap="$1" flexWrap="wrap">
-                  <SizableText size="$bodyMd" color="$textSubdued">
-                    {intl.formatMessage({
-                      id: ETranslations.kyt_last_checked__title,
-                    })}
-                  </SizableText>
-                  <SizableText size="$bodyMd" color="$textSubdued">
+              </YStack>
+
+              <YStack
+                borderWidth={StyleSheet.hairlineWidth}
+                borderColor="$borderSubdued"
+                borderRadius="$3"
+                overflow="hidden"
+              >
+                {network?.name ? (
+                  <>
+                    <CardRow
+                      label={intl.formatMessage({
+                        id: ETranslations.global_network,
+                      })}
+                    >
+                      <XStack
+                        ai="center"
+                        jc="flex-end"
+                        gap="$1.5"
+                        maxWidth="70%"
+                        flexShrink={1}
+                      >
+                        <NetworkAvatar networkId={result.networkId} size="$5" />
+                        <SizableText
+                          size="$bodyMdMedium"
+                          textAlign="right"
+                          numberOfLines={1}
+                          flexShrink={1}
+                        >
+                          {network.name}
+                        </SizableText>
+                      </XStack>
+                    </CardRow>
+                    <Divider />
+                  </>
+                ) : null}
+
+                <CardRow
+                  label={intl.formatMessage({
+                    id: ETranslations.global_address,
+                  })}
+                >
+                  <XStack
+                    ai="center"
+                    jc="flex-end"
+                    gap="$1"
+                    maxWidth="70%"
+                    flexShrink={1}
+                  >
+                    <SizableText
+                      size="$bodyMdMedium"
+                      numberOfLines={1}
+                      textAlign="right"
+                      flexShrink={1}
+                    >
+                      {shortAddress}
+                    </SizableText>
+                    <IconButton
+                      testID="address-risk-check-copy-address"
+                      variant="tertiary"
+                      size="small"
+                      iconSize="$4"
+                      icon="Copy3Outline"
+                      onPress={handleCopyAddress}
+                    />
+                  </XStack>
+                </CardRow>
+
+                <Divider />
+                <CardRow
+                  label={intl.formatMessage({
+                    id: ETranslations.kyt_last_checked__title,
+                  })}
+                >
+                  <SizableText
+                    size="$bodyMdMedium"
+                    textAlign="right"
+                    numberOfLines={1}
+                    flexShrink={1}
+                  >
                     {checkedAtText}
                   </SizableText>
-                </XStack>
+                </CardRow>
               </YStack>
-              <YStack ai="flex-end" gap="$0.5" flexShrink={0}>
-                <XStack ai="center" gap="$1" maxWidth="100%">
-                  <SizableText size="$bodyMdMedium" numberOfLines={1}>
-                    {shortAddress}
-                  </SizableText>
-                  <IconButton
-                    testID="address-risk-check-copy-address"
-                    variant="tertiary"
-                    size="small"
-                    iconSize="$4"
-                    icon="Copy3Outline"
-                    onPress={handleCopyAddress}
-                  />
-                </XStack>
-                <YStack ai="flex-end">
-                  {network?.name ? (
-                    <SizableText
-                      size="$bodyMd"
-                      color="$textSubdued"
-                      numberOfLines={1}
-                    >
-                      {network.name}
-                    </SizableText>
-                  ) : null}
-                </YStack>
-              </YStack>
-            </XStack>
+            </YStack>
 
             {result.reasons.length > 0 ? (
               <YStack px="$5" gap="$2">
