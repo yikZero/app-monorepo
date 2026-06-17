@@ -117,9 +117,13 @@ export const PRIME_FEATURE_INTROS: IPrimeFeatureIntro[] = [
     title: ETranslations.address_risk_check__title,
     description: ETranslations.address_risk_check_intro__desc,
     media: {
-      // TODO: Replace icon media with the Prime intro video and poster once assets are ready.
-      type: 'icon',
-      icon: 'ChecklistBoxSearchSolid',
+      type: 'video',
+      getSource: () =>
+        getPrimeFeatureVideoSource(
+          'prime-feature-address-risk-check-20260617.mp4',
+        ),
+      getPosterSource: () =>
+        require('@onekeyhq/kit/assets/prime/address_risk_check_poster.png') as ImageSourcePropType,
     },
     action: 'addressRiskCheck',
     actionLabel: ETranslations.address_risk_check_check_risk__action,
