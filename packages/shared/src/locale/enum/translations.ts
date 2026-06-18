@@ -3921,6 +3921,7 @@ export enum ETranslations {
   referral_web_landing_step3_perps_cta = 'referral.web_landing_step3_perps_cta',
   referral_web_landing_step3_perps_title = 'referral.web_landing_step3_perps_title',
   referral_web_landing_subtitle = 'referral.web_landing_subtitle',
+  referral_web_landing_subtitle_perps = 'referral.web_landing_subtitle_perps',
   referral_web_landing_title_defi = 'referral.web_landing_title_defi',
   referral_web_landing_title_perps = 'referral.web_landing_title_perps',
   referral_accept = 'referral.accept',
@@ -4167,7 +4168,7 @@ export enum ETranslations {
   referral_wallet_edit_code = 'referral.wallet_edit_code',
   referral_web_landing_app_open_hint = 'referral.web_landing_app_open_hint',
   referral_web_landing_subtitle_defi = 'referral.web_landing_subtitle_defi',
-  referral_web_landing_subtitle_perps = 'referral.web_landing_subtitle_perps',
+
   referral_your_code = 'referral.your_code',
   referral_your_referred = 'referral.your_referred',
   referral_your_referred_wallets_1address = 'referral.your_referred_wallets_1address',
