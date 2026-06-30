@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkweb=self.webpackChunkweb||[]).push([["68242"],{655657(e,t,a){a.d(t,{StateActiveContainer:()=>StateActiveContainer});var i=a(514041),c=a(200370),n=a(986465);let StateActiveContainer=()=>{(0,i.useEffect)(()=>{(async()=>{c.A.serviceNotification.clearBadgeWhenAppStart()})()},[]);let e=(0,i.useCallback)(()=>{c.A.serviceNotification.clearBadgeWhenAppStart()},[]);return(0,n.i)(e,{onActiveFromBlur:e}),null}}}]);
+//# sourceMappingURL=68242.2b1054ee65.chunk.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/24936.3cb2e60cb3.chunk.js","sources":["webpack://web/../../packages/kit/src/views/Setting/pages/FloatingIcon/index.tsx"],"sourcesContent":["function FloatingIconModal() {\n  return null;\n}\n\nexport default FloatingIconModal;\n"],"names":[],"mappings":"gJAIA,4BAJA,WACE,OAAO,IACT,C"}

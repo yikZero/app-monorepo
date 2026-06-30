@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkweb=self.webpackChunkweb||[]).push([["45351"],{48090(e,r,t){t.d(r,{createTrezorConnector:()=>createTrezorConnector});let createTrezorConnector=async()=>{let{createTrezorWebUsbConnector:e}=await Promise.all([t.e("61888"),t.e("26535"),t.e("77130"),t.e("9313")]).then(t.bind(t,606360));return e({thp:{hostName:"OneKey",appName:"OneKey Wallet"}})}}}]);
+//# sourceMappingURL=45351.251e923716.chunk.js.map

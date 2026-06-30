@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/5571.e6e6847523.chunk.js","sources":["webpack://web/../../packages/kit/src/views/Developer/pages/asyncImportTest.ts"],"sourcesContent":["export const test = () => {\n  alert('asyncImportTest');\n};\n"],"names":["test","alert"],"mappings":"kHAAO,IAAMA,KAAOA,KAClBC,MAAM,kBACR,C"}

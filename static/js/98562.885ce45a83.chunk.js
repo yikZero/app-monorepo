@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkweb=self.webpackChunkweb||[]).push([["98562"],{643897(e,s,a){a.r(s),a.d(s,{default:()=>CoreChainImported});var r=a(506592);let CoreChainImported=class CoreChainImported extends r.A{}}}]);
+//# sourceMappingURL=98562.885ce45a83.chunk.js.map

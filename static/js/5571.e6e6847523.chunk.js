@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkweb=self.webpackChunkweb||[]).push([["5571"],{340334(e,t,s){s.d(t,{test:()=>test});let test=()=>{alert("asyncImportTest")}}}]);
+//# sourceMappingURL=5571.e6e6847523.chunk.js.map
