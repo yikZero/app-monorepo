@@ -1,7 +1,6 @@
 import { memo, useMemo } from 'react';
 
 import { useIntl } from 'react-intl';
-import { StyleSheet } from 'react-native';
 
 import { SizableText, XStack, YStack } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
@@ -16,6 +15,8 @@ import {
 } from '@onekeyhq/shared/types/signatureConfirm';
 
 import { SignatureConfirmTestIDs } from '../../testIDs';
+import { LaserBorder } from '../SignatureConfirmComponents/LaserBorder';
+import { ShimmerSignGuard } from '../SignatureConfirmComponents/ShimmerSignGuard';
 
 type ISimulationAsset = IDisplayComponentSimulation['assets'][number];
 
@@ -281,25 +282,32 @@ function TransactionPreview({ simulationComponents }: IProps) {
   }
 
   return (
-    <YStack
-      testID={SignatureConfirmTestIDs.TransactionPreview}
-      gap="$2"
-      p="$3"
-      borderWidth={StyleSheet.hairlineWidth}
-      borderColor="$neutral3"
-      borderRadius="$3"
-      bg="$bgSubdued"
-    >
-      <SizableText size="$bodyMdMedium" numberOfLines={1}>
-        {intl.formatMessage({
-          id: ETranslations.dapp_connect_transaction_preview_estimated_asset_changes__title,
-        })}
-      </SizableText>
-      <SimulationAssetGroups
-        simulationGroups={simulationGroups}
-        networkNameById={networkNameById}
-      />
-    </YStack>
+    <LaserBorder borderRadius={12} borderColor="$neutral3">
+      <YStack
+        testID={SignatureConfirmTestIDs.TransactionPreview}
+        px="$3"
+        py="$3"
+        gap="$2"
+      >
+        <XStack justifyContent="space-between" alignItems="center" gap="$3">
+          <SizableText
+            size="$bodyMdMedium"
+            numberOfLines={1}
+            flex={1}
+            minWidth={0}
+          >
+            {intl.formatMessage({
+              id: ETranslations.dapp_connect_transaction_preview_estimated_asset_changes__title,
+            })}
+          </SizableText>
+          <ShimmerSignGuard />
+        </XStack>
+        <SimulationAssetGroups
+          simulationGroups={simulationGroups}
+          networkNameById={networkNameById}
+        />
+      </YStack>
+    </LaserBorder>
   );
 }
 

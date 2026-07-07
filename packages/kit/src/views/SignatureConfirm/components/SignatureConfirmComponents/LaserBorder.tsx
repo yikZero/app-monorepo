@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { StyleSheet } from 'react-native';
@@ -7,6 +7,7 @@ import Animated, {
   interpolate,
   interpolateColor,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
@@ -20,6 +21,7 @@ import type { LayoutChangeEvent } from 'react-native';
 type IProps = {
   children: ReactNode;
   borderRadius?: number;
+  borderColor?: ComponentProps<typeof Stack>['borderColor'];
   duration?: number;
 };
 
@@ -57,26 +59,31 @@ const BORDER_LOCATIONS = [
 
 const WEB_BLUR_STYLE = { filter: 'blur(6px)' } as Record<string, string>;
 
-function LaserBorder({ children, borderRadius = 12, duration = 2800 }: IProps) {
+function LaserBorder({
+  children,
+  borderRadius = 12,
+  borderColor = '$borderSubdued',
+  duration = 2800,
+}: IProps) {
   const theme = useTheme();
+  const reducedMotion = useReducedMotion();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const rotation = useSharedValue(0);
-  const glowOpacity = useSharedValue(1);
+  const glowOpacity = useSharedValue(reducedMotion ? 0 : 1);
   const hasAnimated = useRef(false);
 
   const bgColor = theme.bg?.val ?? '#1a1a1a';
-  const restBorderColor = theme.borderSubdued?.val ?? '#333';
   const diagonal = Math.sqrt(layout.width ** 2 + layout.height ** 2);
 
   useEffect(() => {
-    if (layout.width === 0 || hasAnimated.current) return;
+    if (layout.width === 0 || hasAnimated.current || reducedMotion) return;
     hasAnimated.current = true;
     rotation.value = withTiming(180, { duration, easing: Easing.linear });
     glowOpacity.value = withDelay(
       duration,
       withTiming(0, { duration: FADE_MS }),
     );
-  }, [layout.width, duration, rotation, glowOpacity]);
+  }, [layout.width, duration, rotation, glowOpacity, reducedMotion]);
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -157,10 +164,10 @@ function LaserBorder({ children, borderRadius = 12, duration = 2800 }: IProps) {
       ) : null}
 
       <Stack
+        borderColor={borderColor}
         style={{
           borderRadius,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: restBorderColor,
           backgroundColor: bgColor,
           overflow: 'hidden',
         }}
