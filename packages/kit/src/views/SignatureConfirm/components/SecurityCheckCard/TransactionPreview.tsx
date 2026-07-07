@@ -31,6 +31,9 @@ type IProps = {
 
 const SIMULATION_GROUP_FALLBACK_ID = 'asset-changes';
 
+// These asset-display helpers are a compact, read-only variant of the canonical
+// simulation rendering in SignatureConfirmComponents/Assets.tsx. Keep the
+// direction-sign, NFT-amount, and color rules in sync with it to avoid drift.
 function getSimulationAssetLabel(asset: ISimulationAsset) {
   if (asset.type === EParseTxComponentType.Token) {
     return asset.token.info.symbol;
@@ -144,8 +147,14 @@ function getSimulationAssets(simulationGroups: ISimulationGroup[]) {
 }
 
 function SimulationAssetText({ asset }: { asset: ISimulationAsset }) {
-  const sign = getSimulationAssetSign(asset);
-  const color = sign === '+' ? '$textSuccess' : '$text';
+  const amount = getSimulationAssetAmount(asset);
+  const direction = getSimulationAssetDirection(asset);
+  // Only prefix a direction sign when there is an amount to sign; a non-ERC1155
+  // NFT has a blank amount and would otherwise render a stray lone '+'/'-'.
+  const sign = amount ? getSimulationAssetSign(asset) : '';
+  // Match the original simulation card (Assets.tsx) scheme: incoming green, else
+  // default text ($text — Assets.tsx's '$textText' is a typo for the same color).
+  const color = direction === ETransferDirection.In ? '$textSuccess' : '$text';
   return (
     <SizableText
       size="$bodySmMedium"
@@ -153,7 +162,7 @@ function SimulationAssetText({ asset }: { asset: ISimulationAsset }) {
       numberOfLines={1}
       textAlign="right"
     >
-      {`${sign}${getSimulationAssetAmount(asset)}`}
+      {`${sign}${amount}`}
     </SizableText>
   );
 }

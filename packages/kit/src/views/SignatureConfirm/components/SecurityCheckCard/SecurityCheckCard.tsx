@@ -145,13 +145,7 @@ function getFindingStyle(status: ISecurityCheckStatus): {
       badgeType: 'warning',
     };
   }
-  if (status === 'unknown') {
-    return {
-      icon: 'InfoCircleOutline',
-      iconColor: '$iconInfo',
-      badgeType: 'info',
-    };
-  }
+  // 'unknown' and any other status fall through to the neutral info style.
   return {
     icon: 'InfoCircleOutline',
     iconColor: '$iconInfo',
@@ -298,7 +292,7 @@ function getAddressFindings(
         component.type === EParseTxComponentType.Address,
     )
     .map((component) => {
-      const riskTags = component.tags.filter((tag) =>
+      const riskTags = (component.tags ?? []).filter((tag) =>
         RISK_BADGE_TYPES.has(tag.displayType),
       );
       return {
