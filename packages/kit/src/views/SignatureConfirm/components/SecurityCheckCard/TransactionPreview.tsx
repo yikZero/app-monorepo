@@ -28,6 +28,11 @@ type ISimulationGroup = {
 
 type IProps = {
   simulationComponents?: IDisplayComponentSimulation[];
+  // When true, render only the asset rows (no LaserBorder frame) so a parent
+  // unified card can own the frame + a single SignGuard mark.
+  bare?: boolean;
+  // Force-show (or hide) the SignGuard mark. Defaults to visible unless `bare`.
+  signGuard?: boolean;
 };
 
 const SIMULATION_GROUP_FALLBACK_ID = 'asset-changes';
@@ -238,7 +243,7 @@ function SimulationAssetGroups({
   );
 }
 
-function TransactionPreview({ simulationComponents }: IProps) {
+function TransactionPreview({ simulationComponents, bare, signGuard }: IProps) {
   const intl = useIntl();
   const simulationGroups = useMemo(
     () => getSimulationGroups(simulationComponents),
@@ -281,32 +286,40 @@ function TransactionPreview({ simulationComponents }: IProps) {
     return null;
   }
 
+  const content = (
+    <YStack
+      testID={SignatureConfirmTestIDs.TransactionPreview}
+      px={bare ? '$0' : '$3'}
+      py={bare ? '$0' : '$3'}
+      gap="$2"
+    >
+      <XStack justifyContent="space-between" alignItems="center" gap="$3">
+        <SizableText
+          size="$bodyMdMedium"
+          numberOfLines={1}
+          flex={1}
+          minWidth={0}
+        >
+          {intl.formatMessage({
+            id: ETranslations.dapp_connect_transaction_preview_estimated_asset_changes__title,
+          })}
+        </SizableText>
+        {(signGuard ?? !bare) ? <ShimmerSignGuard /> : null}
+      </XStack>
+      <SimulationAssetGroups
+        simulationGroups={simulationGroups}
+        networkNameById={networkNameById}
+      />
+    </YStack>
+  );
+
+  if (bare) {
+    return content;
+  }
+
   return (
     <LaserBorder borderRadius={12} borderColor="$neutral3">
-      <YStack
-        testID={SignatureConfirmTestIDs.TransactionPreview}
-        px="$3"
-        py="$3"
-        gap="$2"
-      >
-        <XStack justifyContent="space-between" alignItems="center" gap="$3">
-          <SizableText
-            size="$bodyMdMedium"
-            numberOfLines={1}
-            flex={1}
-            minWidth={0}
-          >
-            {intl.formatMessage({
-              id: ETranslations.dapp_connect_transaction_preview_estimated_asset_changes__title,
-            })}
-          </SizableText>
-          <ShimmerSignGuard />
-        </XStack>
-        <SimulationAssetGroups
-          simulationGroups={simulationGroups}
-          networkNameById={networkNameById}
-        />
-      </YStack>
+      {content}
     </LaserBorder>
   );
 }

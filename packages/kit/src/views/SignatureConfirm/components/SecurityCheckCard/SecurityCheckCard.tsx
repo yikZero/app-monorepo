@@ -29,6 +29,7 @@ import {
   EParseTxComponentType,
   type IDisplayComponent,
   type IDisplayComponentAddress,
+  type IDisplayComponentSimulation,
   type ISignatureConfirmDisplay,
 } from '@onekeyhq/shared/types/signatureConfirm';
 import type { IDecodedTx } from '@onekeyhq/shared/types/tx';
@@ -36,6 +37,10 @@ import type { IDecodedTx } from '@onekeyhq/shared/types/tx';
 import { showDAppRiskyAlertDetail } from '../../../DAppConnection/components/DAppRequestLayout';
 import { SignatureConfirmTestIDs } from '../../testIDs';
 import { getCustomHexDataAlertTitleIds } from '../CustomHexDataAlert/utils';
+import { LaserBorder } from '../SignatureConfirmComponents/LaserBorder';
+import { ShimmerSignGuard } from '../SignatureConfirmComponents/ShimmerSignGuard';
+
+import TransactionPreview from './TransactionPreview';
 
 type ISecurityCheckKind = 'transaction' | 'message';
 
@@ -61,6 +66,7 @@ type IProps = {
   origin?: string;
   urlSecurityInfo?: IHostSecurity;
   decodedTxs?: IDecodedTx[];
+  simulationComponents?: IDisplayComponentSimulation[];
   messageDisplay?: ISignatureConfirmDisplay;
   unsignedMessage?: IUnsignedMessage;
   isRiskSignMethod?: boolean;
@@ -714,6 +720,7 @@ function SecurityCheckCard(props: IProps) {
     origin,
     urlSecurityInfo,
     decodedTxs,
+    simulationComponents,
     messageDisplay,
     unsignedMessage,
     isRiskSignMethod,
@@ -928,154 +935,164 @@ function SecurityCheckCard(props: IProps) {
     );
   }, [findings, highestStatus, intl]);
 
-  if (isNoIssue && (!hasResolvedRequiredChecks || !coverageTitle)) {
-    return null;
-  }
+  const hasAssets = (simulationComponents ?? []).some(
+    (component) => component.assets.length > 0,
+  );
+
+  // The celebratory rainbow glow is reserved for benign/safe surfaces — a
+  // warning / critical / unverified card must not shimmer (single safety
+  // signal). Any non-info finding drops the glow.
+  const isBenign = !highestStatus || highestStatus === 'info';
 
   const headerTitle = intl.formatMessage({
     id: ETranslations.dapp_connect_security_checks__title,
   });
 
-  if (isNoIssue) {
-    return (
-      <YStack
-        testID={SignatureConfirmTestIDs.SecurityCheckCard}
-        borderWidth={StyleSheet.hairlineWidth}
-        borderColor="$neutral3"
-        borderRadius="$3"
-        overflow="hidden"
-        bg="$bgSubdued"
-      >
-        <XStack alignItems="center" gap="$3" px="$3" py="$2.5">
-          <YStack flex={1} minWidth={0} alignItems="flex-start">
-            <SizableText size="$bodyMdMedium" numberOfLines={1}>
-              {headerTitle}
-            </SizableText>
-            <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
-              {coverageTitle}
-            </SizableText>
-          </YStack>
-          <Badge badgeType="success" badgeSize="sm" flexShrink={0}>
-            {intl.formatMessage({
-              id: ETranslations.dapp_connect_security_checks_no_issues_detected__text,
-            })}
-          </Badge>
-        </XStack>
-      </YStack>
-    );
-  }
-
-  return (
-    <YStack
-      testID={SignatureConfirmTestIDs.SecurityCheckCard}
-      borderWidth={StyleSheet.hairlineWidth}
-      borderColor="$neutral3"
-      borderRadius="$3"
-      overflow="hidden"
-      bg="$bgSubdued"
+  const findingsSection = !isNoIssue ? (
+    <Accordion
+      type="multiple"
+      collapsable
+      value={accordionValue}
+      onValueChange={handleAccordionValueChange}
+      bg="$transparent"
     >
-      <Accordion
-        type="multiple"
-        collapsable
-        value={accordionValue}
-        onValueChange={handleAccordionValueChange}
-        bg="$transparent"
-      >
-        <Accordion.Item
-          value={SECURITY_CHECK_ACCORDION_VALUE}
+      <Accordion.Item value={SECURITY_CHECK_ACCORDION_VALUE} bg="$transparent">
+        <Accordion.Trigger
+          unstyled
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="flex-start"
+          gap="$3"
+          px="$3"
+          py="$2.5"
+          borderWidth={0}
           bg="$transparent"
+          hoverStyle={{
+            bg: '$neutral3',
+          }}
+          pressStyle={{
+            bg: '$neutral3',
+          }}
+          focusVisibleStyle={{
+            outlineColor: '$focusRing',
+            outlineWidth: 2,
+            outlineStyle: 'solid',
+            outlineOffset: -2,
+          }}
         >
-          <Accordion.Trigger
-            unstyled
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="flex-start"
-            gap="$3"
-            px="$3"
-            py="$2.5"
-            borderWidth={0}
-            bg="$transparent"
-            hoverStyle={{
-              bg: '$neutral3',
-            }}
-            pressStyle={{
-              bg: '$neutral3',
-            }}
-            focusVisibleStyle={{
-              outlineColor: '$focusRing',
-              outlineWidth: 2,
-              outlineStyle: 'solid',
-              outlineOffset: -2,
-            }}
-          >
-            {({ open }: { open: boolean }) => (
-              <>
-                <YStack flex={1} minWidth={0} alignItems="flex-start">
+          {({ open }: { open: boolean }) => (
+            <>
+              <YStack flex={1} minWidth={0} alignItems="flex-start">
+                <SizableText
+                  size="$bodyMdMedium"
+                  numberOfLines={1}
+                  textAlign="left"
+                >
+                  {headerTitle}
+                </SizableText>
+                {coverageTitle ? (
                   <SizableText
-                    size="$bodyMdMedium"
+                    size="$bodySm"
+                    color="$textSubdued"
                     numberOfLines={1}
                     textAlign="left"
                   >
-                    {headerTitle}
+                    {coverageTitle}
                   </SizableText>
-                  {coverageTitle ? (
-                    <SizableText
-                      size="$bodySm"
-                      color="$textSubdued"
-                      numberOfLines={1}
-                      textAlign="left"
-                    >
-                      {coverageTitle}
-                    </SizableText>
-                  ) : null}
-                </YStack>
-                <XStack
-                  gap="$2"
-                  alignItems="center"
-                  justifyContent="flex-end"
-                  flexShrink={0}
-                >
-                  {renderSummary()}
-                  <YStack rotate={open ? '180deg' : '0deg'}>
-                    <Icon
-                      name="ChevronDownSmallOutline"
-                      color="$iconSubdued"
-                      size="$5"
-                    />
-                  </YStack>
-                </XStack>
-              </>
-            )}
-          </Accordion.Trigger>
-          <Accordion.HeightAnimator>
-            <Accordion.Content
-              unstyled
-              px="$3"
-              pb="$3"
-              pt="$0"
-              bg="$transparent"
-            >
-              <YStack
-                gap="$3.5"
-                pt="$3"
-                borderTopWidth={StyleSheet.hairlineWidth}
-                borderTopColor="$neutral3"
-              >
-                {orderedCategories.map((category) => (
-                  <SecurityCheckCategoryGroup
-                    key={category}
-                    category={category}
-                    kind={kind}
-                    findings={groupedFindings[category]}
-                    intl={intl}
-                  />
-                ))}
+                ) : null}
               </YStack>
-            </Accordion.Content>
-          </Accordion.HeightAnimator>
-        </Accordion.Item>
-      </Accordion>
-    </YStack>
+              <XStack
+                gap="$2"
+                alignItems="center"
+                justifyContent="flex-end"
+                flexShrink={0}
+              >
+                <ShimmerSignGuard />
+                {renderSummary()}
+                <YStack rotate={open ? '180deg' : '0deg'}>
+                  <Icon
+                    name="ChevronDownSmallOutline"
+                    color="$iconSubdued"
+                    size="$5"
+                  />
+                </YStack>
+              </XStack>
+            </>
+          )}
+        </Accordion.Trigger>
+        <Accordion.HeightAnimator>
+          <Accordion.Content unstyled px="$3" pb="$3" pt="$0" bg="$transparent">
+            <YStack
+              gap="$3.5"
+              pt="$3"
+              borderTopWidth={StyleSheet.hairlineWidth}
+              borderTopColor="$neutral3"
+            >
+              {orderedCategories.map((category) => (
+                <SecurityCheckCategoryGroup
+                  key={category}
+                  category={category}
+                  kind={kind}
+                  findings={groupedFindings[category]}
+                  intl={intl}
+                />
+              ))}
+            </YStack>
+          </Accordion.Content>
+        </Accordion.HeightAnimator>
+      </Accordion.Item>
+    </Accordion>
+  ) : null;
+
+  const noIssueSection =
+    isNoIssue && hasResolvedRequiredChecks && coverageTitle ? (
+      <XStack alignItems="center" gap="$3" px="$3" py="$2.5">
+        <YStack flex={1} minWidth={0} alignItems="flex-start">
+          <SizableText size="$bodyMdMedium" numberOfLines={1}>
+            {headerTitle}
+          </SizableText>
+          <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
+            {coverageTitle}
+          </SizableText>
+        </YStack>
+        <ShimmerSignGuard />
+        <Badge badgeType="success" badgeSize="sm" flexShrink={0}>
+          {intl.formatMessage({
+            id: ETranslations.dapp_connect_security_checks_no_issues_detected__text,
+          })}
+        </Badge>
+      </XStack>
+    ) : null;
+
+  const securitySection = findingsSection ?? noIssueSection;
+
+  if (!hasAssets && !securitySection) {
+    return null;
+  }
+
+  return (
+    <LaserBorder borderRadius={12} glow={isBenign} borderColor="$neutral3">
+      <YStack testID={SignatureConfirmTestIDs.SecurityCheckCard}>
+        {securitySection}
+        {hasAssets ? (
+          <YStack
+            px="$3"
+            py="$3"
+            gap="$2"
+            borderTopWidth={
+              securitySection ? StyleSheet.hairlineWidth : undefined
+            }
+            borderTopColor={securitySection ? '$neutral3' : undefined}
+          >
+            <TransactionPreview
+              bare
+              signGuard={!securitySection}
+              simulationComponents={simulationComponents}
+            />
+          </YStack>
+        ) : null}
+      </YStack>
+    </LaserBorder>
   );
 }
 

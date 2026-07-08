@@ -23,6 +23,10 @@ type IProps = {
   borderRadius?: number;
   borderColor?: ComponentProps<typeof Stack>['borderColor'];
   duration?: number;
+  // When false, suppress the animated rainbow sweep + glow and render a plain
+  // static border (borderColor). Keeps the celebratory SignGuard glow to
+  // benign/safe states only — a warning/malicious surface must not shimmer.
+  glow?: boolean;
 };
 
 const BORDER_PX = 1;
@@ -64,26 +68,28 @@ function LaserBorder({
   borderRadius = 12,
   borderColor = '$borderSubdued',
   duration = 2800,
+  glow = true,
 }: IProps) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const rotation = useSharedValue(0);
-  const glowOpacity = useSharedValue(reducedMotion ? 0 : 1);
+  const glowOpacity = useSharedValue(reducedMotion || !glow ? 0 : 1);
   const hasAnimated = useRef(false);
 
   const bgColor = theme.bg?.val ?? '#1a1a1a';
   const diagonal = Math.sqrt(layout.width ** 2 + layout.height ** 2);
 
   useEffect(() => {
-    if (layout.width === 0 || hasAnimated.current || reducedMotion) return;
+    if (layout.width === 0 || hasAnimated.current || reducedMotion || !glow)
+      return;
     hasAnimated.current = true;
     rotation.value = withTiming(180, { duration, easing: Easing.linear });
     glowOpacity.value = withDelay(
       duration,
       withTiming(0, { duration: FADE_MS }),
     );
-  }, [layout.width, duration, rotation, glowOpacity, reducedMotion]);
+  }, [layout.width, duration, rotation, glowOpacity, reducedMotion, glow]);
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -123,7 +129,7 @@ function LaserBorder({
           : undefined,
       ]}
     >
-      {!isNative && layout.width > 0 && glowDiag > 0 ? (
+      {glow && !isNative && layout.width > 0 && glowDiag > 0 ? (
         <Stack
           style={[
             {
@@ -173,7 +179,7 @@ function LaserBorder({
         }}
         onLayout={handleLayout}
       >
-        {diagonal > 0 ? (
+        {glow && diagonal > 0 ? (
           <Animated.View
             style={[
               {

@@ -47,10 +47,7 @@ import {
 } from '../../../DAppConnection/components/DAppRequestLayout';
 import { useRiskDetection } from '../../../DAppConnection/hooks/useRiskDetection';
 import DeFiActionInfo from '../../components/DeFiActionInfo';
-import {
-  SecurityCheckCard,
-  TransactionPreview,
-} from '../../components/SecurityCheckCard';
+import { SecurityCheckCard } from '../../components/SecurityCheckCard';
 import { TxConfirmActions } from '../../components/SignatureConfirmActions';
 import { TxAdvancedSettings } from '../../components/SignatureConfirmAdvanced';
 import { TxConfirmAlert } from '../../components/SignatureConfirmAlert';
@@ -460,18 +457,14 @@ function TxConfirm() {
             hideRiskStyle={shouldHideDAppSiteRiskStyle(urlSecurityInfo)}
           />
         ) : null}
-        <YStack gap="$3">
-          <SecurityCheckCard
-            kind="transaction"
-            requestKey={securityCheckRequestKey}
-            origin={sourceInfo?.origin}
-            urlSecurityInfo={urlSecurityInfo}
-            decodedTxs={decodedTxs}
-          />
-          <TransactionPreview
-            simulationComponents={visibleSimulationComponents}
-          />
-        </YStack>
+        <SecurityCheckCard
+          kind="transaction"
+          requestKey={securityCheckRequestKey}
+          origin={sourceInfo?.origin}
+          urlSecurityInfo={urlSecurityInfo}
+          decodedTxs={decodedTxs}
+          simulationComponents={visibleSimulationComponents}
+        />
         <TxConfirmDetails
           accountId={accountId}
           networkId={networkId}
