@@ -210,6 +210,12 @@ function SimulationAssetGroups({
     <YStack gap="$1.5">
       {simulationGroups.map((group) => (
         <YStack key={group.id} gap="$1">
+          {simulationGroups.length > 1 &&
+          group.label !== SIMULATION_GROUP_FALLBACK_ID ? (
+            <SizableText size="$bodyXs" color="$textSubdued" numberOfLines={1}>
+              {group.label}
+            </SizableText>
+          ) : null}
           {group.assets.map((asset, index) => (
             <XStack
               key={`${group.id}-${asset.type}-${getSimulationAssetLabel(

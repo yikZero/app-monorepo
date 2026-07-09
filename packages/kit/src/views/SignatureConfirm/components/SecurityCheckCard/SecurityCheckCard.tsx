@@ -831,6 +831,7 @@ function SecurityCheckCard(props: IProps) {
     if (didRequestChange) {
       previousRequestKeyRef.current = requestKey;
       hasUserChangedAccordionRef.current = false;
+      previousHighestStatusWeightRef.current = 0;
     }
 
     const didRiskUpgrade =
@@ -849,7 +850,13 @@ function SecurityCheckCard(props: IProps) {
       );
     }
 
-    previousHighestStatusWeightRef.current = highestStatusWeight;
+    // Track the high-water mark so a transient dip-and-recover of the same
+    // finding (e.g. a re-decode momentarily clearing findings) doesn't read as
+    // a risk upgrade and re-open a card the user deliberately collapsed.
+    previousHighestStatusWeightRef.current = Math.max(
+      previousHighestStatusWeightRef.current,
+      highestStatusWeight,
+    );
   }, [findings, highestStatus, requestKey]);
 
   const handleAccordionValueChange = useCallback((value: string[]) => {
@@ -920,27 +927,28 @@ function SecurityCheckCard(props: IProps) {
     const unknownCount = findings.filter(
       (finding) => finding.status === 'unknown',
     ).length;
-    let title = '';
-    if (criticalCount > 0) {
-      const riskTitle = `${criticalCount} ${intl.formatMessage({
-        id: ETranslations.global_risk,
-      })}`;
-      const warningTitle =
-        warningCount > 0
-          ? `${warningCount} ${intl.formatMessage({
-              id: ETranslations.global_warning,
-            })}`
-          : '';
-      title = [riskTitle, warningTitle].filter(Boolean).join(' · ');
-    } else if (warningCount > 0) {
-      title = `${warningCount} ${intl.formatMessage({
-        id: ETranslations.global_warning,
-      })}`;
-    } else if (unknownCount > 0) {
-      title = `${unknownCount} ${intl.formatMessage({
-        id: ETranslations.global_unverified,
-      })}`;
-    }
+    // Surface every non-zero tier so a warning can't hide a co-existing
+    // unverified finding. (The `${count} ${noun}` form is not ICU-pluralized —
+    // grammatically-correct plurals would need dedicated i18n keys.)
+    const title = [
+      criticalCount > 0
+        ? `${criticalCount} ${intl.formatMessage({
+            id: ETranslations.global_risk,
+          })}`
+        : '',
+      warningCount > 0
+        ? `${warningCount} ${intl.formatMessage({
+            id: ETranslations.global_warning,
+          })}`
+        : '',
+      unknownCount > 0
+        ? `${unknownCount} ${intl.formatMessage({
+            id: ETranslations.global_unverified,
+          })}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return (
       <XStack gap="$2" alignItems="center" flexShrink={0}>
         {title ? (
