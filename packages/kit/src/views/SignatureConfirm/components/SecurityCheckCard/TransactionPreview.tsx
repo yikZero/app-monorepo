@@ -63,6 +63,11 @@ function getSimulationAssetAmount(asset: ISimulationAsset) {
     }
     return asset.amountParsed || asset.amount;
   }
+  // Match the canonical Assets renderer: a non-ERC1155 NFT shows only its name,
+  // never a numeric quantity (a unique token's "1" is noise).
+  if (asset.nft.collectionType !== ENFTType.ERC1155) {
+    return '';
+  }
   return asset.amount;
 }
 

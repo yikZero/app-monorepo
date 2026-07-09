@@ -81,15 +81,28 @@ function LaserBorder({
   const diagonal = Math.sqrt(layout.width ** 2 + layout.height ** 2);
 
   useEffect(() => {
-    if (layout.width === 0 || hasAnimated.current || reducedMotion || !glow)
+    // `glow` can flip after mount: a card may render benign while risk data is
+    // still loading, then resolve to warning/malicious (or the reverse).
+    // Reconcile on every change instead of animating only once, so a non-benign
+    // surface never keeps the celebratory glow and a surface that resolves to
+    // benign can still play it.
+    if (reducedMotion || !glow) {
+      rotation.value = 0;
+      glowOpacity.value = 0;
       return;
+    }
+    if (layout.width === 0 || hasAnimated.current) {
+      return;
+    }
     hasAnimated.current = true;
+    rotation.value = 0;
+    glowOpacity.value = 1;
     rotation.value = withTiming(180, { duration, easing: Easing.linear });
     glowOpacity.value = withDelay(
       duration,
       withTiming(0, { duration: FADE_MS }),
     );
-  }, [layout.width, duration, rotation, glowOpacity, reducedMotion, glow]);
+  }, [glow, layout.width, duration, rotation, glowOpacity, reducedMotion]);
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -124,7 +137,7 @@ function LaserBorder({
     <Animated.View
       style={[
         { borderRadius },
-        isNative
+        isNative && glow
           ? [{ shadowOffset: { width: 0, height: 0 } }, nativeShadowStyle]
           : undefined,
       ]}

@@ -360,18 +360,24 @@ function getCustomHexFindings({
   intl: ReturnType<typeof useIntl>;
 }): ISecurityCheckFinding[] {
   const findings: ISecurityCheckFinding[] = [];
+  const seenTitleIds = new Set<ETranslations>();
   decodedTxs
     ?.filter((decodedTx) => decodedTx.isCustomHexData)
-    .forEach((decodedTx, index) => {
-      const titleIds = getCustomHexDataAlertTitleIds(decodedTx);
-      findings.push(
-        ...titleIds.map((titleId) => ({
-          id: `custom-hex-${index}-${titleId}`,
+    .forEach((decodedTx) => {
+      getCustomHexDataAlertTitleIds(decodedTx).forEach((titleId) => {
+        // These are generic operation warnings, not tx-specific — collapse the
+        // same warning across a batch of custom-hex txs into a single row.
+        if (seenTitleIds.has(titleId)) {
+          return;
+        }
+        seenTitleIds.add(titleId);
+        findings.push({
+          id: `custom-hex-${titleId}`,
           category: 'operation' as const,
           status: 'warning' as const,
           title: intl.formatMessage({ id: titleId }),
-        })),
-      );
+        });
+      });
     });
   return findings;
 }
@@ -382,7 +388,10 @@ function getParserAlertDisplay(alert: string) {
     return { title: normalizedAlert };
   }
 
-  const sentenceEndIndex = normalizedAlert.search(/[.!?。！？]/);
+  // Only treat ASCII .!? as a sentence break when followed by whitespace/end,
+  // so decimals ("0.5") and abbreviations ("U.S.") don't split the alert
+  // mid-token. Full-width CJK enders always count.
+  const sentenceEndIndex = normalizedAlert.search(/[。！？]|[.!?](?=\s|$)/);
   const firstSentence =
     sentenceEndIndex > 0 ? normalizedAlert.slice(0, sentenceEndIndex + 1) : '';
 
@@ -523,10 +532,18 @@ function getOperationFindings({
     }
   }
 
+  // Locally-derived operation findings that a server parser alert may restate;
+  // used to drop duplicate parser alerts, and appended to `findings` below.
+  const customHexFindings = getCustomHexFindings({ decodedTxs, intl });
+  const localOperationFindings = [
+    ...localMessageFindings,
+    ...customHexFindings,
+  ];
+
   validParserAlerts
     .filter(
       (alert) =>
-        !localMessageFindings.some((finding) =>
+        !localOperationFindings.some((finding) =>
           isEquivalentParserAlert(alert, finding),
         ),
     )
@@ -588,7 +605,7 @@ function getOperationFindings({
     });
   }
 
-  findings.push(...getCustomHexFindings({ decodedTxs, intl }));
+  findings.push(...customHexFindings);
 
   return findings;
 }
