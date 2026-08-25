@@ -48,8 +48,6 @@ jest.mock('@onekeyhq/components', () => {
         { type: 'button', onClick: onPress, 'data-testid': testID },
         children,
       ),
-    XStack: ({ children }: { children?: import('react').ReactNode }) =>
-      React.createElement('div', null, children),
   };
 });
 
@@ -119,7 +117,7 @@ describe('NotificationsTestButton', () => {
     };
   });
 
-  it('hides Enable when the OS permission is already granted', () => {
+  it('shows only Test when the OS permission is already granted', () => {
     const { queryByTestId, getByTestId } = render(<NotificationsTestButton />);
 
     expect(queryByTestId('setting-notification-permission-btn')).toBeNull();
@@ -128,19 +126,33 @@ describe('NotificationsTestButton', () => {
     );
   });
 
-  it('shows Enable while authorization is still undetermined', () => {
+  it('shows only Enable while authorization is still undetermined', () => {
     mockPermission = {
       isSupported: true,
       permission: ENotificationPermission.default,
     };
-    const { getByTestId } = render(<NotificationsTestButton />);
+    const { getByTestId, queryByTestId } = render(<NotificationsTestButton />);
 
     expect(getByTestId('setting-notification-permission-btn').textContent).toBe(
       ETranslations.global_enable,
     );
+    expect(queryByTestId('setting-intl-btn')).toBeNull();
   });
 
-  it('recovers permission from Enable without sending a test notification', async () => {
+  it('shows Go to Settings after the system prompt has already been denied', () => {
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.denied,
+    };
+    const { getByTestId, queryByTestId } = render(<NotificationsTestButton />);
+
+    expect(getByTestId('setting-notification-permission-btn').textContent).toBe(
+      ETranslations.global_go_to_settings,
+    );
+    expect(queryByTestId('setting-intl-btn')).toBeNull();
+  });
+
+  it('sends the preview automatically after Enable is granted', async () => {
     mockPermission = {
       isSupported: true,
       permission: ENotificationPermission.default,
@@ -148,6 +160,26 @@ describe('NotificationsTestButton', () => {
     mockRecover.mockResolvedValue({
       isSupported: true,
       permission: ENotificationPermission.granted,
+    });
+    mockShowNotification.mockResolvedValue({ notificationId: '1' });
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    fireEvent.click(getByTestId('setting-notification-permission-btn'));
+
+    await waitFor(() => {
+      expect(mockRecover).toHaveBeenCalledTimes(1);
+      expect(mockShowNotification).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('does not send a preview if Enable is denied', async () => {
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.default,
+    };
+    mockRecover.mockResolvedValue({
+      isSupported: true,
+      permission: ENotificationPermission.denied,
     });
     const { getByTestId } = render(<NotificationsTestButton />);
 
@@ -159,19 +191,26 @@ describe('NotificationsTestButton', () => {
     expect(mockShowNotification).not.toHaveBeenCalled();
   });
 
-  it('skips the test notification when permission recovery does not grant', async () => {
-    mockCanSend.mockResolvedValue(false);
+  it('opens Settings from the denied CTA without sending a preview', async () => {
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.denied,
+    };
+    mockRecover.mockResolvedValue({
+      isSupported: true,
+      permission: ENotificationPermission.denied,
+    });
     const { getByTestId } = render(<NotificationsTestButton />);
 
-    fireEvent.click(getByTestId('setting-intl-btn'));
+    fireEvent.click(getByTestId('setting-notification-permission-btn'));
 
     await waitFor(() => {
-      expect(mockCanSend).toHaveBeenCalledTimes(1);
+      expect(mockRecover).toHaveBeenCalledTimes(1);
     });
     expect(mockShowNotification).not.toHaveBeenCalled();
   });
 
-  it('sends the test notification after permission is confirmed', async () => {
+  it('sends the test notification from Test after permission is confirmed', async () => {
     mockCanSend.mockResolvedValue(true);
     mockShowNotification.mockResolvedValue({ notificationId: '1' });
     const { getByTestId } = render(<NotificationsTestButton />);

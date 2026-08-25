@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { Button, XStack } from '@onekeyhq/components';
+import { Button } from '@onekeyhq/components';
 import type { IButtonProps } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { useHandleAppStateActive } from '@onekeyhq/kit/src/hooks/useHandleAppStateActive';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import {
+  type IOsNotificationPermissionAction,
   canSendOsNotificationTest,
   getOsNotificationPermissionSafe,
   recoverOsNotificationPermission,
@@ -15,8 +16,21 @@ import {
 } from '@onekeyhq/kit/src/utils/notificationPermissionUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import { ENotificationPermission } from '@onekeyhq/shared/types/notification';
 
-function useOsNotificationPermissionCta() {
+function getCtaTranslation(
+  action: IOsNotificationPermissionAction,
+): ETranslations {
+  if (action === 'request') {
+    return ETranslations.global_enable;
+  }
+  if (action === 'openSettings') {
+    return ETranslations.global_go_to_settings;
+  }
+  return ETranslations.global_test;
+}
+
+function useOsNotificationPermissionAction() {
   const { result: permission, run } = usePromiseResult(
     getOsNotificationPermissionSafe,
     [],
@@ -28,86 +42,77 @@ function useOsNotificationPermissionCta() {
   }, [run]);
   useHandleAppStateActive(reloadPermission);
 
-  const showEnable =
-    resolveOsNotificationPermissionAction({
-      permission,
-      isDesktop: !!platformEnv.isDesktop,
-      isWebDappMode: !!platformEnv.isWebDappMode,
-    }) !== 'none';
+  const action = resolveOsNotificationPermissionAction({
+    permission,
+    isDesktop: !!platformEnv.isDesktop,
+    isWebDappMode: !!platformEnv.isWebDappMode,
+  });
 
-  return { showEnable, reloadPermission };
+  return { action, reloadPermission };
 }
 
-function useNotificationTestActions() {
+function useNotificationHelperCta() {
   const intl = useIntl();
-  const { showEnable, reloadPermission } = useOsNotificationPermissionCta();
-  const [isEnabling, setIsEnabling] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
+  const { action, reloadPermission } = useOsNotificationPermissionAction();
+  const [isBusy, setIsBusy] = useState(false);
 
-  const handleEnable = useCallback(async () => {
-    setIsEnabling(true);
-    try {
-      await recoverOsNotificationPermission();
-      reloadPermission();
-    } finally {
-      setIsEnabling(false);
-    }
-  }, [reloadPermission]);
+  const sendTestNotification = useCallback(async () => {
+    await backgroundApiProxy.serviceNotification.showNotification({
+      title: intl.formatMessage({
+        id: ETranslations.notifications_test_message_title,
+      }),
+      description: intl.formatMessage({
+        id: ETranslations.notifications_test_message_desc,
+      }),
+    });
+  }, [intl]);
 
-  const handleTest = useCallback(async () => {
-    setIsTesting(true);
+  const handlePress = useCallback(async () => {
+    setIsBusy(true);
     try {
-      const allowed = await canSendOsNotificationTest();
-      reloadPermission();
-      if (!allowed) {
+      if (action === 'none') {
+        const allowed = await canSendOsNotificationTest();
+        reloadPermission();
+        if (allowed) {
+          await sendTestNotification();
+        }
         return;
       }
-      await backgroundApiProxy.serviceNotification.showNotification({
-        title: intl.formatMessage({
-          id: ETranslations.notifications_test_message_title,
-        }),
-        description: intl.formatMessage({
-          id: ETranslations.notifications_test_message_desc,
-        }),
-      });
+      const recovered = await recoverOsNotificationPermission();
+      reloadPermission();
+      // After a first-time Allow, send the preview immediately so the user
+      // does not have to hunt for a second Test tap.
+      if (recovered?.permission === ENotificationPermission.granted) {
+        await sendTestNotification();
+      }
     } finally {
-      setIsTesting(false);
+      setIsBusy(false);
     }
-  }, [intl, reloadPermission]);
+  }, [action, reloadPermission, sendTestNotification]);
 
-  return { showEnable, isEnabling, isTesting, handleEnable, handleTest };
+  return { action, isBusy, handlePress };
 }
 
 function NotificationsTestButton({ ...rest }: IButtonProps) {
   const intl = useIntl();
-  const { showEnable, isEnabling, isTesting, handleEnable, handleTest } =
-    useNotificationTestActions();
+  const { action, isBusy, handlePress } = useNotificationHelperCta();
+  const isPermissionCta = action !== 'none';
 
   return (
-    <XStack gap="$2" alignItems="center" flexShrink={0}>
-      {showEnable ? (
-        <Button
-          testID="setting-notification-permission-btn"
-          size={rest.size}
-          loading={isEnabling}
-          onPress={() => {
-            void handleEnable();
-          }}
-        >
-          {intl.formatMessage({ id: ETranslations.global_enable })}
-        </Button>
-      ) : null}
-      <Button
-        testID="setting-intl-btn"
-        {...rest}
-        loading={isTesting || rest.loading}
-        onPress={() => {
-          void handleTest();
-        }}
-      >
-        {intl.formatMessage({ id: ETranslations.global_test })}
-      </Button>
-    </XStack>
+    <Button
+      testID={
+        isPermissionCta
+          ? 'setting-notification-permission-btn'
+          : 'setting-intl-btn'
+      }
+      {...rest}
+      loading={isBusy || rest.loading}
+      onPress={() => {
+        void handlePress();
+      }}
+    >
+      {intl.formatMessage({ id: getCtaTranslation(action) })}
+    </Button>
   );
 }
 
