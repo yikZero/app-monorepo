@@ -32,17 +32,17 @@ function getCtaTranslation(
 }
 
 function useOsNotificationPermissionAction() {
-  const { result: permission, isLoading, run } = usePromiseResult(
-    getOsNotificationPermissionSafe,
-    [],
-    {
-      watchLoading: true,
-      undefinedResultIfError: true,
-      // Do not wait for route focus: a lagging focus flag would leave the
-      // CTA spinning instead of settling on Enable / Settings / Test.
-      checkIsFocused: false,
-    },
-  );
+  const {
+    result: permission,
+    isLoading,
+    run,
+  } = usePromiseResult(getOsNotificationPermissionSafe, [], {
+    watchLoading: true,
+    undefinedResultIfError: true,
+    // Do not wait for route focus: a lagging focus flag would leave the
+    // CTA spinning instead of settling on Enable / Settings / Test.
+    checkIsFocused: false,
+  });
 
   const reloadPermission = useCallback(() => {
     void run();
