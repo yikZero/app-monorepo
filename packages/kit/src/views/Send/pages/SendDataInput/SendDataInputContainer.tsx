@@ -20,7 +20,6 @@ import {
   Button,
   Form,
   Icon,
-  IconButton,
   Page,
   SizableText,
   Skeleton,
@@ -129,8 +128,6 @@ type ISendDataInputRouteName =
   | EModalSignatureConfirmRoutes.TxDataInput;
 type ISendAmountInputParams =
   IModalSignatureConfirmParamList[EModalSignatureConfirmRoutes.TxAmountInput];
-const showAddressRiskCheckLabel =
-  platformEnv.isNative || platformEnv.isWebMobile;
 const addressRiskCheckInteractionProps = {
   hoverStyle: { bg: '$transparent', opacity: 0.7 },
   pressStyle: { bg: '$transparent', opacity: 0.5 },
@@ -397,6 +394,7 @@ function SendDataInputContainer() {
   const toResolved = toValue?.resolved;
   const toAddressRaw = toValue?.raw;
   const toSimilarAddress = toValue?.similarAddress;
+  const isPrimeUser = Boolean(isPrimeActive && user?.onekeyUserId);
   addressRiskContextRef.current = {
     networkId: currentAccount.networkId,
     address: toResolved,
@@ -407,13 +405,13 @@ function SendDataInputContainer() {
         currentNetworkId: currentAccount.networkId,
         supportNetworkId: addressRiskSupport.networkId,
         isSupported: addressRiskSupport.supported,
+        isPrimeUser,
         resolvedAddress: toResolved,
         isPending: toPending,
       });
-  const isPrimeUser = Boolean(isPrimeActive && user?.onekeyUserId);
 
   const handleAddressRiskCheck = useCallback(() => {
-    if (addressRiskCheckButtonState !== 'enabled' || !toResolved) {
+    if (addressRiskCheckButtonState !== 'enabled') {
       return;
     }
     defaultLogger.prime.subscription.primeEntryClick({
@@ -429,6 +427,9 @@ function SendDataInputContainer() {
           networkId: currentAccount.networkId,
         },
       });
+      return;
+    }
+    if (!toResolved) {
       return;
     }
     const checkedContext = {
@@ -481,14 +482,10 @@ function SendDataInputContainer() {
   let addressRiskCheckLabelAddon: ReactNode = null;
   if (addressRiskCheckButtonState === 'loading') {
     addressRiskCheckLabelAddon = (
-      <Skeleton
-        width={showAddressRiskCheckLabel ? 88 : 32}
-        height={20}
-        radius="round"
-      />
+      <Skeleton width={88} height={20} radius="round" />
     );
   } else if (addressRiskCheckButtonState !== 'hidden') {
-    addressRiskCheckLabelAddon = showAddressRiskCheckLabel ? (
+    addressRiskCheckLabelAddon = (
       <Button
         testID={SendTestIDs.addressRiskCheckButton}
         size="small"
@@ -510,23 +507,6 @@ function SendDataInputContainer() {
           <Icon name="PrimeOutline" size="$4" ml="$1.5" color="$iconSubdued" />
         ) : null}
       </Button>
-    ) : (
-      <IconButton
-        testID={SendTestIDs.addressRiskCheckButton}
-        title={intl.formatMessage({
-          id: ETranslations.address_risk_check__title,
-        })}
-        size="small"
-        variant="tertiary"
-        cursor="default"
-        {...(addressRiskCheckButtonState === 'enabled'
-          ? addressRiskCheckInteractionProps
-          : {})}
-        mt={platformEnv.isDesktop ? 0 : undefined}
-        icon="ChecklistBoxSearchOutline"
-        disabled={addressRiskCheckButtonState !== 'enabled'}
-        onPress={handleAddressRiskCheck}
-      />
     );
   }
 
