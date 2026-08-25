@@ -85,10 +85,16 @@ function PrimeUserInfoMoreButtonDropDownMenu({
       target: ReturnType<typeof getPrimeSubscriptionManagementTarget>,
     ) => {
       if (target.type === 'infini') {
+        defaultLogger.prime.subscription.primeManageSubscriptionClick({
+          target: 'infiniPage',
+        });
         navigation.push(EPrimePages.PrimeInfiniSubscription);
         return true;
       }
       if (target.type === 'external') {
+        defaultLogger.prime.subscription.primeManageSubscriptionClick({
+          target: 'externalUrl',
+        });
         openUrlUtils.openUrlExternal(target.url);
         return true;
       }
@@ -125,6 +131,9 @@ function PrimeUserInfoMoreButtonDropDownMenu({
       if (openTarget(resolvedTarget)) {
         return;
       }
+      defaultLogger.prime.subscription.primeManageSubscriptionClick({
+        target: 'unresolved',
+      });
       Toast.error({
         title: intl.formatMessage({
           id: ETranslations.prime_manage_subscription,

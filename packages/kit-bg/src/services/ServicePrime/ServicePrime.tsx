@@ -5,6 +5,7 @@ import BigNumber from 'bignumber.js';
 import { chunk, cloneDeep, isString } from 'lodash';
 
 import { ensureSensitiveTextEncoded } from '@onekeyhq/core/src/secret';
+import { analytics } from '@onekeyhq/shared/src/analytics';
 import type { IAxiosResponse } from '@onekeyhq/shared/src/appApiClient/appApiClient';
 import type { IBackgroundMethodWithDevOnlyPassword } from '@onekeyhq/shared/src/background/backgroundDecorators';
 import {
@@ -99,6 +100,10 @@ import {
   markIdentityRecoveryReady,
 } from '../ServiceIdentityExit/identityLifecycleMutex';
 
+import {
+  buildPrimeAnalyticsProfileSnapshot,
+  shouldDropStalePrimeProfileReport,
+} from './primeAnalyticsProfile';
 import {
   allowAuthSessionStorageWritesBySessionSource,
   clearAllSupabaseAuthSessions,
@@ -382,8 +387,169 @@ type IOneKeyIdAuthSnapshot = {
 class ServicePrime extends ServiceBase {
   private primeUserInfoFetchGeneration = 0;
 
+  // Per-bg-session dedup for the analytics identity link; the persisted TTL
+  // in simpleDb.prime.markIdentityLinkReported bounds volume across sessions.
+  private identityLinkReportedUserIds = new Set<string>();
+
+  // Per-bg-session snapshot of the last membership profile values handled,
+  // so hot state-maintenance paths skip the persisted check entirely.
+  private lastHandledPrimeProfileKey: string | undefined;
+
+  // Serialize profile reports so a stale logged-out persist/emit cannot
+  // overwrite a later login snapshot in the same session.
+  private primeProfileReportChain: Promise<void> = Promise.resolve();
+
   constructor({ backgroundApi }: { backgroundApi: any }) {
     super({ backgroundApi });
+  }
+
+  /**
+   * Report the analytics identity link (app instanceId <-> onekeyUserId) so
+   * the analytics proxy can merge the device person with the account person
+   * used by server-side subscription events. Deduplicated per user per bg
+   * session, plus a persisted TTL across sessions.
+   */
+  private async trackOneKeyIdIdentityLinked({
+    onekeyUserId,
+  }: {
+    onekeyUserId: string | undefined;
+  }) {
+    try {
+      if (!onekeyUserId) {
+        return;
+      }
+      if (this.identityLinkReportedUserIds.has(onekeyUserId)) {
+        return;
+      }
+      this.identityLinkReportedUserIds.add(onekeyUserId);
+      const { shouldReport } =
+        await this.backgroundApi.simpleDb.prime.markIdentityLinkReported({
+          onekeyUserId,
+          now: Date.now(),
+        });
+      if (shouldReport) {
+        defaultLogger.prime.subscription.onekeyIdIdentityLinked({
+          onekeyUserId,
+        });
+      }
+    } catch (error) {
+      if (onekeyUserId) {
+        this.identityLinkReportedUserIds.delete(onekeyUserId);
+      }
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `trackOneKeyIdIdentityLinked failed: ${getSanitizedAuthErrorLog(
+          error,
+        )}`,
+      });
+    }
+  }
+
+  /**
+   * Report the OneKey ID / Prime membership dimensions as analytics user
+   * profile attributes for EVERY user (false for never-logged-in users), so
+   * any event stream can be segmented by membership without joining
+   * subscription events. Value-change driven with a persisted TTL re-assert;
+   * updateUserProfile is a documented direct-call exception for persistent
+   * user attributes.
+   */
+  private enqueuePrimeProfileAnalyticsReport() {
+    this.primeProfileReportChain = this.primeProfileReportChain
+      .then(() => this.reportPrimeProfileToAnalytics())
+      .catch(() => undefined);
+  }
+
+  private async readPrimeAnalyticsProfileSnapshot() {
+    const { isLoggedIn, isLoggedInOnServer, primeSubscription } =
+      await primePersistAtom.get();
+    return buildPrimeAnalyticsProfileSnapshot({
+      isLoggedIn,
+      isLoggedInOnServer,
+      isPrimeSubscriptionActive: primeSubscription?.isActive,
+    });
+  }
+
+  private dropStalePrimeProfileSnapshot({
+    expectedKey,
+    currentKey,
+  }: {
+    expectedKey: string;
+    currentKey: string;
+  }): boolean {
+    const { drop, clearLastHandled } = shouldDropStalePrimeProfileReport({
+      expectedKey,
+      currentKey,
+      lastHandledKey: this.lastHandledPrimeProfileKey,
+    });
+    if (clearLastHandled) {
+      this.lastHandledPrimeProfileKey = undefined;
+    }
+    return drop;
+  }
+
+  private async persistAndEmitPrimeProfile({
+    isOneKeyIdLoggedIn,
+    isPrimeActive,
+    profileKey,
+  }: {
+    isOneKeyIdLoggedIn: boolean;
+    isPrimeActive: boolean;
+    profileKey: string;
+  }) {
+    const { shouldReport } =
+      await this.backgroundApi.simpleDb.prime.markPrimeProfileReported({
+        isOneKeyIdLoggedIn,
+        isPrimeActive,
+        now: Date.now(),
+      });
+    if (!shouldReport) {
+      return;
+    }
+    const confirmed = await this.readPrimeAnalyticsProfileSnapshot();
+    if (
+      this.dropStalePrimeProfileSnapshot({
+        expectedKey: profileKey,
+        currentKey: confirmed.profileKey,
+      })
+    ) {
+      return;
+    }
+    analytics.updateUserProfile({
+      isOneKeyIdLoggedIn: confirmed.isOneKeyIdLoggedIn,
+      isPrimeActive: confirmed.isPrimeActive,
+    });
+  }
+
+  private async reportPrimeProfileToAnalytics() {
+    let profileKey: string | undefined;
+    try {
+      const snapshot = await this.readPrimeAnalyticsProfileSnapshot();
+      profileKey = snapshot.profileKey;
+      if (this.lastHandledPrimeProfileKey === profileKey) {
+        return;
+      }
+      // Mark before persist so overlapping startup/login calls skip a second
+      // full-entity write. Clear on failure so this session can retry.
+      this.lastHandledPrimeProfileKey = profileKey;
+      const latest = await this.readPrimeAnalyticsProfileSnapshot();
+      if (
+        this.dropStalePrimeProfileSnapshot({
+          expectedKey: profileKey,
+          currentKey: latest.profileKey,
+        })
+      ) {
+        return;
+      }
+      await this.persistAndEmitPrimeProfile(latest);
+    } catch (error) {
+      if (profileKey && this.lastHandledPrimeProfileKey === profileKey) {
+        this.lastHandledPrimeProfileKey = undefined;
+      }
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `reportPrimeProfileToAnalytics failed: ${getSanitizedAuthErrorLog(
+          error,
+        )}`,
+      });
+    }
   }
 
   async getPrimeClient() {
@@ -545,8 +711,8 @@ class ServicePrime extends ServiceBase {
     try {
       await this.backgroundApi.serviceKeylessWallet.cleanupLocalKeylessOAuthTokens();
     } catch (error) {
-      defaultLogger.prime.subscription.onekeyIdLogout({
-        reason: `${callerName}: clear legacy keyless session storage failed: ${String(
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `${callerName}: clear legacy keyless session storage failed: ${getSanitizedAuthErrorLog(
           error,
         )}`,
       });
@@ -940,7 +1106,7 @@ class ServicePrime extends ServiceBase {
       defaultLogger.prime.subscription.onekeyIdInvalidToken({
         url: requestUrl || '',
         errorCode: errorCode || -1,
-        errorMessage: `skip clearing invalid token response because local refresh failed: ${String(
+        errorMessage: `skip clearing invalid token response because local refresh failed: ${getSanitizedAuthErrorLog(
           tokenRead.retryableError,
         )}`,
       });
@@ -1330,6 +1496,9 @@ class ServicePrime extends ServiceBase {
           );
         }
         await this.apiLoginWithPersistedLegacySession({ accessToken });
+        defaultLogger.prime.subscription.onekeyIdLoginSuccess({
+          method: 'email',
+        });
         return { success: true };
       });
     } catch (error) {
@@ -1518,8 +1687,8 @@ class ServicePrime extends ServiceBase {
     try {
       await this.backgroundApi.simpleDb.prime.clearLegacyAuthSession();
     } catch (cleanupError) {
-      defaultLogger.prime.subscription.onekeyIdLogout({
-        reason: `${callerName}: post-commit legacy session cleanup failed: ${String(
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `${callerName}: post-commit legacy session cleanup failed: ${getSanitizedAuthErrorLog(
           cleanupError,
         )}`,
       });
@@ -1539,10 +1708,14 @@ class ServicePrime extends ServiceBase {
       await this.assertOneKeyIdLoggedOutForInteractiveLogin(
         'ServicePrime.apiOAuthLogin',
       );
-      return this.apiOAuthLoginWithPersistedSession({
+      const loginResponse = await this.apiOAuthLoginWithPersistedSession({
         accessToken,
         callerName: 'ServicePrime.apiOAuthLogin',
       });
+      defaultLogger.prime.subscription.onekeyIdLoginSuccess({
+        method: 'oauth',
+      });
+      return loginResponse;
     });
   }
 
@@ -2304,10 +2477,14 @@ class ServicePrime extends ServiceBase {
       // setSession may wait on network I/O. Recheck before the OneKey ID
       // POST so a Keyless wallet created during that wait wins the race.
       await this.assertNoLocalKeylessWalletForFreshOAuthLogin();
-      return this.apiOAuthLoginWithPersistedSession({
+      const loginResponse = await this.apiOAuthLoginWithPersistedSession({
         accessToken,
         callerName,
       });
+      defaultLogger.prime.subscription.onekeyIdLoginSuccess({
+        method: provider ?? 'oauth',
+      });
+      return loginResponse;
     });
   }
 
@@ -2869,7 +3046,7 @@ class ServicePrime extends ServiceBase {
             defaultLogger.prime.subscription.onekeyIdInvalidToken({
               url: '/prime/v1/account/profile',
               errorCode: Number(invalidTokenError.code) || -1,
-              errorMessage: `apiBindLegacyOneKeyIdOAuth: legacy token owner probe reconciliation failed: ${String(
+              errorMessage: `apiBindLegacyOneKeyIdOAuth: legacy token owner probe reconciliation failed: ${getSanitizedAuthErrorLog(
                 reconciliationError,
               )}`,
             });
@@ -2977,8 +3154,8 @@ class ServicePrime extends ServiceBase {
       try {
         await this.backgroundApi.simpleDb.prime.clearLegacyAuthSession();
       } catch (cleanupError) {
-        defaultLogger.prime.subscription.onekeyIdLogout({
-          reason: `ServicePrime.apiBindLegacyOneKeyIdOAuth: post-commit legacy session cleanup failed: ${String(
+        defaultLogger.prime.subscription.onekeyIdStateTrace({
+          reason: `ServicePrime.apiBindLegacyOneKeyIdOAuth: post-commit legacy session cleanup failed: ${getSanitizedAuthErrorLog(
             cleanupError,
           )}`,
         });
@@ -2993,8 +3170,8 @@ class ServicePrime extends ServiceBase {
       // pre-bind cached result.
       this.clearPrimeUserInfoCache();
       void this.apiFetchPrimeUserInfo().catch((error) => {
-        defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
-          reason: `ServicePrime.apiBindLegacyOneKeyIdOAuth: refresh user info failed: ${String(
+        defaultLogger.prime.subscription.onekeyIdStateTrace({
+          reason: `ServicePrime.apiBindLegacyOneKeyIdOAuth: refresh user info failed: ${getSanitizedAuthErrorLog(
             error,
           )}`,
         });
@@ -3437,18 +3614,10 @@ class ServicePrime extends ServiceBase {
         ),
       );
     } catch (error) {
-      const safeError = error as {
-        message?: unknown;
-        code?: unknown;
-        status?: unknown;
-        requestId?: unknown;
-      };
-      defaultLogger.prime.subscription.onekeyIdLogout({
-        reason: `${callerName}: server logout failed message=${String(
-          safeError?.message || 'unknown',
-        )} code=${String(safeError?.code || '')} status=${String(
-          safeError?.status || '',
-        )} requestId=${String(safeError?.requestId || '')}`,
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `${callerName}: server logout failed: ${getSanitizedAuthErrorLog(
+          error,
+        )}`,
       });
     }
   }
@@ -4266,8 +4435,14 @@ class ServicePrime extends ServiceBase {
     const onekeyAccount = (serverUserInfo as Partial<IOneKeyIdProfileResponse>)
       .onekeyAccount;
     const serverUserId = serverUserInfo?.userId ?? onekeyAccount?.onekeyUserId;
-    defaultLogger.prime.subscription.onekeyIdLogout({
-      reason: `updatePrimeAtomByServerUserInfo: before update, atom isPrime=${beforeValue.primeSubscription?.isActive}, atom userId=${beforeValue.onekeyUserId}, server isPrime=${serverUserInfo?.isPrime}, server userId=${serverUserId}`,
+    // Local-only trace: fires on every user-info refresh, and user ids must
+    // never be embedded in server-bound free text.
+    defaultLogger.prime.subscription.onekeyIdStateTrace({
+      reason: `updatePrimeAtomByServerUserInfo: before update, atom isPrime=${
+        beforeValue.primeSubscription?.isActive
+      }, server isPrime=${serverUserInfo?.isPrime}, sameUser=${
+        beforeValue.onekeyUserId === serverUserId
+      }`,
     });
 
     const primeSubscription = this.buildPrimeSubscriptionInfo(serverUserInfo);
@@ -4322,9 +4497,12 @@ class ServicePrime extends ServiceBase {
     });
 
     const afterValue = await primePersistAtom.get();
-    defaultLogger.prime.subscription.onekeyIdLogout({
-      reason: `updatePrimeAtomByServerUserInfo: after update, atom isPrime=${afterValue.primeSubscription?.isActive}, atom userId=${afterValue.onekeyUserId}`,
+    defaultLogger.prime.subscription.onekeyIdStateTrace({
+      reason: `updatePrimeAtomByServerUserInfo: after update, atom isPrime=${afterValue.primeSubscription?.isActive}`,
     });
+
+    void this.trackOneKeyIdIdentityLinked({ onekeyUserId: serverUserId });
+    this.enqueuePrimeProfileAnalyticsReport();
 
     if (serverUserInfo?.inviteCode) {
       await this.backgroundApi.serviceReferralCode.updateMyReferralCode(
@@ -4409,6 +4587,11 @@ class ServicePrime extends ServiceBase {
           (isSameUser ? v.subscriptionManageUrl : undefined),
       };
     });
+
+    void this.trackOneKeyIdIdentityLinked({
+      onekeyUserId: onekeyAccount.onekeyUserId,
+    });
+    this.enqueuePrimeProfileAnalyticsReport();
 
     if (loginResponse.inviteCode) {
       await this.backgroundApi.serviceReferralCode.updateMyReferralCode(
@@ -4527,7 +4710,10 @@ class ServicePrime extends ServiceBase {
     const authToken =
       await this.backgroundApi.simpleDb.prime.getActiveAuthToken();
     if (!authToken) {
-      defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
+      // Local-only traces: this branch runs for every logged-out user on
+      // every app start — as server events they flooded analytics and, worse,
+      // polluted the genuine invalid-token signal with synthetic -1759 noise.
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'ServicePrime.apiFetchPrimeUserInfo: simpleDb.prime.getActiveAuthToken() is null',
       });
@@ -4536,12 +4722,10 @@ class ServicePrime extends ServiceBase {
       });
       const localUserInfo = await primePersistAtom.get();
 
-      defaultLogger.prime.subscription.onekeyIdInvalidToken({
-        url: '',
-        errorCode: -1759,
-        errorMessage:
-          'servicePrime.apiFetchPrimeUserInfo: simpleDb.prime.getActiveAuthToken() No auth token',
-      });
+      // App-start fetch runs for every user; this is the guaranteed trigger
+      // that gives never-logged-in users the membership profile attributes.
+      this.enqueuePrimeProfileAnalyticsReport();
+
       // Do NOT emit PrimeLoginInvalidToken here: having no token is not an
       // invalid-token event, and a payload-less emit would wipe local
       // keyless sessions (e.g. keyless-only users not logged into OneKey ID).
@@ -4567,7 +4751,7 @@ class ServicePrime extends ServiceBase {
       await this.backgroundApi.simpleDb.prime.getAuthSessionSource();
     const localUserInfoAfterFetch = await primePersistAtom.get();
     if (!authTokenAfterFetch) {
-      defaultLogger.prime.subscription.onekeyIdLogout({
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'ServicePrime.apiFetchPrimeUserInfo: auth token cleared during request, discarding response',
       });
@@ -4586,7 +4770,7 @@ class ServicePrime extends ServiceBase {
       localUserInfoAfterFetch.onekeyUserId !==
         localUserInfoBeforeFetch.onekeyUserId
     ) {
-      defaultLogger.prime.subscription.onekeyIdLogout({
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'ServicePrime.apiFetchPrimeUserInfo: auth session changed during request, discarding response',
       });
@@ -4661,7 +4845,7 @@ class ServicePrime extends ServiceBase {
       };
     });
     if (!commitResult.committed) {
-      defaultLogger.prime.subscription.onekeyIdLogout({
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'ServicePrime.apiFetchPrimeUserInfo: identity lifecycle or fetch generation changed before response commit, discarding response',
       });
@@ -4698,18 +4882,25 @@ class ServicePrime extends ServiceBase {
     // cached moments earlier can never be served after the state is reset.
     this.clearPrimeUserInfoCache();
     const beforeValue = await primePersistAtom.get();
-    defaultLogger.prime.subscription.onekeyIdLogout({
-      reason: `setPrimePersistAtomNotLoggedIn: before clear, isLoggedIn=${beforeValue.isLoggedIn}, onekeyUserId=${beforeValue.onekeyUserId}, isPrime=${beforeValue.primeSubscription?.isActive}`,
-    });
+    const alreadyLoggedOut =
+      !beforeValue.isLoggedIn && !beforeValue.isLoggedInOnServer;
+    // Local-only: this method also runs for already-logged-out users on hot
+    // startup paths, so it must not produce server events. Skip the trace
+    // when the atom is already the logged-out projection.
+    if (!alreadyLoggedOut) {
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `setPrimePersistAtomNotLoggedIn: before clear, isLoggedIn=${beforeValue.isLoggedIn}, isPrime=${beforeValue.primeSubscription?.isActive}`,
+      });
+    }
 
     await primePersistAtom.set(
       (): IPrimePersistAtomData => cloneDeep(primePersistAtomInitialValue),
     );
 
-    const afterValue = await primePersistAtom.get();
-    defaultLogger.prime.subscription.onekeyIdLogout({
-      reason: `setPrimePersistAtomNotLoggedIn: after clear, isLoggedIn=${afterValue.isLoggedIn}, onekeyUserId=${afterValue.onekeyUserId}, isPrime=${afterValue.primeSubscription?.isActive}`,
-    });
+    // Runs for never-logged-in users too (hot startup paths), which is what
+    // gives every user the membership profile attributes; the in-memory
+    // snapshot inside keeps repeats free.
+    this.enqueuePrimeProfileAnalyticsReport();
 
     await this.backgroundApi.serviceMasterPassword.clearLocalMasterPassword();
     await primeServerMasterPasswordStatusAtom.set((v) => ({
@@ -4725,8 +4916,9 @@ class ServicePrime extends ServiceBase {
       this.backgroundApi.simpleDb.prime.getActiveAuthToken(),
     );
     if (tokenRead.retryableError) {
-      defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
-        reason: `ServicePrime.isLoggedIn: auth refresh failed, keep local login state: ${String(
+      // Local-only: transient refresh failures can repeat while offline.
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
+        reason: `ServicePrime.isLoggedIn: auth refresh failed, keep local login state: ${getSanitizedAuthErrorLog(
           tokenRead.retryableError,
         )}`,
       });
@@ -4735,9 +4927,13 @@ class ServicePrime extends ServiceBase {
     const authToken = tokenRead.token;
     const result = Boolean(isLoggedIn && isLoggedInOnServer && authToken);
 
-    if (!result) {
-      // debugger;
-      defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
+    // Expected logged-out is the common result of this hot gate — do not
+    // trace it. Only log inconsistent flag/token combinations: "flags say
+    // logged in, no token" and "flags say logged out, token still exists"
+    // (e.g. an interrupted clear sequence). Never-logged-in users hit
+    // neither, so this cannot flood.
+    if (!result && (isLoggedIn || isLoggedInOnServer || authToken)) {
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason: `isLoggedIn=false ${JSON.stringify({
           isLoggedIn,
           isLoggedInOnServer,

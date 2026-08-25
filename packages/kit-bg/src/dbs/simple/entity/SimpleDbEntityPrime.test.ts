@@ -2968,3 +2968,187 @@ describe('SimpleDbEntityPrime Infini pending payment session', () => {
     },
   );
 });
+
+function createPrimeAnalyticsEntityWithStore(initial: ISimpleDBPrime = {}) {
+  const entity = new SimpleDbEntityPrime();
+  let persisted: ISimpleDBPrime = initial;
+  jest
+    .spyOn(entity, 'getRawData')
+    .mockImplementation((async () => persisted) as never);
+  const setRawDataSpy = jest
+    .spyOn(entity, 'setRawData')
+    .mockImplementation((async (
+      updater: (rawData: ISimpleDBPrime) => ISimpleDBPrime,
+    ) => {
+      persisted = updater(persisted);
+      return persisted;
+    }) as never);
+  return { entity, getPersisted: () => persisted, setRawDataSpy };
+}
+
+describe('SimpleDbEntityPrime.markIdentityLinkReported', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  test('reports and records the first link for a user', async () => {
+    const { entity, getPersisted } = createPrimeAnalyticsEntityWithStore();
+    const now = Date.now();
+
+    await expect(
+      entity.markIdentityLinkReported({ onekeyUserId: 'user-1', now }),
+    ).resolves.toEqual({ shouldReport: true });
+    expect(getPersisted().identityLinkReportedAtByUserId).toEqual({
+      'user-1': now,
+    });
+  });
+
+  test('suppresses re-reports within the TTL without touching storage', async () => {
+    const now = Date.now();
+    const { entity, getPersisted, setRawDataSpy } =
+      createPrimeAnalyticsEntityWithStore({
+        identityLinkReportedAtByUserId: { 'user-1': now - DAY_MS },
+      });
+
+    await expect(
+      entity.markIdentityLinkReported({ onekeyUserId: 'user-1', now }),
+    ).resolves.toEqual({ shouldReport: false });
+    expect(getPersisted().identityLinkReportedAtByUserId).toEqual({
+      'user-1': now - DAY_MS,
+    });
+    expect(setRawDataSpy).not.toHaveBeenCalled();
+  });
+
+  test('re-reports after the TTL elapses', async () => {
+    const now = Date.now();
+    const { entity, getPersisted } = createPrimeAnalyticsEntityWithStore({
+      identityLinkReportedAtByUserId: { 'user-1': now - 8 * DAY_MS },
+    });
+
+    await expect(
+      entity.markIdentityLinkReported({ onekeyUserId: 'user-1', now }),
+    ).resolves.toEqual({ shouldReport: true });
+    expect(getPersisted().identityLinkReportedAtByUserId).toEqual({
+      'user-1': now,
+    });
+  });
+
+  test('re-reports when the recorded timestamp is in the future (clock rollback)', async () => {
+    const now = Date.now();
+    const { entity } = createPrimeAnalyticsEntityWithStore({
+      identityLinkReportedAtByUserId: { 'user-1': now + DAY_MS },
+    });
+
+    await expect(
+      entity.markIdentityLinkReported({ onekeyUserId: 'user-1', now }),
+    ).resolves.toEqual({ shouldReport: true });
+  });
+
+  test('prunes the record to the most recent users', async () => {
+    const now = Date.now();
+    const { entity, getPersisted } = createPrimeAnalyticsEntityWithStore({
+      identityLinkReportedAtByUserId: {
+        'user-1': now - 5,
+        'user-2': now - 4,
+        'user-3': now - 3,
+        'user-4': now - 2,
+        'user-5': now - 1,
+      },
+    });
+
+    await expect(
+      entity.markIdentityLinkReported({ onekeyUserId: 'user-6', now }),
+    ).resolves.toEqual({ shouldReport: true });
+    const persistedRecord = getPersisted().identityLinkReportedAtByUserId;
+    expect(Object.keys(persistedRecord ?? {})).toHaveLength(5);
+    expect(persistedRecord?.['user-6']).toBe(now);
+    expect(persistedRecord?.['user-1']).toBeUndefined();
+  });
+});
+
+describe('SimpleDbEntityPrime.markPrimeProfileReported', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  test('reports the first profile snapshot', async () => {
+    const { entity, getPersisted } = createPrimeAnalyticsEntityWithStore();
+    const now = Date.now();
+
+    await expect(
+      entity.markPrimeProfileReported({
+        isOneKeyIdLoggedIn: false,
+        isPrimeActive: false,
+        now,
+      }),
+    ).resolves.toEqual({ shouldReport: true });
+    expect(getPersisted().analyticsPrimeProfileReport).toEqual({
+      isOneKeyIdLoggedIn: false,
+      isPrimeActive: false,
+      reportedAt: now,
+    });
+  });
+
+  test('suppresses unchanged values within the TTL without touching storage', async () => {
+    const now = Date.now();
+    const { entity, getPersisted, setRawDataSpy } =
+      createPrimeAnalyticsEntityWithStore({
+        analyticsPrimeProfileReport: {
+          isOneKeyIdLoggedIn: true,
+          isPrimeActive: false,
+          reportedAt: now - DAY_MS,
+        },
+      });
+
+    await expect(
+      entity.markPrimeProfileReported({
+        isOneKeyIdLoggedIn: true,
+        isPrimeActive: false,
+        now,
+      }),
+    ).resolves.toEqual({ shouldReport: false });
+    expect(getPersisted().analyticsPrimeProfileReport?.reportedAt).toBe(
+      now - DAY_MS,
+    );
+    expect(setRawDataSpy).not.toHaveBeenCalled();
+  });
+
+  test('reports immediately when a value changes', async () => {
+    const now = Date.now();
+    const { entity, getPersisted } = createPrimeAnalyticsEntityWithStore({
+      analyticsPrimeProfileReport: {
+        isOneKeyIdLoggedIn: true,
+        isPrimeActive: false,
+        reportedAt: now - 1000,
+      },
+    });
+
+    await expect(
+      entity.markPrimeProfileReported({
+        isOneKeyIdLoggedIn: true,
+        isPrimeActive: true,
+        now,
+      }),
+    ).resolves.toEqual({ shouldReport: true });
+    expect(getPersisted().analyticsPrimeProfileReport).toEqual({
+      isOneKeyIdLoggedIn: true,
+      isPrimeActive: true,
+      reportedAt: now,
+    });
+  });
+
+  test('re-asserts unchanged values after the TTL', async () => {
+    const now = Date.now();
+    const { entity } = createPrimeAnalyticsEntityWithStore({
+      analyticsPrimeProfileReport: {
+        isOneKeyIdLoggedIn: true,
+        isPrimeActive: true,
+        reportedAt: now - 8 * DAY_MS,
+      },
+    });
+
+    await expect(
+      entity.markPrimeProfileReported({
+        isOneKeyIdLoggedIn: true,
+        isPrimeActive: true,
+        now,
+      }),
+    ).resolves.toEqual({ shouldReport: true });
+  });
+});
