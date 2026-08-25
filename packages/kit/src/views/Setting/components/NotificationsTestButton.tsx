@@ -11,6 +11,7 @@ import {
   type IOsNotificationPermissionAction,
   canSendOsNotificationTest,
   getOsNotificationPermissionSafe,
+  isOsNotificationPermissionPending,
   recoverOsNotificationPermission,
   resolveOsNotificationPermissionAction,
 } from '@onekeyhq/kit/src/utils/notificationPermissionUtils';
@@ -31,10 +32,16 @@ function getCtaTranslation(
 }
 
 function useOsNotificationPermissionAction() {
-  const { result: permission, run } = usePromiseResult(
+  const { result: permission, isLoading, run } = usePromiseResult(
     getOsNotificationPermissionSafe,
     [],
-    { undefinedResultIfError: true },
+    {
+      watchLoading: true,
+      undefinedResultIfError: true,
+      // Do not wait for route focus: a lagging focus flag would leave the
+      // CTA spinning instead of settling on Enable / Settings / Test.
+      checkIsFocused: false,
+    },
   );
 
   const reloadPermission = useCallback(() => {
@@ -42,18 +49,27 @@ function useOsNotificationPermissionAction() {
   }, [run]);
   useHandleAppStateActive(reloadPermission);
 
+  const isDesktop = !!platformEnv.isDesktop;
+  const isWebDappMode = !!platformEnv.isWebDappMode;
+  const isPending = isOsNotificationPermissionPending({
+    permission,
+    isLoading,
+    isDesktop,
+    isWebDappMode,
+  });
   const action = resolveOsNotificationPermissionAction({
     permission,
-    isDesktop: !!platformEnv.isDesktop,
-    isWebDappMode: !!platformEnv.isWebDappMode,
+    isDesktop,
+    isWebDappMode,
   });
 
-  return { action, reloadPermission };
+  return { action, isPending, reloadPermission };
 }
 
 function useNotificationHelperCta() {
   const intl = useIntl();
-  const { action, reloadPermission } = useOsNotificationPermissionAction();
+  const { action, isPending, reloadPermission } =
+    useOsNotificationPermissionAction();
   const [isBusy, setIsBusy] = useState(false);
 
   const sendTestNotification = useCallback(async () => {
@@ -68,6 +84,9 @@ function useNotificationHelperCta() {
   }, [intl]);
 
   const handlePress = useCallback(async () => {
+    if (isPending) {
+      return;
+    }
     setIsBusy(true);
     try {
       if (action === 'none') {
@@ -85,33 +104,38 @@ function useNotificationHelperCta() {
       if (recovered?.permission === ENotificationPermission.granted) {
         await sendTestNotification();
       }
+    } catch {
+      // Preview/test send is best-effort; keep the CTA usable.
     } finally {
       setIsBusy(false);
     }
-  }, [action, reloadPermission, sendTestNotification]);
+  }, [action, isPending, reloadPermission, sendTestNotification]);
 
-  return { action, isBusy, handlePress };
+  return { action, isBusy, isPending, handlePress };
 }
 
-function NotificationsTestButton({ ...rest }: IButtonProps) {
+function NotificationsTestButton({
+  loading: restLoading,
+  ...rest
+}: IButtonProps) {
   const intl = useIntl();
-  const { action, isBusy, handlePress } = useNotificationHelperCta();
-  const isPermissionCta = action !== 'none';
+  const { action, isBusy, isPending, handlePress } = useNotificationHelperCta();
+  const isPermissionCta = isPending || action !== 'none';
 
   return (
     <Button
+      {...rest}
       testID={
         isPermissionCta
           ? 'setting-notification-permission-btn'
           : 'setting-intl-btn'
       }
-      {...rest}
-      loading={isBusy || rest.loading}
+      loading={isBusy || isPending || restLoading}
       onPress={() => {
         void handlePress();
       }}
     >
-      {intl.formatMessage({ id: getCtaTranslation(action) })}
+      {isPending ? '' : intl.formatMessage({ id: getCtaTranslation(action) })}
     </Button>
   );
 }

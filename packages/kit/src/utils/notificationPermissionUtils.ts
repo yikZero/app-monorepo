@@ -45,6 +45,27 @@ export function resolveOsNotificationPermissionAction({
   return 'request';
 }
 
+// Native/extension first paint has `permission === undefined`. Treating that
+// as `'none'` flashes Test before Enable / Go to Settings. Stay pending until
+// the read finishes (`isLoading === false`) or a payload arrives. Desktop and
+// web dapp always show Test, so they skip the wait.
+export function isOsNotificationPermissionPending({
+  permission,
+  isLoading,
+  isDesktop,
+  isWebDappMode,
+}: {
+  permission: INotificationPermissionDetail | undefined;
+  isLoading: boolean | undefined;
+  isDesktop: boolean;
+  isWebDappMode: boolean;
+}): boolean {
+  if (isWebDappMode || isDesktop) {
+    return false;
+  }
+  return permission === undefined && isLoading !== false;
+}
+
 export async function getOsNotificationPermissionSafe(): Promise<
   INotificationPermissionDetail | undefined
 > {

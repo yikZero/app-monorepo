@@ -12,13 +12,16 @@ const mockRecover: jest.Mock<Promise<unknown>, unknown[]> = jest.fn();
 const mockCanSend: jest.Mock<Promise<boolean>, unknown[]> = jest.fn();
 const mockReload: jest.Mock<Promise<void>, unknown[]> = jest.fn();
 
-let mockPermission: {
-  isSupported: boolean;
-  permission: ENotificationPermission;
-} = {
+let mockPermission:
+  | {
+      isSupported: boolean;
+      permission: ENotificationPermission;
+    }
+  | undefined = {
   isSupported: true,
   permission: ENotificationPermission.granted,
 };
+let mockIsLoading: boolean | undefined = false;
 
 const mockPlatformEnv = {
   isDesktop: false,
@@ -54,6 +57,7 @@ jest.mock('@onekeyhq/components', () => {
 jest.mock('@onekeyhq/kit/src/hooks/usePromiseResult', () => ({
   usePromiseResult: () => ({
     result: mockPermission,
+    isLoading: mockIsLoading,
     run: mockReload,
   }),
 }));
@@ -115,6 +119,30 @@ describe('NotificationsTestButton', () => {
       isSupported: true,
       permission: ENotificationPermission.granted,
     };
+    mockIsLoading = false;
+  });
+
+  it('does not flash Test while the OS permission is still loading', () => {
+    mockPermission = undefined;
+    mockIsLoading = undefined;
+    const { queryByText, getByTestId } = render(<NotificationsTestButton />);
+
+    expect(queryByText(ETranslations.global_test)).toBeNull();
+    expect(queryByText(ETranslations.global_enable)).toBeNull();
+    expect(queryByText(ETranslations.global_go_to_settings)).toBeNull();
+    fireEvent.click(getByTestId('setting-notification-permission-btn'));
+    expect(mockCanSend).not.toHaveBeenCalled();
+    expect(mockRecover).not.toHaveBeenCalled();
+  });
+
+  it('falls back to Test after the permission read finishes without a payload', () => {
+    mockPermission = undefined;
+    mockIsLoading = false;
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    expect(getByTestId('setting-intl-btn').textContent).toBe(
+      ETranslations.global_test,
+    );
   });
 
   it('shows only Test when the OS permission is already granted', () => {

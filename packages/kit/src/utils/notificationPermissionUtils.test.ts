@@ -4,6 +4,7 @@ import {
   canSendOsNotificationTest,
   getOsNotificationPermissionSafe,
   isNotificationFullyEnabled,
+  isOsNotificationPermissionPending,
   recoverOsNotificationPermission,
   resolveOsNotificationPermissionAction,
 } from './notificationPermissionUtils';
@@ -134,6 +135,65 @@ describe('resolveOsNotificationPermissionAction', () => {
         isWebDappMode: false,
       }),
     ).toBe('none');
+  });
+});
+
+describe('isOsNotificationPermissionPending', () => {
+  it('waits while the OS permission has not been read yet', () => {
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undefined,
+        isLoading: undefined,
+        isDesktop: false,
+        isWebDappMode: false,
+      }),
+    ).toBe(true);
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undefined,
+        isLoading: true,
+        isDesktop: false,
+        isWebDappMode: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('stops waiting once the read finishes, even if the payload is missing', () => {
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undefined,
+        isLoading: false,
+        isDesktop: false,
+        isWebDappMode: false,
+      }),
+    ).toBe(false);
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undetermined,
+        isLoading: true,
+        isDesktop: false,
+        isWebDappMode: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('does not wait on desktop or web dapp mode, where the CTA is always Test', () => {
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undefined,
+        isLoading: true,
+        isDesktop: true,
+        isWebDappMode: false,
+      }),
+    ).toBe(false);
+    expect(
+      isOsNotificationPermissionPending({
+        permission: undefined,
+        isLoading: true,
+        isDesktop: false,
+        isWebDappMode: true,
+      }),
+    ).toBe(false);
   });
 });
 

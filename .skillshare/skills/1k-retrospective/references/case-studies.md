@@ -171,3 +171,10 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries �
 **Root Cause**: Dismissing the custom intro never called `requestAuthorization`, so iOS stayed `notDetermined`. In-app `pushEnabled` still looked granted. Test scheduled a local notification without checking OS permission, which iOS drops. `enableNotificationPermissions()` also auto-opens Settings after a fresh deny, which is the wrong recovery for `notDetermined`.
 **Fix**: Branch on OS authorization: show Enable next to Test when permission is missing; `notDetermined` only requests the system prompt; `denied` opens Settings; Test runs the same recovery and skips sending until granted.
 **Catchable by**: Section 4: Data flow end-to-end (in-app switch vs OS permission); Section 8: verify the denied and not-asked OS states, not only the granted path
+
+## Case: Notification helper CTA flashed Test before OS permission loaded
+**Date**: 2026-08-25 | **Platforms**: iOS, Android, extension (main runtime)
+**Symptom**: Settings → Notifications helper button first painted as Test, then flipped to Enable or Go to Settings once `getPermission` returned. A fast tap on the flashed Test could call `requestAuthorization` or send a local test.
+**Root Cause**: `resolveOsNotificationPermissionAction(undefined)` returns `'none'` (the Test label). First `usePromiseResult` render has no payload yet, so missing-permission and not-yet-loaded were the same state.
+**Fix**: Treat unresolved permission as pending while `isLoading !== false` (except desktop / web dapp, which always show Test). Pending shows a loading button with no Test/Enable label and ignores presses; a finished read with no payload still falls back to Test.
+**Catchable by**: Section 5: "Not loaded" (`null`/`undefined`) vs "empty" (`[]`) properly distinguished — here undefined permission meant "still loading", not "no OS grant action"
