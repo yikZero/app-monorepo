@@ -1,0 +1,185 @@
+/** @jest-environment jsdom */
+
+import { fireEvent, render, waitFor } from '@testing-library/react';
+
+import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { ENotificationPermission } from '@onekeyhq/shared/types/notification';
+
+import NotificationsTestButton from './NotificationsTestButton';
+
+const mockShowNotification: jest.Mock<Promise<unknown>, unknown[]> = jest.fn();
+const mockRecover: jest.Mock<Promise<unknown>, unknown[]> = jest.fn();
+const mockCanSend: jest.Mock<Promise<boolean>, unknown[]> = jest.fn();
+const mockReload: jest.Mock<Promise<void>, unknown[]> = jest.fn();
+
+let mockPermission: {
+  isSupported: boolean;
+  permission: ENotificationPermission;
+} = {
+  isSupported: true,
+  permission: ENotificationPermission.granted,
+};
+
+const mockPlatformEnv = {
+  isDesktop: false,
+  isWebDappMode: false,
+};
+
+jest.mock('react-intl', () => ({
+  useIntl: () => ({
+    formatMessage: ({ id }: { id: string }) => id,
+  }),
+}));
+
+jest.mock('@onekeyhq/components', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return {
+    Button: ({
+      children,
+      onPress,
+      testID,
+    }: {
+      children?: import('react').ReactNode;
+      onPress?: () => void;
+      testID?: string;
+    }) =>
+      React.createElement(
+        'button',
+        { type: 'button', onClick: onPress, 'data-testid': testID },
+        children,
+      ),
+    XStack: ({ children }: { children?: import('react').ReactNode }) =>
+      React.createElement('div', null, children),
+  };
+});
+
+jest.mock('@onekeyhq/kit/src/hooks/usePromiseResult', () => ({
+  usePromiseResult: () => ({
+    result: mockPermission,
+    run: mockReload,
+  }),
+}));
+
+jest.mock('@onekeyhq/kit/src/hooks/useHandleAppStateActive', () => ({
+  useHandleAppStateActive: jest.fn(),
+}));
+
+jest.mock('@onekeyhq/shared/src/platformEnv', () => ({
+  __esModule: true,
+  default: {
+    get isDesktop() {
+      return mockPlatformEnv.isDesktop;
+    },
+    get isWebDappMode() {
+      return mockPlatformEnv.isWebDappMode;
+    },
+  },
+}));
+
+jest.mock('@onekeyhq/kit/src/utils/notificationPermissionUtils', () => {
+  const actual = jest.requireActual<
+    typeof import('@onekeyhq/kit/src/utils/notificationPermissionUtils')
+  >('@onekeyhq/kit/src/utils/notificationPermissionUtils');
+  return {
+    ...actual,
+    recoverOsNotificationPermission: (...args: unknown[]) => {
+      const result: Promise<unknown> = mockRecover(...args);
+      return result;
+    },
+    canSendOsNotificationTest: (...args: unknown[]) => {
+      const result: Promise<boolean> = mockCanSend(...args);
+      return result;
+    },
+  };
+});
+
+jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
+  __esModule: true,
+  default: {
+    serviceNotification: {
+      showNotification: (...args: unknown[]) => {
+        const result: Promise<unknown> = mockShowNotification(...args);
+        return result;
+      },
+    },
+  },
+}));
+
+describe('NotificationsTestButton', () => {
+  beforeEach(() => {
+    mockShowNotification.mockReset();
+    mockRecover.mockReset();
+    mockCanSend.mockReset();
+    mockReload.mockReset();
+    mockPlatformEnv.isDesktop = false;
+    mockPlatformEnv.isWebDappMode = false;
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.granted,
+    };
+  });
+
+  it('hides Enable when the OS permission is already granted', () => {
+    const { queryByTestId, getByTestId } = render(<NotificationsTestButton />);
+
+    expect(queryByTestId('setting-notification-permission-btn')).toBeNull();
+    expect(getByTestId('setting-intl-btn').textContent).toBe(
+      ETranslations.global_test,
+    );
+  });
+
+  it('shows Enable while authorization is still undetermined', () => {
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.default,
+    };
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    expect(getByTestId('setting-notification-permission-btn').textContent).toBe(
+      ETranslations.global_enable,
+    );
+  });
+
+  it('recovers permission from Enable without sending a test notification', async () => {
+    mockPermission = {
+      isSupported: true,
+      permission: ENotificationPermission.default,
+    };
+    mockRecover.mockResolvedValue({
+      isSupported: true,
+      permission: ENotificationPermission.granted,
+    });
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    fireEvent.click(getByTestId('setting-notification-permission-btn'));
+
+    await waitFor(() => {
+      expect(mockRecover).toHaveBeenCalledTimes(1);
+    });
+    expect(mockShowNotification).not.toHaveBeenCalled();
+  });
+
+  it('skips the test notification when permission recovery does not grant', async () => {
+    mockCanSend.mockResolvedValue(false);
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    fireEvent.click(getByTestId('setting-intl-btn'));
+
+    await waitFor(() => {
+      expect(mockCanSend).toHaveBeenCalledTimes(1);
+    });
+    expect(mockShowNotification).not.toHaveBeenCalled();
+  });
+
+  it('sends the test notification after permission is confirmed', async () => {
+    mockCanSend.mockResolvedValue(true);
+    mockShowNotification.mockResolvedValue({ notificationId: '1' });
+    const { getByTestId } = render(<NotificationsTestButton />);
+
+    fireEvent.click(getByTestId('setting-intl-btn'));
+
+    await waitFor(() => {
+      expect(mockShowNotification).toHaveBeenCalledTimes(1);
+    });
+  });
+});
