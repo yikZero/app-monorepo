@@ -405,8 +405,8 @@ export default function PrimeDashboard({
                   </SizableText>
                 </Stack>
               ) : null}
-              {shouldShowConfirmButton && !platformEnv.isNative ? (
-                <Stack alignItems="center" $gtMd={{ alignItems: 'flex-start' }}>
+              {shouldShowConfirmButton ? (
+                <Stack>
                   <PrimeTermsAndPrivacy />
                 </Stack>
               ) : null}
@@ -441,11 +441,6 @@ export default function PrimeDashboard({
             <Page.Footer>
               <FooterGradient />
               <Stack p="$5" pt="$1" gap="$4">
-                {platformEnv.isNative ? (
-                  <Stack width="100%" alignItems="center">
-                    <PrimeTermsAndPrivacy />
-                  </Stack>
-                ) : null}
                 {/* Desktop layout: row with login left, subscribe right */}
                 <XStack
                   display="none"
