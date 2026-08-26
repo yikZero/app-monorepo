@@ -19,26 +19,24 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { ENotificationPermission } from '@onekeyhq/shared/types/notification';
 
-function getCtaTranslation(
-  action: IOsNotificationPermissionAction,
-): ETranslations {
-  if (action === 'request') {
-    return ETranslations.global_enable;
-  }
-  if (action === 'openSettings') {
-    return ETranslations.global_go_to_settings;
-  }
-  return ETranslations.global_test;
-}
+const NOTIFICATION_HELPER_CTA_TITLE: Record<
+  IOsNotificationPermissionAction,
+  ETranslations
+> = {
+  none: ETranslations.global_test,
+  request: ETranslations.global_enable,
+  openSettings: ETranslations.global_go_to_settings,
+};
 
-function useOsNotificationPermissionAction() {
+function useNotificationHelperCta() {
+  const intl = useIntl();
+  const [isBusy, setIsBusy] = useState(false);
   const {
     result: permission,
     isLoading,
     run,
   } = usePromiseResult(getOsNotificationPermissionSafe, [], {
     watchLoading: true,
-    undefinedResultIfError: true,
     // Do not wait for route focus: a lagging focus flag would leave the
     // CTA spinning instead of settling on Enable / Settings / Test.
     checkIsFocused: false,
@@ -62,15 +60,6 @@ function useOsNotificationPermissionAction() {
     isDesktop,
     isWebDappMode,
   });
-
-  return { action, isPending, reloadPermission };
-}
-
-function useNotificationHelperCta() {
-  const intl = useIntl();
-  const { action, isPending, reloadPermission } =
-    useOsNotificationPermissionAction();
-  const [isBusy, setIsBusy] = useState(false);
 
   const sendTestNotification = useCallback(async () => {
     await backgroundApiProxy.serviceNotification.showNotification({
@@ -135,7 +124,9 @@ function NotificationsTestButton({
         void handlePress();
       }}
     >
-      {isPending ? '' : intl.formatMessage({ id: getCtaTranslation(action) })}
+      {isPending
+        ? ''
+        : intl.formatMessage({ id: NOTIFICATION_HELPER_CTA_TITLE[action] })}
     </Button>
   );
 }

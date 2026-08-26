@@ -72,6 +72,7 @@ export async function getOsNotificationPermissionSafe(): Promise<
   try {
     return await backgroundApiProxy.serviceNotification.getPermissionWithoutLog();
   } catch {
+    // Native/provider permission reads can throw when the module is unavailable.
     return undefined;
   }
 }
@@ -94,7 +95,7 @@ export async function recoverOsNotificationPermission(
   const permission =
     knownPermission ?? (await getOsNotificationPermissionSafe());
   const action = currentOsPermissionAction(permission);
-  if (action === 'none' || !permission) {
+  if (action === 'none') {
     return permission;
   }
   try {
@@ -104,6 +105,7 @@ export async function recoverOsNotificationPermission(
     await backgroundApiProxy.serviceNotification.openPermissionSettings();
     return await getOsNotificationPermissionSafe();
   } catch {
+    // requestPermission / openPermissionSettings can throw from the native module.
     return permission;
   }
 }
