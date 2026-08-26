@@ -185,3 +185,31 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries �
 **Root Cause**: Moving from a captured-key wallet to per-signature key fetching removed the implicit key↔address binding that constructing `ethers.Wallet` at setup time used to provide; no explicit check replaced it.
 **Fix**: `signTypedData` derives the address from the fetched key (already computed by ethers) and fails closed with a re-enable-trading error when it does not match the advertised agentAddress, case-insensitively.
 **Catchable by**: Section 5: No stale closures capturing outdated state (identity captured at setup must be re-validated against data fetched later)
+
+## Case: onekeyIdLogout analytics flood with user IDs embedded in server-bound reason text
+**Date**: 2026-08-25 | **Platforms**: iOS, Android, desktop, web, extension (bg runtime emits; analytics is a shared server-side resource)
+**Symptom**: PostHog showed 1.76M `onekeyIdLogout` events in 30 days across ~70k persons — the highest-volume Prime event — drowning genuine logout signals and inflating analytics cost. Several `reason` strings carried Privy DIDs (`did:privy:…` = onekeyUserId), leaking account identifiers into server-bound free text; single users emitted 1000+ events in loops.
+**Root Cause**: `onekeyIdLogout` is decorated `@LogToServer`, but state-maintenance code paths (`setPrimePersistAtomNotLoggedIn` before/after clears on hot startup paths, `updatePrimeAtomByServerUserInfo` before/after every user-info refresh, discarded-response diagnostics) reused it as a general trace channel, interpolating atom values including `onekeyUserId` into `reason`.
+**Fix**: Added local-only `onekeyIdStateTrace` (`@LogToLocal`) and demoted 11 state-maintenance call sites; removed user ids from reason templates; reserved server `onekeyIdLogout` for genuine logout actions; also scrubbed `onekeyIdInvalidToken` (url query/hash + message) and `fetchPackagesFailed` free text at the scene level so every call site inherits the sanitization.
+**Catchable by**: Section 1: no sensitive/identifier interpolation into server-bound free text (scrub at the scene method, not call sites); NEW — @LogToServer methods called from hot/state-maintenance paths need a volume review (dedup or LogToLocal)
+
+## Case: PrimeLoginInvalidToken still counted as onekeyIdLogout
+**Date**: 2026-08-25 | **Platforms**: iOS, Android, desktop, web, extension
+**Symptom**: After demoting hot-path `onekeyIdLogout` traces, invalid-token bus handling still emitted a server `onekeyIdLogout` before the stale-generation gate, so retries and superseded clears kept polluting the genuine logout event.
+**Root Cause**: `PrimeGlobalEffectView` logged logout at handler entry, then separately local-traced stale events. Background already emits `onekeyIdInvalidToken` for the server signal.
+**Fix**: Remove the server logout emit; log a local `onekeyIdStateTrace` only after the stale gate when the handler actually proceeds.
+**Catchable by**: Section 4: Logic moved between files carries its surrounding guard/condition and scope (a reserved server event must stay behind the same skip gate as the handler body)
+
+## Case: iOS notification test silent-fails after dismissing the first-run prompt
+**Date**: 2026-08-25 | **Platforms**: iOS, Android (native main runtime)
+**Symptom**: After closing the first-run notification intro without Enable, settings switches stayed on but Push Test delivered nothing. Users had to toggle the master switch or read the help center.
+**Root Cause**: Dismissing the custom intro never called `requestAuthorization`, so iOS stayed `notDetermined`. In-app `pushEnabled` still looked granted. Test scheduled a local notification without checking OS permission, which iOS drops. `enableNotificationPermissions()` also auto-opens Settings after a fresh deny, which is the wrong recovery for `notDetermined`.
+**Fix**: Branch on OS authorization: show Enable next to Test when permission is missing; `notDetermined` only requests the system prompt; `denied` opens Settings; Test runs the same recovery and skips sending until granted.
+**Catchable by**: Section 4: Data flow end-to-end (in-app switch vs OS permission); Section 8: verify the denied and not-asked OS states, not only the granted path
+
+## Case: Notification helper CTA flashed Test before OS permission loaded
+**Date**: 2026-08-25 | **Platforms**: iOS, Android, extension (main runtime)
+**Symptom**: Settings → Notifications helper button first painted as Test, then flipped to Enable or Go to Settings once `getPermission` returned. A fast tap on the flashed Test could call `requestAuthorization` or send a local test.
+**Root Cause**: `resolveOsNotificationPermissionAction(undefined)` returns `'none'` (the Test label). First `usePromiseResult` render has no payload yet, so missing-permission and not-yet-loaded were the same state.
+**Fix**: Treat unresolved permission as pending while `isLoading !== false` (except desktop / web dapp, which always show Test). Pending shows a loading button with no Test/Enable label and ignores presses; a finished read with no payload still falls back to Test.
+**Catchable by**: Section 5: "Not loaded" (`null`/`undefined`) vs "empty" (`[]`) properly distinguished — here undefined permission meant "still loading", not "no OS grant action"
