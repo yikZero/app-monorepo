@@ -2,6 +2,7 @@
 
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
+import errorToastUtils from '@onekeyhq/shared/src/errors/utils/errorToastUtils';
 import {
   EAppEventBusNames,
   appEventBus,
@@ -16,6 +17,10 @@ const mockGetOfferings = jest.fn<Promise<unknown>, []>();
 const mockLogIn = jest.fn<Promise<void>, [string]>();
 const mockPurchasePackage = jest.fn<Promise<unknown>, [unknown]>();
 const mockSetMixpanelDistinctID = jest.fn<Promise<void>, [string]>();
+const mockSetAttributes = jest.fn<Promise<void>, [Record<string, string>]>();
+const mockPrimeSubscribeFailed = jest.fn<void, [unknown]>();
+const mockPrimeSubscribeFailedLocal = jest.fn<void, [unknown]>();
+const mockPrimeRestorePurchaseResult = jest.fn<void, [unknown]>();
 const mockDialogConfirm = jest.fn<void, [unknown]>();
 const mockFetchPrimeUserInfo = jest.fn<Promise<void>, []>();
 const mockTryClaimKytIntro = jest.fn<
@@ -53,6 +58,8 @@ jest.mock('react-native-purchases', () => ({
     setLogLevel: jest.fn(async () => undefined),
     setMixpanelDistinctID: (instanceId: string) =>
       mockSetMixpanelDistinctID(instanceId),
+    setAttributes: (attributes: Record<string, string>) =>
+      mockSetAttributes(attributes),
     setProxyURL: jest.fn(async () => undefined),
   },
   INTRO_ELIGIBILITY_STATUS: {
@@ -99,6 +106,14 @@ jest.mock('@onekeyhq/shared/src/logger/logger', () => ({
   defaultLogger: {
     prime: {
       usage: { primeReceiveKytIntroFlowFailed: jest.fn() },
+      subscription: {
+        primeSubscribeFailed: (params: unknown) =>
+          mockPrimeSubscribeFailed(params),
+        primeSubscribeFailedLocal: (params: unknown) =>
+          mockPrimeSubscribeFailedLocal(params),
+        primeRestorePurchaseResult: (params: unknown) =>
+          mockPrimeRestorePurchaseResult(params),
+      },
     },
   },
 }));
@@ -314,6 +329,11 @@ describe('usePrimePaymentMethods native purchase', () => {
         featureName: undefined,
         paymentMethod: 'iap',
       });
+      // RevenueCat -> PostHog identity alignment: server-side subscription
+      // events must land on the same analytics person as client events.
+      expect(mockSetAttributes).toHaveBeenCalledWith({
+        '$posthogUserId': 'instance-a',
+      });
       if (isNativeAndroid) {
         expect(mockIsGooglePlayAvailable).toHaveBeenCalledTimes(1);
       } else {
@@ -417,11 +437,83 @@ describe('usePrimePaymentMethods native purchase', () => {
 
     expect(mockDialogConfirm).not.toHaveBeenCalled();
     expect(mockPurchaseSuccessListener).not.toHaveBeenCalled();
-    // A cancelled purchase refreshes the server projection exactly once. The
-    // rejection surfaces before the finally block's async tail settles, so
+    // The rejection surfaces before the catch/finally async tail settles, so
     // poll instead of asserting synchronously.
+    await waitFor(() =>
+      expect(mockPrimeSubscribeFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethod: 'iap',
+          subscriptionPeriod: 'P1Y',
+          reason: 'userCancelled',
+        }),
+      ),
+    );
+    expect(errorToastUtils.toastIfError).not.toHaveBeenCalled();
+    // A cancelled purchase refreshes the server projection exactly once.
     await waitFor(() =>
       expect(mockFetchPrimeUserInfo).toHaveBeenCalledTimes(1),
     );
+  });
+
+  it('does not toast when native purchase is cancelled via userCancelled flag only', async () => {
+    mockPurchasePackage.mockRejectedValue(
+      Object.assign(new Error('Purchase cancelled by user'), {
+        userCancelled: true,
+        code: 1,
+      }),
+    );
+    const { result } = renderHook(() => usePrimePaymentMethods());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+
+    await expect(
+      act(async () => {
+        await result.current.purchasePackageNative?.({
+          subscriptionPeriod: 'P1Y',
+        });
+      }),
+    ).rejects.toThrow('Purchase cancelled by user');
+
+    await waitFor(() =>
+      expect(mockPrimeSubscribeFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethod: 'iap',
+          reason: 'userCancelled',
+        }),
+      ),
+    );
+    expect(errorToastUtils.toastIfError).not.toHaveBeenCalled();
+  });
+
+  it('reports paymentFailed when the store purchase throws a non-cancel error', async () => {
+    mockPurchasePackage.mockRejectedValue(
+      Object.assign(new Error('Store connection failed'), {
+        code: 2,
+        userCancelled: false,
+      }),
+    );
+    const { result } = renderHook(() => usePrimePaymentMethods());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+
+    await expect(
+      act(async () => {
+        await result.current.purchasePackageNative?.({
+          subscriptionPeriod: 'P1Y',
+        });
+      }),
+    ).rejects.toThrow('Store connection failed');
+
+    // The rejection surfaces before the catch/finally async tail settles, so
+    // poll instead of asserting synchronously.
+    await waitFor(() =>
+      expect(mockPrimeSubscribeFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethod: 'iap',
+          subscriptionPeriod: 'P1Y',
+          reason: 'paymentFailed',
+          errorCode: '2',
+        }),
+      ),
+    );
+    expect(errorToastUtils.toastIfError).toHaveBeenCalled();
   });
 });

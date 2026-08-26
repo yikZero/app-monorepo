@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { IUnsignedMessage } from '@onekeyhq/core/src/types';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
+import { primePersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import {
   isEthSignType,
   isPrimaryTypeOrderSign,
@@ -14,7 +16,14 @@ import {
   type IHostSecurity,
 } from '@onekeyhq/shared/types/discovery';
 
+import {
+  isPrimeActiveFromPersist,
+  shouldStartSiteScanRiskWarningAttempt,
+} from './siteScanRiskWarning';
+
 import type { Verify } from '@walletconnect/types';
+
+let siteScanRiskWarnedReportedThisSession = false;
 
 function overrideSecurityLevel(
   base: IHostSecurity | undefined,
@@ -137,6 +146,50 @@ function useRiskDetection({
       currentContinueOperate: continueOperate,
     });
   }, [riskLevel, showContinueOperate, continueOperate]);
+
+  // Prime benefit usage: a Prime user was shown an enhanced dapp-security
+  // risk warning. Read the persist atom once (no subscription, no token
+  // refresh) so this shared connection/sign hook gains no new re-render
+  // source and non-Prime users skip the event without a bg auth hop.
+  // Session-level emit flag bounds volume across stacked DApp modals; no
+  // URL/domain is reported.
+  const siteScanRiskWarnedTrackedRef = useRef(false);
+  const siteScanRiskWarnedInFlightRef = useRef(false);
+  useEffect(() => {
+    if (
+      !shouldStartSiteScanRiskWarningAttempt({
+        riskLevel,
+        sessionReported: siteScanRiskWarnedReportedThisSession,
+        instanceTracked: siteScanRiskWarnedTrackedRef.current,
+        inFlight: siteScanRiskWarnedInFlightRef.current,
+      })
+    ) {
+      return;
+    }
+    siteScanRiskWarnedInFlightRef.current = true;
+    void (async () => {
+      try {
+        const persist = await primePersistAtom.get();
+        if (
+          !isPrimeActiveFromPersist(persist) ||
+          siteScanRiskWarnedReportedThisSession
+        ) {
+          return;
+        }
+        siteScanRiskWarnedTrackedRef.current = true;
+        siteScanRiskWarnedReportedThisSession = true;
+        defaultLogger.prime.usage.siteScanRiskWarned({
+          featureName: EPrimeFeatures.BlockaidSiteScan,
+          riskLevel,
+          isPrimeActive: true,
+        });
+      } catch {
+        // Analytics must never affect the risk detection flow.
+      } finally {
+        siteScanRiskWarnedInFlightRef.current = false;
+      }
+    })();
+  }, [riskLevel]);
 
   return {
     showContinueOperate,
