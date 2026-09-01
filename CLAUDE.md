@@ -95,6 +95,13 @@ Never violate this dependency order:
 - Run targeted tests when scope or risk requires them; avoid the ambiguous root
   `yarn test` alias.
 
+## Cursor Cloud specific instructions
+
+- Install: `yarn setup:env` then `yarn` (Node >= 22.12, Yarn 4.12).
+- Desktop UI: `yarn app:desktop` on `DISPLAY=:99`; CDP `127.0.0.1:9222`;
+  renderer `:3001`; verify with `/1k-ui-verify`.
+- `onekeyd` uses `-u=false -e 21324` (no USB). iOS/Android are unavailable.
+
 Use `.skillshare/skills` for detailed workflows instead of duplicating them here.
 `apps/cli/` has separate guidance; external wallet CLI skills belong in
 `https://github.com/OneKeyHQ/onekey-wallet-skills`.
