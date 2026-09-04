@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/59977.fac07d2ba6.chunk.js","sources":["webpack://web/../../packages/kit/src/views/Discovery/pages/Browser/Browser.tsx"],"sourcesContent":["function Browser() {\n  return null;\n}\n\nexport default Browser;\n"],"names":[],"mappings":"iHAAA,WACE,OAAO,IACT,C"}
