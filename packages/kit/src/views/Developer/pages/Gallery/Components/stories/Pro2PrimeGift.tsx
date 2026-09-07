@@ -1009,52 +1009,50 @@ function Pro2PrimeGiftDemo() {
         ) : null}
         {state.screen === 'success' ? (
           <YStack flex={1}>
-            <ScrollView flex={1}>
-              <YStack px="$5" pt="$6" pb="$5" alignItems="center">
-                <LottieView
-                  source={require('@onekeyhq/kit/assets/animations/lottie-swap-done.json')}
-                  width={96}
-                  height={96}
-                  autoPlay
-                  loop={false}
-                />
-                <SizableText size="$headingXl" mt="$-2">
-                  领取成功
-                </SizableText>
+            <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }}>
+              <YStack flex={1} px="$5" py="$4">
                 <YStack
-                  mt="$5"
-                  width="100%"
+                  flex={1}
+                  justifyContent="center"
                   alignItems="center"
-                  bg="$brand2"
-                  borderRadius="$3"
-                  borderWidth="$px"
-                  borderColor="$brand4"
-                  px="$4"
-                  py="$4"
+                  gap="$3"
                 >
-                  <XStack alignItems="center" gap="$2">
-                    <Icon name={icon} size="$6" />
-                    <SizableText size="$heading2xl">6 个月 Prime</SizableText>
-                  </XStack>
-                  <YStack mt="$2" alignItems="center" gap="$1">
-                    <SizableText size="$bodyMd" color="$textSubdued">
-                      {ACCOUNT}
-                    </SizableText>
-                    <SizableText size="$bodyMd" color="$textSubdued">
-                      {UNTIL}到期
-                    </SizableText>
+                  <LottieView
+                    source={require('@onekeyhq/kit/assets/animations/lottie-swap-done.json')}
+                    width={96}
+                    height={96}
+                    autoPlay
+                    loop={false}
+                  />
+                  <SizableText size="$heading3xl" textAlign="center">
+                    领取成功
+                  </SizableText>
+                  <YStack alignItems="center" gap="$2">
+                    <XStack alignItems="center" gap="$1.5">
+                      <Icon name={icon} size="$5" />
+                      <SizableText size="$bodyLgMedium">
+                        6 个月 Prime
+                      </SizableText>
+                    </XStack>
+                    <YStack alignItems="center" gap="$0.5">
+                      <SizableText size="$bodyMd" color="$textSubdued">
+                        {ACCOUNT}
+                      </SizableText>
+                      <SizableText size="$bodyMd" color="$textSubdued">
+                        {UNTIL}到期
+                      </SizableText>
+                    </YStack>
                   </YStack>
                 </YStack>
-                <YStack
-                  mt="$5"
-                  width="100%"
-                  bg="$bgSubdued"
-                  borderRadius="$4"
-                  p="$4"
-                  gap="$2"
-                >
-                  {state.kytEnabled ? (
-                    <XStack alignItems="flex-start" gap="$2">
+                {state.kytEnabled ? (
+                  <YStack
+                    mt="$4"
+                    width="100%"
+                    bg="$bgSubdued"
+                    borderRadius="$4"
+                    p="$4"
+                  >
+                    <XStack alignItems="flex-start" gap="$3">
                       <Icon
                         name="CheckRadioSolid"
                         size="$5"
@@ -1073,31 +1071,46 @@ function Pro2PrimeGiftDemo() {
                         </SizableText>
                       </YStack>
                     </XStack>
-                  ) : (
-                    <>
+                  </YStack>
+                ) : (
+                  <XStack
+                    mt="$4"
+                    width="100%"
+                    minHeight={44}
+                    bg="$bgSubdued"
+                    borderRadius="$4"
+                    p="$4"
+                    alignItems="center"
+                    gap="$3"
+                    accessibilityRole="button"
+                    focusable
+                    testID="pro2-prime-open-kyt"
+                    onPress={openKyt}
+                    hoverStyle={{ bg: '$bgHover' }}
+                    pressStyle={{ bg: '$bgActive' }}
+                  >
+                    <Icon
+                      name="ShieldOutline"
+                      size="$5"
+                      color="$iconSubdued"
+                      flexShrink={0}
+                    />
+                    <YStack flex={1} minWidth={0} gap="$0.5">
                       <SizableText size="$bodyLgMedium">
                         收款风险监控
                       </SizableText>
                       <SizableText size="$bodyMd" color="$textSubdued">
                         入账确认后，发现风险时提醒您。
                       </SizableText>
-                      <Button
-                        variant="tertiary"
-                        size="small"
-                        iconAfter="ChevronRightSmallOutline"
-                        alignSelf="flex-start"
-                        minHeight={44}
-                        mx="$0"
-                        my="$0"
-                        px="$0"
-                        testID="pro2-prime-open-kyt"
-                        onPress={openKyt}
-                      >
-                        了解并开启
-                      </Button>
-                    </>
-                  )}
-                </YStack>
+                    </YStack>
+                    <Icon
+                      name="ChevronRightSmallOutline"
+                      size="$5"
+                      color="$iconSubdued"
+                      flexShrink={0}
+                    />
+                  </XStack>
+                )}
               </YStack>
             </ScrollView>
             <YStack px="$5" pb="$5">
