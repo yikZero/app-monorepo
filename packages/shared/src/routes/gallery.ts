@@ -42,6 +42,7 @@ export enum EGalleryRoutes {
   ComponentSecureQRToast = 'component-SecureQrToast',
   ComponentSend = 'component-Send',
   ComponentSetupStepItem = 'component-SetupStepItem',
+  ComponentPro2PrimeGift = 'component-Pro2PrimeGift',
   ComponentShortcut = 'component-Shortcut',
   ComponentSpotlight = 'component-Spotlight',
   ComponentNewTabs = 'component-NewTabs',

@@ -145,6 +145,7 @@ export function Layout({
 
             <XStack ml="$4" alignItems="center" gap="$2">
               <Switch
+                testID="gallery-theme-toggle"
                 thumbProps={{
                   children: (
                     <Stack

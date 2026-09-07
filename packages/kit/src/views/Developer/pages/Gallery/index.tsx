@@ -115,6 +115,10 @@ const SetupStepItemGallery = LazyLoadPage(
   () =>
     import('@onekeyhq/kit/src/views/Developer/pages/Gallery/Components/stories/SetupStepItem'),
 );
+const Pro2PrimeGiftGallery = LazyLoadPage(
+  () =>
+    import('@onekeyhq/kit/src/views/Developer/pages/Gallery/Components/stories/Pro2PrimeGift'),
+);
 const ShortcutGallery = LazyLoadPage(
   () =>
     import('@onekeyhq/kit/src/views/Developer/pages/Gallery/Components/stories/Shortcut'),
@@ -372,6 +376,10 @@ export const galleryScreenList: {
   {
     name: EGalleryRoutes.ComponentSetupStepItem,
     component: SetupStepItemGallery,
+  },
+  {
+    name: EGalleryRoutes.ComponentPro2PrimeGift,
+    component: Pro2PrimeGiftGallery,
   },
   {
     name: EGalleryRoutes.ComponentDiscoveryBrowser,
