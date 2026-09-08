@@ -959,6 +959,13 @@ function Pro2PrimeGiftDemo() {
                     py="$1"
                   >
                     <StatusCheckRow
+                      done={state.verified}
+                      title="设备验证"
+                      status={
+                        state.verified ? '已通过验证' : '领取前需完成验证'
+                      }
+                    />
+                    <StatusCheckRow
                       done={qualification.done}
                       title="领取资格"
                       status={qualification.status}
@@ -967,13 +974,6 @@ function Pro2PrimeGiftDemo() {
                       done={state.loggedIn}
                       title="登录 OneKey ID"
                       status={state.loggedIn ? ACCOUNT : '用于接收 Prime 权益'}
-                    />
-                    <StatusCheckRow
-                      done={state.verified}
-                      title="验证设备"
-                      status={
-                        state.verified ? '已通过验证' : '领取前需完成验证'
-                      }
                     />
                   </YStack>
                 </SetupCard>
