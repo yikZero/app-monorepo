@@ -1603,3 +1603,9 @@ binarize
 
 # password manager brand referenced in Input suppression comment
 Dashlane
+# Prime demo-video PoC
+FFPROBE
+SignGuard
+ffprobe
+permit2
+simctl

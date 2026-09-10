@@ -44,15 +44,23 @@ const DESKTOP_AMOUNT_STYLE = { textAlign: 'left' } as const;
 
 type IProps = {
   simulationComponents?: IDisplayComponentSimulation[];
+  // Fires once after the glow fade finishes. Skipped animations do not fire.
+  onLaserAnimationComplete?: () => void;
+  // Fires once after the SignGuard shimmer finishes. Skipped animations do not fire.
+  onShimmerAnimationComplete?: () => void;
 };
 
-function SignGuardMark() {
+function SignGuardMark({
+  onShimmerAnimationComplete,
+}: {
+  onShimmerAnimationComplete?: () => void;
+}) {
   return (
     <Stack
       testID={SignatureConfirmTestIDs.TransactionPreviewSignGuard}
       flexShrink={0}
     >
-      <ShimmerSignGuard />
+      <ShimmerSignGuard onAnimationComplete={onShimmerAnimationComplete} />
     </Stack>
   );
 }
@@ -167,7 +175,11 @@ function SimulationAssetGroups({
   );
 }
 
-function TransactionPreview({ simulationComponents }: IProps) {
+function TransactionPreview({
+  simulationComponents,
+  onLaserAnimationComplete,
+  onShimmerAnimationComplete,
+}: IProps) {
   const intl = useIntl();
   const simulationGroups = useMemo(
     () => getSimulationGroups(simulationComponents),
@@ -218,7 +230,7 @@ function TransactionPreview({ simulationComponents }: IProps) {
   }
 
   return (
-    <ConfirmCardFrame glow>
+    <ConfirmCardFrame glow onLaserAnimationComplete={onLaserAnimationComplete}>
       <YStack
         testID={SignatureConfirmTestIDs.TransactionPreview}
         px="$4"
@@ -229,7 +241,9 @@ function TransactionPreview({ simulationComponents }: IProps) {
           <SizableText size="$headingSm" flex={1} minWidth={0}>
             {title}
           </SizableText>
-          <SignGuardMark />
+          <SignGuardMark
+            onShimmerAnimationComplete={onShimmerAnimationComplete}
+          />
         </XStack>
         <SimulationAssetGroups
           simulationGroups={simulationGroups}

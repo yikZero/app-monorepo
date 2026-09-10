@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "signguard-permit2",
+  "title": "SignGuard Permit2",
+  "scene": "signguard-permit2",
+  "fixture": "fixture.json",
+  "camera": "camera.json",
+  "taps": "taps.json",
+  "layout": "../../presets/prime-393x852.json",
+  "capture": {
+    "interaction": "risk-checkbox",
+    "readyMarker": "animationsComplete",
+    "requiredMarkers": [
+      "sheetVisible",
+      "cardMounted",
+      "laserComplete",
+      "shimmerComplete"
+    ],
+    "waitAfterReadyMs": 2200,
+    "startOffsetSeconds": -0.1,
+    "endCushionSeconds": 0.5
+  },
+  "compose": {
+    "holdSeconds": 2
+  }
+}

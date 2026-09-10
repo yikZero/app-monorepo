@@ -6,6 +6,7 @@ import Animated, {
   Easing,
   interpolate,
   interpolateColor,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -26,6 +27,8 @@ type IProps = {
   // When false, suppress the animated rainbow sweep and render a plain static
   // border using borderColor.
   glow?: boolean;
+  // Fires once after the glow fade finishes. Skipped animations do not fire.
+  onAnimationComplete?: () => void;
 };
 
 const BORDER_PX = 1;
@@ -68,12 +71,16 @@ function LaserBorder({
   borderColor = '$borderSubdued',
   duration = 2800,
   glow = true,
+  onAnimationComplete,
 }: IProps) {
   const reducedMotion = useReducedMotion();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const rotation = useSharedValue(0);
   const glowOpacity = useSharedValue(reducedMotion || !glow ? 0 : 1);
   const hasAnimated = useRef(false);
+  const hasNotifiedComplete = useRef(false);
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  onAnimationCompleteRef.current = onAnimationComplete;
   // Keep the inset geometry stable for the entire glow lifecycle. Changing it
   // when the opacity animation ends would resize the card by 2px and shift all
   // content below it.
@@ -81,12 +88,22 @@ function LaserBorder({
 
   const diagonal = Math.sqrt(layout.width ** 2 + layout.height ** 2);
 
+  const notifyComplete = useCallback(() => {
+    if (hasNotifiedComplete.current) {
+      return;
+    }
+    hasNotifiedComplete.current = true;
+    onAnimationCompleteRef.current?.();
+  }, []);
+
   useEffect(() => {
     // `glow` can flip after mount as async caller state changes. Disable it
     // immediately; if it has not run yet, enable it once layout is available.
     if (reducedMotion || !glow) {
       rotation.value = 0;
       glowOpacity.value = 0;
+      // Do not report completion when the glow never ran. Callers that need a
+      // skip signal should inspect reduced-motion themselves.
       return;
     }
     if (layout.width === 0 || hasAnimated.current) {
@@ -98,9 +115,22 @@ function LaserBorder({
     rotation.value = withTiming(180, { duration, easing: Easing.linear });
     glowOpacity.value = withDelay(
       duration,
-      withTiming(0, { duration: FADE_MS }),
+      withTiming(0, { duration: FADE_MS }, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(notifyComplete)();
+        }
+      }),
     );
-  }, [glow, layout.width, duration, rotation, glowOpacity, reducedMotion]);
+  }, [
+    glow,
+    layout.width,
+    duration,
+    rotation,
+    glowOpacity,
+    reducedMotion,
+    notifyComplete,
+  ]);
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;

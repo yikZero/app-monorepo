@@ -11,15 +11,19 @@ const DIRECT_SHADOW_OFFSET = { width: 0, height: 1 };
 export function ConfirmCardFrame({
   children,
   glow = false,
+  onLaserAnimationComplete,
 }: {
   children: ReactNode;
   glow?: boolean;
+  // Fires once after the glow fade finishes. Skipped animations do not fire.
+  onLaserAnimationComplete?: () => void;
 }) {
   const card = (
     <LaserBorder
       borderRadius={OUTER_RADIUS}
       glow={glow}
       borderColor="$neutral4"
+      onAnimationComplete={onLaserAnimationComplete}
     >
       {children}
     </LaserBorder>

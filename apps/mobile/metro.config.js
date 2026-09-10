@@ -293,6 +293,96 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return resolve(context, moduleName, platform);
 };
 
+// Prime demo-video shell. Ordinary app / Storybook / vendor graphs stay
+// unchanged: the gated require('./prime-demo') in index.ts is rewritten to an
+// empty root, and the backgroundApiProxy fixture stub is only applied when
+// PRIME_DEMO_ENABLED is on.
+{
+  const prevResolveRequestForPrimeDemo = config.resolver.resolveRequest;
+  const primeDemoEmptyRoot = path.resolve(
+    projectRoot,
+    'prime-demo/stubs/emptyRoot.tsx',
+  );
+  const primeDemoBackgroundApiProxyStub = path.resolve(
+    projectRoot,
+    'prime-demo/stubs/backgroundApiProxy.ts',
+  );
+  const primeDemoAppStorageStub = path.resolve(
+    projectRoot,
+    'prime-demo/stubs/appStorage.ts',
+  );
+  const primeDemoNativeAsyncStorageStub = path.resolve(
+    projectRoot,
+    'prime-demo/stubs/nativeAsyncStorageInstance.ts',
+  );
+  const primeDemoDebugRenderTrackerStub = path.resolve(
+    projectRoot,
+    'prime-demo/stubs/DebugRenderTracker.tsx',
+  );
+  const isPrimeDemoEnabled = process.env.PRIME_DEMO_ENABLED === 'true';
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (
+      !isPrimeDemoEnabled &&
+      typeof moduleName === 'string' &&
+      context.originModulePath &&
+      /[/\\]apps[/\\]mobile[/\\]index\.ts$/.test(context.originModulePath) &&
+      (moduleName === './prime-demo' ||
+        moduleName === './prime-demo/index' ||
+        moduleName === './prime-demo/index.tsx')
+    ) {
+      return {
+        type: 'sourceFile',
+        filePath: primeDemoEmptyRoot,
+      };
+    }
+    if (isPrimeDemoEnabled && typeof moduleName === 'string') {
+      if (
+        moduleName ===
+          '@onekeyhq/kit/src/background/instance/backgroundApiProxy' ||
+        moduleName.endsWith('/background/instance/backgroundApiProxy')
+      ) {
+        return {
+          type: 'sourceFile',
+          filePath: primeDemoBackgroundApiProxyStub,
+        };
+      }
+      if (
+        moduleName === '@onekeyhq/shared/src/storage/appStorage' ||
+        /(^|\/)appStorage$/.test(moduleName)
+      ) {
+        return {
+          type: 'sourceFile',
+          filePath: primeDemoAppStorageStub,
+        };
+      }
+      if (
+        moduleName ===
+          '@onekeyhq/shared/src/storage/instance/nativeAsyncStorageInstance' ||
+        /(^|\/)nativeAsyncStorageInstance$/.test(moduleName)
+      ) {
+        return {
+          type: 'sourceFile',
+          filePath: primeDemoNativeAsyncStorageStub,
+        };
+      }
+      if (
+        moduleName.includes('DebugRenderTracker') &&
+        (moduleName.endsWith('DebugRenderTracker') ||
+          (context.originModulePath &&
+            /[/\\]components[/\\]src[/\\]utils[/\\]index\.tsx?$/.test(
+              context.originModulePath,
+            )))
+      ) {
+        return {
+          type: 'sourceFile',
+          filePath: primeDemoDebugRenderTrackerStub,
+        };
+      }
+    }
+    return prevResolveRequestForPrimeDemo(context, moduleName, platform);
+  };
+}
+
 // When running under React Native Harness, manually resolve subpath exports
 // for harness and vitest packages that Metro can't handle with unstable_enablePackageExports=false.
 // Also map lodash-es to lodash (matching Jest's moduleNameMapper for test compatibility).
@@ -710,14 +800,17 @@ config.server.enhanceMiddleware = (metroMiddleware, _metroServer) => {
     serveDevSessionWebEmbed(req, res, () => assetMiddleware(req, res, next));
 };
 
-// STORYBOOK_ENABLED gates the app entry via babel env inlining, which Metro's
-// transform-cache key cannot see — flipping modes would serve stale transforms
-// (e.g. the wallet entry inside storybook mode). Namespace the cache per mode
-// so both stay correct and cached without `--clear` on every switch.
-config.cacheVersion = [
-  config.cacheVersion,
-  process.env.STORYBOOK_ENABLED === 'true' ? 'storybook' : 'app',
-]
+// STORYBOOK_ENABLED / PRIME_DEMO_ENABLED gate the app entry via babel env
+// inlining, which Metro's transform-cache key cannot see — flipping modes
+// would serve stale transforms. Namespace the cache per mode so each stay
+// correct and cached without `--clear` on every switch.
+let metroCacheMode = 'app';
+if (process.env.STORYBOOK_ENABLED === 'true') {
+  metroCacheMode = 'storybook';
+} else if (process.env.PRIME_DEMO_ENABLED === 'true') {
+  metroCacheMode = 'prime-demo';
+}
+config.cacheVersion = [config.cacheVersion, metroCacheMode]
   .filter(Boolean)
   .join('-');
 

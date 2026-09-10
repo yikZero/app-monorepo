@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-09-10",
+  "purpose": "Known working local reference, not minimum supported versions",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "macOS": "27.0",
+  "xcode": {
+    "version": "26.6",
+    "build": "17F113"
+  },
+  "simulator": {
+    "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+    "deviceType": "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro",
+    "logicalWidth": 393,
+    "logicalHeight": 852
+  },
+  "node": "22.14.0",
+  "yarn": "4.12.0",
+  "ruby": "4.0.6",
+  "cocoapods": "1.17.0",
+  "reactNative": "0.86.2",
+  "detox": "20.46.3",
+  "nitroModules": "0.37.0",
+  "ffmpeg": "9.0.1",
+  "applesimutils": "0.9.12",
+  "podsLockSha256": "cc693a67cc4542d5d3786feb3e178d7cca21841bbd0003b3250dbd339acf5f1c",
+  "app": {
+    "architecture": "arm64",
+    "sdk": "iphonesimulator26.5",
+    "minimumOSVersion": "16.4"
+  },
+  "buildEnvironment": {
+    "SKIP_BUNDLING": "1",
+    "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+    "ENABLE_NATIVE_BACKGROUND_THREAD": "false"
+  },
+  "podsEnvironment": {
+    "RCT_USE_RN_DEP": "0",
+    "RCT_USE_PREBUILT_RNCORE": "0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "offsetUnits": "designPx",
+  "note": "at is seconds on the trimmed 30fps output, including hold. y is 640x400 design pixels, pan down. Planned camera, not tap tracking or in-app scroll.",
+  "keyframes": [
+    { "at": 0, "y": 0 },
+    { "at": 4.3, "y": 0, "easing": "ease-in-out" },
+    { "at": 5.7, "y": 240 }
+  ]
+}

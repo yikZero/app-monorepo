@@ -1,0 +1,13 @@
+{
+  "offsetUnits": "designPx",
+  "initialY": 0,
+  "moves": [
+    {
+      "marker": "riskAcknowledged",
+      "arriveBefore": 1.3,
+      "duration": 1.4,
+      "y": 240,
+      "easing": "ease-in-out"
+    }
+  ]
+}

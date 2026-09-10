@@ -24,6 +24,8 @@ function buildEnvExposedToClientDangerously({ platform }) {
     'GITHUB_SHA',
     'WORKFLOW_GITHUB_SHA',
     'STORYBOOK_ENABLED',
+    'PRIME_DEMO_ENABLED',
+    'PRIME_DEMO_FIXTURE_URL',
     'WALLETCONNECT_PROJECT_ID',
     'SENTRY_DSN_EXT',
     'SENTRY_DSN_DESKTOP',

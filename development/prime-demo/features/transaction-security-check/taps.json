@@ -1,0 +1,55 @@
+{
+  "enabled": true,
+  "coordinateSpace": "device",
+  "style": {
+    "radius": 14,
+    "color": "#FFFFFF",
+    "opacity": 0.46,
+    "ringColor": "#A8B3AE",
+    "ringOpacity": 0.28
+  },
+  "events": [
+    {
+      "id": "openDapp",
+      "enabled": true,
+      "marker": "openDapp",
+      "offset": 0,
+      "duration": 0.35
+    },
+    {
+      "id": "requestSignature",
+      "enabled": true,
+      "marker": "requestSignature",
+      "offset": 0,
+      "duration": 0.85
+    },
+    {
+      "id": "showRiskDetails",
+      "enabled": true,
+      "marker": "showRiskDetails",
+      "offset": 0,
+      "duration": 0.85
+    },
+    {
+      "id": "closeRiskDetails",
+      "enabled": true,
+      "marker": "closeRiskDetails",
+      "offset": 0,
+      "duration": 0.85
+    },
+    {
+      "id": "showCoverage",
+      "enabled": true,
+      "marker": "showCoverage",
+      "offset": 0,
+      "duration": 0.85
+    },
+    {
+      "id": "closeCoverage",
+      "enabled": true,
+      "marker": "closeCoverage",
+      "offset": 0,
+      "duration": 0.85
+    }
+  ]
+}

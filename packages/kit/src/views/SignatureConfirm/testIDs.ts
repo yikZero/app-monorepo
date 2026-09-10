@@ -69,6 +69,7 @@ export const SignatureConfirmTestIDs = {
   TransactionPreview: 'sig-confirm-transaction-preview',
   TransactionPreviewSignGuard: 'sig-confirm-transaction-preview-signguard',
   SecurityFindingDetails: 'sig-confirm-security-finding-details',
+  SecurityCoverageDetails: 'sig-confirm-security-coverage-details',
 
   // -- Similar address dialog --
   SimilarAddressDialog: 'sig-confirm-similar-address-dialog',

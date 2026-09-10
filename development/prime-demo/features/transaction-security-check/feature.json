@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "transaction-security-check",
+  "title": "Prime Transaction Security Check",
+  "scene": "transaction-security-check",
+  "fixture": "fixture.json",
+  "camera": "camera.json",
+  "taps": "taps.json",
+  "layout": "../../presets/prime-393x852.json",
+  "capture": {
+    "readyMarker": "browserReady",
+    "requiredMarkers": [],
+    "waitAfterReadyMs": 650,
+    "startMarker": "browserReady",
+    "endMarker": "closeCoverage",
+    "startOffsetSeconds": 0,
+    "endCushionSeconds": 2.0,
+    "steps": [
+      {
+        "id": "openDapp",
+        "testID": "prime-demo-open-dapp",
+        "waitForMarker": "dappVisible",
+        "holdMs": 900
+      },
+      {
+        "id": "requestSignature",
+        "testID": "prime-demo-dapp-webview",
+        "pointMarker": "dappReady",
+        "waitForMarker": "securityResultReady",
+        "holdMs": 2200
+      },
+      {
+        "id": "showRiskDetails",
+        "testID": "sig-confirm-security-finding-tx-security-malicious_approval",
+        "waitForTestID": "sig-confirm-security-finding-details",
+        "holdMs": 3200
+      },
+      {
+        "id": "closeRiskDetails",
+        "testID": "dialog-close-button",
+        "waitForGoneTestID": "sig-confirm-security-finding-details",
+        "holdMs": 650
+      },
+      {
+        "id": "showCoverage",
+        "testID": "sig-confirm-security-check-coverage",
+        "waitForTestID": "sig-confirm-security-coverage-details",
+        "holdMs": 2600
+      },
+      {
+        "id": "closeCoverage",
+        "testID": "popover-btn-close",
+        "waitForGoneTestID": "sig-confirm-security-coverage-details",
+        "holdMs": 200
+      }
+    ]
+  },
+  "compose": {
+    "holdSeconds": 1.4
+  }
+}

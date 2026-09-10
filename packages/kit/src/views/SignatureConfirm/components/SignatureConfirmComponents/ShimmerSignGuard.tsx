@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -17,33 +18,53 @@ import SignGuardIcon from '../SimilarAddressDialog/SignGuardIcon';
 const ICON_WIDTH = 80;
 const SHIMMER_BAND = 24;
 
-function ShimmerSignGuard() {
+function ShimmerSignGuard({
+  onAnimationComplete,
+}: {
+  onAnimationComplete?: () => void;
+} = {}) {
   const reducedMotion = useReducedMotion();
   const translate = useSharedValue(-SHIMMER_BAND);
   const END = ICON_WIDTH + SHIMMER_BAND;
   const START = -SHIMMER_BAND;
   const FAST = 350;
   const SLOW = 1500;
+  const hasNotifiedComplete = useRef(false);
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  onAnimationCompleteRef.current = onAnimationComplete;
+
+  const notifyComplete = useCallback(() => {
+    if (hasNotifiedComplete.current) {
+      return;
+    }
+    hasNotifiedComplete.current = true;
+    onAnimationCompleteRef.current?.();
+  }, []);
 
   useEffect(() => {
     if (reducedMotion) {
       return;
     }
-    const sweep = (v: number, d: number) =>
-      withTiming(v, { duration: d, easing: Easing.inOut(Easing.sin) });
-    const reset = (v: number) => withTiming(v, { duration: 0 });
-
+    const easing = Easing.inOut(Easing.sin);
     translate.value = withDelay(
       1200,
       withSequence(
-        sweep(END, FAST),
-        reset(START),
-        sweep(END, FAST),
-        reset(START),
-        withDelay(200, sweep(END, SLOW)),
+        withTiming(END, { duration: FAST, easing }),
+        withTiming(START, { duration: 0 }),
+        withTiming(END, { duration: FAST, easing }),
+        withTiming(START, { duration: 0 }),
+        withDelay(
+          200,
+          withTiming(END, { duration: SLOW, easing }, (finished) => {
+            'worklet';
+            if (finished) {
+              runOnJS(notifyComplete)();
+            }
+          }),
+        ),
       ),
     );
-  }, [translate, END, START, FAST, SLOW, reducedMotion]);
+  }, [translate, END, START, FAST, SLOW, reducedMotion, notifyComplete]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translate.value }],

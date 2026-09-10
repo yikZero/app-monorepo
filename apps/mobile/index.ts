@@ -18,7 +18,16 @@ type IAppModule = typeof import('./App');
   }
 ).__ONEKEY_RUNTIME_KIND__ = 'main';
 
-require('@onekeyhq/shared/src/polyfills');
+// Prime demo must not load `@onekeyhq/shared/src/polyfills` — that barrel
+// requires `../request` (axios/fetch interceptors + AsyncStorage). Ordinary
+// and Storybook bundles keep the full set. Native fetch stays unmodified in
+// demo so localhost fixture HTTP works.
+if (process.env.PRIME_DEMO_ENABLED === 'true') {
+  require('@onekeyhq/shared/src/polyfills/polyfillsPlatform');
+  require('@onekeyhq/shared/src/polyfills/reactCreateElementShim');
+} else {
+  require('@onekeyhq/shared/src/polyfills');
+}
 const { markRuntimePolyfillsReady } =
   require('@onekeyhq/shared/src/polyfills/runtimeCapabilities') as typeof import('@onekeyhq/shared/src/polyfills/runtimeCapabilities');
 markRuntimePolyfillsReady();
@@ -34,7 +43,13 @@ markRuntimePolyfillsReady();
 // app. The withStorybook Metro wrapper stubs the Storybook config dir out of
 // normal bundles (STORYBOOK_ENABLED unset), so this branch adds nothing to
 // production. Main runtime only; the background runtime is never started.
-if (process.env.STORYBOOK_ENABLED === 'true') {
+if (process.env.PRIME_DEMO_ENABLED === 'true') {
+  const { I18nManager } =
+    require('react-native') as typeof import('react-native');
+  I18nManager.allowRTL(true);
+  const { registerRootComponent } = require('expo') as IExpoModule;
+  registerRootComponent((require('./prime-demo') as IAppModule).default);
+} else if (process.env.STORYBOOK_ENABLED === 'true') {
   const { I18nManager } =
     require('react-native') as typeof import('react-native');
   I18nManager.allowRTL(true);

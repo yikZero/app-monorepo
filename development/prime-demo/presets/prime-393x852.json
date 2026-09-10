@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "outputScale": 3,
+  "canvas": {
+    "width": 640,
+    "height": 400
+  },
+  "phone": {
+    "x": 176,
+    "y": 48,
+    "width": 288,
+    "bezel": 8,
+    "radius": 43,
+    "outerStroke": {
+      "width": 4,
+      "opacity": 0.2
+    }
+  },
+  "gradient": {
+    "top": "#39DB00",
+    "bottom": "#00C9A5"
+  }
+}

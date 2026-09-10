@@ -1,0 +1,15 @@
+export const PrimeDemoTestIDs = {
+  Idle: 'prime-demo-idle',
+  Start: 'prime-demo-start',
+  Reset: 'prime-demo-reset',
+  Close: 'prime-demo-close',
+  Sheet: 'prime-demo-sheet',
+  AnimationsComplete: 'prime-demo-animations-complete',
+  FixtureError: 'prime-demo-fixture-error',
+  ReduceMotionError: 'prime-demo-reduce-motion-error',
+  Browser: 'prime-demo-browser',
+  OpenDapp: 'prime-demo-open-dapp',
+  DappWebView: 'prime-demo-dapp-webview',
+  TxCancel: 'prime-demo-tx-cancel',
+  TxClose: 'prime-demo-tx-close',
+} as const;

@@ -27,6 +27,7 @@ const transformationEnvironment = {
   RN_HARNESS: undefined,
   SPLIT_BUNDLE_SEGMENTS: undefined,
   STORYBOOK_ENABLED: undefined,
+  PRIME_DEMO_ENABLED: undefined,
   TAMAGUI_TARGET: 'native',
   UNION_BUILD: undefined,
   WITH_ROZENITE: 'true',

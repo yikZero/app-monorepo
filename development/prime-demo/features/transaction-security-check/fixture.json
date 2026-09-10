@@ -1,0 +1,94 @@
+{
+  "scene": "transaction-security-check",
+  "title": "Permit2",
+  "origin": "https://rewards.example.com",
+  "accountAddress": "0x13b30304dAa2129a21e42df663e8f49C49b276e8",
+  "accountLabel": "Wallet 1 / Account #1",
+  "networkName": "Ethereum",
+  "scanDelayMs": 1000,
+  "dapp": {
+    "name": "Rewards",
+    "url": "http://localhost:4737/dapp",
+    "ctaLabel": "Claim",
+    "rewardAmount": "125",
+    "rewardSymbol": "USDC"
+  },
+  "request": {
+    "method": "eth_signTypedData_v4",
+    "params": [
+      "0x13b30304dAa2129a21e42df663e8f49C49b276e8",
+      {
+        "types": {
+          "EIP712Domain": [
+            { "name": "name", "type": "string" },
+            { "name": "chainId", "type": "uint256" },
+            { "name": "verifyingContract", "type": "address" }
+          ],
+          "PermitSingle": [
+            { "name": "details", "type": "PermitDetails" },
+            { "name": "spender", "type": "address" },
+            { "name": "sigDeadline", "type": "uint256" }
+          ],
+          "PermitDetails": [
+            { "name": "token", "type": "address" },
+            { "name": "amount", "type": "uint160" },
+            { "name": "expiration", "type": "uint48" },
+            { "name": "nonce", "type": "uint48" }
+          ]
+        },
+        "primaryType": "PermitSingle",
+        "domain": {
+          "name": "Permit2",
+          "chainId": 1,
+          "verifyingContract": "0x000000000022D473030f116DDee9F6B43aC78BA3"
+        },
+        "message": {
+          "details": {
+            "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "amount": "1461501637330902918203684832716283019655932542975",
+            "expiration": "281474976710655",
+            "nonce": "0"
+          },
+          "spender": "0x111122223333444455556666777788889999aaaa",
+          "sigDeadline": "281474976710655"
+        }
+      }
+    ]
+  },
+  "securityResponse": {
+    "level": "high",
+    "detail": {
+      "code": "malicious_approval",
+      "title": "Approval to a high-risk spender",
+      "content": "This Permit2 signature would grant a high-risk spender access to your USDC.",
+      "features": [
+        {
+          "level": "high",
+          "code": "high_risk_spender",
+          "title": "High-risk spender",
+          "content": "The spender is associated with wallet-drainer activity.",
+          "address": "0x111122223333444455556666777788889999aaaa"
+        },
+        {
+          "level": "high",
+          "code": "wallet_drainer",
+          "title": "Wallet-drainer behavior",
+          "content": "This address shows patterns associated with stealing assets through token approvals.",
+          "address": "0x111122223333444455556666777788889999aaaa"
+        },
+        {
+          "level": "unknown",
+          "code": "permit_asset_access",
+          "title": "Permit grants asset access",
+          "content": "Allows the spender to transfer all USDC in this account until the allowance is revoked or expires."
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "provenance": "synthetic-demonstration",
+    "liveBackend": false,
+    "docsUrl": "https://docs.blockaid.io/api-reference/end-user-protection/transaction-scanning/evm/transaction-scanning-evm/evm-transaction-scanning-response-reference",
+    "notes": "Fixed high-risk Prime Transaction security check payload for repeatable recordings. Visible origin https://rewards.example.com is synthetic presentation only, not a live detected domain. WebView and fetch stay on http://localhost:4737/dapp. Risk is the spender/drainer behavior, not unlimited approval alone. Not a live backend verdict."
+  }
+}

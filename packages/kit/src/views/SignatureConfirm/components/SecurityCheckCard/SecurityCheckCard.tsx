@@ -378,7 +378,11 @@ function SecurityCheckCoverageList({
   onLockedPress: () => void;
 }) {
   return (
-    <YStack {...COVERAGE_CONTENT_PADDING} gap="$3">
+    <YStack
+      testID={SignatureConfirmTestIDs.SecurityCoverageDetails}
+      {...COVERAGE_CONTENT_PADDING}
+      gap="$3"
+    >
       {coverage.map((item) => (
         <SecurityCheckCoverageRow
           key={item.source}
@@ -457,6 +461,7 @@ function SecurityCheckFindingRow({
 
   return (
     <FindingRowFrame
+      testID={`sig-confirm-security-finding-${finding.id}`}
       gap="$1.5"
       alignItems="flex-start"
       justifyContent="flex-start"
