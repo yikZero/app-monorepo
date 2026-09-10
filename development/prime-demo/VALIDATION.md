@@ -10,6 +10,9 @@
 - 录制结束后 4737 / 8081 端口释放，专用模拟器已关闭。原 checkout 的已有改动、当前 feature 的四份参数、最终母版及上传版保留。
 - 主助手独立运行全部 127 项 Node 测试，全部通过，无跳过。新增 5 项构建入口测试在临时目录使用命令替身，覆盖默认锁定安装、兼容参数、成功 / 失败恢复本地修改和缺失工程时提前退出；这些测试不调用真实 Pods 或 Xcode。
 - `yarn agent:check --profile commit` 全部通过，日志为 `node_modules/.cache/agent-checks/2026-09-10T03-20-26-137Z`。随后仅补充本验收记录。
+- 最终 `build-ios` 默认入口再次完成真实 Pods 安装与 Xcode 构建，退出码为 0，App 的严格递归签名检查通过。独立比较原锁文件 SHA-256 与 Xcode 工程字节，均恢复到运行前状态，工作区干净。
+- 已推送到个人 fork 的 `yikzero/prime-transaction-security-video` 分支，工具源码标签为 `prime-video-kit-2026-09-10`，对应提交 `6c2166e674e97a11ae932210b5cd8500d598cd8c`。素材保存在同名 Draft Release，未创建上游 PR。
+- 从 GitHub 重新浅克隆该提交，并下载 Draft Release 的归档与校验文件，495 个解包文件的大小与 SHA-256 均通过。在没有 App `node_modules` 的新目录中，`doctor post`、feature 检查、搬迁重放和压缩导出全部成功。母版完整摘要仍为上述 `5d9793…329af`，上传版完整 SHA-256 为 `60a0710ac020f5f167f99ac596a7e05a0abaa52ae5443236f7309cae2614d597`；两者都与用户已认可的原文件完全一致。本地恢复记录位于 `.tmp/prime-demo/portability/github-source/.tmp/prime-demo/github-restore/`。随后只补充这份验收记录。
 - 原生验证在当前 Apple Silicon Mac 进行，复用已有 Node / Pods / DerivedData 缓存；尚未在第二台全新 Mac 或 Linux / Windows 验收。后期恢复不要求启动 iOS，也不要求安装完整 App 依赖。
 
 ## 本地 Skill 与统一入口（2026-09-10）
