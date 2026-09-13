@@ -17,6 +17,7 @@ export const ReferFriendsTestIDs = {
   inviteEarningsRow: 'refer-friends-invite-earnings-row',
   inviteLevelRow: 'refer-friends-invite-level-row',
   inviteShareBtn: 'refer-friends-invite-share-btn',
+  inviteWithdrawAddressRow: 'refer-friends-invite-withdraw-address-row',
   benefitsPlaceholder: 'refer-friends-benefits-placeholder',
 
   // --- Filter & Export ---

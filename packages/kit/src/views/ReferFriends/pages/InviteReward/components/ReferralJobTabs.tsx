@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
-import { useIntl } from 'react-intl';
-
+import { useLocaleVariant } from '@onekeyhq/kit/src/hooks/useLocaleVariant';
 import { SimpleTabs } from '@onekeyhq/kit/src/views/ReferFriends/components';
-import { ETranslations } from '@onekeyhq/shared/src/locale';
 
 import { ReferFriendsTestIDs } from '../../../testIDs';
+import { getReferralJobTabLabels } from '../getReferralJobTabLabels';
 import { EReferralPageTab, type IReferralPageTab } from '../referralPageTab';
 
 export function ReferralJobTabs({
@@ -15,26 +14,22 @@ export function ReferralJobTabs({
   value: IReferralPageTab;
   onChange: (value: IReferralPageTab) => void;
 }) {
-  const intl = useIntl();
-  const tabs = useMemo(
-    () => [
+  const locale = useLocaleVariant();
+  const tabs = useMemo(() => {
+    const labels = getReferralJobTabLabels(locale);
+    return [
       {
         value: EReferralPageTab.invite,
-        label: intl.formatMessage({
-          id: ETranslations.activity_hub_invite__action,
-        }),
+        label: labels.invite,
         testID: ReferFriendsTestIDs.inviteTab,
       },
       {
         value: EReferralPageTab.benefits,
-        label: intl.formatMessage({
-          id: ETranslations.activity_hub_my_rewards__action,
-        }),
+        label: labels.benefits,
         testID: ReferFriendsTestIDs.benefitsTab,
       },
-    ],
-    [intl],
-  );
+    ];
+  }, [locale]);
 
   return <SimpleTabs value={value} onChange={onChange} tabs={tabs} />;
 }

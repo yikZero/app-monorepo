@@ -1,12 +1,12 @@
-import { useIntl } from 'react-intl';
-
 import { Empty, YStack } from '@onekeyhq/components';
-import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { useLocaleVariant } from '@onekeyhq/kit/src/hooks/useLocaleVariant';
 
 import { ReferFriendsTestIDs } from '../../../testIDs';
+import { getReferralJobTabLabels } from '../getReferralJobTabLabels';
 
 export function BenefitsTabPlaceholder() {
-  const intl = useIntl();
+  const locale = useLocaleVariant();
+  const { benefits } = getReferralJobTabLabels(locale);
 
   return (
     <YStack
@@ -15,12 +15,7 @@ export function BenefitsTabPlaceholder() {
       px="$pagePadding"
       py="$10"
     >
-      <Empty
-        icon="GiftOutline"
-        title={intl.formatMessage({
-          id: ETranslations.activity_hub_my_rewards__action,
-        })}
-      />
+      <Empty icon="GiftOutline" title={benefits} />
     </YStack>
   );
 }
