@@ -170,7 +170,10 @@ export const useReferFriends = () => {
   }, [devSettings.enabled, devSettings.settings?.enableTestEndpoint]);
 
   const toInviteRewardPage = useCallback(
-    async (params?: { showRewardDistributionHistory?: boolean }) => {
+    async (params?: {
+      showRewardDistributionHistory?: boolean;
+      tab?: 'invite' | 'benefits';
+    }) => {
       const isLogin = await backgroundApiProxy.servicePrime.isLoggedIn();
       if (isLogin) {
         if (shouldOpenReferralInExtensionExpandTab) {

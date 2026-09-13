@@ -18,6 +18,7 @@ export type ITabReferFriendsParamList = {
   TabInviteReward:
     | {
         showRewardDistributionHistory?: boolean;
+        tab?: 'invite' | 'benefits';
       }
     | undefined;
   TabYourReferred: undefined;

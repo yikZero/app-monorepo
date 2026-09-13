@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useFocusEffect, useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
@@ -9,7 +9,6 @@ import {
   Spinner,
   Stack,
   XStack,
-  YStack,
   useMedia,
 } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
@@ -18,92 +17,53 @@ import { TabPageHeader } from '@onekeyhq/kit/src/components/TabPageHeader';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { useRedirectWhenNotLoggedIn } from '@onekeyhq/kit/src/views/ReferFriends/hooks/useRedirectWhenNotLoggedIn';
-import { CumulativeRewards } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/CumulativeRewards';
-import { CurrentLevelCard } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/CurrentLevelCard';
-import { InvitationDetailsSection } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InvitationDetailsSection';
+import { BenefitsTabPlaceholder } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/BenefitsTabPlaceholder';
+import { InviteTabContent } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteTabContent';
 import { LogoutButton } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/LogoutButton';
-import { ReferralCodeCard } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralCodeCard';
+import { useReferralCodeCard } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralCodeCard/hooks/useReferralCodeCard';
+import { ReferralJobTabs } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralJobTabs';
 import { RulesButton } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/RulesButton';
-import { SectionHeader } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/SectionHeader';
-import { ResponsiveTwoColumnLayout } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/shared';
-import { SuspensionAlert } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/SuspensionAlert';
+import {
+  EReferralPageTab,
+  type IReferralPageTab,
+  resolveReferralPageTab,
+} from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/referralPageTab';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import type { IInviteSummary } from '@onekeyhq/shared/src/referralCode/type';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
+import { ReferFriendsTestIDs } from '../../testIDs';
 import { useNavigateToRewardHistory } from '../RewardDistributionHistory/hooks/useNavigateToRewardHistory';
 
-import { ReferralListButton } from './components/ReferralListButton';
+function ReferralPageHeader({ activeTab }: { activeTab: IReferralPageTab }) {
+  const intl = useIntl();
+  const { md } = useMedia();
+  const renderHeaderRight = useCallback(() => {
+    if (activeTab !== EReferralPageTab.invite) {
+      return null;
+    }
+    return <RulesButton />;
+  }, [activeTab]);
 
-function InviteRewardContent({
-  summaryInfo,
-  fetchSummaryInfo,
-}: {
-  summaryInfo: IInviteSummary;
-  fetchSummaryInfo: () => void;
-}) {
-  const {
-    inviteUrl,
-    inviteCode,
-    enabledNetworks,
-    cumulativeRewards,
-    rebateLevels,
-    rebateConfig,
-    withdrawAddresses,
-    suspensionNotice,
-    suspensionContactLabel,
-  } = summaryInfo;
+  if (platformEnv.isNative || md) {
+    return (
+      <Page.Header
+        title={intl.formatMessage({
+          id: ETranslations.referral_title,
+        })}
+        headerRight={renderHeaderRight}
+      />
+    );
+  }
 
   return (
-    <>
-      <SuspensionAlert
-        suspensionNotice={suspensionNotice}
-        suspensionContactLabel={suspensionContactLabel}
-      />
-
-      <XStack px="$pagePadding" pt="$5" pb="$4" jc="space-between" ai="center">
-        <SectionHeader translationId={ETranslations.global_overview} />
-
-        <XStack $md={{ display: 'none' }} gap="$4">
-          <RulesButton />
-          {platformEnv.isWeb ? <LogoutButton /> : null}
-        </XStack>
-
-        <XStack $gtMd={{ display: 'none' }} $md={{ display: 'flex' }}>
-          <ReferralListButton />
-        </XStack>
-      </XStack>
-
-      <ResponsiveTwoColumnLayout
-        reverseOnMobile
-        leftColumn={
-          <CumulativeRewards
-            cumulativeRewards={cumulativeRewards}
-            withdrawAddresses={withdrawAddresses}
-            enabledNetworks={enabledNetworks}
-            fetchSummaryInfo={fetchSummaryInfo}
-          />
-        }
-        rightColumn={
-          <ReferralCodeCard inviteUrl={inviteUrl} inviteCode={inviteCode} />
-        }
-      />
-
-      <YStack py="$5">
-        <CurrentLevelCard
-          rebateConfig={rebateConfig}
-          rebateLevels={rebateLevels}
-        />
-      </YStack>
-
-      <InvitationDetailsSection
-        summaryInfo={summaryInfo}
-        fetchSummaryInfo={fetchSummaryInfo}
-      />
-    </>
+    <TabPageHeader
+      sceneName={EAccountSelectorSceneName.home}
+      tabRoute={ETabRoutes.ReferFriends}
+      hideHeaderLeft={platformEnv.isDesktop}
+    />
   );
 }
 
@@ -115,10 +75,18 @@ function InviteRewardPage() {
   const route = useRoute<{
     key: string;
     name: string;
-    params?: { showRewardDistributionHistory?: boolean };
+    params?: {
+      showRewardDistributionHistory?: boolean;
+      tab?: IReferralPageTab;
+    };
   }>();
+  const routeTab = resolveReferralPageTab(route.params?.tab);
+  const [activeTab, setActiveTab] = useState<IReferralPageTab>(routeTab);
 
-  // Handle showRewardDistributionHistory param - open modal once when param is set
+  useEffect(() => {
+    setActiveTab(routeTab);
+  }, [routeTab]);
+
   useFocusEffect(
     useCallback(() => {
       if (!route.params?.showRewardDistributionHistory) {
@@ -133,12 +101,9 @@ function InviteRewardPage() {
     ]),
   );
 
-  // Redirect to ReferAFriend page if user is not logged in
   useRedirectWhenNotLoggedIn();
 
   const [isFirstLoading, setIsFirstLoading] = useState(true);
-
-  const renderHeaderRight = useCallback(() => <RulesButton />, []);
 
   const {
     result: summaryInfo,
@@ -151,13 +116,12 @@ function InviteRewardPage() {
     [],
     {
       initResult: undefined,
-      pollingInterval: timerUtils.getTimeDurationMs({ minute: 1 }), // Auto refresh every 1 minute
+      pollingInterval: timerUtils.getTimeDurationMs({ minute: 1 }),
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       undefinedResultIfError: true,
-      watchLoading: false, // Disable auto loading state for silent refresh
+      watchLoading: false,
       onIsLoadingChange: (loading) => {
-        // Only show loading on first fetch
         if (!loading && isFirstLoading) {
           setIsFirstLoading(false);
         }
@@ -165,59 +129,68 @@ function InviteRewardPage() {
     },
   );
 
+  const { copyLink } = useReferralCodeCard({
+    inviteUrl: summaryInfo?.inviteUrl ?? '',
+    inviteCode: summaryInfo?.inviteCode ?? '',
+  });
+
   const isFetching = isFirstLoading && (isLoading ?? summaryInfo === undefined);
+  const showInviteFooter =
+    platformEnv.isNative &&
+    activeTab === EReferralPageTab.invite &&
+    Boolean(summaryInfo?.inviteUrl);
 
   return (
     <Page>
-      {platformEnv.isNative || md ? (
-        <Page.Header
-          title={intl.formatMessage({
-            id: ETranslations.referral_title,
-          })}
-          headerRight={renderHeaderRight}
-        />
-      ) : (
-        <TabPageHeader
-          sceneName={EAccountSelectorSceneName.home}
-          tabRoute={ETabRoutes.ReferFriends}
-          hideHeaderLeft={platformEnv.isDesktop}
-        />
-      )}
+      <ReferralPageHeader activeTab={activeTab} />
       <Page.Body>
-        {(() => {
-          if (isFetching) {
-            return (
-              <Stack
-                position="absolute"
-                top={0}
-                left={0}
-                right={0}
-                bottom={0}
-                ai="center"
-                jc="center"
-                flex={1}
-              >
-                <Spinner size="large" />
-              </Stack>
-            );
-          }
-
-          if (summaryInfo) {
-            return (
-              <ScrollView>
-                <Page.Container padded={false}>
-                  <InviteRewardContent
-                    summaryInfo={summaryInfo}
-                    fetchSummaryInfo={fetchSummaryInfo}
-                  />
-                </Page.Container>
-              </ScrollView>
-            );
-          }
-
-          return null;
-        })()}
+        <XStack
+          px="$pagePadding"
+          pt="$4"
+          pb="$2"
+          ai="center"
+          jc="space-between"
+        >
+          <ReferralJobTabs value={activeTab} onChange={setActiveTab} />
+          {!md && activeTab === EReferralPageTab.invite ? (
+            <XStack gap="$4">
+              <RulesButton />
+              {platformEnv.isWeb ? <LogoutButton /> : null}
+            </XStack>
+          ) : null}
+        </XStack>
+        {isFetching && activeTab === EReferralPageTab.invite ? (
+          <Stack flex={1} ai="center" jc="center">
+            <Spinner size="large" />
+          </Stack>
+        ) : (
+          <ScrollView>
+            <Page.Container padded={false}>
+              {activeTab === EReferralPageTab.invite ? (
+                <InviteTabContent
+                  summaryInfo={summaryInfo}
+                  fetchSummaryInfo={fetchSummaryInfo}
+                />
+              ) : (
+                <BenefitsTabPlaceholder />
+              )}
+            </Page.Container>
+          </ScrollView>
+        )}
       </Page.Body>
+      {showInviteFooter ? (
+        <Page.Footer>
+          <Page.FooterActions
+            onConfirm={copyLink}
+            onConfirmText={intl.formatMessage({
+              id: ETranslations.browser_copy_link,
+            })}
+            confirmButtonProps={{
+              testID: ReferFriendsTestIDs.copyLinkFooterBtn,
+            }}
+          />
+        </Page.Footer>
+      ) : null}
     </Page>
   );
 }

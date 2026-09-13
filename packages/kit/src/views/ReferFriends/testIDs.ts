@@ -10,6 +10,14 @@ export const ReferFriendsTestIDs = {
   referralListBtn: 'refer-friends-referral-list-btn',
   createCodeBtn: 'refer-friends-create-code-btn',
   copyLinkBtn: 'refer-friends-copy-link-btn',
+  copyLinkFooterBtn: 'refer-friends-copy-link-footer-btn',
+  inviteTab: 'refer-friends-tab-invite',
+  benefitsTab: 'refer-friends-tab-benefits',
+  inviteBindRow: 'refer-friends-invite-bind-row',
+  inviteEarningsRow: 'refer-friends-invite-earnings-row',
+  inviteLevelRow: 'refer-friends-invite-level-row',
+  inviteShareBtn: 'refer-friends-invite-share-btn',
+  benefitsPlaceholder: 'refer-friends-benefits-placeholder',
 
   // --- Filter & Export ---
   filterBtn: 'refer-friends-filter-btn',

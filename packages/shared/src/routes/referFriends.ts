@@ -60,6 +60,7 @@ export type IModalReferFriendsParamList = {
   [EModalReferFriendsRoutes.InviteReward]:
     | {
         showRewardDistributionHistory?: boolean;
+        tab?: 'invite' | 'benefits';
       }
     | undefined;
   [EModalReferFriendsRoutes.EditAddress]: {
