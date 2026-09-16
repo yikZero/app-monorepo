@@ -24,7 +24,10 @@ import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 
 import { showPrimeFeatureIntroDialog } from '../PrimeFeatures/PrimeFeatureIntroContent';
-import { PRIME_FEATURE_INTROS } from '../PrimeFeatures/primeFeatureIntroUtils';
+import {
+  PRIME_FEATURE_INTROS,
+  isPrimeFeatureIntroComingSoon,
+} from '../PrimeFeatures/primeFeatureIntroUtils';
 
 import type { ISubscriptionPeriod } from '../../hooks/usePrimePaymentTypes';
 import type { IPrimeFeatureIntro } from '../PrimeFeatures/primeFeatureIntroUtils';
@@ -106,7 +109,10 @@ export function PrimeBenefitsItem({
         },
         feature.descriptionValues,
       )}
-      isComingSoon={feature.isComingSoon}
+      isComingSoon={isPrimeFeatureIntroComingSoon({
+        feature,
+        isExtension: !!platformEnv.isExtension,
+      })}
       onPress={onPress}
       itemProps={itemProps}
     />

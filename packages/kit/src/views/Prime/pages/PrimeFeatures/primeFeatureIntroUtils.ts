@@ -311,12 +311,31 @@ export function getPrimeFeatureIntro(featureId: EPrimeFeatures | undefined) {
   return PRIME_FEATURE_INTROS.find((feature) => feature.id === featureId);
 }
 
+export function isPrimeFeatureIntroComingSoon({
+  feature,
+  isExtension,
+}: {
+  feature?: Pick<IPrimeFeatureIntro, 'isComingSoon' | 'action'>;
+  isExtension: boolean;
+}): boolean {
+  if (!feature) {
+    return false;
+  }
+  // Extension has no in-app WebView browser, so browser-action Prime
+  // intros stay listed but are treated as not supported yet.
+  return (
+    !!feature.isComingSoon || (isExtension && feature.action === 'browser')
+  );
+}
+
 export function getPrimeFeatureIntroCtaKind({
   featureId,
   isPrimeSubscriptionActive,
+  isExtension,
 }: {
   featureId: EPrimeFeatures | undefined;
   isPrimeSubscriptionActive: boolean;
+  isExtension: boolean;
 }): IPrimeFeatureIntroCtaKind {
   const feature = getPrimeFeatureIntro(featureId);
   if (!feature) {
@@ -325,7 +344,7 @@ export function getPrimeFeatureIntroCtaKind({
   if (!isPrimeSubscriptionActive) {
     return 'subscribe';
   }
-  if (feature.isComingSoon) {
+  if (isPrimeFeatureIntroComingSoon({ feature, isExtension })) {
     return 'comingSoon';
   }
   return 'featureAction';

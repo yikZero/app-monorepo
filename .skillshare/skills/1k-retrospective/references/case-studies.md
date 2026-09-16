@@ -437,3 +437,10 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries �
 **Root Cause**: `initialTab="market"` landed on the Market tab, which filters sections by title. Stocks is a different title, and native Discovery does not focus `ETabRoutes.Market`, so All-tab prioritization never ran.
 **Fix**: Open the All tab for the market preset and treat `initialTab="market"` as market-focused so Stocks / Market / Perp stay first.
 **Catchable by**: Section 3: Cross-platform Impact — a tab-route focus gate must also cover hosts that pass `initialTab`; Section 4: shared filter after splitting a section title
+
+## Case: Extension Prime browser features still offered Go to Browser Tab
+**Date**: 2026-09-16 | **Platforms**: extension
+**Symptom**: Prime intros for transaction security, DApp site scan, and AI translate used “Go to Browser Tab”. Popup/sidebar navigation did nothing; fullscreen opened Discovery Market/Earn, not an in-app browser.
+**Root Cause**: Those intros share `action: 'browser'` and `gotoDiscoveryTab` / MultiTabBrowser. Extension has no product WebView browser (`Browser.ext.tsx` is Market/Earn).
+**Fix**: Treat browser-action intros as coming soon on extension (Soon badge + disabled Soon CTA) and no-op the browser action. Leave gift/redeem catalogs unchanged.
+**Catchable by**: Section 3: Cross-platform Impact — a Discovery/browser CTA must be gated on platforms that actually host the in-app browser

@@ -57,6 +57,7 @@ import { usePrimeSubscriptionPackages } from '../../hooks/usePrimeSubscriptionPa
 import {
   PRIME_FEATURE_INTROS,
   getPrimeFeatureIntroCtaKind,
+  isPrimeFeatureIntroComingSoon,
 } from './primeFeatureIntroUtils';
 
 import type {
@@ -564,8 +565,12 @@ export function PrimeFeatureIntroContent({
   const ctaKind = getPrimeFeatureIntroCtaKind({
     featureId: activeFeature?.id,
     isPrimeSubscriptionActive: !!isPrimeSubscriptionActive,
+    isExtension: !!platformEnv.isExtension,
   });
-  const isComingSoon = !!activeFeature?.isComingSoon;
+  const isComingSoon = isPrimeFeatureIntroComingSoon({
+    feature: activeFeature,
+    isExtension: !!platformEnv.isExtension,
+  });
   const shouldUseSubscribeCta = ctaKind === 'subscribe';
   const shouldUseFeatureActionCta = ctaKind === 'featureAction';
   const shouldUseComingSoonCta = ctaKind === 'comingSoon';
@@ -599,6 +604,9 @@ export function PrimeFeatureIntroContent({
       return;
     }
     if (featureActionSubmittingRef.current) {
+      return;
+    }
+    if (activeFeature.action === 'browser' && platformEnv.isExtension) {
       return;
     }
     featureActionSubmittingRef.current = true;
