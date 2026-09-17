@@ -9,6 +9,11 @@ import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import type { IPrimeGiftAnalyticsSource } from '@onekeyhq/shared/src/logger/scopes/prime/scenes/subscription';
 import type { IPrimeRedemptionResult } from '@onekeyhq/shared/types/prime/primeTypes';
 
+import {
+  emitPrimeSubscriptionPurchaseSuccess,
+  preparePrimeSubscriptionPurchaseSuccess,
+} from '../primeSubscriptionPurchaseSuccess';
+
 import { getPrimeRedemptionErrorPresentation } from './primeRedemptionError';
 
 export type IPrimeRedemptionFormValues = {
@@ -93,11 +98,27 @@ export function usePrimeRedemptionSubmit({
             ? { source: giftSource, entry: 'primeGift' as const }
             : {}),
         });
+        // Gift success uses a page card instead of the shared auto intro.
+        const kytIntroPayload =
+          primeGiftSerialNo || giftSource
+            ? undefined
+            : await preparePrimeSubscriptionPurchaseSuccess(
+                expectedOneKeyUserId,
+              );
         setRedemptionResult(result);
         onRedeemed?.(result);
-        void backgroundApiProxy.servicePrime
-          .apiFetchPrimeUserInfo({ forceRefresh: true })
-          .catch(() => undefined); // best-effort persist refresh; success UI is already shown
+        void (async () => {
+          try {
+            await backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo({
+              forceRefresh: true,
+            });
+          } catch {
+            // best-effort persist refresh; success UI is already shown
+          }
+          if (kytIntroPayload) {
+            emitPrimeSubscriptionPurchaseSuccess(kytIntroPayload);
+          }
+        })();
       } catch (error) {
         const presentation = getPrimeRedemptionErrorPresentation({
           error,

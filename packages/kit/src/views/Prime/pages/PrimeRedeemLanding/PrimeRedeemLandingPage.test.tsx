@@ -33,6 +33,11 @@ const mockFetchPrimeUserInfo = jest.fn<
   Promise<unknown>,
   [{ forceRefresh?: boolean }?]
 >();
+const mockPreparePrimeSubscriptionPurchaseSuccess = jest.fn<
+  Promise<{ onekeyUserId: string; claimId?: string }>,
+  [string]
+>(async (onekeyUserId) => ({ onekeyUserId, claimId: 'claim-redeem' }));
+const mockEmitPrimeSubscriptionPurchaseSuccess = jest.fn<void, [unknown]>();
 const mockLoginOneKeyId = jest.fn<Promise<void>, []>();
 const mockPrimeRedemptionResult = jest.fn();
 const mockPrimeRedemptionEntryClick = jest.fn();
@@ -318,6 +323,14 @@ jest.mock('@onekeyhq/components', () => {
   };
 });
 
+jest.mock('../../primeSubscriptionPurchaseSuccess', () => ({
+  preparePrimeSubscriptionPurchaseSuccess: (onekeyUserId: string) =>
+    mockPreparePrimeSubscriptionPurchaseSuccess(onekeyUserId),
+  emitPrimeSubscriptionPurchaseSuccess: (payload: unknown) => {
+    mockEmitPrimeSubscriptionPurchaseSuccess(payload);
+  },
+}));
+
 jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
   __esModule: true,
   default: {
@@ -567,6 +580,15 @@ describe('PrimeRedeemLandingPage', () => {
     expect(mockRedeemPrimeCode).toHaveBeenCalledWith({
       code: 'OKP-PJ37L-DYXWR',
       expectedOneKeyUserId: 'user-a',
+    });
+    expect(mockPreparePrimeSubscriptionPurchaseSuccess).toHaveBeenCalledWith(
+      'user-a',
+    );
+    await waitFor(() => {
+      expect(mockEmitPrimeSubscriptionPurchaseSuccess).toHaveBeenCalledWith({
+        onekeyUserId: 'user-a',
+        claimId: 'claim-redeem',
+      });
     });
     expect(mockPrimeRedemptionResult).toHaveBeenCalledWith({
       result: 'success',

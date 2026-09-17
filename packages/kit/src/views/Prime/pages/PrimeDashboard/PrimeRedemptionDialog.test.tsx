@@ -53,6 +53,11 @@ const mockFetchPrimeUserInfo = jest.fn<
   Promise<unknown>,
   [{ forceRefresh?: boolean }?]
 >();
+const mockPreparePrimeSubscriptionPurchaseSuccess = jest.fn<
+  Promise<{ onekeyUserId: string; claimId?: string }>,
+  [string]
+>(async (onekeyUserId) => ({ onekeyUserId, claimId: 'claim-redeem' }));
+const mockEmitPrimeSubscriptionPurchaseSuccess = jest.fn<void, [unknown]>();
 const mockDialogFooterClose = jest.fn<Promise<void>, []>();
 const mockPrimeRedemptionResult = jest.fn();
 const mockPrimeGiftStage = jest.fn();
@@ -283,6 +288,14 @@ jest.mock('@onekeyhq/components', () => {
   };
 });
 
+jest.mock('../../primeSubscriptionPurchaseSuccess', () => ({
+  preparePrimeSubscriptionPurchaseSuccess: (onekeyUserId: string) =>
+    mockPreparePrimeSubscriptionPurchaseSuccess(onekeyUserId),
+  emitPrimeSubscriptionPurchaseSuccess: (payload: unknown) => {
+    mockEmitPrimeSubscriptionPurchaseSuccess(payload);
+  },
+}));
+
 jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
   __esModule: true,
   default: {
@@ -349,6 +362,10 @@ describe('PrimeRedemptionDialog', () => {
       isExist: () => true,
     });
     mockFetchPrimeUserInfo.mockResolvedValue(undefined);
+    mockPreparePrimeSubscriptionPurchaseSuccess.mockResolvedValue({
+      onekeyUserId: 'user-a',
+      claimId: 'claim-redeem',
+    });
     mockDialogFooterClose.mockResolvedValue(undefined);
     mockGetPrimeInfiniPaymentEntryGuard.mockResolvedValue({
       isLoggedIn: true,
@@ -422,6 +439,8 @@ describe('PrimeRedemptionDialog', () => {
     expect(mockGetPrimeInfiniPaymentEntryGuard).toHaveBeenCalledTimes(1);
     expect(onRedeemed).toHaveBeenCalledTimes(1);
     expect(onRedeemed).toHaveBeenCalledWith(redemption);
+    expect(mockPreparePrimeSubscriptionPurchaseSuccess).not.toHaveBeenCalled();
+    expect(mockEmitPrimeSubscriptionPurchaseSuccess).not.toHaveBeenCalled();
   });
 
   it('retains the parameter code in the open dialog for a failed redemption retry', async () => {
@@ -490,6 +509,8 @@ describe('PrimeRedemptionDialog', () => {
         }),
       ],
     ]);
+    expect(mockPreparePrimeSubscriptionPurchaseSuccess).not.toHaveBeenCalled();
+    expect(mockEmitPrimeSubscriptionPurchaseSuccess).not.toHaveBeenCalled();
   });
 
   describe.each([undefined, 'DEVICE-A'])(
@@ -680,6 +701,15 @@ describe('PrimeRedemptionDialog', () => {
     expect(screen.getByTestId('success-lottie')).toBeTruthy();
     expect(mockFetchPrimeUserInfo).toHaveBeenCalledWith({
       forceRefresh: true,
+    });
+    expect(mockPreparePrimeSubscriptionPurchaseSuccess).toHaveBeenCalledWith(
+      'user-a',
+    );
+    await waitFor(() => {
+      expect(mockEmitPrimeSubscriptionPurchaseSuccess).toHaveBeenCalledWith({
+        onekeyUserId: 'user-a',
+        claimId: 'claim-redeem',
+      });
     });
     expect(mockPrimeRedemptionResult).toHaveBeenCalledWith({
       result: 'success',
