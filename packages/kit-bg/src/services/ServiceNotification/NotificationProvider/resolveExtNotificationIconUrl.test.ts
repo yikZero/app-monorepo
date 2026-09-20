@@ -8,9 +8,7 @@ import {
 const EXTENSION_ORIGIN = 'chrome-extension://onekey-test-id';
 const packagedIconUrl = `${EXTENSION_ORIGIN}/${EXT_NOTIFICATION_DEFAULT_ICON_PATH}`;
 const originalChrome = globalThis.chrome;
-const getURL = jest.fn(
-  (path: string) => `${EXTENSION_ORIGIN}/${path}`,
-);
+const getURL = jest.fn((path: string) => `${EXTENSION_ORIGIN}/${path}`);
 
 beforeEach(() => {
   getURL.mockClear();
