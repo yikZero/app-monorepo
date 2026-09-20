@@ -7,50 +7,44 @@ import {
 
 const EXTENSION_ORIGIN = 'chrome-extension://onekey-test-id';
 const packagedIconUrl = `${EXTENSION_ORIGIN}/${EXT_NOTIFICATION_DEFAULT_ICON_PATH}`;
+const originalChrome = globalThis.chrome;
+const getURL = jest.fn(
+  (path: string) => `${EXTENSION_ORIGIN}/${path}`,
+);
 
-function getExtensionUrl(path: string) {
-  return `${EXTENSION_ORIGIN}/${path}`;
-}
+beforeEach(() => {
+  getURL.mockClear();
+  Object.defineProperty(globalThis, 'chrome', {
+    configurable: true,
+    value: {
+      runtime: {
+        getURL,
+      },
+    },
+  });
+});
+
+afterEach(() => {
+  Object.defineProperty(globalThis, 'chrome', {
+    configurable: true,
+    value: originalChrome,
+  });
+});
 
 describe('resolveExtNotificationIconUrl', () => {
   it('keeps a payload icon when present', () => {
     expect(
-      resolveExtNotificationIconUrl({
-        icon: 'https://uni.onekey-asset.com/static/token.png',
-        getExtensionUrl,
-      }),
+      resolveExtNotificationIconUrl(
+        'https://uni.onekey-asset.com/static/token.png',
+      ),
     ).toBe('https://uni.onekey-asset.com/static/token.png');
+    expect(getURL).not.toHaveBeenCalled();
   });
 
   it('uses the packaged OneKey icon when the payload has no usable icon', () => {
-    expect(resolveExtNotificationIconUrl({ getExtensionUrl })).toBe(
-      packagedIconUrl,
-    );
-    expect(resolveExtNotificationIconUrl({ icon: '', getExtensionUrl })).toBe(
-      packagedIconUrl,
-    );
-    expect(resolveExtNotificationIconUrl({ getExtensionUrl })).not.toBe(
-      BLANK_ICON_BASE64,
-    );
-  });
-
-  it('reads the packaged icon from chrome.runtime.getURL by default', () => {
-    const originalChrome = globalThis.chrome;
-    Object.defineProperty(globalThis, 'chrome', {
-      configurable: true,
-      value: {
-        runtime: {
-          getURL: (path: string) => `${EXTENSION_ORIGIN}/${path}`,
-        },
-      },
-    });
-    try {
-      expect(resolveExtNotificationIconUrl()).toBe(packagedIconUrl);
-    } finally {
-      Object.defineProperty(globalThis, 'chrome', {
-        configurable: true,
-        value: originalChrome,
-      });
-    }
+    expect(resolveExtNotificationIconUrl()).toBe(packagedIconUrl);
+    expect(resolveExtNotificationIconUrl('')).toBe(packagedIconUrl);
+    expect(resolveExtNotificationIconUrl()).not.toBe(BLANK_ICON_BASE64);
+    expect(getURL).toHaveBeenCalledWith(EXT_NOTIFICATION_DEFAULT_ICON_PATH);
   });
 });

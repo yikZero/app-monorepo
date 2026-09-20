@@ -202,7 +202,7 @@ export default class NotificationProvider extends NotificationProviderBase {
       const options: chrome.notifications.NotificationOptions<true> = {
         // export type TemplateType = "basic" | "image" | "list" | "progress";
         type: 'basic',
-        iconUrl: resolveExtNotificationIconUrl({ icon }),
+        iconUrl: resolveExtNotificationIconUrl(icon),
         title,
         message: description,
         silent: false,
