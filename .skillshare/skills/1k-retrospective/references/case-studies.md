@@ -592,3 +592,10 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries �
 **Fix**: Move pinned/current caches to `onekey-tradingview-embed-pin-v1:`, delete the legacy `onekey-tradingview-embed:` namespace when adopting a release, and regression-test that a poisoned legacy entry is not served.
 **Catchable by**: Section 4: implementation matches original requirement — a trust-root change must also rotate or re-verify the persistent cache that will execute those bytes
 
+## Case: Extension OS notifications used a transparent icon
+**Date**: 2026-09-20 | **Platforms**: Extension
+**Symptom**: Chrome extension system pushes showed the Chrome icon (or no OneKey branding). Marketing notifications looked unattributed.
+**Root Cause**: `chrome.notifications.create` used `BLANK_ICON_BASE64` (1x1 transparent PNG) when `extras.image` was missing or the remote URL failed. macOS then fell back to the Chrome app icon.
+**Fix**: Resolve `iconUrl` with the packaged `icon-128.png` via `chrome.runtime.getURL` when the payload has no usable icon, including the create-failure retry path.
+**Catchable by**: Section 3: identified which platforms consume modified code; NEW — extension OS notifications must not use a transparent placeholder for `iconUrl`
+
