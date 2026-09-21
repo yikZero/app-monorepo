@@ -4,6 +4,10 @@ import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
 import { Stack } from '../../primitives';
 
+import { roundDragRegionRect, subtractRects } from './dragRegionGeometry';
+import { subscribeDesktopDragResume } from './dragRegionResume';
+
+import type { IDragRegionRect } from './dragRegionGeometry';
 import type { IDesktopDragZoneBoxProps } from './index.type';
 
 const dragZoneStyle = {
@@ -30,13 +34,18 @@ const dragZoneStyle = {
 //      injected style below, so they never produce a stale native region.
 //   2. A single global imperative manager reads those markers and synthesizes,
 //      from the current geometry, fresh invisible overlays:
-//        - a `drag` overlay covering each visible marker zone;
+//        - `drag` overlays covering only the empty remainder of each zone
+//          (zone minus clickable controls). Never cover controls with drag:
+//          after idle Chromium can drop no-drag holes and keep drag
+//          (OK-63872), which would steal address-bar / refresh clicks.
 //        - `no-drag` holes covering the clickable controls inside it.
 //      All overlays are body-level, position:fixed, opacity:0,
 //      pointer-events:none.
-//   3. On resize / DPI change / aria-hidden (tab, modal) flips and zone
-//      mount/unmount the overlays are cleared, recomputed and re-attached
-//      (debounced, with a max-wait guard).
+//   3. On resize / DPI change / aria-hidden (tab, modal) flips, zone
+//      mount/unmount, and returning to the foreground (focus / visible /
+//      app-state active / page resume) the overlays are cleared, recomputed
+//      and re-attached (layout events are debounced with a max-wait guard;
+//      resume recomputes immediately so the first click is not stolen).
 //   Fresh overlays => never stale; invisible => no flicker; one central place
 //   => replaces (and removes) the previous per-instance ghost-mirror.
 // =============================================================================
@@ -128,15 +137,15 @@ function isZoneShown(el: Element): boolean {
 }
 
 function makeRegionEl(
-  rect: DOMRect,
+  rect: IDragRegionRect,
   region: 'drag' | 'no-drag',
 ): HTMLDivElement {
   const el = document.createElement('div');
   el.setAttribute(SYN_ATTR, region);
   el.style.cssText =
     `position:fixed;pointer-events:none;opacity:0;z-index:0;` +
-    `left:${Math.round(rect.left)}px;top:${Math.round(rect.top)}px;` +
-    `width:${Math.round(rect.width)}px;height:${Math.round(rect.height)}px;` +
+    `left:${rect.left}px;top:${rect.top}px;` +
+    `width:${rect.width}px;height:${rect.height}px;` +
     `-webkit-app-region:${region};`;
   return el;
 }
@@ -145,11 +154,10 @@ function clearSynRegions() {
   document.querySelectorAll(`[${SYN_ATTR}]`).forEach((el) => el.remove());
 }
 
-// Imperative recompute: drop the old overlays → rebuild the drag overlay +
-// no-drag holes from the current geometry → re-attach. The drag overlays are
-// appended first and the no-drag holes after: the native region is built in DOM
-// order (drag = union, no-drag = difference), so the later no-drag holes carve
-// the clickable controls back out of the drag overlay.
+// Imperative recompute: drop the old overlays → rebuild empty-space drag
+// overlays + no-drag holes from the current geometry → re-attach. Drag is
+// appended first and holes after. Holes remain a safety net if subtractRects
+// leaves a sliver over a control; they are not the only thing keeping clicks.
 function recompute() {
   if (!document.body || !document.body.isConnected) {
     return;
@@ -164,13 +172,20 @@ function recompute() {
   const drags: HTMLDivElement[] = [];
   const holes: HTMLDivElement[] = [];
   for (const zone of zones) {
-    drags.push(makeRegionEl(zone.getBoundingClientRect(), 'drag'));
+    const zoneRect = roundDragRegionRect(zone.getBoundingClientRect());
+    const holeRects: IDragRegionRect[] = [];
     zone.querySelectorAll(NO_DRAG_SELECTOR).forEach((nd) => {
-      const r = (nd as HTMLElement).getBoundingClientRect();
+      const r = roundDragRegionRect(
+        (nd as HTMLElement).getBoundingClientRect(),
+      );
       if (r.width > 0 && r.height > 0) {
+        holeRects.push(r);
         holes.push(makeRegionEl(r, 'no-drag'));
       }
     });
+    for (const dragRect of subtractRects(zoneRect, holeRects)) {
+      drags.push(makeRegionEl(dragRect, 'drag'));
+    }
   }
   drags.forEach((d) => document.body.appendChild(d));
   holes.forEach((h) => document.body.appendChild(h));
@@ -251,6 +266,10 @@ function startManager() {
     attributeFilter: ['aria-hidden'],
     subtree: true,
   });
+
+  // Returning from background/idle: rebuild immediately so the first click
+  // after the window is frontmost is not stolen by a stale native drag cache.
+  subscribeDesktopDragResume(runRecompute);
 
   // Initial pass — run it synchronously (not debounced) so the draggable region
   // exists on the first commit instead of ~200ms later, otherwise the title bar
