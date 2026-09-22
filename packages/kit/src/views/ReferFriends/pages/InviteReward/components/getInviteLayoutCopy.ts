@@ -1,6 +1,5 @@
 export interface IInviteLayoutCopy {
   headline: string;
-  copyInviteLink: string;
   cumulativeEarnings: string;
   manageCodes: string;
   levelBenefits: string;
@@ -11,7 +10,6 @@ export interface IInviteLayoutCopy {
 
 const ZH_COPY: IInviteLayoutCopy = {
   headline: '邀请好友，赚取返佣',
-  copyInviteLink: '复制邀请链接',
   cumulativeEarnings: '累计收益',
   manageCodes: '管理邀请码',
   levelBenefits: '等级权益',
@@ -22,7 +20,6 @@ const ZH_COPY: IInviteLayoutCopy = {
 
 const EN_COPY: IInviteLayoutCopy = {
   headline: 'Invite friends, earn commission',
-  copyInviteLink: 'Copy invite link',
   cumulativeEarnings: 'Cumulative earnings',
   manageCodes: 'Manage codes',
   levelBenefits: 'Level benefits',

@@ -4,7 +4,6 @@ describe('getInviteLayoutCopy', () => {
   it('uses the locked Chinese labels', () => {
     expect(getInviteLayoutCopy('zh-CN')).toEqual({
       headline: '邀请好友，赚取返佣',
-      copyInviteLink: '复制邀请链接',
       cumulativeEarnings: '累计收益',
       manageCodes: '管理邀请码',
       levelBenefits: '等级权益',

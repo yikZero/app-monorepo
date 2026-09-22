@@ -111,7 +111,7 @@ function ActiveEarningsBody({
       <SizableText size="$bodyMd" color="$textSubdued">
         {undistributedLabel}
       </SizableText>
-      <Currency size="$headingXl">{earnings.undistributed}</Currency>
+      <Currency size="$heading2xl">{earnings.undistributed}</Currency>
       {earnings.nextDistribution ? (
         <SizableText size="$bodySm" color="$textSubdued">
           {`${nextDistributionLabel} ${earnings.nextDistribution}`}
