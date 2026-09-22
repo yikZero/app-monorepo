@@ -19,7 +19,6 @@ import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/Acco
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import { openTransactionDetailsUrl } from '@onekeyhq/kit/src/utils/explorerUtils';
 import { useRedirectWhenNotLoggedIn } from '@onekeyhq/kit/src/views/ReferFriends/hooks/useRedirectWhenNotLoggedIn';
-import { InviteWithdrawAddressRow } from '@onekeyhq/kit/src/views/ReferFriends/pages/RewardDistributionHistory/components/InviteWithdrawAddressRow';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import type {
   IInvitePaidHistory,
@@ -196,7 +195,6 @@ function RewardDistributionHistoryPageWrapper() {
         })}
       />
       <Page.Body>
-        <InviteWithdrawAddressRow />
         <ReferFriendsPageContainer flex={1} position="relative">
           {sections === undefined ? (
             <YStack

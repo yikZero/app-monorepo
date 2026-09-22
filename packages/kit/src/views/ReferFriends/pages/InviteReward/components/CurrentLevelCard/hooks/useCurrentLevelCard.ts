@@ -72,6 +72,7 @@ export function useCurrentLevelCard(
         you: number;
         invitee: number;
         label: string;
+        enabled: boolean;
       };
     }> = [];
 
@@ -94,6 +95,7 @@ export function useCurrentLevelCard(
               rate.commissionRatesLabelKey ?? rate.labelKey,
               rate.commissionRatesLabel ?? rate.label,
             ),
+            enabled: rate.enabled === true,
           },
         }));
       } else {
@@ -107,6 +109,7 @@ export function useCurrentLevelCard(
               rate.commissionRatesLabelKey ?? rate.labelKey,
               rate.commissionRatesLabel ?? rate.label ?? subject,
             ),
+            enabled: rate.enabled === true,
           },
         }));
       }

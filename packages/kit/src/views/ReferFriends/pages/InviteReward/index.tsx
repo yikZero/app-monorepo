@@ -18,6 +18,7 @@ import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { useRedirectWhenNotLoggedIn } from '@onekeyhq/kit/src/views/ReferFriends/hooks/useRedirectWhenNotLoggedIn';
 import { BenefitsTabPlaceholder } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/BenefitsTabPlaceholder';
+import { InviteLevelPill } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteLevelPill';
 import { InviteTabContent } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteTabContent';
 import { LogoutButton } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/LogoutButton';
 import { useReferralCodeCard } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralCodeCard/hooks/useReferralCodeCard';
@@ -152,10 +153,21 @@ function InviteRewardPage() {
           jc="space-between"
         >
           <ReferralJobTabs value={activeTab} onChange={setActiveTab} />
-          {!md && activeTab === EReferralPageTab.invite ? (
-            <XStack gap="$4">
-              <RulesButton />
-              {platformEnv.isWeb ? <LogoutButton /> : null}
+          {activeTab === EReferralPageTab.invite ? (
+            <XStack ai="center" gap="$2" flexShrink={1} jc="flex-end">
+              {summaryInfo ? (
+                <InviteLevelPill
+                  rebateConfig={summaryInfo.rebateConfig}
+                  rebateLevels={summaryInfo.rebateLevels}
+                  showBenefitsLabel={!md}
+                />
+              ) : null}
+              {!md ? (
+                <XStack gap="$4" ai="center">
+                  <RulesButton />
+                  {platformEnv.isWeb ? <LogoutButton /> : null}
+                </XStack>
+              ) : null}
             </XStack>
           ) : null}
         </XStack>

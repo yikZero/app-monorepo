@@ -15,6 +15,7 @@ export interface IUseCurrentLevelCardReturn {
       you: number;
       invitee: number;
       label: string;
+      enabled: boolean;
     };
   }>;
 }
