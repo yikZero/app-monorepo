@@ -166,6 +166,17 @@ export function makeRootModalStackOptions(params?: {
   return options;
 }
 
+// A root modal locked to its own theme must paint its native screen in that
+// theme too: the stack-wide contentStyle above follows the app theme, and it
+// shows through during the sheet presentation and around the sheet edges.
+export function makeRootModalThemedScreenOptions(
+  bgColor: string,
+): IStackNavigationOptions {
+  return {
+    contentStyle: { backgroundColor: bgColor },
+  };
+}
+
 export function makeTabScreenOptions({
   navigation,
   bgColor,

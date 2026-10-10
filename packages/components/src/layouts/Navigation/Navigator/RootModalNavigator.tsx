@@ -5,7 +5,11 @@ import { ThemeProvider } from '@react-navigation/native';
 import { Theme } from '../../../content/Theme';
 import { EPageType } from '../../../hocs';
 import { useTheme } from '../../../hooks';
-import { makeRootModalStackOptions } from '../GlobalScreenOptions';
+import { getTokenValue } from '../../../shared/tamagui';
+import {
+  makeRootModalStackOptions,
+  makeRootModalThemedScreenOptions,
+} from '../GlobalScreenOptions';
 import { createStackNavigator } from '../StackNavigator';
 
 import {
@@ -32,6 +36,17 @@ interface IModalNavigatorProps<RouteName extends string> {
 
 const ModalStack = createStackNavigator();
 
+const flowThemeConfig = {
+  light: {
+    navigationTheme: TransparentModalTheme,
+    bgToken: '$bgAppLight',
+  },
+  dark: {
+    navigationTheme: TransparentDarkModalTheme,
+    bgToken: '$bgAppDark',
+  },
+} as const;
+
 export function RootModalNavigator<RouteName extends string>({
   config,
   pageType,
@@ -53,6 +68,14 @@ export function RootModalNavigator<RouteName extends string>({
       config.map(
         ({ name, children, onMounted, onUnmounted, theme: flowTheme }) => ({
           name,
+          options: flowTheme
+            ? makeRootModalThemedScreenOptions(
+                getTokenValue(
+                  flowThemeConfig[flowTheme].bgToken,
+                  'color',
+                ) as string,
+              )
+            : undefined,
           // eslint-disable-next-line react/no-unstable-nested-components
           children: () => {
             const navigator = (
@@ -67,7 +90,13 @@ export function RootModalNavigator<RouteName extends string>({
             if (!flowTheme) {
               return navigator;
             }
-            return <Theme name={flowTheme}>{navigator}</Theme>;
+            // The navigation theme drives native-stack defaults such as the
+            // iOS 26 glass header variant, so it must match the Tamagui theme.
+            return (
+              <ThemeProvider value={flowThemeConfig[flowTheme].navigationTheme}>
+                <Theme name={flowTheme}>{navigator}</Theme>
+              </ThemeProvider>
+            );
           },
         }),
       ),
@@ -77,8 +106,12 @@ export function RootModalNavigator<RouteName extends string>({
   return (
     <ThemeProvider value={navigationTheme}>
       <ModalStack.Navigator screenOptions={screenOptions}>
-        {modalComponents.map(({ name, children }) => (
-          <ModalStack.Screen key={`ROOT-Modal-${name}`} name={name}>
+        {modalComponents.map(({ name, options, children }) => (
+          <ModalStack.Screen
+            key={`ROOT-Modal-${name}`}
+            name={name}
+            options={options}
+          >
             {children}
           </ModalStack.Screen>
         ))}

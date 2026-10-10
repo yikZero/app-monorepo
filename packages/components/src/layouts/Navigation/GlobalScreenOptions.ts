@@ -192,6 +192,14 @@ export function makeRootModalStackOptions(_params?: {
   };
 }
 
+// Web root modals stay transparent; the themed modal content draws its own
+// background.
+export function makeRootModalThemedScreenOptions(
+  _bgColor: string,
+): StackNavigationOptions {
+  return {};
+}
+
 export function makeTabScreenOptions({
   navigation,
   bgColor,
