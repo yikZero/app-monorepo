@@ -65,20 +65,27 @@ function useDescriptionSize() {
 function NotificationRowText({
   title,
   description,
+  isPressable,
 }: {
   title: string;
   description?: string;
+  isPressable?: boolean;
 }) {
   const { titleSize } = useSettingsRowMetrics();
   const descriptionSize = useDescriptionSize();
+  // Same rule as ListItem's own title: text in a pressable row is not
+  // selectable, so web shows the row cursor instead of a text cursor.
+  const pressableTextProps = isPressable
+    ? ({ userSelect: 'none' } as const)
+    : undefined;
   return (
     <ListItem.Text
       flex={1}
       gap="$0.5"
       primary={title}
-      primaryTextProps={{ size: titleSize }}
+      primaryTextProps={{ size: titleSize, ...pressableTextProps }}
       secondary={description}
-      secondaryTextProps={{ size: descriptionSize }}
+      secondaryTextProps={{ size: descriptionSize, ...pressableTextProps }}
     />
   );
 }
@@ -132,7 +139,11 @@ export function NotificationLinkRow({
   const descriptionSize = useDescriptionSize();
   return (
     <TabSettingsListItem testID={testID} onPress={onPress} drillIn>
-      <NotificationRowText title={title} description={description} />
+      <NotificationRowText
+        title={title}
+        description={description}
+        isPressable
+      />
       {value ? (
         <SizableText size={descriptionSize} color="$textSubdued">
           {value}
