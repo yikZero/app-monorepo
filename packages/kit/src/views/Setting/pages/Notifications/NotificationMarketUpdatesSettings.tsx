@@ -5,9 +5,10 @@ import { Stack } from '@onekeyhq/components';
 import { TabSettingsInsetDivider } from '../Tab/ListItem';
 
 import {
-  LISTINGS_AND_EVENTS_DESCRIPTION,
-  LISTINGS_AND_EVENTS_TITLE,
   MARKETING_SUB_ITEMS,
+  NOTIFICATION_COPY,
+  buildMarketingGroupUpdate,
+  getMarketingGroups,
   isMarketingSubEnabled,
 } from './notificationCategories';
 import {
@@ -18,21 +19,24 @@ import {
 } from './NotificationSettingsLayout';
 import { useNotificationPushSettings } from './useNotificationPushSettings';
 
-export default function NotificationListingsSettings() {
+export default function NotificationMarketUpdatesSettings() {
   const { settings, updateSettings } = useNotificationPushSettings();
   const isSettingsLoading = settings === undefined;
-  const isParentEnabled = !!settings?.dailyUpdateEnabled;
+  const isParentEnabled = getMarketingGroups(settings).marketUpdates;
+  const copy = NOTIFICATION_COPY.marketUpdates;
 
   return (
-    <NotificationSettingsPage title={LISTINGS_AND_EVENTS_TITLE}>
+    <NotificationSettingsPage title={copy.title}>
       <NotificationSection>
         <NotificationSwitchRow
-          title="Allow listings & events"
-          description={LISTINGS_AND_EVENTS_DESCRIPTION}
+          title={copy.allowTitle}
+          description={copy.description}
           value={isParentEnabled}
           isLoading={isSettingsLoading}
           onChange={(checked) =>
-            updateSettings({ dailyUpdateEnabled: checked })
+            updateSettings(
+              buildMarketingGroupUpdate(settings, { marketUpdates: checked }),
+            )
           }
         />
       </NotificationSection>
@@ -57,7 +61,7 @@ export default function NotificationListingsSettings() {
           ))}
         </NotificationSection>
         {isParentEnabled || isSettingsLoading ? null : (
-          <NotificationSectionFooter text="Turn on listings & events to choose categories." />
+          <NotificationSectionFooter text={copy.disabledHint} />
         )}
       </Stack>
     </NotificationSettingsPage>

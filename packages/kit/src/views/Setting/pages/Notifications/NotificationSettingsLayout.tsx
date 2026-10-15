@@ -41,6 +41,17 @@ export function NotificationSection({ children }: { children: ReactNode }) {
   );
 }
 
+// Group title above a card. It uses the row title size so the card-edge
+// alignment reads as intentional; $1 matches the tab page title offset.
+export function NotificationSectionTitle({ title }: { title: string }) {
+  const { titleSize } = useSettingsRowMetrics();
+  return (
+    <SizableText px="$1" pb="$2" size={titleSize} color="$textSubdued">
+      {title}
+    </SizableText>
+  );
+}
+
 // Hint below a card, aligned with the row text inside it.
 export function NotificationSectionFooter({ text }: { text: string }) {
   const { isMobileLayout } = useSettingsLayout();

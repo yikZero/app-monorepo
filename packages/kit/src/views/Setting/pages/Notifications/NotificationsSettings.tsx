@@ -35,13 +35,15 @@ import {
 } from '../Tab/ListItem';
 
 import {
-  LISTINGS_AND_EVENTS_DESCRIPTION,
-  LISTINGS_AND_EVENTS_TITLE,
-  getListingsAndEventsStatus,
+  NOTIFICATION_COPY,
+  buildMarketingGroupUpdate,
+  getMarketUpdatesStatus,
+  getMarketingGroups,
 } from './notificationCategories';
 import {
   NotificationLinkRow,
   NotificationSection,
+  NotificationSectionTitle,
   NotificationSettingsPage,
   NotificationSwitchRow,
 } from './NotificationSettingsLayout';
@@ -162,91 +164,86 @@ export default function NotificationsSettings() {
       {settings === undefined || settings.pushEnabled ? (
         <>
           {/* Wallet: notifications bound to wallet addresses */}
-          <NotificationSection>
-            <NotificationSwitchRow
-              title={intl.formatMessage({
-                id: ETranslations.notifications_notifications_account_activity_label,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.notifications_notifications_account_activity_desc,
-              })}
-              {...bindSwitch('accountActivityPushEnabled')}
-            />
-            <TabSettingsInsetDivider withoutIcon />
-            <NotificationSwitchRow
-              title={intl.formatMessage({
-                id: ETranslations.global_perps_trading,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.global_update_perp_contract,
-              })}
-              {...bindSwitch('perpsEnabled')}
-            />
-            <TabSettingsInsetDivider withoutIcon />
-            {/* Manage - Account selection */}
-            <NotificationLinkRow
-              testID="notifications-manage-accounts"
-              title={intl.formatMessage({
-                id: ETranslations.notifications_notifications_account_manage_label,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.notifications_notifications_account_manage_desc,
-              })}
-              onPress={() => {
-                navigation.push(
-                  EModalSettingRoutes.SettingManageAccountActivity,
-                );
-              }}
-            />
-          </NotificationSection>
+          <Stack>
+            <NotificationSectionTitle title={NOTIFICATION_COPY.walletSection} />
+            <NotificationSection>
+              <NotificationSwitchRow
+                {...NOTIFICATION_COPY.accountActivity}
+                {...bindSwitch('accountActivityPushEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationSwitchRow
+                {...NOTIFICATION_COPY.perpsTrading}
+                {...bindSwitch('perpsEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationLinkRow
+                testID="notifications-manage-accounts"
+                {...NOTIFICATION_COPY.manageAccounts}
+                onPress={() => {
+                  navigation.push(
+                    EModalSettingRoutes.SettingManageAccountActivity,
+                  );
+                }}
+              />
+            </NotificationSection>
+          </Stack>
 
           {/* System: announcements and person-level service updates */}
-          <NotificationSection>
-            <NotificationSwitchRow
-              title={intl.formatMessage({
-                id: ETranslations.global_important_announcement,
-              })}
-              description="Security alerts, version updates, and maintenance."
-              {...bindSwitch('announcementEnabled')}
-            />
-            <TabSettingsInsetDivider withoutIcon />
-            <NotificationSwitchRow
-              title="Service notifications"
-              description="Support replies, referral rewards, and export status."
-              {...bindSwitch('serviceNotificationEnabled')}
-            />
-          </NotificationSection>
+          <Stack>
+            <NotificationSectionTitle title={NOTIFICATION_COPY.systemSection} />
+            <NotificationSection>
+              <NotificationSwitchRow
+                {...NOTIFICATION_COPY.announcements}
+                {...bindSwitch('announcementEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationSwitchRow
+                {...NOTIFICATION_COPY.serviceUpdates}
+                {...bindSwitch('serviceNotificationEnabled')}
+              />
+            </NotificationSection>
+          </Stack>
 
           {/* Markets & events: subscribed alerts and marketing pushes */}
-          <NotificationSection>
-            {platformEnv.isExtension ? null : (
-              <>
-                <NotificationSwitchRow
-                  title={intl.formatMessage({
-                    id: ETranslations.global_price_alerts,
-                  })}
-                  description={intl.formatMessage({
-                    id: ETranslations.global_get_alert_token_move,
-                  })}
-                  {...bindSwitch('priceAlertsEnabled')}
-                />
-                <TabSettingsInsetDivider withoutIcon />
-              </>
-            )}
-            <NotificationLinkRow
-              testID="notifications-listings-and-events"
-              title={LISTINGS_AND_EVENTS_TITLE}
-              description={LISTINGS_AND_EVENTS_DESCRIPTION}
-              value={
-                settings ? getListingsAndEventsStatus(settings) : undefined
-              }
-              onPress={() => {
-                navigation.push(
-                  EModalSettingRoutes.SettingNotificationsListings,
-                );
-              }}
+          <Stack>
+            <NotificationSectionTitle
+              title={NOTIFICATION_COPY.marketsSection}
             />
-          </NotificationSection>
+            <NotificationSection>
+              {platformEnv.isExtension ? null : (
+                <>
+                  <NotificationSwitchRow
+                    {...NOTIFICATION_COPY.priceAlerts}
+                    {...bindSwitch('priceAlertsEnabled')}
+                  />
+                  <TabSettingsInsetDivider withoutIcon />
+                </>
+              )}
+              <NotificationLinkRow
+                testID="notifications-market-updates"
+                title={NOTIFICATION_COPY.marketUpdates.title}
+                description={NOTIFICATION_COPY.marketUpdates.description}
+                value={settings ? getMarketUpdatesStatus(settings) : undefined}
+                onPress={() => {
+                  navigation.push(
+                    EModalSettingRoutes.SettingNotificationsMarketUpdates,
+                  );
+                }}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationSwitchRow
+                {...NOTIFICATION_COPY.rewardsAndEvents}
+                value={getMarketingGroups(settings).campaigns}
+                isLoading={isSettingsLoading}
+                onChange={(checked) =>
+                  updateSettings(
+                    buildMarketingGroupUpdate(settings, { campaigns: checked }),
+                  )
+                }
+              />
+            </NotificationSection>
+          </Stack>
 
           {/* Push notifications helper */}
           <NotificationSection>
