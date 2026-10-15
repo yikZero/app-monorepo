@@ -148,6 +148,11 @@ const ManageAccountActivity = LazyLoadPage(
     import('@onekeyhq/kit/src/views/Setting/pages/Notifications/ManageAccountActivity'),
 );
 
+const NotificationListingsSettings = LazyLoadPage(
+  () =>
+    import('@onekeyhq/kit/src/views/Setting/pages/Notifications/NotificationListingsSettings'),
+);
+
 const AlignPrimaryAccountModal = LazyLoadPage(
   () => import('@onekeyhq/kit/src/views/Setting/pages/AlignPrimaryAccount'),
 );
@@ -346,6 +351,10 @@ export const BasicModalSettingStack: IModalFlowNavigatorConfig<
   {
     name: EModalSettingRoutes.SettingManageAccountActivity,
     component: ManageAccountActivity,
+  },
+  {
+    name: EModalSettingRoutes.SettingNotificationsListings,
+    component: NotificationListingsSettings,
   },
   {
     name: EModalSettingRoutes.SettingAlignPrimaryAccount,

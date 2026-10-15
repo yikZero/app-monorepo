@@ -41,6 +41,7 @@ export enum EModalSettingRoutes {
   SettingNotifications = 'SettingNotifications',
   SettingOfficialChannels = 'SettingOfficialChannels',
   SettingManageAccountActivity = 'SettingManageAccountActivity',
+  SettingNotificationsListings = 'SettingNotificationsListings',
   SettingAlignPrimaryAccount = 'SettingAlignPrimaryAccount',
   SettingFloatingIconModal = 'SettingFloatingIconModal',
   // Dev JS Bundle Manager
@@ -134,6 +135,7 @@ export type IModalSettingParamList = {
   [EModalSettingRoutes.SettingNotifications]: undefined;
   [EModalSettingRoutes.SettingOfficialChannels]: undefined;
   [EModalSettingRoutes.SettingManageAccountActivity]: undefined;
+  [EModalSettingRoutes.SettingNotificationsListings]: undefined;
   [EModalSettingRoutes.SettingAlignPrimaryAccount]: undefined;
   [EModalSettingRoutes.SettingFloatingIconModal]: undefined;
   // Dev JS Bundle Manager
