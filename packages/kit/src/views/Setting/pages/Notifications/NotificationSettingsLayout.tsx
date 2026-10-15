@@ -41,39 +41,20 @@ export function NotificationSection({ children }: { children: ReactNode }) {
   );
 }
 
-// Mobile grouped lists inset section text to the row text; wider layouts align
-// it with the card edge and the page title.
-function NotificationSectionText({
-  text,
-  isTitle,
-}: {
-  text: string;
-  isTitle: boolean;
-}) {
+// Hint below a card, aligned with the row text inside it.
+export function NotificationSectionFooter({ text }: { text: string }) {
   const { isMobileLayout } = useSettingsLayout();
   const { paddingX } = useSettingsRowMetrics();
-  const spacing = isMobileLayout ? '$2' : '$1.5';
-  const titleSize = isMobileLayout ? '$bodyMdMedium' : '$bodySmMedium';
-  const footerSize = isMobileLayout ? '$bodyMd' : '$bodySm';
   return (
     <SizableText
-      px={isMobileLayout ? paddingX : undefined}
-      pb={isTitle ? spacing : undefined}
-      pt={isTitle ? undefined : spacing}
-      size={isTitle ? titleSize : footerSize}
+      px={paddingX}
+      pt={isMobileLayout ? '$2' : '$1.5'}
+      size={isMobileLayout ? '$bodyMd' : '$bodySm'}
       color="$textSubdued"
     >
       {text}
     </SizableText>
   );
-}
-
-export function NotificationSectionTitle({ title }: { title: string }) {
-  return <NotificationSectionText text={title} isTitle />;
-}
-
-export function NotificationSectionFooter({ text }: { text: string }) {
-  return <NotificationSectionText text={text} isTitle={false} />;
 }
 
 function useDescriptionSize() {

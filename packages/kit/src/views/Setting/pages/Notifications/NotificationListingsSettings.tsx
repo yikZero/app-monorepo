@@ -13,7 +13,6 @@ import {
 import {
   NotificationSection,
   NotificationSectionFooter,
-  NotificationSectionTitle,
   NotificationSettingsPage,
   NotificationSwitchRow,
 } from './NotificationSettingsLayout';
@@ -39,7 +38,6 @@ export default function NotificationListingsSettings() {
       </NotificationSection>
 
       <Stack>
-        <NotificationSectionTitle title="Categories" />
         <NotificationSection>
           {MARKETING_SUB_ITEMS.map((item, index) => (
             <Fragment key={item.key}>
