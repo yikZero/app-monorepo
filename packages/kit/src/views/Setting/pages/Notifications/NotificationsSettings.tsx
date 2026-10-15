@@ -53,7 +53,6 @@ type INotificationSwitchField =
   | 'accountActivityPushEnabled'
   | 'perpsEnabled'
   | 'announcementEnabled'
-  | 'serviceNotificationEnabled'
   | 'priceAlertsEnabled';
 
 function NotificationsSettingsHelper() {
@@ -106,9 +105,8 @@ export default function NotificationsSettings() {
     return backgroundApiProxy.serviceNotification.getPushClient();
   }, [devAppSettings.enabled]);
 
-  // serviceNotificationEnabled is new, so a missing value means enabled.
   const bindSwitch = (field: INotificationSwitchField) => ({
-    value: settings?.[field] ?? field === 'serviceNotificationEnabled',
+    value: settings?.[field] ?? false,
     isLoading: isSettingsLoading,
     onChange: (checked: boolean) => updateSettings({ [field]: checked }),
   });
@@ -189,18 +187,13 @@ export default function NotificationsSettings() {
             </NotificationSection>
           </Stack>
 
-          {/* System: announcements and person-level service updates */}
+          {/* System: everything OneKey sends that is not marketing */}
           <Stack>
             <NotificationSectionTitle title={NOTIFICATION_COPY.systemSection} />
             <NotificationSection>
               <NotificationSwitchRow
-                {...NOTIFICATION_COPY.announcements}
+                {...NOTIFICATION_COPY.systemNotifications}
                 {...bindSwitch('announcementEnabled')}
-              />
-              <TabSettingsInsetDivider withoutIcon />
-              <NotificationSwitchRow
-                {...NOTIFICATION_COPY.serviceUpdates}
-                {...bindSwitch('serviceNotificationEnabled')}
               />
             </NotificationSection>
           </Stack>

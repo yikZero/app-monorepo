@@ -205,8 +205,6 @@ export type INotificationPushSettings = {
   // so older clients still read and write it. Newer clients keep it equal to
   // marketUpdatesEnabled || campaignsEnabled.
   dailyUpdateEnabled?: boolean;
-  // Support replies, referral rewards and export results.
-  serviceNotificationEnabled?: boolean;
   // Marketing groups under dailyUpdateEnabled. A missing value means enabled.
   marketUpdatesEnabled?: boolean;
   campaignsEnabled?: boolean;

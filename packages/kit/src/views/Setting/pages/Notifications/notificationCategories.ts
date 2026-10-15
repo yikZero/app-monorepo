@@ -20,13 +20,11 @@ export const NOTIFICATION_COPY = {
     title: 'Manage accounts',
     description: 'Choose which accounts send notifications.',
   },
-  announcements: {
-    title: 'Important announcements',
-    description: 'Security alerts, app updates, and maintenance.',
-  },
-  serviceUpdates: {
-    title: 'Service updates',
-    description: 'Support replies, referral rewards, and exports.',
+  // Covers announcements plus support replies, export results and referral
+  // rewards, so it keeps the legacy announcementEnabled field.
+  systemNotifications: {
+    title: 'System notifications',
+    description: 'Announcements, support replies, and referral rewards.',
   },
   priceAlerts: {
     title: 'Price alerts',

@@ -18,7 +18,6 @@ const EMPTY_NOTIFICATION_SETTINGS_DEFAULTS = {
   perpsEnabled: true,
   announcementEnabled: true,
   dailyUpdateEnabled: true,
-  serviceNotificationEnabled: true,
 } satisfies INotificationPushSettings;
 
 // One store shared by the notifications page and its sub pages, so they read
