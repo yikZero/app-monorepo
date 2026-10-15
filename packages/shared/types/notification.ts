@@ -188,6 +188,12 @@ export type INotificationPushRegisterParams = {
   syncMethod: ENotificationPushSyncMethod;
   syncAccounts: INotificationPushSyncAccount[];
 };
+export type INotificationMarketingSubKey =
+  | 'perps'
+  | 'trade'
+  | 'defi'
+  | 'market'
+  | 'events';
 // /notification/v1/config/update
 // /notification/v1/config/query
 export type INotificationPushSettings = {
@@ -196,7 +202,13 @@ export type INotificationPushSettings = {
   priceAlertsEnabled?: boolean;
   perpsEnabled?: boolean;
   announcementEnabled?: boolean;
+  // Shown as "Listings & events"; keeps the legacy field so older clients
+  // ("Daily updates") read and write the same value.
   dailyUpdateEnabled?: boolean;
+  // Support replies, referral rewards and export results.
+  serviceNotificationEnabled?: boolean;
+  // Sub-switches under dailyUpdateEnabled. A missing key means enabled.
+  marketingSubs?: Partial<Record<INotificationMarketingSubKey, boolean>>;
   maxAccount?: number;
   supportedNetworks?: {
     networkId: string;
