@@ -28,23 +28,37 @@ import {
   NotificationHelperCtaButton,
   useNotificationHelperCta,
 } from '../../components/NotificationsTestButton';
-import { TabSettingsListItem, TabSettingsSection } from '../Tab/ListItem';
+import {
+  TabSettingsInsetDivider,
+  TabSettingsListItem,
+  useSettingsRowMetrics,
+} from '../Tab/ListItem';
 
 import {
   LISTINGS_AND_EVENTS_DESCRIPTION,
   LISTINGS_AND_EVENTS_TITLE,
-  NotificationRowDivider,
+  getListingsAndEventsStatus,
+} from './notificationCategories';
+import {
+  NotificationLinkRow,
+  NotificationSection,
   NotificationSectionTitle,
   NotificationSettingsPage,
   NotificationSwitchRow,
-  useNotificationRowLayout,
 } from './NotificationSettingsLayout';
 import { useNotificationPushSettings } from './useNotificationPushSettings';
+
+type INotificationSwitchField =
+  | 'accountActivityPushEnabled'
+  | 'perpsEnabled'
+  | 'announcementEnabled'
+  | 'serviceNotificationEnabled'
+  | 'priceAlertsEnabled';
 
 function NotificationsSettingsHelper() {
   const intl = useIntl();
   const cta = useNotificationHelperCta();
-  const { titleSize } = useNotificationRowLayout();
+  const { titleSize } = useSettingsRowMetrics();
   let titleId = ETranslations.notifications_settings_helper_title;
   if (!cta.isPending) {
     titleId =
@@ -79,7 +93,6 @@ function NotificationsSettingsHelper() {
 export default function NotificationsSettings() {
   const intl = useIntl();
   const { settings, updateSettings } = useNotificationPushSettings();
-  const { titleSize } = useNotificationRowLayout();
   const [devAppSettings] = useDevSettingsPersistAtom();
   const [appSettings] = useSettingsPersistAtom();
   const [, setNotificationsData] = useNotificationsAtom();
@@ -92,8 +105,15 @@ export default function NotificationsSettings() {
     return backgroundApiProxy.serviceNotification.getPushClient();
   }, [devAppSettings.enabled]);
 
+  // serviceNotificationEnabled is new, so a missing value means enabled.
+  const bindSwitch = (field: INotificationSwitchField) => ({
+    value: settings?.[field] ?? field === 'serviceNotificationEnabled',
+    isLoading: isSettingsLoading,
+    onChange: (checked: boolean) => updateSettings({ [field]: checked }),
+  });
+
   const handleMasterSwitchChange = async (checked: boolean) => {
-    void updateSettings({
+    updateSettings({
       pushEnabled: checked,
     });
     if (checked) {
@@ -115,227 +135,187 @@ export default function NotificationsSettings() {
     <NotificationSettingsPage
       title={intl.formatMessage({ id: ETranslations.global_notifications })}
     >
-      {(presentation) => (
+      {/* Allow notifications - Master switch */}
+      <NotificationSection>
+        <NotificationSwitchRow
+          title={intl.formatMessage({
+            id: ETranslations.notifications_notifications_switch_label,
+          })}
+          description={intl.formatMessage({
+            id: ETranslations.global_master_switch_all_notification,
+          })}
+          value={!!settings?.pushEnabled}
+          isLoading={isSettingsLoading}
+          onChange={(checked) => {
+            void handleMasterSwitchChange(checked);
+          }}
+        />
+      </NotificationSection>
+
+      {settings?.pushEnabled ? (
+        <NotificationPermissionRecoveryAlert
+          scene="settings"
+          pushEnabled={settings.pushEnabled}
+          showAlert={false}
+        />
+      ) : null}
+
+      {settings === undefined || settings.pushEnabled ? (
         <>
-          {/* Allow notifications - Master switch */}
-          <TabSettingsSection presentation={presentation}>
-            <NotificationSwitchRow
-              title={intl.formatMessage({
-                id: ETranslations.notifications_notifications_switch_label,
-              })}
-              description={intl.formatMessage({
-                id: ETranslations.global_master_switch_all_notification,
-              })}
-              value={!!settings?.pushEnabled}
-              isLoading={isSettingsLoading}
-              onChange={(checked) => {
-                void handleMasterSwitchChange(checked);
-              }}
-            />
-          </TabSettingsSection>
+          {/* Wallet: notifications bound to wallet addresses */}
+          <Stack>
+            <NotificationSectionTitle title="Wallet" />
+            <NotificationSection>
+              <NotificationSwitchRow
+                title={intl.formatMessage({
+                  id: ETranslations.notifications_notifications_account_activity_label,
+                })}
+                description={intl.formatMessage({
+                  id: ETranslations.notifications_notifications_account_activity_desc,
+                })}
+                {...bindSwitch('accountActivityPushEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationSwitchRow
+                title={intl.formatMessage({
+                  id: ETranslations.global_perps_trading,
+                })}
+                description={intl.formatMessage({
+                  id: ETranslations.global_update_perp_contract,
+                })}
+                {...bindSwitch('perpsEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              {/* Manage - Account selection */}
+              <NotificationLinkRow
+                testID="notifications-manage-accounts"
+                title={intl.formatMessage({
+                  id: ETranslations.notifications_notifications_account_manage_label,
+                })}
+                description={intl.formatMessage({
+                  id: ETranslations.notifications_notifications_account_manage_desc,
+                })}
+                onPress={() => {
+                  navigation.push(
+                    EModalSettingRoutes.SettingManageAccountActivity,
+                  );
+                }}
+              />
+            </NotificationSection>
+          </Stack>
 
-          {settings?.pushEnabled ? (
-            <NotificationPermissionRecoveryAlert
-              scene="settings"
-              pushEnabled={settings.pushEnabled}
-              showAlert={false}
-            />
-          ) : null}
+          {/* System: announcements and person-level service updates */}
+          <Stack>
+            <NotificationSectionTitle title="System" />
+            <NotificationSection>
+              <NotificationSwitchRow
+                title={intl.formatMessage({
+                  id: ETranslations.global_important_announcement,
+                })}
+                description="Security alerts, version updates, and maintenance."
+                {...bindSwitch('announcementEnabled')}
+              />
+              <TabSettingsInsetDivider withoutIcon />
+              <NotificationSwitchRow
+                title="Service notifications"
+                description="Support replies, referral rewards, and export status."
+                {...bindSwitch('serviceNotificationEnabled')}
+              />
+            </NotificationSection>
+          </Stack>
 
-          {settings === undefined || settings.pushEnabled ? (
-            <>
-              {/* Wallet: notifications bound to wallet addresses */}
-              <Stack>
-                <NotificationSectionTitle title="Wallet" />
-                <TabSettingsSection presentation={presentation}>
+          {/* Markets & events: subscribed alerts and marketing pushes */}
+          <Stack>
+            <NotificationSectionTitle title="Markets & events" />
+            <NotificationSection>
+              {platformEnv.isExtension ? null : (
+                <>
                   <NotificationSwitchRow
                     title={intl.formatMessage({
-                      id: ETranslations.notifications_notifications_account_activity_label,
+                      id: ETranslations.global_price_alerts,
                     })}
                     description={intl.formatMessage({
-                      id: ETranslations.notifications_notifications_account_activity_desc,
+                      id: ETranslations.global_get_alert_token_move,
                     })}
-                    value={!!settings?.accountActivityPushEnabled}
-                    isLoading={isSettingsLoading}
-                    onChange={(checked) => {
-                      void updateSettings({
-                        accountActivityPushEnabled: checked,
-                      });
-                    }}
+                    {...bindSwitch('priceAlertsEnabled')}
                   />
-                  <NotificationRowDivider />
-                  <NotificationSwitchRow
-                    title={intl.formatMessage({
-                      id: ETranslations.global_perps_trading,
-                    })}
-                    description={intl.formatMessage({
-                      id: ETranslations.global_update_perp_contract,
-                    })}
-                    value={!!settings?.perpsEnabled}
-                    isLoading={isSettingsLoading}
-                    onChange={(checked) => {
-                      void updateSettings({
-                        perpsEnabled: checked,
-                      });
-                    }}
-                  />
-                  <NotificationRowDivider />
-                  {/* Manage - Account selection */}
-                  <TabSettingsListItem
-                    testID="notifications-manage-accounts"
-                    titleProps={{ size: titleSize }}
-                    title={intl.formatMessage({
-                      id: ETranslations.notifications_notifications_account_manage_label,
-                    })}
-                    subtitle={intl.formatMessage({
-                      id: ETranslations.notifications_notifications_account_manage_desc,
-                    })}
-                    drillIn
-                    onPress={() => {
-                      navigation.push(
-                        EModalSettingRoutes.SettingManageAccountActivity,
-                      );
-                    }}
-                  />
-                </TabSettingsSection>
-              </Stack>
-
-              {/* System: announcements and person-level service updates */}
-              <Stack>
-                <NotificationSectionTitle title="System" />
-                <TabSettingsSection presentation={presentation}>
-                  <NotificationSwitchRow
-                    title={intl.formatMessage({
-                      id: ETranslations.global_important_announcement,
-                    })}
-                    description="Security alerts, version updates, and maintenance."
-                    value={!!settings?.announcementEnabled}
-                    isLoading={isSettingsLoading}
-                    onChange={(checked) => {
-                      void updateSettings({
-                        announcementEnabled: checked,
-                      });
-                    }}
-                  />
-                  <NotificationRowDivider />
-                  <NotificationSwitchRow
-                    title="Service notifications"
-                    description="Support replies, referral rewards, and export status."
-                    value={settings?.serviceNotificationEnabled ?? true}
-                    isLoading={isSettingsLoading}
-                    onChange={(checked) => {
-                      void updateSettings({
-                        serviceNotificationEnabled: checked,
-                      });
-                    }}
-                  />
-                </TabSettingsSection>
-              </Stack>
-
-              {/* Markets & events: subscribed alerts and marketing pushes */}
-              <Stack>
-                <NotificationSectionTitle title="Markets & events" />
-                <TabSettingsSection presentation={presentation}>
-                  {platformEnv.isExtension ? null : (
-                    <>
-                      <NotificationSwitchRow
-                        title={intl.formatMessage({
-                          id: ETranslations.global_price_alerts,
-                        })}
-                        description={intl.formatMessage({
-                          id: ETranslations.global_get_alert_token_move,
-                        })}
-                        value={!!settings?.priceAlertsEnabled}
-                        isLoading={isSettingsLoading}
-                        onChange={(checked) => {
-                          void updateSettings({
-                            priceAlertsEnabled: checked,
-                          });
-                        }}
-                      />
-                      <NotificationRowDivider />
-                    </>
-                  )}
-                  <NotificationSwitchRow
-                    testID="notifications-listings-and-events"
-                    title={LISTINGS_AND_EVENTS_TITLE}
-                    description={LISTINGS_AND_EVENTS_DESCRIPTION}
-                    value={!!settings?.dailyUpdateEnabled}
-                    isLoading={isSettingsLoading}
-                    onChange={(checked) => {
-                      void updateSettings({
-                        dailyUpdateEnabled: checked,
-                      });
-                    }}
-                    onPress={() => {
-                      navigation.push(
-                        EModalSettingRoutes.SettingNotificationsListings,
-                      );
-                    }}
-                  />
-                </TabSettingsSection>
-              </Stack>
-
-              {/* Push notifications helper */}
-              <TabSettingsSection presentation={presentation}>
-                <NotificationsSettingsHelper />
-              </TabSettingsSection>
-            </>
-          ) : null}
-
-          <MultipleClickStack
-            h="$12"
-            showDevBgColor
-            onPress={() => {
-              setShouldShowDevPanel(true);
-            }}
-          />
-
-          {shouldShowDevPanel ? (
-            <Stack p="$5" m="$5" borderRadius="$3" gap="$2" bg="$bgSubdued">
-              <SizableText>Dev tools</SizableText>
-              <Button
-                onPress={showNotificationPermissionsDialog}
-                testID="setting-btn"
-              >
-                通知权限
-              </Button>
-              <Button
-                testID="setting-btn"
+                  <TabSettingsInsetDivider withoutIcon />
+                </>
+              )}
+              <NotificationLinkRow
+                testID="notifications-listings-and-events"
+                title={LISTINGS_AND_EVENTS_TITLE}
+                description={LISTINGS_AND_EVENTS_DESCRIPTION}
+                value={
+                  settings ? getListingsAndEventsStatus(settings) : undefined
+                }
                 onPress={() => {
-                  navigation.pushModal(EModalRoutes.NotificationsModal, {
-                    screen: EModalNotificationsRoutes.NotificationIntroduction,
-                  });
+                  navigation.push(
+                    EModalSettingRoutes.SettingNotificationsListings,
+                  );
                 }}
-              >
-                初次引导
-              </Button>
-              <Button
-                testID="setting-btn"
-                onPress={() => {
-                  setNotificationsData((v) => ({
-                    ...v,
-                    txHistoryAlertDismissed: undefined,
-                    swapHistoryAlertDismissed: undefined,
-                    perpHistoryAlertDismissed: undefined,
-                  }));
-                }}
-              >
-                重置所有 Alert 状态
-              </Button>
-              <SizableText>
-                InstanceId: {appSettings?.instanceId?.slice(0, 8)}...
-              </SizableText>
-              <SizableText>
-                JPush: {pushClient?.jpushId?.slice(0, 8)}...
-              </SizableText>
-              <SizableText>
-                WebSocket: {pushClient?.socketId?.slice(0, 8)}...
-              </SizableText>
-            </Stack>
-          ) : null}
+              />
+            </NotificationSection>
+          </Stack>
+
+          {/* Push notifications helper */}
+          <NotificationSection>
+            <NotificationsSettingsHelper />
+          </NotificationSection>
         </>
-      )}
+      ) : null}
+
+      <MultipleClickStack
+        h="$12"
+        showDevBgColor
+        onPress={() => {
+          setShouldShowDevPanel(true);
+        }}
+      />
+
+      {shouldShowDevPanel ? (
+        <Stack p="$5" m="$5" borderRadius="$3" gap="$2" bg="$bgSubdued">
+          <SizableText>Dev tools</SizableText>
+          <Button
+            onPress={showNotificationPermissionsDialog}
+            testID="setting-btn"
+          >
+            通知权限
+          </Button>
+          <Button
+            testID="setting-btn"
+            onPress={() => {
+              navigation.pushModal(EModalRoutes.NotificationsModal, {
+                screen: EModalNotificationsRoutes.NotificationIntroduction,
+              });
+            }}
+          >
+            初次引导
+          </Button>
+          <Button
+            testID="setting-btn"
+            onPress={() => {
+              setNotificationsData((v) => ({
+                ...v,
+                txHistoryAlertDismissed: undefined,
+                swapHistoryAlertDismissed: undefined,
+                perpHistoryAlertDismissed: undefined,
+              }));
+            }}
+          >
+            重置所有 Alert 状态
+          </Button>
+          <SizableText>
+            InstanceId: {appSettings?.instanceId?.slice(0, 8)}...
+          </SizableText>
+          <SizableText>
+            JPush: {pushClient?.jpushId?.slice(0, 8)}...
+          </SizableText>
+          <SizableText>
+            WebSocket: {pushClient?.socketId?.slice(0, 8)}...
+          </SizableText>
+        </Stack>
+      ) : null}
     </NotificationSettingsPage>
   );
 }

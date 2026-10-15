@@ -1,105 +1,104 @@
 import type { ReactNode } from 'react';
 
-import { StyleSheet } from 'react-native';
-
 import {
   Page,
   ScrollView,
   SizableText,
   Skeleton,
-  Stack,
   Switch,
-  XStack,
   YStack,
 } from '@onekeyhq/components';
 import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import type { INotificationMarketingSubKey } from '@onekeyhq/shared/types/notification';
 
-import { TabSettingsListItem } from '../Tab/ListItem';
 import {
-  type ISettingsSectionPresentation,
+  TabSettingsListItem,
+  TabSettingsSection,
+  useSettingsRowMetrics,
+} from '../Tab/ListItem';
+import {
   SETTINGS_PAGE_CONTENT_PADDING_X,
   SETTINGS_TAB_HEADER_TITLE_CONTAINER_STYLE,
-  resolveSettingsSectionPresentation,
 } from '../Tab/settingsSurface';
 import { useSettingsLayout } from '../Tab/useIsTabNavigator';
 import { useSettingsPageStyle } from '../Tab/useSettingsPageStyle';
 
-// TODO: move copy to Lokalise once the notification categories are final.
-export const LISTINGS_AND_EVENTS_TITLE = 'Listings & events';
-export const LISTINGS_AND_EVENTS_DESCRIPTION =
-  'New tokens and perps, market highlights, events, and new features.';
-
-export const MARKETING_SUB_ITEMS: {
-  key: INotificationMarketingSubKey;
-  title: string;
-  description: string;
-}[] = [
-  {
-    key: 'perps',
-    title: 'Perps',
-    description: 'New perps listings and trending markets.',
-  },
-  {
-    key: 'trade',
-    title: 'Trade',
-    description: 'New tokens and trending tokens.',
-  },
-  {
-    key: 'defi',
-    title: 'DeFi',
-    description: 'New earn products and yield opportunities.',
-  },
-  {
-    key: 'market',
-    title: 'Market',
-    description: 'Market and sector movements.',
-  },
-  {
-    key: 'events',
-    title: 'Events',
-    description: 'Trading competitions, rewards, and new features.',
-  },
-];
-
-// Row metrics follow TabSettingsListItem / TabSettingsListGrid so these pages
-// match the rest of Settings on each layout.
-export function useNotificationRowLayout() {
+// Bright cards on the subdued canvas on every layout, including the flat
+// native iPad layout that other settings pages keep borderless.
+function useNotificationSectionPresentation() {
   const { isMobileLayout, isTabNavigator } = useSettingsLayout();
-  return {
-    isMobileLayout,
-    insetX: isMobileLayout ? '$4' : '$5',
-    titleSize: isTabNavigator ? '$bodyMdMedium' : '$bodyLgMedium',
-  } as const;
+  return !isMobileLayout && isTabNavigator && !platformEnv.isNative
+    ? 'tab'
+    : 'mobile';
 }
 
-function NotificationSettingsSwitchSkeleton() {
-  return <Skeleton w={38} h="$6" radius="round" flexShrink={0} />;
+export function NotificationSection({ children }: { children: ReactNode }) {
+  const presentation = useNotificationSectionPresentation();
+  return (
+    <TabSettingsSection presentation={presentation}>
+      {children}
+    </TabSettingsSection>
+  );
 }
 
-export function NotificationSectionTitle({ title }: { title: string }) {
-  const { isMobileLayout, insetX } = useNotificationRowLayout();
-  // Mobile grouped lists inset the title to the row text; wider layouts align
-  // it with the card edge and the page title.
+// Mobile grouped lists inset section text to the row text; wider layouts align
+// it with the card edge and the page title.
+function NotificationSectionText({
+  text,
+  isTitle,
+}: {
+  text: string;
+  isTitle: boolean;
+}) {
+  const { isMobileLayout } = useSettingsLayout();
+  const { paddingX } = useSettingsRowMetrics();
+  const spacing = isMobileLayout ? '$2' : '$1.5';
+  const titleSize = isMobileLayout ? '$bodyMdMedium' : '$bodySmMedium';
+  const footerSize = isMobileLayout ? '$bodyMd' : '$bodySm';
   return (
     <SizableText
-      px={isMobileLayout ? insetX : undefined}
-      pb={isMobileLayout ? '$2' : '$1.5'}
-      size={isMobileLayout ? '$bodyMdMedium' : '$bodySmMedium'}
+      px={isMobileLayout ? paddingX : undefined}
+      pb={isTitle ? spacing : undefined}
+      pt={isTitle ? undefined : spacing}
+      size={isTitle ? titleSize : footerSize}
       color="$textSubdued"
     >
-      {title}
+      {text}
     </SizableText>
   );
 }
 
-export function NotificationRowDivider() {
-  const { insetX } = useNotificationRowLayout();
+export function NotificationSectionTitle({ title }: { title: string }) {
+  return <NotificationSectionText text={title} isTitle />;
+}
+
+export function NotificationSectionFooter({ text }: { text: string }) {
+  return <NotificationSectionText text={text} isTitle={false} />;
+}
+
+function useDescriptionSize() {
+  const { isTabNavigator } = useSettingsLayout();
+  return isTabNavigator ? '$bodySm' : '$bodyMd';
+}
+
+function NotificationRowText({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  const { titleSize } = useSettingsRowMetrics();
+  const descriptionSize = useDescriptionSize();
   return (
-    <XStack alignSelf="stretch" pl={insetX}>
-      <Stack flex={1} h={StyleSheet.hairlineWidth} bg="$neutral3" />
-    </XStack>
+    <ListItem.Text
+      flex={1}
+      gap="$0.5"
+      primary={title}
+      primaryTextProps={{ size: titleSize }}
+      secondary={description}
+      secondaryTextProps={{ size: descriptionSize }}
+    />
   );
 }
 
@@ -110,33 +109,19 @@ export function NotificationSwitchRow({
   isLoading,
   onChange,
   disabled,
-  onPress,
-  testID,
 }: {
   title: string;
-  description: string;
+  description?: string;
   value: boolean;
   isLoading: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-  // Makes the row a drill-in entry; the switch keeps its own toggle.
-  onPress?: () => void;
-  testID?: string;
 }) {
-  const { titleSize } = useNotificationRowLayout();
   return (
-    <TabSettingsListItem testID={testID} onPress={onPress} drillIn={!!onPress}>
-      <ListItem.Text
-        flex={1}
-        primary={title}
-        primaryTextProps={{ size: titleSize }}
-        secondary={description}
-        secondaryTextProps={{
-          maxWidth: '$96',
-        }}
-      />
+    <TabSettingsListItem>
+      <NotificationRowText title={title} description={description} />
       {isLoading ? (
-        <NotificationSettingsSwitchSkeleton />
+        <Skeleton w={38} h="$6" radius="round" flexShrink={0} />
       ) : (
         <Switch
           testID="setting-switch"
@@ -150,22 +135,41 @@ export function NotificationSwitchRow({
   );
 }
 
-// Grey canvas with white grouped cards on every layout.
+export function NotificationLinkRow({
+  title,
+  description,
+  value,
+  onPress,
+  testID,
+}: {
+  title: string;
+  description: string;
+  value?: string;
+  onPress: () => void;
+  testID?: string;
+}) {
+  const descriptionSize = useDescriptionSize();
+  return (
+    <TabSettingsListItem testID={testID} onPress={onPress} drillIn>
+      <NotificationRowText title={title} description={description} />
+      {value ? (
+        <SizableText size={descriptionSize} color="$textSubdued">
+          {value}
+        </SizableText>
+      ) : null}
+    </TabSettingsListItem>
+  );
+}
+
 export function NotificationSettingsPage({
   title,
   children,
 }: {
   title: string;
-  children: (presentation: ISettingsSectionPresentation) => ReactNode;
+  children: ReactNode;
 }) {
   const { isMobileLayout, isTabNavigator } = useSettingsLayout();
-  const resolvedPresentation = resolveSettingsSectionPresentation({
-    isMobileLayout,
-    isNative: Boolean(platformEnv.isNative),
-    isTabNavigator,
-  });
-  const presentation =
-    resolvedPresentation === 'flat' ? 'mobile' : resolvedPresentation;
+  const presentation = useNotificationSectionPresentation();
   const { headerBackgroundColor, headerStyle, pageBackgroundColor } =
     useSettingsPageStyle(true);
 
@@ -194,7 +198,7 @@ export function NotificationSettingsPage({
             px={SETTINGS_PAGE_CONTENT_PADDING_X}
             pt={isTabNavigator ? undefined : '$3'}
           >
-            {children(presentation)}
+            {children}
           </YStack>
         </ScrollView>
       </Page.Body>

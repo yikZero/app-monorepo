@@ -60,6 +60,18 @@ export function MobileTabSettingsSection(props: ISettingsSectionProps) {
   return <TabSettingsSection {...props} presentation="mobile" />;
 }
 
+/**
+ * Shared row metrics for settings lists: row horizontal padding and the title
+ * size used by TabSettingsListGrid.
+ */
+export function useSettingsRowMetrics() {
+  const { isMobileLayout, isTabNavigator } = useSettingsLayout();
+  return {
+    paddingX: isMobileLayout ? '$4' : '$5',
+    titleSize: isTabNavigator ? '$bodyMdMedium' : '$bodyLgMedium',
+  } as const;
+}
+
 export function TabSettingsListItem({
   showDot,
   children,
@@ -72,15 +84,9 @@ export function TabSettingsListItem({
     logItemClick?: () => void;
     analyticsSource?: ISettingsEntrySurface;
   }) {
-  const { isMobileLayout } = useSettingsLayout();
+  const { paddingX } = useSettingsRowMetrics();
   return (
-    <BaseListItem
-      py="$3"
-      px={isMobileLayout ? '$4' : '$5'}
-      mx={0}
-      borderRadius={0}
-      {...props}
-    >
+    <BaseListItem py="$3" px={paddingX} mx={0} borderRadius={0} {...props}>
       {children}
       {showDot ? (
         <Stack width="$2" height="$2" bg="$bgAccent" borderRadius="$full" />
@@ -97,17 +103,23 @@ export function TabSettingsListItem({
  */
 export function TabSettingsInsetDivider({
   iconWidth,
+  withoutIcon,
 }: {
   iconWidth?: IStackProps['w'];
+  // For rows without a leading icon: start at the row text.
+  withoutIcon?: boolean;
 }) {
-  const { isTabNavigator, isMobileLayout } = useSettingsLayout();
+  const { isTabNavigator } = useSettingsLayout();
+  const { paddingX } = useSettingsRowMetrics();
   return (
-    <XStack alignSelf="stretch" pl={isMobileLayout ? '$4' : '$5'}>
-      <Stack
-        w={iconWidth ?? (isTabNavigator ? '$5' : '$6')}
-        mr="$3"
-        flexShrink={0}
-      />
+    <XStack alignSelf="stretch" pl={paddingX}>
+      {withoutIcon ? null : (
+        <Stack
+          w={iconWidth ?? (isTabNavigator ? '$5' : '$6')}
+          mr="$3"
+          flexShrink={0}
+        />
+      )}
       <Stack flex={1} h={StyleSheet.hairlineWidth} bg="$neutral3" />
     </XStack>
   );
@@ -135,13 +147,12 @@ export function TabSettingsListGrid({
   searchQueryLength?: number;
 }) {
   const isTabNavigator = useIsTabNavigator();
+  const { titleSize } = useSettingsRowMetrics();
   const titleProps = useMemo(() => {
     return {
-      size: (isTabNavigator
-        ? '$bodyMdMedium'
-        : '$bodyLgMedium') as ISizableTextProps['size'],
+      size: titleSize as ISizableTextProps['size'],
     };
-  }, [isTabNavigator]);
+  }, [titleSize]);
   const valueTextProps = useMemo<ISizableTextProps | undefined>(() => {
     if (useMobilePresentation) {
       return {
