@@ -30,7 +30,7 @@ export function getAddressRiskCheckPendingMessageIds({
 
 // Exposures below this share (in percent) are usually dust, spam, or address
 // poisoning transfers the owner did not initiate; they are folded by default.
-export const MINOR_EXPOSURE_PERCENT = 0.1;
+const MINOR_EXPOSURE_PERCENT = 0.1;
 const MIN_VISIBLE_EXPOSURES = 3;
 const MAX_VISIBLE_EXPOSURES = 5;
 
@@ -78,15 +78,15 @@ export function getAddressRiskSummaryVariant({
   }
 }
 
-export function sortRiskFactors(factors: IKytRiskFactor[]): IKytRiskFactor[] {
-  return [...factors].toSorted(
+function sortRiskFactors(factors: IKytRiskFactor[]): IKytRiskFactor[] {
+  return factors.toSorted(
     (a, b) =>
       (b.percent ?? -1) - (a.percent ?? -1) ||
       (b.amountUsd ?? -1) - (a.amountUsd ?? -1),
   );
 }
 
-export function isMinorRiskFactor(factor: IKytRiskFactor) {
+function isMinorRiskFactor(factor: IKytRiskFactor) {
   return (
     factor.percent !== undefined && factor.percent < MINOR_EXPOSURE_PERCENT
   );
@@ -140,15 +140,12 @@ export function formatRiskPercent(percent: number | undefined) {
 // takes 25% of the width regardless of its numeric range.
 export function getRiskScoreMeterPosition(score: number) {
   const clamped = Math.min(100, Math.max(0, score));
-  const bandIndex = Math.max(
-    0,
-    RISK_SCORE_BANDS.findIndex((band) => clamped <= band.max),
-  );
+  // The last band ends at 100, so a clamped score always finds a band.
+  const bandIndex = RISK_SCORE_BANDS.findIndex((band) => clamped <= band.max);
   const band = RISK_SCORE_BANDS[bandIndex];
   const ratio = (clamped - band.min) / (band.max - band.min);
-  const bandWidth = 100 / RISK_SCORE_BANDS.length;
   return {
     bandIndex,
-    positionPercent: bandIndex * bandWidth + Math.max(0, ratio) * bandWidth,
+    positionPercent: ((bandIndex + ratio) * 100) / RISK_SCORE_BANDS.length,
   };
 }

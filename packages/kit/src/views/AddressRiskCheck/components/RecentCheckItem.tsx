@@ -11,11 +11,11 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { AccountAvatar } from '@onekeyhq/kit/src/components/AccountAvatar';
+import { getKytBadgeColorOverride } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import type { IAddressRiskCheckRecentItem } from '@onekeyhq/shared/types/addressRiskCheck';
 
 import {
-  LEVEL_BADGE_COLOR_OVERRIDE,
   LEVEL_BADGE_TYPE,
   LEVEL_TITLE,
   formatRiskCheckDate,
@@ -33,6 +33,7 @@ export function RecentCheckItem({
   onDelete?: (item: IAddressRiskCheckRecentItem) => void;
 }) {
   const intl = useIntl();
+  const badgeColor = getKytBadgeColorOverride(item.level);
 
   const handlePress = useCallback(() => onPress(item), [onPress, item]);
   const handleDelete = useCallback(() => onDelete?.(item), [onDelete, item]);
@@ -65,9 +66,9 @@ export function RecentCheckItem({
         <Badge
           badgeType={LEVEL_BADGE_TYPE[item.level]}
           badgeSize="sm"
-          bg={LEVEL_BADGE_COLOR_OVERRIDE[item.level]?.bg}
+          bg={badgeColor?.bg}
         >
-          <Badge.Text color={LEVEL_BADGE_COLOR_OVERRIDE[item.level]?.color}>
+          <Badge.Text color={badgeColor?.color}>
             {intl.formatMessage({ id: LEVEL_TITLE[item.level] })}
           </Badge.Text>
         </Badge>

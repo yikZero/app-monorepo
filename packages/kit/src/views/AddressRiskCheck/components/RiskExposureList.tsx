@@ -112,6 +112,10 @@ function ExposureGlossaryContent() {
   );
 }
 
+// Static element so the popover keeps a stable content reference across
+// parent re-renders.
+const EXPOSURE_GLOSSARY_CONTENT = <ExposureGlossaryContent />;
+
 function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
   const intl = useIntl();
   const meta: string[] = [];
@@ -199,7 +203,7 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
           title={title}
           placement="bottom"
           iconSize="$4"
-          renderContent={<ExposureGlossaryContent />}
+          renderContent={EXPOSURE_GLOSSARY_CONTENT}
           triggerProps={{ testID: 'address-risk-check-exposure-info' }}
         />
       </XStack>

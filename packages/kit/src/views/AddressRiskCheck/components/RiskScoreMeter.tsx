@@ -2,7 +2,10 @@ import { useIntl } from 'react-intl';
 
 import type { ColorTokens } from '@onekeyhq/components';
 import { Popover, SizableText, XStack, YStack } from '@onekeyhq/components';
-import { KYT_HIGH_RISK_COLOR } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
+import {
+  KYT_HIGH_RISK_COLOR,
+  KYT_LEVEL_TEXT_COLOR,
+} from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
@@ -19,13 +22,6 @@ const BAND_COLOR: Partial<Record<EKytRiskLevel, ColorTokens>> = {
   [EKytRiskLevel.Moderate]: '$bgCautionStrong',
   [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.solid,
   [EKytRiskLevel.Severe]: '$bgCriticalStrong',
-};
-
-const BAND_TEXT_COLOR: Partial<Record<EKytRiskLevel, ColorTokens>> = {
-  [EKytRiskLevel.Low]: '$textSuccess',
-  [EKytRiskLevel.Moderate]: '$textCaution',
-  [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.text,
-  [EKytRiskLevel.Severe]: '$textCritical',
 };
 
 function formatBandRange(band: (typeof RISK_SCORE_BANDS)[number]) {
@@ -77,6 +73,10 @@ function RiskScoreTooltipContent() {
   );
 }
 
+// Static element so the popover keeps a stable content reference across
+// parent re-renders.
+const RISK_SCORE_TOOLTIP_CONTENT = <RiskScoreTooltipContent />;
+
 export function RiskScoreMeter({
   score,
   level,
@@ -86,15 +86,10 @@ export function RiskScoreMeter({
 }) {
   const intl = useIntl();
   const { positionPercent, bandIndex } = getRiskScoreMeterPosition(score);
-  const activeBandIndex = Math.max(
-    0,
-    RISK_SCORE_BANDS.findIndex((band) => band.level === level),
-  );
   // Trust the server level for highlighting; fall back to the score band when
   // the level is outside the four scored bands.
-  const highlightIndex = RISK_SCORE_BANDS.some((band) => band.level === level)
-    ? activeBandIndex
-    : bandIndex;
+  const levelIndex = RISK_SCORE_BANDS.findIndex((band) => band.level === level);
+  const highlightIndex = levelIndex >= 0 ? levelIndex : bandIndex;
   const scoreTitle = intl.formatMessage({
     id: ETranslations.address_risk_check_score__title,
   });
@@ -110,7 +105,7 @@ export function RiskScoreMeter({
             title={scoreTitle}
             placement="bottom"
             iconSize="$4"
-            renderContent={<RiskScoreTooltipContent />}
+            renderContent={RISK_SCORE_TOOLTIP_CONTENT}
             triggerProps={{ testID: 'address-risk-check-score-info' }}
           />
         </XStack>
@@ -159,9 +154,7 @@ export function RiskScoreMeter({
               textAlign="center"
               size={isActive ? '$bodySmMedium' : '$bodySm'}
               color={
-                isActive
-                  ? (BAND_TEXT_COLOR[band.level] ?? '$text')
-                  : '$textSubdued'
+                isActive ? KYT_LEVEL_TEXT_COLOR[band.level] : '$textSubdued'
               }
               numberOfLines={1}
             >
