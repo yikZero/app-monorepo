@@ -9,7 +9,6 @@ import {
   Button,
   Dialog,
   Divider,
-  Icon,
   IconButton,
   Illustration,
   LottieView,
@@ -68,7 +67,8 @@ const FALLBACK_LEVEL_CONTENT: Partial<
 
 const SUMMARY_CONTENT: Record<
   Exclude<IAddressRiskSummaryVariant, 'unknown'>,
-  { title: ETranslations; description: ETranslations }
+  // High and Severe show the exchange warning in place of a description.
+  { title: ETranslations; description?: ETranslations }
 > = {
   clean: {
     title: ETranslations.kyt_no_significant_risk_detected__title,
@@ -84,11 +84,9 @@ const SUMMARY_CONTENT: Record<
   },
   high: {
     title: ETranslations.kyt_high_risk_detected__title,
-    description: ETranslations.address_risk_check_summary_high__desc,
   },
   severe: {
     title: ETranslations.kyt_severe_risk_detected__title,
-    description: ETranslations.address_risk_check_summary_severe__desc,
   },
 };
 
@@ -152,13 +150,18 @@ function AddressRiskCheckResultContent({
           fallbackContent?.title ??
           ETranslations.address_risk_check_level_failed__title,
       });
-  const descriptionText = summaryContent
-    ? intl.formatMessage({ id: summaryContent.description })
-    : intl.formatMessage({
-        id:
-          fallbackContent?.description ??
-          ETranslations.address_risk_check_level_failed__desc,
-      });
+  let descriptionText: string | undefined;
+  if (summaryContent) {
+    descriptionText = summaryContent.description
+      ? intl.formatMessage({ id: summaryContent.description })
+      : undefined;
+  } else {
+    descriptionText = intl.formatMessage({
+      id:
+        fallbackContent?.description ??
+        ETranslations.address_risk_check_level_failed__desc,
+    });
+  }
   const titleColor: ColorTokens =
     variant === 'clean'
       ? '$textSuccess'
@@ -315,29 +318,24 @@ function AddressRiskCheckResultContent({
                 >
                   {titleText}
                 </SizableText>
-                <SizableText size="$bodyMd" color="$textSubdued">
-                  {descriptionText}
-                </SizableText>
                 {isHighOrSevere ? (
-                  <XStack gap="$2" pt="$2" ai="flex-start">
-                    <Icon
-                      name="ErrorSolid"
-                      size="$4"
-                      color="$iconCritical"
-                      mt="$0.5"
-                      flexShrink={0}
-                    />
-                    <SizableText size="$bodyMd" flex={1}>
-                      {result.level === EKytRiskLevel.Severe ? (
-                        <SizableText size="$bodyMdMedium">
-                          {`${intl.formatMessage({ id: ETranslations.address_risk_check_severe_advice__desc })} `}
-                        </SizableText>
-                      ) : null}
-                      {intl.formatMessage({
-                        id: ETranslations.address_risk_check_exchange_flag__desc,
-                      })}
-                    </SizableText>
-                  </XStack>
+                  <SizableText size="$bodyMd">
+                    {result.level === EKytRiskLevel.Severe ? (
+                      <SizableText size="$bodyMdMedium">
+                        {`${intl.formatMessage({
+                          id: ETranslations.address_risk_check_severe_advice__desc,
+                        })} `}
+                      </SizableText>
+                    ) : null}
+                    {intl.formatMessage({
+                      id: ETranslations.address_risk_check_exchange_flag__desc,
+                    })}
+                  </SizableText>
+                ) : null}
+                {!isHighOrSevere && descriptionText ? (
+                  <SizableText size="$bodyMd" color="$textSubdued">
+                    {descriptionText}
+                  </SizableText>
                 ) : null}
                 {isHistoryResult ? (
                   <SizableText size="$bodyMd" color="$textCaution" pt="$1.5">
