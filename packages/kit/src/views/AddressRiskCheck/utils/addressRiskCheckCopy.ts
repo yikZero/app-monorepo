@@ -16,7 +16,7 @@ export const ADDRESS_RISK_CHECK_COPY = {
 
   address_risk_check_exchange_flag__desc:
     'Regulated exchanges may flag your address after you interact with this one.',
-  address_risk_check_severe_advice__title: "Sending isn't recommended",
+  address_risk_check_severe_advice__desc: "Sending isn't recommended.",
 
   address_risk_check_score__title: 'Risk score',
   address_risk_check_score_tooltip__desc:

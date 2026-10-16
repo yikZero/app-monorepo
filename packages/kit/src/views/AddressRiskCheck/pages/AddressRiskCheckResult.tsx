@@ -6,10 +6,10 @@ import { StyleSheet } from 'react-native';
 
 import type { ColorTokens } from '@onekeyhq/components';
 import {
-  Alert,
   Button,
   Dialog,
   Divider,
+  Icon,
   IconButton,
   Illustration,
   LottieView,
@@ -165,6 +165,9 @@ function AddressRiskCheckResultContent({
     variant === 'clean'
       ? '$textSuccess'
       : (LEVEL_TEXT_COLOR[result.level] ?? '$text');
+  const isHighOrSevere =
+    result.level === EKytRiskLevel.High ||
+    result.level === EKytRiskLevel.Severe;
   const stats = useMemo(
     () => getRiskExposureStats(result.reasons),
     [result.reasons],
@@ -317,6 +320,29 @@ function AddressRiskCheckResultContent({
                 <SizableText size="$bodyMd" color="$textSubdued">
                   {descriptionText}
                 </SizableText>
+                {isHighOrSevere ? (
+                  <XStack gap="$2" pt="$2" ai="flex-start">
+                    <Icon
+                      name="ErrorSolid"
+                      size="$4"
+                      color="$iconCritical"
+                      mt="$0.5"
+                      flexShrink={0}
+                    />
+                    <SizableText size="$bodyMd" flex={1}>
+                      {result.level === EKytRiskLevel.Severe ? (
+                        <SizableText size="$bodyMdMedium">
+                          {`${formatAddressRiskCopy(
+                            'address_risk_check_severe_advice__desc',
+                          )} `}
+                        </SizableText>
+                      ) : null}
+                      {formatAddressRiskCopy(
+                        'address_risk_check_exchange_flag__desc',
+                      )}
+                    </SizableText>
+                  </XStack>
+                ) : null}
                 {isHistoryResult ? (
                   <SizableText size="$bodyMd" color="$textCaution" pt="$1.5">
                     {intl.formatMessage({
@@ -325,28 +351,6 @@ function AddressRiskCheckResultContent({
                   </SizableText>
                 ) : null}
               </YStack>
-
-              {result.level === EKytRiskLevel.High ? (
-                <Alert
-                  type="critical"
-                  icon="ErrorOutline"
-                  description={formatAddressRiskCopy(
-                    'address_risk_check_exchange_flag__desc',
-                  )}
-                />
-              ) : null}
-              {result.level === EKytRiskLevel.Severe ? (
-                <Alert
-                  type="critical"
-                  icon="ErrorOutline"
-                  title={formatAddressRiskCopy(
-                    'address_risk_check_severe_advice__title',
-                  )}
-                  description={formatAddressRiskCopy(
-                    'address_risk_check_exchange_flag__desc',
-                  )}
-                />
-              ) : null}
 
               {hasScore || stats.total > 0 ? (
                 <YStack
