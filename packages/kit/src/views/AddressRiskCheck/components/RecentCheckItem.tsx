@@ -15,6 +15,7 @@ import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import type { IAddressRiskCheckRecentItem } from '@onekeyhq/shared/types/addressRiskCheck';
 
 import {
+  LEVEL_BADGE_COLOR_OVERRIDE,
   LEVEL_BADGE_TYPE,
   LEVEL_TITLE,
   formatRiskCheckDate,
@@ -61,8 +62,12 @@ export function RecentCheckItem({
         </SizableText>
       </YStack>
       <YStack ai="flex-end" gap="$1" flexShrink={0}>
-        <Badge badgeType={LEVEL_BADGE_TYPE[item.level]} badgeSize="sm">
-          <Badge.Text>
+        <Badge
+          badgeType={LEVEL_BADGE_TYPE[item.level]}
+          badgeSize="sm"
+          bg={LEVEL_BADGE_COLOR_OVERRIDE[item.level]?.bg}
+        >
+          <Badge.Text color={LEVEL_BADGE_COLOR_OVERRIDE[item.level]?.color}>
             {intl.formatMessage({ id: LEVEL_TITLE[item.level] })}
           </Badge.Text>
         </Badge>

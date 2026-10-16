@@ -11,19 +11,19 @@ import {
   getRiskScoreMeterPosition,
 } from '../utils/addressRiskCheckResultUtils';
 
-import { LEVEL_TITLE } from './RiskCheckShared';
+import { HIGH_RISK_COLOR, LEVEL_TITLE } from './RiskCheckShared';
 
 const BAND_COLOR: Partial<Record<EKytRiskLevel, ColorTokens>> = {
   [EKytRiskLevel.Low]: '$bgSuccessStrong',
   [EKytRiskLevel.Moderate]: '$bgCautionStrong',
-  [EKytRiskLevel.High]: '$bgCriticalStrong',
+  [EKytRiskLevel.High]: HIGH_RISK_COLOR.solid,
   [EKytRiskLevel.Severe]: '$bgCriticalStrong',
 };
 
 const BAND_TEXT_COLOR: Partial<Record<EKytRiskLevel, ColorTokens>> = {
   [EKytRiskLevel.Low]: '$textSuccess',
   [EKytRiskLevel.Moderate]: '$textCaution',
-  [EKytRiskLevel.High]: '$textCritical',
+  [EKytRiskLevel.High]: HIGH_RISK_COLOR.text,
   [EKytRiskLevel.Severe]: '$textCritical',
 };
 

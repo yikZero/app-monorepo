@@ -27,15 +27,24 @@ export function formatRiskCheckDate(
   });
 }
 
-// Risk level → text color. High uses the critical tone so it reads clearly
-// apart from Moderate, which is common on active addresses.
+// Orange marks High so the four scored levels read green / amber / orange /
+// red. The design system has no semantic orange, so these follow the same
+// palette steps the semantic tokens use: 11 for text, 9 for solid fills and
+// 3 for subtle backgrounds. Palette tokens switch with the light/dark theme.
+export const HIGH_RISK_COLOR = {
+  text: '$orange11',
+  solid: '$orange9',
+  subtle: '$orange3',
+} as const satisfies Record<string, ColorTokens>;
+
+// Risk level → text color.
 export const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
   [EKytRiskLevel.None]: '$textSuccess',
   [EKytRiskLevel.Checking]: '$textSubdued',
   [EKytRiskLevel.Failed]: '$textSubdued',
   [EKytRiskLevel.Low]: '$textSuccess',
   [EKytRiskLevel.Moderate]: '$textCaution',
-  [EKytRiskLevel.High]: '$textCritical',
+  [EKytRiskLevel.High]: HIGH_RISK_COLOR.text,
   [EKytRiskLevel.Severe]: '$textCritical',
 };
 
@@ -46,8 +55,18 @@ export const LEVEL_BADGE_TYPE: Record<EKytRiskLevel, IBadgeType> = {
   [EKytRiskLevel.Failed]: 'default',
   [EKytRiskLevel.Low]: 'success',
   [EKytRiskLevel.Moderate]: 'warning',
-  [EKytRiskLevel.High]: 'critical',
+  [EKytRiskLevel.High]: 'warning',
   [EKytRiskLevel.Severe]: 'critical',
+};
+
+// Badge has no orange type; High overrides the warning badge colors.
+export const LEVEL_BADGE_COLOR_OVERRIDE: Partial<
+  Record<EKytRiskLevel, { bg: ColorTokens; color: ColorTokens }>
+> = {
+  [EKytRiskLevel.High]: {
+    bg: HIGH_RISK_COLOR.subtle,
+    color: HIGH_RISK_COLOR.text,
+  },
 };
 
 // Short level name shown in the summary card / list tags (None / Low / …).
