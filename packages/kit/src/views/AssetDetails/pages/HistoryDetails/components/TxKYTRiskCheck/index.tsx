@@ -147,11 +147,7 @@ function KytBadge({ level }: { level: EKytRiskLevel }) {
   const colorOverride =
     level === EKytRiskLevel.High ? KYT_HIGH_RISK_BADGE_COLOR : undefined;
   return (
-    <Badge
-      badgeType={config.badgeType}
-      badgeSize="sm"
-      bg={colorOverride?.bg}
-    >
+    <Badge badgeType={config.badgeType} badgeSize="sm" bg={colorOverride?.bg}>
       {config.label ? (
         <Badge.Text color={colorOverride?.color}>
           {intl.formatMessage({ id: config.label })}
