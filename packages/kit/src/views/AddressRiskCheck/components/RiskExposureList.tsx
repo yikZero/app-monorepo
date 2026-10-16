@@ -1,0 +1,269 @@
+import { useMemo, useState } from 'react';
+
+import { useIntl } from 'react-intl';
+import { StyleSheet } from 'react-native';
+
+import type { ColorTokens } from '@onekeyhq/components';
+import {
+  Button,
+  Divider,
+  NumberSizeableText,
+  Popover,
+  SizableText,
+  XStack,
+  YStack,
+} from '@onekeyhq/components';
+import { formatKytRiskFactorCategory } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
+
+import { formatAddressRiskCopy } from '../utils/addressRiskCheckCopy';
+import {
+  formatRiskPercent,
+  getRiskFactorDisplay,
+} from '../utils/addressRiskCheckResultUtils';
+
+import type { IAddressRiskCheckCopyKey } from '../utils/addressRiskCheckCopy';
+
+const CATEGORY_GLOSSARY: {
+  category: string;
+  desc: IAddressRiskCheckCopyKey;
+}[] = [
+  {
+    category: 'sanctioned_entity',
+    desc: 'address_risk_check_category_sanctioned_entity__desc',
+  },
+  {
+    category: 'illicit_activity',
+    desc: 'address_risk_check_category_illicit_activity__desc',
+  },
+  { category: 'mixer', desc: 'address_risk_check_category_mixer__desc' },
+  {
+    category: 'risk_exchange',
+    desc: 'address_risk_check_category_risk_exchange__desc',
+  },
+  { category: 'gambling', desc: 'address_risk_check_category_gambling__desc' },
+  { category: 'bridge', desc: 'address_risk_check_category_bridge__desc' },
+];
+
+// Bar color by how serious the category is, so a long list is scannable.
+function getCategoryBarColor(category: string): ColorTokens {
+  switch (category) {
+    case 'sanctioned_entity':
+    case 'illicit_activity':
+      return '$bgCriticalStrong';
+    case 'mixer':
+    case 'risk_exchange':
+    case 'gambling':
+      return '$bgCautionStrong';
+    default:
+      return '$iconSubdued';
+  }
+}
+
+function GlossaryRow({ title, desc }: { title: string; desc: string }) {
+  return (
+    <YStack gap="$0.5">
+      <SizableText size="$bodyMdMedium">{title}</SizableText>
+      <SizableText size="$bodyMd" color="$textSubdued">
+        {desc}
+      </SizableText>
+    </YStack>
+  );
+}
+
+function ExposureGlossaryContent() {
+  const intl = useIntl();
+  return (
+    <YStack
+      px="$5"
+      pb="$5"
+      pt={platformEnv.isNative ? '$0' : '$5'}
+      gap="$3"
+      maxWidth={360}
+    >
+      <GlossaryRow
+        title={formatAddressRiskCopy(
+          'address_risk_check_exposure_direct__title',
+        )}
+        desc={formatAddressRiskCopy('address_risk_check_exposure_direct__desc')}
+      />
+      <GlossaryRow
+        title={formatAddressRiskCopy(
+          'address_risk_check_exposure_indirect__title',
+        )}
+        desc={formatAddressRiskCopy(
+          'address_risk_check_exposure_indirect__desc',
+        )}
+      />
+      <GlossaryRow
+        title={intl.formatMessage({
+          id: ETranslations.kyt_risk_factor_share__title,
+        })}
+        desc={formatAddressRiskCopy('address_risk_check_exposure_share__desc')}
+      />
+      <Divider />
+      {CATEGORY_GLOSSARY.map((item) => (
+        <GlossaryRow
+          key={item.category}
+          title={formatKytRiskFactorCategory({
+            category: item.category,
+            intl,
+          })}
+          desc={formatAddressRiskCopy(item.desc)}
+        />
+      ))}
+    </YStack>
+  );
+}
+
+function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
+  const intl = useIntl();
+  const meta: string[] = [];
+  if (factor.entity) {
+    meta.push(factor.entity);
+  }
+  if (factor.exposureType === 'direct') {
+    meta.push(
+      formatAddressRiskCopy('address_risk_check_exposure_direct__title'),
+    );
+  } else if (factor.exposureType === 'indirect') {
+    meta.push(
+      formatAddressRiskCopy('address_risk_check_exposure_indirect__title'),
+    );
+    if (factor.hops !== undefined) {
+      meta.push(
+        intl.formatMessage(
+          { id: ETranslations.kyt_risk_factor_distance_hops__msg },
+          { count: factor.hops },
+        ),
+      );
+    }
+  }
+  const sharePercent =
+    factor.percent !== undefined && Number.isFinite(factor.percent)
+      ? Math.min(100, Math.max(0, factor.percent))
+      : undefined;
+
+  return (
+    <YStack px="$4" py="$3" gap="$1.5">
+      <XStack ai="center" jc="space-between" gap="$3">
+        <SizableText size="$bodyMdMedium" flexShrink={1} numberOfLines={1}>
+          {formatKytRiskFactorCategory({ category: factor.category, intl })}
+        </SizableText>
+        {sharePercent !== undefined ? (
+          <SizableText size="$bodyMdMedium">
+            {formatRiskPercent(factor.percent)}
+          </SizableText>
+        ) : null}
+      </XStack>
+      <XStack ai="center" jc="space-between" gap="$3">
+        <SizableText
+          size="$bodySm"
+          color="$textSubdued"
+          flexShrink={1}
+          numberOfLines={2}
+        >
+          {meta.join(' · ')}
+        </SizableText>
+        {factor.amountUsd !== undefined ? (
+          <NumberSizeableText
+            size="$bodySm"
+            color="$textSubdued"
+            formatter="value"
+            formatterOptions={{ currency: '$' }}
+            flexShrink={0}
+          >
+            {String(factor.amountUsd)}
+          </NumberSizeableText>
+        ) : null}
+      </XStack>
+      {sharePercent !== undefined ? (
+        <YStack
+          h="$1"
+          borderRadius="$full"
+          bg="$neutral3"
+          overflow="hidden"
+          mt="$0.5"
+        >
+          <YStack
+            h="100%"
+            w={`${sharePercent}%`}
+            minWidth={2}
+            borderRadius="$full"
+            bg={getCategoryBarColor(factor.category)}
+          />
+        </YStack>
+      ) : null}
+    </YStack>
+  );
+}
+
+export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
+  const intl = useIntl();
+  const [expanded, setExpanded] = useState(false);
+  const display = useMemo(() => getRiskFactorDisplay(factors), [factors]);
+  const visibleFactors = expanded
+    ? display.sorted
+    : display.sorted.slice(0, display.visibleCount);
+  const title = formatAddressRiskCopy(
+    'address_risk_check_exposure_breakdown__title',
+  );
+
+  return (
+    <YStack gap="$2">
+      <XStack ai="center" jc="space-between">
+        <XStack ai="center" gap="$1">
+          <SizableText size="$headingSm" color="$textSubdued">
+            {title}
+          </SizableText>
+          <Popover.Tooltip
+            title={title}
+            placement="bottom"
+            iconSize="$4"
+            renderContent={<ExposureGlossaryContent />}
+            triggerProps={{ testID: 'address-risk-check-exposure-info' }}
+          />
+        </XStack>
+        <SizableText size="$bodyMdMedium" color="$textSubdued">
+          {intl.formatMessage(
+            { id: ETranslations.kyt_risk_factors_found__msg },
+            { count: factors.length },
+          )}
+        </SizableText>
+      </XStack>
+      <YStack
+        borderWidth={StyleSheet.hairlineWidth}
+        borderColor="$borderSubdued"
+        borderRadius="$3"
+        borderCurve="continuous"
+        overflow="hidden"
+      >
+        {visibleFactors.map((factor, index) => (
+          <YStack key={`${factor.category}-${factor.entity ?? ''}-${index}`}>
+            {index > 0 ? <Divider /> : null}
+            <ExposureRow factor={factor} />
+          </YStack>
+        ))}
+      </YStack>
+      {!expanded && display.hiddenCount > 0 ? (
+        <Button
+          testID="address-risk-check-show-more-factors"
+          size="small"
+          variant="tertiary"
+          alignSelf="flex-start"
+          cursor="default"
+          onPress={() => setExpanded(true)}
+        >
+          {formatAddressRiskCopy(
+            display.hiddenAllMinor
+              ? 'address_risk_check_show_more_minor_exposures__action'
+              : 'address_risk_check_show_more_exposures__action',
+            { count: display.hiddenCount },
+          )}
+        </Button>
+      ) : null}
+    </YStack>
+  );
+}

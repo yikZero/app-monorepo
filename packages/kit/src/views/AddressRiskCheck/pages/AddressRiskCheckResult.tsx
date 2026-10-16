@@ -1,11 +1,14 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
+import type { ColorTokens } from '@onekeyhq/components';
 import {
+  Alert,
   Button,
+  Dialog,
   Divider,
   IconButton,
   Illustration,
@@ -34,27 +37,27 @@ import type { IAddressRiskCheckResult } from '@onekeyhq/shared/types/addressRisk
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 
 import { AddressRiskMoreAnalysis } from '../components/AddressRiskMoreAnalysis';
-import {
-  CardRow,
-  LEVEL_TEXT_COLOR,
-  RiskFactorCard,
-} from '../components/RiskCheckShared';
+import { CardRow, LEVEL_TEXT_COLOR } from '../components/RiskCheckShared';
+import { RiskExposureList } from '../components/RiskExposureList';
+import { RiskScoreMeter } from '../components/RiskScoreMeter';
 import { useAddressRiskCheckRequest } from '../hooks/useCheckAddressRisk';
-import { getAddressRiskCheckPendingMessageIds } from '../utils/addressRiskCheckResultUtils';
+import { formatAddressRiskCopy } from '../utils/addressRiskCheckCopy';
+import {
+  formatRiskPercent,
+  getAddressRiskCheckPendingMessageIds,
+  getAddressRiskSummaryVariant,
+  getRiskExposureStats,
+} from '../utils/addressRiskCheckResultUtils';
 
+import type { IAddressRiskCheckCopyKey } from '../utils/addressRiskCheckCopy';
+import type { IAddressRiskSummaryVariant } from '../utils/addressRiskCheckResultUtils';
 import type { RouteProp } from '@react-navigation/core';
 
-const ADDRESS_RISK_LEVEL_CONTENT: Record<
-  EKytRiskLevel,
-  {
-    title: ETranslations;
-    description: ETranslations;
-  }
+// Checking / failed results never reach the content page in practice; keep the
+// original level copy as a fallback for any unexpected level.
+const FALLBACK_LEVEL_CONTENT: Partial<
+  Record<EKytRiskLevel, { title: ETranslations; description: ETranslations }>
 > = {
-  [EKytRiskLevel.None]: {
-    title: ETranslations.address_risk_check_level_none__title,
-    description: ETranslations.address_risk_check_level_none__desc,
-  },
   [EKytRiskLevel.Checking]: {
     title: ETranslations.address_risk_check_level_checking__title,
     description: ETranslations.address_risk_check_level_checking__desc,
@@ -63,23 +66,50 @@ const ADDRESS_RISK_LEVEL_CONTENT: Record<
     title: ETranslations.address_risk_check_level_failed__title,
     description: ETranslations.address_risk_check_level_failed__desc,
   },
-  [EKytRiskLevel.Low]: {
-    title: ETranslations.address_risk_check_level_low__title,
-    description: ETranslations.address_risk_check_level_low__desc,
+};
+
+const SUMMARY_CONTENT: Record<
+  Exclude<IAddressRiskSummaryVariant, 'unknown'>,
+  { title: ETranslations; description: IAddressRiskCheckCopyKey }
+> = {
+  clean: {
+    title: ETranslations.kyt_no_significant_risk_detected__title,
+    description: 'address_risk_check_level_clean__desc',
   },
-  [EKytRiskLevel.Moderate]: {
-    title: ETranslations.address_risk_check_level_moderate__title,
-    description: ETranslations.address_risk_check_level_moderate__desc,
+  low: {
+    title: ETranslations.kyt_low_risk_detected__title,
+    description: 'address_risk_check_level_low__desc',
   },
-  [EKytRiskLevel.High]: {
-    title: ETranslations.address_risk_check_level_high__title,
-    description: ETranslations.address_risk_check_level_high__desc,
+  moderate: {
+    title: ETranslations.kyt_moderate_risk_detected__title,
+    description: 'address_risk_check_level_moderate__desc',
   },
-  [EKytRiskLevel.Severe]: {
-    title: ETranslations.address_risk_check_level_severe__title,
-    description: ETranslations.address_risk_check_level_severe__desc,
+  high: {
+    title: ETranslations.kyt_high_risk__title,
+    description: 'address_risk_check_level_high__desc',
+  },
+  severe: {
+    title: ETranslations.kyt_severe_risk__title,
+    description: 'address_risk_check_level_severe__desc',
   },
 };
+
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  misttrack: 'MistTrack',
+};
+
+function StatItem({ label, value }: { label: string; value: string }) {
+  return (
+    <YStack flex={1} gap="$0.5" minWidth={0}>
+      <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
+        {label}
+      </SizableText>
+      <SizableText size="$headingMd" numberOfLines={1}>
+        {value}
+      </SizableText>
+    </YStack>
+  );
+}
 
 function AddressRiskCheckResultContent({
   result,
@@ -94,10 +124,9 @@ function AddressRiskCheckResultContent({
 }) {
   const intl = useIntl();
   const { copyText } = useClipboard();
-  const [showAllFactors, setShowAllFactors] = useState(false);
+  const isSendFlow = Boolean(onContinue) && !showMoreAnalysis;
   const canContinueToSend =
-    Boolean(onContinue) &&
-    !showMoreAnalysis &&
+    isSendFlow &&
     [EKytRiskLevel.None, EKytRiskLevel.Low, EKytRiskLevel.Moderate].includes(
       result.level,
     );
@@ -111,11 +140,41 @@ function AddressRiskCheckResultContent({
   );
 
   const checkedAtText = formatDate(new Date(result.checkedAt * 1000));
-  const levelContent = ADDRESS_RISK_LEVEL_CONTENT[result.level];
-  const visibleFactors = showAllFactors
-    ? result.reasons
-    : result.reasons.slice(0, 3);
-  const hasMoreFactors = !showAllFactors && result.reasons.length > 3;
+  const variant = getAddressRiskSummaryVariant({
+    level: result.level,
+    factorCount: result.reasons.length,
+  });
+  const summaryContent =
+    variant === 'unknown' ? undefined : SUMMARY_CONTENT[variant];
+  const fallbackContent = FALLBACK_LEVEL_CONTENT[result.level];
+  const titleText = summaryContent
+    ? intl.formatMessage({ id: summaryContent.title })
+    : intl.formatMessage({
+        id:
+          fallbackContent?.title ??
+          ETranslations.address_risk_check_level_failed__title,
+      });
+  const descriptionText = summaryContent
+    ? formatAddressRiskCopy(summaryContent.description)
+    : intl.formatMessage({
+        id:
+          fallbackContent?.description ??
+          ETranslations.address_risk_check_level_failed__desc,
+      });
+  const titleColor: ColorTokens =
+    variant === 'clean'
+      ? '$textSuccess'
+      : (LEVEL_TEXT_COLOR[result.level] ?? '$text');
+  const stats = useMemo(
+    () => getRiskExposureStats(result.reasons),
+    [result.reasons],
+  );
+  const hasScore =
+    variant !== 'unknown' &&
+    result.score !== undefined &&
+    Number.isFinite(result.score);
+  const providerName: string | undefined =
+    PROVIDER_DISPLAY_NAMES[String(result.provider).toLowerCase()];
 
   // Only trust HTTPS report links from the backend — defense in depth against a
   // tampered/compromised response opening a deep link or phishing page.
@@ -158,6 +217,84 @@ function AddressRiskCheckResultContent({
     [],
   );
 
+  const handleBackToEdit = useCallback(
+    (
+      _close: (extra?: { flag?: string }) => void,
+      closePageStack: (extra?: { flag?: string }) => void,
+    ) => {
+      closePageStack();
+    },
+    [],
+  );
+
+  const handleContinueAnyway = useCallback(
+    (
+      _close: (extra?: { flag?: string }) => void,
+      closePageStack: (extra?: { flag?: string }) => void,
+    ) => {
+      Dialog.show({
+        title: formatAddressRiskCopy(
+          'address_risk_check_continue_high_risk__title',
+        ),
+        description: formatAddressRiskCopy(
+          'address_risk_check_exchange_flag__desc',
+        ),
+        tone: 'warning',
+        icon: 'ErrorOutline',
+        onConfirmText: intl.formatMessage({
+          id: ETranslations.global_continue,
+        }),
+        onConfirm: () => {
+          closePageStack({ flag: 'continueSend' });
+        },
+      });
+    },
+    [intl],
+  );
+
+  let footer = null;
+  if (canContinueToSend) {
+    footer = (
+      <Page.FooterActions
+        onConfirm={handleContinueToSend}
+        onConfirmText={intl.formatMessage({
+          id: ETranslations.continue_to_send__action,
+        })}
+        confirmButtonProps={{
+          testID: 'address-risk-check-send-action',
+        }}
+      />
+    );
+  } else if (isSendFlow && result.level === EKytRiskLevel.High) {
+    footer = (
+      <Page.FooterActions
+        stacked
+        onConfirm={handleBackToEdit}
+        onConfirmText={intl.formatMessage({ id: ETranslations.global_back })}
+        confirmButtonProps={{
+          testID: 'address-risk-check-back-action',
+        }}
+        onCancel={handleContinueAnyway}
+        onCancelText={intl.formatMessage({
+          id: ETranslations.global_continue_anyway,
+        })}
+        cancelButtonProps={{
+          testID: 'address-risk-check-continue-anyway-action',
+        }}
+      />
+    );
+  } else if (isSendFlow && result.level === EKytRiskLevel.Severe) {
+    footer = (
+      <Page.FooterActions
+        onConfirm={handleBackToEdit}
+        onConfirmText={intl.formatMessage({ id: ETranslations.global_back })}
+        confirmButtonProps={{
+          testID: 'address-risk-check-back-action',
+        }}
+      />
+    );
+  }
+
   return (
     <Page onClose={handleClose}>
       <Page.Header
@@ -167,26 +304,18 @@ function AddressRiskCheckResultContent({
       />
       <Page.Body>
         <ScrollView>
-          <YStack gap="$4" pb="$5">
-            <YStack gap="$4" padding="$5">
-              <YStack gap="$0.5">
+          <YStack gap="$5" px="$5" pt="$5" pb="$8">
+            <YStack gap="$4">
+              <YStack gap="$1">
                 <SizableText
-                  size="$heading2xl"
-                  color={LEVEL_TEXT_COLOR[result.level] ?? '$text'}
+                  size="$headingXl"
+                  color={titleColor}
                   numberOfLines={2}
                 >
-                  {intl.formatMessage({
-                    id: levelContent.title,
-                  })}
+                  {titleText}
                 </SizableText>
-                <SizableText
-                  size="$bodyMd"
-                  color="$textSubdued"
-                  numberOfLines={2}
-                >
-                  {intl.formatMessage({
-                    id: levelContent.description,
-                  })}
+                <SizableText size="$bodyMd" color="$textSubdued">
+                  {descriptionText}
                 </SizableText>
                 {isHistoryResult ? (
                   <SizableText size="$bodyMd" color="$textCaution" pt="$1.5">
@@ -197,175 +326,195 @@ function AddressRiskCheckResultContent({
                 ) : null}
               </YStack>
 
-              <YStack
-                borderWidth={StyleSheet.hairlineWidth}
-                borderColor="$borderSubdued"
-                borderRadius="$3"
-                overflow="hidden"
-              >
-                {network?.name ? (
-                  <>
-                    <CardRow
-                      label={intl.formatMessage({
-                        id: ETranslations.global_network,
-                      })}
-                    >
-                      <XStack
-                        ai="center"
-                        jc="flex-end"
-                        gap="$1.5"
-                        maxWidth="70%"
-                        flexShrink={1}
-                      >
-                        <NetworkAvatar networkId={result.networkId} size="$5" />
-                        <SizableText
-                          size="$bodyMdMedium"
-                          textAlign="right"
-                          numberOfLines={1}
-                          flexShrink={1}
-                        >
-                          {network.name}
-                        </SizableText>
-                      </XStack>
-                    </CardRow>
-                    <Divider />
-                  </>
-                ) : null}
-
-                <CardRow
-                  label={intl.formatMessage({
-                    id: ETranslations.global_address,
-                  })}
+              {hasScore || stats.total > 0 ? (
+                <YStack
+                  p="$4"
+                  gap="$4"
+                  bg="$bgSubdued"
+                  borderRadius="$3"
+                  borderCurve="continuous"
                 >
-                  <XStack
-                    ai="center"
-                    jc="flex-end"
-                    gap="$1"
-                    maxWidth="70%"
-                    flexShrink={1}
-                  >
-                    <SizableText
-                      size="$bodyMdMedium"
-                      numberOfLines={2}
-                      textAlign="right"
-                      flexShrink={1}
-                      style={
-                        platformEnv.isNative
-                          ? undefined
-                          : { wordBreak: 'break-all' }
-                      }
-                    >
-                      {result.address}
-                    </SizableText>
-                    <IconButton
-                      testID="address-risk-check-copy-address"
-                      title={intl.formatMessage({
-                        id: ETranslations.global_copy_address,
-                      })}
-                      variant="tertiary"
-                      size="small"
-                      iconSize="$4"
-                      icon="Copy3Outline"
-                      onPress={handleCopyAddress}
-                    />
-                  </XStack>
-                </CardRow>
+                  {hasScore && result.score !== undefined ? (
+                    <RiskScoreMeter score={result.score} level={result.level} />
+                  ) : null}
+                  {hasScore && stats.total > 0 ? <Divider /> : null}
+                  {stats.total > 0 ? (
+                    <XStack gap="$3">
+                      <StatItem
+                        label={formatAddressRiskCopy(
+                          'address_risk_check_stats_exposures__title',
+                        )}
+                        value={String(stats.total)}
+                      />
+                      <StatItem
+                        label={formatAddressRiskCopy(
+                          'address_risk_check_stats_direct__title',
+                        )}
+                        value={String(stats.direct)}
+                      />
+                      <StatItem
+                        label={formatAddressRiskCopy(
+                          'address_risk_check_stats_largest_share__title',
+                        )}
+                        value={formatRiskPercent(stats.largestPercent)}
+                      />
+                    </XStack>
+                  ) : null}
+                </YStack>
+              ) : null}
 
-                <Divider />
-                <CardRow
-                  label={intl.formatMessage({
-                    id: ETranslations.kyt_last_checked__title,
-                  })}
-                >
-                  <SizableText
-                    size="$bodyMdMedium"
-                    textAlign="right"
-                    numberOfLines={1}
-                    flexShrink={1}
-                  >
-                    {checkedAtText}
-                  </SizableText>
-                </CardRow>
-              </YStack>
+              {result.level === EKytRiskLevel.High ? (
+                <Alert
+                  type="warning"
+                  icon="ErrorOutline"
+                  description={formatAddressRiskCopy(
+                    'address_risk_check_exchange_flag__desc',
+                  )}
+                />
+              ) : null}
+              {result.level === EKytRiskLevel.Severe ? (
+                <Alert
+                  type="critical"
+                  icon="ErrorOutline"
+                  title={formatAddressRiskCopy(
+                    'address_risk_check_severe_advice__title',
+                  )}
+                  description={formatAddressRiskCopy(
+                    'address_risk_check_exchange_flag__desc',
+                  )}
+                />
+              ) : null}
             </YStack>
 
             {result.reasons.length > 0 ? (
-              <YStack px="$5" gap="$2">
-                <XStack ai="center" jc="space-between">
-                  <SizableText size="$headingSm" color="$textSubdued">
-                    {intl.formatMessage({
-                      id: ETranslations.kyt_risk_factors__title,
-                    })}
-                  </SizableText>
-                  <SizableText size="$bodyMdMedium" color="$textSubdued">
-                    {intl.formatMessage(
-                      { id: ETranslations.kyt_risk_factors_found__msg },
-                      { count: result.reasons.length },
-                    )}
-                  </SizableText>
-                </XStack>
-                <YStack gap="$1">
-                  {visibleFactors.map((factor, index) => (
-                    <RiskFactorCard key={index} factor={factor} />
-                  ))}
-                </YStack>
-                {hasMoreFactors ? (
-                  <Button
-                    testID="address-risk-check-show-more-factors"
-                    size="small"
-                    variant="tertiary"
-                    alignSelf="flex-start"
-                    cursor="default"
-                    onPress={() => setShowAllFactors(true)}
-                  >
-                    {intl.formatMessage({
-                      id: ETranslations.global_show_more,
-                    })}
-                  </Button>
-                ) : null}
-              </YStack>
+              <RiskExposureList factors={result.reasons} />
             ) : null}
 
-            {canViewReport ? (
-              <YStack px="$5">
-                <Button
-                  testID="address-risk-check-view-report"
-                  variant="secondary"
-                  size="large"
-                  iconAfter="ArrowTopRightOutline"
-                  onPress={handleViewReport}
+            <YStack
+              borderWidth={StyleSheet.hairlineWidth}
+              borderColor="$borderSubdued"
+              borderRadius="$3"
+              borderCurve="continuous"
+              overflow="hidden"
+            >
+              {network?.name ? (
+                <>
+                  <CardRow
+                    label={intl.formatMessage({
+                      id: ETranslations.global_network,
+                    })}
+                  >
+                    <XStack
+                      ai="center"
+                      jc="flex-end"
+                      gap="$1.5"
+                      maxWidth="70%"
+                      flexShrink={1}
+                    >
+                      <NetworkAvatar networkId={result.networkId} size="$5" />
+                      <SizableText
+                        size="$bodyMdMedium"
+                        textAlign="right"
+                        numberOfLines={1}
+                        flexShrink={1}
+                      >
+                        {network.name}
+                      </SizableText>
+                    </XStack>
+                  </CardRow>
+                  <Divider />
+                </>
+              ) : null}
+
+              <CardRow
+                label={intl.formatMessage({
+                  id: ETranslations.global_address,
+                })}
+              >
+                <XStack
+                  ai="center"
+                  jc="flex-end"
+                  gap="$1"
+                  maxWidth="70%"
+                  flexShrink={1}
                 >
-                  {intl.formatMessage({
-                    id: ETranslations.kyt_view_report__action,
-                  })}
-                </Button>
-              </YStack>
+                  <SizableText
+                    size="$bodyMdMedium"
+                    numberOfLines={2}
+                    textAlign="right"
+                    flexShrink={1}
+                    style={
+                      platformEnv.isNative
+                        ? undefined
+                        : { wordBreak: 'break-all' }
+                    }
+                  >
+                    {result.address}
+                  </SizableText>
+                  <IconButton
+                    testID="address-risk-check-copy-address"
+                    title={intl.formatMessage({
+                      id: ETranslations.global_copy_address,
+                    })}
+                    variant="tertiary"
+                    size="small"
+                    iconSize="$4"
+                    icon="Copy3Outline"
+                    onPress={handleCopyAddress}
+                  />
+                </XStack>
+              </CardRow>
+
+              <Divider />
+              <CardRow
+                label={intl.formatMessage({
+                  id: ETranslations.kyt_last_checked__title,
+                })}
+              >
+                <SizableText
+                  size="$bodyMdMedium"
+                  textAlign="right"
+                  numberOfLines={1}
+                  flexShrink={1}
+                >
+                  {checkedAtText}
+                </SizableText>
+              </CardRow>
+            </YStack>
+
+            {canViewReport ? (
+              <Button
+                testID="address-risk-check-view-report"
+                variant="secondary"
+                size="large"
+                iconAfter="ArrowTopRightOutline"
+                onPress={handleViewReport}
+              >
+                {intl.formatMessage({
+                  id: ETranslations.kyt_view_report__action,
+                })}
+              </Button>
             ) : null}
 
             {showMoreAnalysis ? (
-              <YStack px="$5">
-                <AddressRiskMoreAnalysis
-                  networkId={result.networkId}
-                  address={result.address}
-                />
-              </YStack>
+              <AddressRiskMoreAnalysis
+                networkId={result.networkId}
+                address={result.address}
+              />
             ) : null}
+
+            <SizableText size="$bodySm" color="$textSubdued">
+              {providerName
+                ? formatAddressRiskCopy(
+                    'address_risk_check_source_disclaimer__desc',
+                    { provider: providerName },
+                  )
+                : formatAddressRiskCopy('address_risk_check_disclaimer__desc')}
+            </SizableText>
           </YStack>
         </ScrollView>
       </Page.Body>
-      {canContinueToSend ? (
-        <Page.Footer>
-          <Page.FooterActions
-            onConfirm={handleContinueToSend}
-            onConfirmText={intl.formatMessage({
-              id: ETranslations.continue_to_send__action,
-            })}
-            confirmButtonProps={{
-              testID: 'address-risk-check-send-action',
-            }}
-          />
-        </Page.Footer>
-      ) : null}
+      {footer ? <Page.Footer>{footer}</Page.Footer> : null}
     </Page>
   );
 }

@@ -1,6 +1,15 @@
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
+import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
-import { getAddressRiskCheckPendingMessageIds } from './addressRiskCheckResultUtils';
+import {
+  formatRiskPercent,
+  getAddressRiskCheckPendingMessageIds,
+  getAddressRiskSummaryVariant,
+  getRiskExposureStats,
+  getRiskFactorDisplay,
+  getRiskScoreMeterPosition,
+} from './addressRiskCheckResultUtils';
 
 describe('getAddressRiskCheckPendingMessageIds', () => {
   it.each([
@@ -38,5 +47,116 @@ describe('getAddressRiskCheckPendingMessageIds', () => {
     ],
   ] as const)('%s', (_name, input, expected) => {
     expect(getAddressRiskCheckPendingMessageIds(input)).toEqual(expected);
+  });
+});
+
+describe('getAddressRiskSummaryVariant', () => {
+  it.each([
+    [EKytRiskLevel.None, 0, 'clean'],
+    [EKytRiskLevel.Low, 0, 'clean'],
+    [EKytRiskLevel.Low, 4, 'low'],
+    [EKytRiskLevel.Moderate, 0, 'moderate'],
+    [EKytRiskLevel.High, 2, 'high'],
+    [EKytRiskLevel.Severe, 1, 'severe'],
+    [EKytRiskLevel.Failed, 0, 'unknown'],
+  ] as const)('%s with %d factors -> %s', (level, factorCount, expected) => {
+    expect(getAddressRiskSummaryVariant({ level, factorCount })).toBe(expected);
+  });
+});
+
+const factor = (overrides: Partial<IKytRiskFactor>): IKytRiskFactor => ({
+  category: 'illicit_activity',
+  ...overrides,
+});
+
+describe('getRiskFactorDisplay', () => {
+  it('sorts by share and folds minor exposures beyond the minimum', () => {
+    const factors = [
+      factor({ entity: 'dust-a', percent: 0 }),
+      factor({ entity: 'major', percent: 3.1 }),
+      factor({ entity: 'dust-b', percent: 0.05 }),
+      factor({ entity: 'mid', percent: 0.4 }),
+      factor({ entity: 'dust-c', percent: 0.001 }),
+      factor({ entity: 'dust-d', percent: 0.002 }),
+    ];
+    const display = getRiskFactorDisplay(factors);
+    expect(display.sorted.map((item) => item.entity)).toEqual([
+      'major',
+      'mid',
+      'dust-b',
+      'dust-d',
+      'dust-c',
+      'dust-a',
+    ]);
+    expect(display.visibleCount).toBe(3);
+    expect(display.hiddenCount).toBe(3);
+    expect(display.hiddenAllMinor).toBe(true);
+  });
+
+  it('caps significant exposures and flags non-minor hidden items', () => {
+    const factors = Array.from({ length: 7 }, (_, index) =>
+      factor({ entity: `e${index}`, percent: 10 - index }),
+    );
+    const display = getRiskFactorDisplay(factors);
+    expect(display.visibleCount).toBe(5);
+    expect(display.hiddenCount).toBe(2);
+    expect(display.hiddenAllMinor).toBe(false);
+  });
+
+  it('shows everything when there are only a few exposures', () => {
+    const display = getRiskFactorDisplay([
+      factor({ percent: 0.01 }),
+      factor({}),
+    ]);
+    expect(display.visibleCount).toBe(2);
+    expect(display.hiddenCount).toBe(0);
+    expect(display.hiddenAllMinor).toBe(false);
+  });
+});
+
+describe('getRiskExposureStats', () => {
+  it('counts direct exposures and the largest share', () => {
+    expect(
+      getRiskExposureStats([
+        factor({ exposureType: 'direct', percent: 1.97 }),
+        factor({ exposureType: 'indirect', percent: 3.1 }),
+        factor({ exposureType: 'indirect' }),
+      ]),
+    ).toEqual({ total: 3, direct: 1, largestPercent: 3.1 });
+  });
+
+  it('returns no largest share when none is reported', () => {
+    expect(getRiskExposureStats([factor({})]).largestPercent).toBeUndefined();
+  });
+});
+
+describe('formatRiskPercent', () => {
+  it.each([
+    [undefined, '-'],
+    [0, '0%'],
+    [0.004, '<0.01%'],
+    [0.448, '0.45%'],
+    [45.652, '45.65%'],
+    [100, '100%'],
+  ] as const)('%s -> %s', (input, expected) => {
+    expect(formatRiskPercent(input)).toBe(expected);
+  });
+});
+
+describe('getRiskScoreMeterPosition', () => {
+  it.each([
+    [0, 0, 0],
+    [3, 0, 2.5],
+    [30, 0, 25],
+    [36, 1, 28.75],
+    [70, 1, 50],
+    [85, 2, 68.75],
+    [100, 3, 100],
+    [120, 3, 100],
+    [-5, 0, 0],
+  ] as const)('score %d -> band %d at %d%%', (score, bandIndex, position) => {
+    const result = getRiskScoreMeterPosition(score);
+    expect(result.bandIndex).toBe(bandIndex);
+    expect(result.positionPercent).toBeCloseTo(position);
   });
 });
