@@ -20,6 +20,7 @@ import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { Token } from '@onekeyhq/kit/src/components/Token';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { formatKytRiskFactorCategory } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
+import { KYT_HIGH_RISK_COLOR } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { RECEIVE_RISK_MONITORING_HELP_LINK } from '@onekeyhq/shared/src/config/appConfig';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes, EModalWebViewRoutes } from '@onekeyhq/shared/src/routes';
@@ -44,7 +45,7 @@ const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
   [EKytRiskLevel.Failed]: '$textSubdued',
   [EKytRiskLevel.Low]: '$textSuccess',
   [EKytRiskLevel.Moderate]: '$textCaution',
-  [EKytRiskLevel.High]: '$textCaution',
+  [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.text,
   [EKytRiskLevel.Severe]: '$textCritical',
 };
 

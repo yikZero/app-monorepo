@@ -36,6 +36,7 @@ import { useAccountData } from '../../hooks/useAccountData';
 import { usePromiseResult } from '../../hooks/usePromiseResult';
 import { useActiveAccount } from '../../states/jotai/contexts/accountSelector';
 import { useAddressesInfoAtom } from '../../states/jotai/contexts/historyList';
+import { KYT_HIGH_RISK_BADGE_COLOR } from '../../utils/kytRiskLevelColorUtils';
 import {
   InfoItem,
   InfoItemGroup,
@@ -225,8 +226,15 @@ function TxActionCommonTitle({
         </Badge>
       ) : null}
       {kytRiskLevel === EKytRiskLevel.High ? (
-        <Badge badgeSize="sm" badgeType="warning" ml="$2">
-          {intl.formatMessage({ id: ETranslations.kyt_high_risk__title })}
+        <Badge
+          badgeSize="sm"
+          badgeType="warning"
+          ml="$2"
+          bg={KYT_HIGH_RISK_BADGE_COLOR.bg}
+        >
+          <Badge.Text color={KYT_HIGH_RISK_BADGE_COLOR.color}>
+            {intl.formatMessage({ id: ETranslations.kyt_high_risk__title })}
+          </Badge.Text>
         </Badge>
       ) : null}
     </XStack>

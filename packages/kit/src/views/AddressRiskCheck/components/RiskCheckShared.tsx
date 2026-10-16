@@ -1,6 +1,10 @@
 import type { ColorTokens } from '@onekeyhq/components';
 import { Popover, SizableText, XStack, YStack } from '@onekeyhq/components';
 import type { IBadgeType } from '@onekeyhq/components/src/content/Badge';
+import {
+  KYT_HIGH_RISK_BADGE_COLOR,
+  KYT_HIGH_RISK_COLOR,
+} from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { appLocale } from '@onekeyhq/shared/src/locale/appLocale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -27,16 +31,6 @@ export function formatRiskCheckDate(
   });
 }
 
-// Orange marks High so the four scored levels read green / amber / orange /
-// red. The design system has no semantic orange, so these follow the same
-// palette steps the semantic tokens use: 11 for text, 9 for solid fills and
-// 3 for subtle backgrounds. Palette tokens switch with the light/dark theme.
-export const HIGH_RISK_COLOR = {
-  text: '$orange11',
-  solid: '$orange9',
-  subtle: '$orange3',
-} as const satisfies Record<string, ColorTokens>;
-
 // Risk level → text color.
 export const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
   [EKytRiskLevel.None]: '$textSuccess',
@@ -44,7 +38,7 @@ export const LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
   [EKytRiskLevel.Failed]: '$textSubdued',
   [EKytRiskLevel.Low]: '$textSuccess',
   [EKytRiskLevel.Moderate]: '$textCaution',
-  [EKytRiskLevel.High]: HIGH_RISK_COLOR.text,
+  [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.text,
   [EKytRiskLevel.Severe]: '$textCritical',
 };
 
@@ -63,10 +57,7 @@ export const LEVEL_BADGE_TYPE: Record<EKytRiskLevel, IBadgeType> = {
 export const LEVEL_BADGE_COLOR_OVERRIDE: Partial<
   Record<EKytRiskLevel, { bg: ColorTokens; color: ColorTokens }>
 > = {
-  [EKytRiskLevel.High]: {
-    bg: HIGH_RISK_COLOR.subtle,
-    color: HIGH_RISK_COLOR.text,
-  },
+  [EKytRiskLevel.High]: KYT_HIGH_RISK_BADGE_COLOR,
 };
 
 // Short level name shown in the summary card / list tags (None / Low / …).
