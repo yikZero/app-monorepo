@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
-import type { ColorTokens } from '@onekeyhq/components';
 import {
   Button,
   Divider,
@@ -46,21 +45,6 @@ const CATEGORY_GLOSSARY: {
   { category: 'gambling', desc: 'address_risk_check_category_gambling__desc' },
   { category: 'bridge', desc: 'address_risk_check_category_bridge__desc' },
 ];
-
-// Bar color by how serious the category is, so a long list is scannable.
-function getCategoryBarColor(category: string): ColorTokens {
-  switch (category) {
-    case 'sanctioned_entity':
-    case 'illicit_activity':
-      return '$bgCriticalStrong';
-    case 'mixer':
-    case 'risk_exchange':
-    case 'gambling':
-      return '$bgCautionStrong';
-    default:
-      return '$iconSubdued';
-  }
-}
 
 function GlossaryRow({ title, desc }: { title: string; desc: string }) {
   return (
@@ -141,18 +125,14 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
       );
     }
   }
-  const sharePercent =
-    factor.percent !== undefined && Number.isFinite(factor.percent)
-      ? Math.min(100, Math.max(0, factor.percent))
-      : undefined;
 
   return (
-    <YStack px="$4" py="$3" gap="$1.5">
+    <YStack px="$4" py="$3" gap="$0.5">
       <XStack ai="center" jc="space-between" gap="$3">
         <SizableText size="$bodyMdMedium" flexShrink={1} numberOfLines={1}>
           {formatKytRiskFactorCategory({ category: factor.category, intl })}
         </SizableText>
-        {sharePercent !== undefined ? (
+        {factor.percent !== undefined ? (
           <SizableText size="$bodyMdMedium">
             {formatRiskPercent(factor.percent)}
           </SizableText>
@@ -160,16 +140,17 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
       </XStack>
       <XStack ai="center" jc="space-between" gap="$3">
         <SizableText
-          size="$bodySm"
+          size="$bodyMd"
           color="$textSubdued"
           flexShrink={1}
           numberOfLines={2}
         >
           {meta.join(' · ')}
         </SizableText>
-        {factor.amountUsd !== undefined ? (
+        {/* Zero volume means the address itself is the entity. */}
+        {factor.amountUsd !== undefined && factor.amountUsd > 0 ? (
           <NumberSizeableText
-            size="$bodySm"
+            size="$bodyMd"
             color="$textSubdued"
             formatter="value"
             formatterOptions={{ currency: '$' }}
@@ -179,29 +160,11 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
           </NumberSizeableText>
         ) : null}
       </XStack>
-      {sharePercent !== undefined ? (
-        <YStack
-          h="$1"
-          borderRadius="$full"
-          bg="$neutral3"
-          overflow="hidden"
-          mt="$0.5"
-        >
-          <YStack
-            h="100%"
-            w={`${sharePercent}%`}
-            minWidth={2}
-            borderRadius="$full"
-            bg={getCategoryBarColor(factor.category)}
-          />
-        </YStack>
-      ) : null}
     </YStack>
   );
 }
 
 export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
-  const intl = useIntl();
   const [expanded, setExpanded] = useState(false);
   const display = useMemo(() => getRiskFactorDisplay(factors), [factors]);
   const visibleFactors = expanded
@@ -212,26 +175,18 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
   );
 
   return (
-    <YStack gap="$2">
-      <XStack ai="center" jc="space-between">
-        <XStack ai="center" gap="$1">
-          <SizableText size="$headingSm" color="$textSubdued">
-            {title}
-          </SizableText>
-          <Popover.Tooltip
-            title={title}
-            placement="bottom"
-            iconSize="$4"
-            renderContent={<ExposureGlossaryContent />}
-            triggerProps={{ testID: 'address-risk-check-exposure-info' }}
-          />
-        </XStack>
-        <SizableText size="$bodyMdMedium" color="$textSubdued">
-          {intl.formatMessage(
-            { id: ETranslations.kyt_risk_factors_found__msg },
-            { count: factors.length },
-          )}
+    <YStack gap="$2.5">
+      <XStack ai="center" gap="$1">
+        <SizableText size="$headingSm" color="$textSubdued">
+          {title}
         </SizableText>
+        <Popover.Tooltip
+          title={title}
+          placement="bottom"
+          iconSize="$4"
+          renderContent={<ExposureGlossaryContent />}
+          triggerProps={{ testID: 'address-risk-check-exposure-info' }}
+        />
       </XStack>
       <YStack
         borderWidth={StyleSheet.hairlineWidth}

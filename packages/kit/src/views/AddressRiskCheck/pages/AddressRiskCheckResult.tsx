@@ -85,11 +85,11 @@ const SUMMARY_CONTENT: Record<
     description: 'address_risk_check_level_moderate__desc',
   },
   high: {
-    title: ETranslations.kyt_high_risk__title,
+    title: ETranslations.kyt_high_risk_detected__title,
     description: 'address_risk_check_level_high__desc',
   },
   severe: {
-    title: ETranslations.kyt_severe_risk__title,
+    title: ETranslations.kyt_severe_risk_detected__title,
     description: 'address_risk_check_level_severe__desc',
   },
 };
@@ -104,7 +104,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
       <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
         {label}
       </SizableText>
-      <SizableText size="$headingMd" numberOfLines={1}>
+      <SizableText size="$bodyMdMedium" numberOfLines={1}>
         {value}
       </SizableText>
     </YStack>
@@ -326,6 +326,28 @@ function AddressRiskCheckResultContent({
                 ) : null}
               </YStack>
 
+              {result.level === EKytRiskLevel.High ? (
+                <Alert
+                  type="critical"
+                  icon="ErrorOutline"
+                  description={formatAddressRiskCopy(
+                    'address_risk_check_exchange_flag__desc',
+                  )}
+                />
+              ) : null}
+              {result.level === EKytRiskLevel.Severe ? (
+                <Alert
+                  type="critical"
+                  icon="ErrorOutline"
+                  title={formatAddressRiskCopy(
+                    'address_risk_check_severe_advice__title',
+                  )}
+                  description={formatAddressRiskCopy(
+                    'address_risk_check_exchange_flag__desc',
+                  )}
+                />
+              ) : null}
+
               {hasScore || stats.total > 0 ? (
                 <YStack
                   p="$4"
@@ -361,28 +383,6 @@ function AddressRiskCheckResultContent({
                     </XStack>
                   ) : null}
                 </YStack>
-              ) : null}
-
-              {result.level === EKytRiskLevel.High ? (
-                <Alert
-                  type="warning"
-                  icon="ErrorOutline"
-                  description={formatAddressRiskCopy(
-                    'address_risk_check_exchange_flag__desc',
-                  )}
-                />
-              ) : null}
-              {result.level === EKytRiskLevel.Severe ? (
-                <Alert
-                  type="critical"
-                  icon="ErrorOutline"
-                  title={formatAddressRiskCopy(
-                    'address_risk_check_severe_advice__title',
-                  )}
-                  description={formatAddressRiskCopy(
-                    'address_risk_check_exchange_flag__desc',
-                  )}
-                />
               ) : null}
             </YStack>
 

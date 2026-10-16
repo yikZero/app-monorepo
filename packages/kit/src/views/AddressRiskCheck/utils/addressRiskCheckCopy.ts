@@ -8,18 +8,17 @@ export const ADDRESS_RISK_CHECK_COPY = {
   address_risk_check_level_low__desc:
     'Minor exposure to risk entities. Still verify the full address before sending.',
   address_risk_check_level_moderate__desc:
-    'Some exposure to risk entities. Review the sources below before sending.',
+    'Some exposure to risk entities. Review the breakdown before sending.',
   address_risk_check_level_high__desc:
     'Significant exposure to high-risk entities.',
   address_risk_check_level_severe__desc:
-    'Heavy exposure to severe-risk entities, such as sanctioned or stolen funds.',
+    'Heavy exposure to severe-risk entities, such as sanctioned or hacked addresses.',
 
   address_risk_check_exchange_flag__desc:
     'Regulated exchanges may flag your address after you interact with this one.',
   address_risk_check_severe_advice__title: "Sending isn't recommended",
 
   address_risk_check_score__title: 'Risk score',
-  address_risk_check_score__value: '{score}/100',
   address_risk_check_score_tooltip__desc:
     "Scored from 0 to 100 based on this address's transaction history. Higher scores mean larger or closer links to risk entities.",
   address_risk_check_score_ranges__title: 'Score ranges',
@@ -36,7 +35,7 @@ export const ADDRESS_RISK_CHECK_COPY = {
   address_risk_check_exposure_indirect__desc:
     'Funds moved through other addresses. Hops count the steps in between.',
   address_risk_check_exposure_share__desc:
-    "Share of this address's total transaction volume linked to the entity.",
+    "Portion of this address's transaction volume linked to the entity.",
   address_risk_check_show_more_exposures__action: 'Show {count} more',
   address_risk_check_show_more_minor_exposures__action:
     'Show {count} more, each under 0.1%',

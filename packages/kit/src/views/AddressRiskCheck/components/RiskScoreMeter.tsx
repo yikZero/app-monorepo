@@ -42,7 +42,7 @@ function RiskScoreTooltipContent() {
       gap="$4"
       maxWidth={360}
     >
-      <SizableText size="$bodyLg">
+      <SizableText size="$bodyMd">
         {formatAddressRiskCopy('address_risk_check_score_tooltip__desc')}
       </SizableText>
       <YStack gap="$2">
@@ -62,7 +62,7 @@ function RiskScoreTooltipContent() {
                 {intl.formatMessage({ id: LEVEL_TITLE[band.level] })}
               </SizableText>
             </XStack>
-            <SizableText size="$bodyMdMedium" color="$textSubdued">
+            <SizableText size="$bodyMd" color="$textSubdued">
               {formatBandRange(band)}
             </SizableText>
           </XStack>
@@ -108,9 +108,10 @@ export function RiskScoreMeter({
           />
         </XStack>
         <SizableText size="$headingMd">
-          {formatAddressRiskCopy('address_risk_check_score__value', {
-            score: Math.round(score),
-          })}
+          {Math.round(score)}
+          <SizableText size="$bodyMd" color="$textSubdued">
+            /100
+          </SizableText>
         </SizableText>
       </XStack>
 
@@ -121,8 +122,9 @@ export function RiskScoreMeter({
               key={band.level}
               flex={1}
               borderRadius="$full"
-              bg={BAND_COLOR[band.level]}
-              opacity={index === highlightIndex ? 1 : 0.2}
+              bg={
+                index === highlightIndex ? BAND_COLOR[band.level] : '$neutral3'
+              }
             />
           ))}
         </XStack>
@@ -152,7 +154,7 @@ export function RiskScoreMeter({
               color={
                 isActive
                   ? (BAND_TEXT_COLOR[band.level] ?? '$text')
-                  : '$textDisabled'
+                  : '$textSubdued'
               }
               numberOfLines={1}
             >

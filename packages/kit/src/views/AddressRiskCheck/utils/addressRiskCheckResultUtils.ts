@@ -128,10 +128,12 @@ export function formatRiskPercent(percent: number | undefined) {
   if (percent === undefined || !Number.isFinite(percent)) {
     return '-';
   }
-  if (percent > 0 && percent < 0.01) {
+  // Listed exposures are never truly zero; the provider rounds tiny shares
+  // down, so anything below 0.01% reads as "<0.01%".
+  if (percent < 0.01) {
     return '<0.01%';
   }
-  return `${new BigNumber(percent).decimalPlaces(2).toFixed()}%`;
+  return `${new BigNumber(percent).toFixed(2)}%`;
 }
 
 // Position of the score on the meter (0-100), mapped piecewise so every band

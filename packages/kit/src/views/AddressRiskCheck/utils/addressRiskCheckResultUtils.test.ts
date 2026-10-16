@@ -133,11 +133,12 @@ describe('getRiskExposureStats', () => {
 describe('formatRiskPercent', () => {
   it.each([
     [undefined, '-'],
-    [0, '0%'],
+    [0, '<0.01%'],
     [0.004, '<0.01%'],
     [0.448, '0.45%'],
+    [3.1, '3.10%'],
     [45.652, '45.65%'],
-    [100, '100%'],
+    [100, '100.00%'],
   ] as const)('%s -> %s', (input, expected) => {
     expect(formatRiskPercent(input)).toBe(expected);
   });
