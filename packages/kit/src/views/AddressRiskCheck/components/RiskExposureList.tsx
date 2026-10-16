@@ -17,33 +17,39 @@ import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
-import { formatAddressRiskCopy } from '../utils/addressRiskCheckCopy';
 import {
   formatRiskPercent,
   getRiskFactorDisplay,
 } from '../utils/addressRiskCheckResultUtils';
 
-import type { IAddressRiskCheckCopyKey } from '../utils/addressRiskCheckCopy';
-
 const CATEGORY_GLOSSARY: {
   category: string;
-  desc: IAddressRiskCheckCopyKey;
+  desc: ETranslations;
 }[] = [
   {
     category: 'sanctioned_entity',
-    desc: 'address_risk_check_category_sanctioned_entity__desc',
+    desc: ETranslations.address_risk_check_category_sanctioned_entity__desc,
   },
   {
     category: 'illicit_activity',
-    desc: 'address_risk_check_category_illicit_activity__desc',
+    desc: ETranslations.address_risk_check_category_illicit_activity__desc,
   },
-  { category: 'mixer', desc: 'address_risk_check_category_mixer__desc' },
+  {
+    category: 'mixer',
+    desc: ETranslations.address_risk_check_category_mixer__desc,
+  },
   {
     category: 'risk_exchange',
-    desc: 'address_risk_check_category_risk_exchange__desc',
+    desc: ETranslations.address_risk_check_category_risk_exchange__desc,
   },
-  { category: 'gambling', desc: 'address_risk_check_category_gambling__desc' },
-  { category: 'bridge', desc: 'address_risk_check_category_bridge__desc' },
+  {
+    category: 'gambling',
+    desc: ETranslations.address_risk_check_category_gambling__desc,
+  },
+  {
+    category: 'bridge',
+    desc: ETranslations.address_risk_check_category_bridge__desc,
+  },
 ];
 
 function GlossaryRow({ title, desc }: { title: string; desc: string }) {
@@ -68,24 +74,28 @@ function ExposureGlossaryContent() {
       maxWidth={360}
     >
       <GlossaryRow
-        title={formatAddressRiskCopy(
-          'address_risk_check_exposure_direct__title',
-        )}
-        desc={formatAddressRiskCopy('address_risk_check_exposure_direct__desc')}
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check_exposure_direct__title,
+        })}
+        desc={intl.formatMessage({
+          id: ETranslations.address_risk_check_exposure_direct__desc,
+        })}
       />
       <GlossaryRow
-        title={formatAddressRiskCopy(
-          'address_risk_check_exposure_indirect__title',
-        )}
-        desc={formatAddressRiskCopy(
-          'address_risk_check_exposure_indirect__desc',
-        )}
+        title={intl.formatMessage({
+          id: ETranslations.address_risk_check_exposure_indirect__title,
+        })}
+        desc={intl.formatMessage({
+          id: ETranslations.address_risk_check_exposure_indirect__desc,
+        })}
       />
       <GlossaryRow
         title={intl.formatMessage({
           id: ETranslations.kyt_risk_factor_share__title,
         })}
-        desc={formatAddressRiskCopy('address_risk_check_exposure_share__desc')}
+        desc={intl.formatMessage({
+          id: ETranslations.address_risk_check_exposure_share__desc,
+        })}
       />
       <Divider />
       {CATEGORY_GLOSSARY.map((item) => (
@@ -95,7 +105,7 @@ function ExposureGlossaryContent() {
             category: item.category,
             intl,
           })}
-          desc={formatAddressRiskCopy(item.desc)}
+          desc={intl.formatMessage({ id: item.desc })}
         />
       ))}
     </YStack>
@@ -110,11 +120,15 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
   }
   if (factor.exposureType === 'direct') {
     meta.push(
-      formatAddressRiskCopy('address_risk_check_exposure_direct__title'),
+      intl.formatMessage({
+        id: ETranslations.address_risk_check_exposure_direct__title,
+      }),
     );
   } else if (factor.exposureType === 'indirect') {
     meta.push(
-      formatAddressRiskCopy('address_risk_check_exposure_indirect__title'),
+      intl.formatMessage({
+        id: ETranslations.address_risk_check_exposure_indirect__title,
+      }),
     );
     if (factor.hops !== undefined) {
       meta.push(
@@ -165,14 +179,15 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
 }
 
 export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
+  const intl = useIntl();
   const [expanded, setExpanded] = useState(false);
   const display = useMemo(() => getRiskFactorDisplay(factors), [factors]);
   const visibleFactors = expanded
     ? display.sorted
     : display.sorted.slice(0, display.visibleCount);
-  const title = formatAddressRiskCopy(
-    'address_risk_check_exposure_breakdown__title',
-  );
+  const title = intl.formatMessage({
+    id: ETranslations.address_risk_check_exposure_breakdown__title,
+  });
 
   return (
     <YStack gap="$2.5">
@@ -211,10 +226,12 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
           cursor="default"
           onPress={() => setExpanded(true)}
         >
-          {formatAddressRiskCopy(
-            display.hiddenAllMinor
-              ? 'address_risk_check_show_more_minor_exposures__action'
-              : 'address_risk_check_show_more_exposures__action',
+          {intl.formatMessage(
+            {
+              id: display.hiddenAllMinor
+                ? ETranslations.address_risk_check_show_more_minor_exposures__action
+                : ETranslations.address_risk_check_show_more_exposures__action,
+            },
             { count: display.hiddenCount },
           )}
         </Button>

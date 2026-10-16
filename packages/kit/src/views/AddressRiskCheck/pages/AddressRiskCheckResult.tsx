@@ -41,7 +41,6 @@ import { CardRow, LEVEL_TEXT_COLOR } from '../components/RiskCheckShared';
 import { RiskExposureList } from '../components/RiskExposureList';
 import { RiskScoreMeter } from '../components/RiskScoreMeter';
 import { useAddressRiskCheckRequest } from '../hooks/useCheckAddressRisk';
-import { formatAddressRiskCopy } from '../utils/addressRiskCheckCopy';
 import {
   formatRiskPercent,
   getAddressRiskCheckPendingMessageIds,
@@ -49,7 +48,6 @@ import {
   getRiskExposureStats,
 } from '../utils/addressRiskCheckResultUtils';
 
-import type { IAddressRiskCheckCopyKey } from '../utils/addressRiskCheckCopy';
 import type { IAddressRiskSummaryVariant } from '../utils/addressRiskCheckResultUtils';
 import type { RouteProp } from '@react-navigation/core';
 
@@ -70,27 +68,27 @@ const FALLBACK_LEVEL_CONTENT: Partial<
 
 const SUMMARY_CONTENT: Record<
   Exclude<IAddressRiskSummaryVariant, 'unknown'>,
-  { title: ETranslations; description: IAddressRiskCheckCopyKey }
+  { title: ETranslations; description: ETranslations }
 > = {
   clean: {
     title: ETranslations.kyt_no_significant_risk_detected__title,
-    description: 'address_risk_check_level_clean__desc',
+    description: ETranslations.address_risk_check_summary_clean__desc,
   },
   low: {
     title: ETranslations.kyt_low_risk_detected__title,
-    description: 'address_risk_check_level_low__desc',
+    description: ETranslations.address_risk_check_summary_low__desc,
   },
   moderate: {
     title: ETranslations.kyt_moderate_risk_detected__title,
-    description: 'address_risk_check_level_moderate__desc',
+    description: ETranslations.address_risk_check_summary_moderate__desc,
   },
   high: {
     title: ETranslations.kyt_high_risk_detected__title,
-    description: 'address_risk_check_level_high__desc',
+    description: ETranslations.address_risk_check_summary_high__desc,
   },
   severe: {
     title: ETranslations.kyt_severe_risk_detected__title,
-    description: 'address_risk_check_level_severe__desc',
+    description: ETranslations.address_risk_check_summary_severe__desc,
   },
 };
 
@@ -155,7 +153,7 @@ function AddressRiskCheckResultContent({
           ETranslations.address_risk_check_level_failed__title,
       });
   const descriptionText = summaryContent
-    ? formatAddressRiskCopy(summaryContent.description)
+    ? intl.formatMessage({ id: summaryContent.description })
     : intl.formatMessage({
         id:
           fallbackContent?.description ??
@@ -236,12 +234,12 @@ function AddressRiskCheckResultContent({
       closePageStack: (extra?: { flag?: string }) => void,
     ) => {
       Dialog.show({
-        title: formatAddressRiskCopy(
-          'address_risk_check_continue_high_risk__title',
-        ),
-        description: formatAddressRiskCopy(
-          'address_risk_check_exchange_flag__desc',
-        ),
+        title: intl.formatMessage({
+          id: ETranslations.address_risk_check_continue_high_risk__title,
+        }),
+        description: intl.formatMessage({
+          id: ETranslations.address_risk_check_exchange_flag__desc,
+        }),
         tone: 'warning',
         icon: 'ErrorOutline',
         onConfirmText: intl.formatMessage({
@@ -332,14 +330,12 @@ function AddressRiskCheckResultContent({
                     <SizableText size="$bodyMd" flex={1}>
                       {result.level === EKytRiskLevel.Severe ? (
                         <SizableText size="$bodyMdMedium">
-                          {`${formatAddressRiskCopy(
-                            'address_risk_check_severe_advice__desc',
-                          )} `}
+                          {`${intl.formatMessage({ id: ETranslations.address_risk_check_severe_advice__desc })} `}
                         </SizableText>
                       ) : null}
-                      {formatAddressRiskCopy(
-                        'address_risk_check_exchange_flag__desc',
-                      )}
+                      {intl.formatMessage({
+                        id: ETranslations.address_risk_check_exchange_flag__desc,
+                      })}
                     </SizableText>
                   </XStack>
                 ) : null}
@@ -367,21 +363,21 @@ function AddressRiskCheckResultContent({
                   {stats.total > 0 ? (
                     <XStack gap="$3">
                       <StatItem
-                        label={formatAddressRiskCopy(
-                          'address_risk_check_stats_exposures__title',
-                        )}
+                        label={intl.formatMessage({
+                          id: ETranslations.address_risk_check_stats_exposures__title,
+                        })}
                         value={String(stats.total)}
                       />
                       <StatItem
-                        label={formatAddressRiskCopy(
-                          'address_risk_check_stats_direct__title',
-                        )}
+                        label={intl.formatMessage({
+                          id: ETranslations.address_risk_check_exposure_direct__title,
+                        })}
                         value={String(stats.direct)}
                       />
                       <StatItem
-                        label={formatAddressRiskCopy(
-                          'address_risk_check_stats_largest_share__title',
-                        )}
+                        label={intl.formatMessage({
+                          id: ETranslations.address_risk_check_stats_largest_share__title,
+                        })}
                         value={formatRiskPercent(stats.largestPercent)}
                       />
                     </XStack>
@@ -509,11 +505,15 @@ function AddressRiskCheckResultContent({
 
             <SizableText size="$bodySm" color="$textSubdued">
               {providerName
-                ? formatAddressRiskCopy(
-                    'address_risk_check_source_disclaimer__desc',
+                ? intl.formatMessage(
+                    {
+                      id: ETranslations.address_risk_check_source_disclaimer__desc,
+                    },
                     { provider: providerName },
                   )
-                : formatAddressRiskCopy('address_risk_check_disclaimer__desc')}
+                : intl.formatMessage({
+                    id: ETranslations.address_risk_check_disclaimer__desc,
+                  })}
             </SizableText>
           </YStack>
         </ScrollView>

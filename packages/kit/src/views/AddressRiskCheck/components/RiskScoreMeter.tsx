@@ -2,10 +2,10 @@ import { useIntl } from 'react-intl';
 
 import type { ColorTokens } from '@onekeyhq/components';
 import { Popover, SizableText, XStack, YStack } from '@onekeyhq/components';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 
-import { formatAddressRiskCopy } from '../utils/addressRiskCheckCopy';
 import {
   RISK_SCORE_BANDS,
   getRiskScoreMeterPosition,
@@ -43,11 +43,15 @@ function RiskScoreTooltipContent() {
       maxWidth={360}
     >
       <SizableText size="$bodyMd">
-        {formatAddressRiskCopy('address_risk_check_score_tooltip__desc')}
+        {intl.formatMessage({
+          id: ETranslations.address_risk_check_score_tooltip__desc,
+        })}
       </SizableText>
       <YStack gap="$2">
         <SizableText size="$headingSm" color="$textSubdued">
-          {formatAddressRiskCopy('address_risk_check_score_ranges__title')}
+          {intl.formatMessage({
+            id: ETranslations.address_risk_check_score_ranges__title,
+          })}
         </SizableText>
         {RISK_SCORE_BANDS.map((band) => (
           <XStack key={band.level} ai="center" jc="space-between" gap="$4">
@@ -90,7 +94,9 @@ export function RiskScoreMeter({
   const highlightIndex = RISK_SCORE_BANDS.some((band) => band.level === level)
     ? activeBandIndex
     : bandIndex;
-  const scoreTitle = formatAddressRiskCopy('address_risk_check_score__title');
+  const scoreTitle = intl.formatMessage({
+    id: ETranslations.address_risk_check_score__title,
+  });
 
   return (
     <YStack gap="$2.5">
