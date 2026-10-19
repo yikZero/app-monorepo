@@ -2428,7 +2428,7 @@
   "kyt_risk_level_low__desc": "未发现明显高风险来源",
   "kyt_risk_level_low__title": "低",
   "kyt_risk_level_moderate__desc": "发现一定资金来源风险",
-  "kyt_risk_level_moderate__title": "中等",
+  "kyt_risk_level_moderate__title": "中",
   "kyt_risk_level_none__desc": "未发现明显风险",
   "kyt_risk_level_none__title": "无",
   "kyt_risk_level_severe__desc": "关联严重风险资金来源",
