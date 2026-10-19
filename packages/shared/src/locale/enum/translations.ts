@@ -155,6 +155,7 @@ export enum ETranslations {
   address_risk_check_level_severe__title = 'address_risk_check_level_severe__title',
   address_risk_check_loading__desc = 'address_risk_check_loading__desc',
   address_risk_check_more_analysis__action = 'address_risk_check_more_analysis__action',
+  address_risk_check_more_analysis__desc = 'address_risk_check_more_analysis__desc',
   address_risk_check_no_platform_signals__desc = 'address_risk_check_no_platform_signals__desc',
   address_risk_check_phishing__title = 'address_risk_check_phishing__title',
   address_risk_check_platform_profile__title = 'address_risk_check_platform_profile__title',
