@@ -1,13 +1,14 @@
 import { useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 import { StyleSheet } from 'react-native';
 
 import {
-  Button,
   Dialog,
   Divider,
+  Icon,
   IconButton,
   Illustration,
   LottieView,
@@ -106,7 +107,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
-    <YStack flex={1} gap="$0.5" minWidth={0}>
+    <YStack gap="$0.5" flexShrink={1} minWidth={0}>
       <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
         {label}
       </SizableText>
@@ -148,7 +149,7 @@ function AddressRiskCheckResultContent({
   const summaryContent = SUMMARY_CONTENT[variant];
   const titleText = intl.formatMessage({ id: summaryContent.title });
   const isTaggedAddress = isRiskTaggedAddress(result.reasons);
-  let descriptionText: string | undefined;
+  let descriptionText: ReactNode;
   if (isTaggedAddress) {
     // Name the tag instead of describing exposures the page no longer lists.
     const tags = Array.from(
@@ -160,9 +161,16 @@ function AddressRiskCheckResultContent({
         ),
       ),
     );
+    // The tag is the key fact, so it reads stronger than the sentence.
     descriptionText = intl.formatMessage(
       { id: ETranslations.address_risk_check_tagged_address__desc },
-      { tags: tags.join(', ') },
+      {
+        tags: (
+          <SizableText key="tags" size="$bodyMdMedium" color="$text">
+            {tags.join(', ')}
+          </SizableText>
+        ),
+      },
     );
   } else if (summaryContent.description) {
     descriptionText = intl.formatMessage({ id: summaryContent.description });
@@ -339,7 +347,7 @@ function AddressRiskCheckResultContent({
                   ) : null}
                   {score !== undefined && showExposures ? <Divider /> : null}
                   {showExposures ? (
-                    <XStack gap="$3">
+                    <XStack gap="$8">
                       <StatItem
                         label={intl.formatMessage({
                           id: ETranslations.address_risk_check_stats_exposures__title,
@@ -458,21 +466,36 @@ function AddressRiskCheckResultContent({
                   {checkedAtText}
                 </SizableText>
               </CardRow>
+              {canViewReport ? (
+                <>
+                  <Divider />
+                  <XStack
+                    testID="address-risk-check-view-report"
+                    role="button"
+                    px="$4"
+                    py="$2.5"
+                    ai="center"
+                    jc="space-between"
+                    gap="$2"
+                    userSelect="none"
+                    hoverStyle={{ bg: '$bgHover' }}
+                    pressStyle={{ bg: '$bgActive' }}
+                    onPress={handleViewReport}
+                  >
+                    <SizableText size="$bodyMd">
+                      {intl.formatMessage({
+                        id: ETranslations.kyt_view_report__action,
+                      })}
+                    </SizableText>
+                    <Icon
+                      name="ArrowTopRightOutline"
+                      size="$4"
+                      color="$iconSubdued"
+                    />
+                  </XStack>
+                </>
+              ) : null}
             </YStack>
-
-            {canViewReport ? (
-              <Button
-                testID="address-risk-check-view-report"
-                variant="secondary"
-                size="large"
-                iconAfter="ArrowTopRightOutline"
-                onPress={handleViewReport}
-              >
-                {intl.formatMessage({
-                  id: ETranslations.kyt_view_report__action,
-                })}
-              </Button>
-            ) : null}
 
             {showMoreAnalysis ? (
               <AddressRiskMoreAnalysis
