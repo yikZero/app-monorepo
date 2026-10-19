@@ -22,6 +22,19 @@ export const KYT_LEVEL_TEXT_COLOR: Record<EKytRiskLevel, ColorTokens> = {
   [EKytRiskLevel.Severe]: '$textCritical',
 };
 
+// Solid fills for the four scored levels (score meter segments and dots).
+// Moderate uses amber instead of the semantic caution fill: that pale lemon
+// nearly disappears on light cards, while amber stays visible and still reads
+// clearly apart from the High orange in both themes.
+export const KYT_LEVEL_SOLID_COLOR: Partial<
+  Record<EKytRiskLevel, ColorTokens>
+> = {
+  [EKytRiskLevel.Low]: '$bgSuccessStrong',
+  [EKytRiskLevel.Moderate]: '$amber9',
+  [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.solid,
+  [EKytRiskLevel.Severe]: '$bgCriticalStrong',
+};
+
 // Badge has no orange type: High keeps its badge type and overrides the frame
 // (`bg`) and text (`color`) colors. Other levels use the badge type as is.
 export function getKytBadgeColorOverride(

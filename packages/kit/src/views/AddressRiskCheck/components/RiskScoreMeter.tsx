@@ -1,14 +1,13 @@
 import { useIntl } from 'react-intl';
 
-import type { ColorTokens } from '@onekeyhq/components';
 import { Popover, SizableText, XStack, YStack } from '@onekeyhq/components';
 import {
-  KYT_HIGH_RISK_COLOR,
+  KYT_LEVEL_SOLID_COLOR,
   KYT_LEVEL_TEXT_COLOR,
 } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
+import type { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 
 import {
   RISK_SCORE_BANDS,
@@ -16,13 +15,6 @@ import {
 } from '../utils/addressRiskCheckResultUtils';
 
 import { LEVEL_TITLE } from './RiskCheckShared';
-
-const BAND_COLOR: Partial<Record<EKytRiskLevel, ColorTokens>> = {
-  [EKytRiskLevel.Low]: '$bgSuccessStrong',
-  [EKytRiskLevel.Moderate]: '$bgCautionStrong',
-  [EKytRiskLevel.High]: KYT_HIGH_RISK_COLOR.solid,
-  [EKytRiskLevel.Severe]: '$bgCriticalStrong',
-};
 
 function formatBandRange(band: (typeof RISK_SCORE_BANDS)[number]) {
   const min = band.min === 0 ? 0 : band.min + 1;
@@ -57,7 +49,7 @@ function RiskScoreTooltipContent() {
                 w="$2"
                 h="$2"
                 borderRadius="$full"
-                bg={BAND_COLOR[band.level]}
+                bg={KYT_LEVEL_SOLID_COLOR[band.level]}
               />
               <SizableText size="$bodyMd">
                 {intl.formatMessage({ id: LEVEL_TITLE[band.level] })}
@@ -125,7 +117,9 @@ export function RiskScoreMeter({
               flex={1}
               borderRadius="$full"
               bg={
-                index === highlightIndex ? BAND_COLOR[band.level] : '$neutral3'
+                index === highlightIndex
+                  ? KYT_LEVEL_SOLID_COLOR[band.level]
+                  : '$neutral3'
               }
             />
           ))}

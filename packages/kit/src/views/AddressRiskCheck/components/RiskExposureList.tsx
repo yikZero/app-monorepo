@@ -63,7 +63,11 @@ function GlossaryRow({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-function ExposureGlossaryContent() {
+function ExposureGlossaryContent({
+  categories,
+}: {
+  categories: typeof CATEGORY_GLOSSARY;
+}) {
   const intl = useIntl();
   return (
     <YStack
@@ -97,8 +101,8 @@ function ExposureGlossaryContent() {
           id: ETranslations.address_risk_check_exposure_share__desc,
         })}
       />
-      <Divider />
-      {CATEGORY_GLOSSARY.map((item) => (
+      {categories.length ? <Divider /> : null}
+      {categories.map((item) => (
         <GlossaryRow
           key={item.category}
           title={formatKytRiskFactorCategory({
@@ -111,10 +115,6 @@ function ExposureGlossaryContent() {
     </YStack>
   );
 }
-
-// Static element so the popover keeps a stable content reference across
-// parent re-renders.
-const EXPOSURE_GLOSSARY_CONTENT = <ExposureGlossaryContent />;
 
 function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
   const intl = useIntl();
@@ -186,6 +186,18 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
   const intl = useIntl();
   const [expanded, setExpanded] = useState(false);
   const display = useMemo(() => getRiskFactorDisplay(factors), [factors]);
+  // Only explain the categories this result contains, so the popover stays
+  // short; memoized to keep a stable popover content reference.
+  const glossaryContent = useMemo(() => {
+    const present = new Set(factors.map((factor) => factor.category));
+    return (
+      <ExposureGlossaryContent
+        categories={CATEGORY_GLOSSARY.filter((item) =>
+          present.has(item.category),
+        )}
+      />
+    );
+  }, [factors]);
   const visibleFactors = expanded
     ? display.sorted
     : display.sorted.slice(0, display.visibleCount);
@@ -203,7 +215,7 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
           title={title}
           placement="bottom"
           iconSize="$4"
-          renderContent={EXPOSURE_GLOSSARY_CONTENT}
+          renderContent={glossaryContent}
           triggerProps={{ testID: 'address-risk-check-exposure-info' }}
         />
       </XStack>
