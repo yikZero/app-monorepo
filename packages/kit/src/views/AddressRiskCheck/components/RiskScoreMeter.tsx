@@ -24,13 +24,7 @@ function formatBandRange(band: (typeof RISK_SCORE_BANDS)[number]) {
 function RiskScoreTooltipContent() {
   const intl = useIntl();
   return (
-    <YStack
-      px="$5"
-      pb="$5"
-      pt={platformEnv.isNative ? '$0' : '$5'}
-      gap="$4"
-      maxWidth={360}
-    >
+    <YStack px="$5" pb="$5" pt={platformEnv.isNative ? '$0' : '$5'} gap="$4">
       <SizableText size="$bodyMd">
         {intl.formatMessage({
           id: ETranslations.address_risk_check_score_tooltip__desc,
