@@ -9,6 +9,7 @@ import {
   getRiskExposureStats,
   getRiskFactorDisplay,
   getRiskScoreMeterPosition,
+  isLowShareRiskFactor,
   isRiskTaggedAddress,
 } from './addressRiskCheckResultUtils';
 
@@ -192,5 +193,17 @@ describe('isRiskTaggedAddress', () => {
         factor({ exposureType: 'direct', amountUsd: 75_130, percent: 100 }),
       ]),
     ).toBe(false);
+  });
+});
+
+describe('isLowShareRiskFactor', () => {
+  it.each([
+    [0.44, true],
+    [0.999, true],
+    [1, false],
+    [14.48, false],
+    [undefined, false],
+  ] as const)('share %s -> %s', (percent, expected) => {
+    expect(isLowShareRiskFactor(factor({ percent }))).toBe(expected);
   });
 });

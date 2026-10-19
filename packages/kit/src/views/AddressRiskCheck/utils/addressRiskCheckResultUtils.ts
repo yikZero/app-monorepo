@@ -31,6 +31,9 @@ export function getAddressRiskCheckPendingMessageIds({
 // Exposures below this share (in percent) are usually dust, spam, or address
 // poisoning transfers the owner did not initiate; they are folded by default.
 const MINOR_EXPOSURE_PERCENT = 0.1;
+// Exposures under this share stay listed but are de-emphasized, so a small
+// share does not read as alarming as a large one with the same label.
+const LOW_SHARE_EXPOSURE_PERCENT = 1;
 const MIN_VISIBLE_EXPOSURES = 3;
 const MAX_VISIBLE_EXPOSURES = 5;
 
@@ -89,6 +92,12 @@ function sortRiskFactors(factors: IKytRiskFactor[]): IKytRiskFactor[] {
 function isMinorRiskFactor(factor: IKytRiskFactor) {
   return (
     factor.percent !== undefined && factor.percent < MINOR_EXPOSURE_PERCENT
+  );
+}
+
+export function isLowShareRiskFactor(factor: IKytRiskFactor) {
+  return (
+    factor.percent !== undefined && factor.percent < LOW_SHARE_EXPOSURE_PERCENT
   );
 }
 

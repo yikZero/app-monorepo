@@ -23,6 +23,7 @@ import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 import {
   formatRiskPercent,
   getRiskFactorDisplay,
+  isLowShareRiskFactor,
 } from '../utils/addressRiskCheckResultUtils';
 
 const CATEGORY_GLOSSARY: {
@@ -141,14 +142,21 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
     }
   }
 
+  const primaryColor = isLowShareRiskFactor(factor) ? '$textSubdued' : '$text';
+
   return (
     <YStack px="$4" py="$3" gap="$0.5">
       <XStack ai="center" jc="space-between" gap="$3">
-        <SizableText size="$bodyMdMedium" flexShrink={1} numberOfLines={1}>
+        <SizableText
+          size="$bodyMdMedium"
+          color={primaryColor}
+          flexShrink={1}
+          numberOfLines={1}
+        >
           {formatKytRiskFactorCategory({ category: factor.category, intl })}
         </SizableText>
         {factor.percent !== undefined ? (
-          <SizableText size="$bodyMdMedium">
+          <SizableText size="$bodyMdMedium" color={primaryColor}>
             {formatRiskPercent(factor.percent)}
           </SizableText>
         ) : null}
