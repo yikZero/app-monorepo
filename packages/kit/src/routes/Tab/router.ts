@@ -27,6 +27,7 @@ import { marketRouters } from './Marktet/router';
 import { multiTabBrowserRouters } from './MultiTabBrowser/router';
 import { referFriendsRouters } from './ReferFriends/router';
 import { swapRouters } from './Swap/router';
+import { getTabVisibility } from './tabVisibility';
 
 // Native tab icons using SVG files from @onekeyhq/components/svg
 // The native tab bar will tint icons using tabBarActiveTintColor/tabBarInactiveTintColor
@@ -88,9 +89,7 @@ const getDiscoverRouterConfig = (
   tabBarIcon: (focused?: boolean) =>
     focused ? 'CompassSolid' : 'CompassOutline',
   nativeTabBarIcon: nativeTabIcons.discover,
-  translationId: platformEnv.isNative
-    ? ETranslations.global_discover
-    : ETranslations.global_browser,
+  translationId: getTabVisibility({ md: false }).discoverTranslationId,
   freezeOnBlur: Boolean(params?.freezeOnBlur),
   children: discoveryRouters,
   tabBarStyle,
@@ -101,17 +100,13 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
   const { md } = useMedia();
 
   const { isModalStack } = useDeviceManagerModalStyle();
-  const isShowDesktopDiscover = platformEnv.isDesktop;
   const isWebDappMode = platformEnv.isWebDappMode;
-  const isShowMDDiscover =
-    !isShowDesktopDiscover &&
-    !platformEnv.isWebDappMode &&
-    !platformEnv.isExtensionUiPopup &&
-    !(platformEnv.isExtensionUiSidePanel && md);
-
-  const shouldShowMarketTab = !(
-    platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel
-  );
+  const {
+    isShowDesktopDiscover,
+    isShowMDDiscover,
+    shouldShowMarketTab,
+    isMarketTabIconHidden,
+  } = getTabVisibility({ md });
 
   const { perpDisabled, perpTabShowWeb } = usePerpTabConfig();
   const handleMarketTabPress = useCallback(() => {
@@ -170,8 +165,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
             exact: true,
             children: marketRouters,
             trackId: 'global-market',
-            // Hide Market tab on mobile (merged into Discovery)
-            hiddenIcon: platformEnv.isNative,
+            hiddenIcon: isMarketTabIconHidden,
             // Only apply custom tab press handler for non-mobile platforms
             ...(platformEnv.isDesktop ||
             platformEnv.isWeb ||
@@ -278,6 +272,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
     params,
     isWebDappMode,
     shouldShowMarketTab,
+    isMarketTabIconHidden,
     handleMarketTabPress,
     perpTabShowWeb,
     perpDisabled,

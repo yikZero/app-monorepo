@@ -1,5 +1,5 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef } from 'react';
-import type { PropsWithChildren } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 
 import { useFocusEffect } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
@@ -36,14 +36,10 @@ import {
   useMedia,
   usePopoverContext,
 } from '@onekeyhq/components';
-import GiftExpandOnDark from '@onekeyhq/kit/assets/animations/gift-expand-on-dark.json';
-import GiftExpandOnLight from '@onekeyhq/kit/assets/animations/gift-expand-on-light.json';
 import { getDisplayEmailOrUnknown } from '@onekeyhq/kit/src/components/OneKeyAuth/oneKeyIdDisplayEmailUtils';
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
-import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
 import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector/atoms';
-import { useHomeTokenListSnapshot } from '@onekeyhq/kit/src/states/jotai/contexts/tokenList/cells';
 import { HomeTokenListProviderMirror } from '@onekeyhq/kit/src/views/Home/components/HomeTokenListProvider/HomeTokenListProviderMirror';
 import {
   useHardwareWalletXfpStatusAtom,
@@ -65,36 +61,27 @@ import {
   ESettingsTabNames,
   ETabRoutes,
 } from '@onekeyhq/shared/src/routes';
-import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
-import { EModalBulkCopyAddressesRoutes } from '@onekeyhq/shared/src/routes/bulkCopyAddresses';
 import {
   EActionCenterPages,
   EFullScreenPushRoutes,
 } from '@onekeyhq/shared/src/routes/fullScreenPush';
-import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
+import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
+import { formatDistanceToNow } from '@onekeyhq/shared/src/utils/dateUtils';
 import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import extUtils from '@onekeyhq/shared/src/utils/extUtils';
-import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
-import { EPrimeFreeTrialPendingActionType } from '@onekeyhq/shared/types/prime/primeFreeTrialTypes';
 
 import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import { useOnLock } from '../../hooks/useOnLock';
 import { usePromiseResult } from '../../hooks/usePromiseResult';
-import { useReferFriends } from '../../hooks/useReferFriends';
 import { useThemeVariant } from '../../hooks/useThemeVariant';
 import { getDeviceManagementWallets } from '../../states/jotai/contexts/deviceDetails/deviceStateManagement';
-import { canAccessBulkSend } from '../../views/BulkSend/access';
-import { useBulkSendModeDialog } from '../../views/BulkSend/hooks/useBulkSendModeDialog';
-import { useNavigateToBulkSend } from '../../views/BulkSend/hooks/useNavigateToBulkSend';
 import { useDeviceManagerNavigation } from '../../views/DeviceManagement/hooks/useDeviceManagerNavigation';
 import { useFirmwareUpdateDetectStatus } from '../../views/FirmwareUpdate/hooks/useFirmwareUpdateDetectStatus';
 import { WalletXfpStatusReminder } from '../../views/Home/components/WalletXfpStatusReminder/WalletXfpStatusReminder';
 import { usePrimeAvailable } from '../../views/Prime/hooks/usePrimeAvailable';
-import { usePrimeFeatureAccess } from '../../views/Prime/hooks/usePrimeFeatureAccess';
-import useScanQrCodeLazy from '../../views/ScanQrCode/hooks/useScanQrCodeLazy';
 import { logSettingCategoryOpened } from '../../views/Setting/pages/Tab/settingsAnalytics';
 import { AccountSelectorProviderMirror } from '../AccountSelector/AccountSelectorProvider';
 import {
@@ -108,8 +95,24 @@ import { useReviewControl } from '../ReviewControl';
 import { UpdateReminder } from '../UpdateReminder';
 import { WalletAvatar } from '../WalletAvatar';
 
-import { buildMoreActionGridLayout } from './gridLayout';
+import {
+  buildMoreActionGridLayout,
+  isMoreActionItemVisible,
+} from './gridLayout';
+import {
+  ERecentFeatureId,
+  isRecentFeatureId,
+  selectDisplayedRecentFeatures,
+} from './recentFeatures/recentFeatureRoutes';
+import { useRecentFeatureItems } from './recentFeatures/useRecentFeatureItems';
+import { TRAVEL_MODE_IGNORED_MORE_ACTIONS } from './types';
+import {
+  useMoreActionFeatureItems,
+  useMoreActionScan,
+} from './useMoreActionFeatureItems';
 
+import type { IMoreActionContentGridItemProps } from './types';
+import type { IMoreActionFeatureItems } from './useMoreActionFeatureItems';
 import type { IDeviceManagementListItem } from '../../views/DeviceManagement/pages/DeviceManagementListModal';
 import type { GestureResponderEvent } from 'react-native';
 
@@ -236,27 +239,13 @@ function MoreActionContentHeader({
     void showIntercom();
   }, [isTravelMode]);
 
-  const {
-    activeAccount: { account, network },
-  } = useActiveAccount({ num: 0 });
-  const { tokens, keys, map } = useHomeTokenListSnapshot();
-  const scanQrCode = useScanQrCodeLazy();
+  const scan = useMoreActionScan();
   const { closePopover } = usePopoverContext();
 
   const handleScan = useCallback(async () => {
     await closePopover?.();
-    await scanQrCode.start({
-      handlers: scanQrCode.PARSE_HANDLER_NAMES.all,
-      autoExecuteParsedAction: true,
-      account,
-      network,
-      tokens: {
-        data: tokens,
-        keys,
-        map,
-      },
-    });
-  }, [closePopover, scanQrCode, account, network, tokens, keys, map]);
+    await scan();
+  }, [closePopover, scan]);
 
   const popupMenu = useMemo(() => {
     if (platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel) {
@@ -510,21 +499,6 @@ function MoreActionAboutCard({
   );
 }
 
-interface IMoreActionContentGridItemProps {
-  title: IIconButtonProps['title'];
-  icon?: IIconButtonProps['icon'];
-  testID?: string;
-  trackID: string;
-  onPress: () => void;
-  ignorePress?: boolean;
-  showRedDot?: boolean;
-  showBadges?: boolean;
-  badges?: number;
-  lottieSrc?: any;
-  isPrimeFeature?: boolean;
-  hidePrimeBadge?: boolean;
-}
-
 function MoreActionContentGridItem({
   title,
   icon,
@@ -538,6 +512,7 @@ function MoreActionContentGridItem({
   lottieSrc,
   isPrimeFeature,
   hidePrimeBadge,
+  subtitle,
   isDesktopMode,
   isDarkTheme,
 }: IMoreActionContentGridItemProps & {
@@ -712,6 +687,16 @@ function MoreActionContentGridItem({
         >
           {title}
         </SizableText>
+        {subtitle ? (
+          <SizableText
+            size="$bodySm"
+            color="$textDisabled"
+            numberOfLines={1}
+            textAlign="center"
+          >
+            {subtitle}
+          </SizableText>
+        ) : null}
       </YStack>
     </YStack>
   );
@@ -981,24 +966,16 @@ function UpdateReminders() {
   ) : null;
 }
 
-const TRAVEL_MODE_IGNORED_MORE_ACTIONS = new Set([
-  'wallet-customer-support',
-  'wallet-lock-now',
-  'wallet-backup',
-  'wallet-address-book',
-  'wallet-network',
-  'wallet-referral',
-  'wallet-redeem',
-]);
-
 function BaseMoreActionGrid({
   title,
   items,
   onTitleMultipleClick,
+  headerRight,
 }: {
   title: string;
   items: IMoreActionContentGridItemProps[];
   onTitleMultipleClick?: () => void;
+  headerRight?: ReactNode;
 }) {
   const { isPrimeAvailable } = usePrimeAvailable();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
@@ -1036,11 +1013,15 @@ function BaseMoreActionGrid({
     return null;
   }
 
+  const headerEndPadding = headerRight ? '$5' : '$0';
+
   return (
     <YStack gap={isDesktopMode ? '$0.5' : '$1'}>
       <XStack
-        pl={I18nManager.isRTL ? '$0' : '$6'}
-        pr={I18nManager.isRTL ? '$6' : '$0'}
+        pl={I18nManager.isRTL ? headerEndPadding : '$6'}
+        pr={I18nManager.isRTL ? '$6' : headerEndPadding}
+        jc="space-between"
+        ai="center"
       >
         {onTitleMultipleClick ? (
           <MultipleClickStack onPress={onTitleMultipleClick}>
@@ -1049,6 +1030,7 @@ function BaseMoreActionGrid({
         ) : (
           titleContent
         )}
+        {headerRight}
       </XStack>
       <YStack gap={isDesktopMode ? '$2' : '$3'}>
         {rows.map((row, rowIndex) => (
@@ -1078,7 +1060,11 @@ function BaseMoreActionGrid({
   );
 }
 
-function MoreActionGeneralGrid() {
+function MoreActionGeneralGrid({
+  featureItems,
+}: {
+  featureItems: IMoreActionFeatureItems;
+}) {
   const intl = useIntl();
   const navigation = useAppNavigation();
   const onLock = useOnLock();
@@ -1099,36 +1085,6 @@ function MoreActionGeneralGrid() {
     await onLock();
   }, [isTravelMode, onLock]);
 
-  const {
-    activeAccount: { account, network },
-  } = useActiveAccount({ num: 0 });
-  const scanQrCode = useScanQrCodeLazy();
-
-  const { tokens, keys, map } = useHomeTokenListSnapshot();
-
-  const handleScan = useCallback(async () => {
-    await scanQrCode.start({
-      handlers: scanQrCode.PARSE_HANDLER_NAMES.all,
-      autoExecuteParsedAction: true,
-      account,
-      network,
-      tokens: {
-        data: tokens,
-        keys,
-        map,
-      },
-    });
-  }, [scanQrCode, account, network, tokens, keys, map]);
-
-  const handlePrime = useCallback(() => {
-    navigation.pushFullModal(EModalRoutes.PrimeModal, {
-      screen: EPrimePages.PrimeDashboard,
-      params: {
-        networkId: network?.id,
-      },
-    });
-  }, [navigation, network?.id]);
-
   const items = useMemo(() => {
     return [
       {
@@ -1137,23 +1093,8 @@ function MoreActionGeneralGrid() {
         onPress: handleSettings,
         trackID: 'wallet-settings',
       },
-      {
-        title: intl.formatMessage({ id: ETranslations.scan_scan_qr_code }),
-        icon: 'ScanOutline' as const,
-        onPress: handleScan,
-        trackID: 'wallet-scan',
-      },
-      !platformEnv.isWebDappMode
-        ? {
-            title: 'Prime',
-            icon: 'PrimeOutline' as const,
-            onPress: handlePrime,
-            testID: 'wallet-prime',
-            trackID: 'wallet-prime',
-            isPrimeFeature: true,
-            hidePrimeBadge: true,
-          }
-        : undefined,
+      featureItems[ERecentFeatureId.Scan],
+      featureItems[ERecentFeatureId.Prime],
       !platformEnv.isWebDappMode
         ? {
             title: intl.formatMessage({ id: ETranslations.settings_lock_now }),
@@ -1164,7 +1105,7 @@ function MoreActionGeneralGrid() {
           }
         : undefined,
     ].filter(Boolean);
-  }, [handleLock, handlePrime, handleScan, handleSettings, intl, isTravelMode]);
+  }, [featureItems, handleLock, handleSettings, intl, isTravelMode]);
   return (
     <BaseMoreActionGrid
       title={intl.formatMessage({ id: ETranslations.global_general })}
@@ -1176,307 +1117,33 @@ function MoreActionGeneralGrid() {
   );
 }
 
-type IMoreActionActiveContext = {
-  walletId?: string;
-  networkId?: string;
-  accountId?: string;
-  indexedAccountId?: string;
-};
-
-const MoreActionWalletGrid = () => {
+function MoreActionWalletGrid({
+  featureItems,
+}: {
+  featureItems: IMoreActionFeatureItems;
+}) {
   const intl = useIntl();
-  const navigation = useAppNavigation();
-  const navigateToBulkSend = useNavigateToBulkSend();
-  const showBulkSendModeDialog = useBulkSendModeDialog();
-  const openSettingsCategory = useCallback(
-    (category: ESettingsTabNames) => {
-      logSettingCategoryOpened({
-        category,
-        source: 'moreActions',
-      });
-      navigation.pushModal(EModalRoutes.SettingModal, {
-        screen: EModalSettingRoutes.SettingListSubModal,
-        params: {
-          name: category,
-        },
-      });
-    },
-    [navigation],
+  const items = useMemo(
+    () =>
+      [
+        featureItems[ERecentFeatureId.SettingBackup],
+        featureItems[ERecentFeatureId.AddressBook],
+        featureItems[ERecentFeatureId.SettingNetwork],
+        featureItems[ERecentFeatureId.SettingPreferences],
+        featureItems[ERecentFeatureId.SettingSecurity],
+        featureItems[ERecentFeatureId.BulkCopyAddresses],
+        featureItems[ERecentFeatureId.BulkSend],
+        featureItems[ERecentFeatureId.AddressRiskCheck],
+      ].filter(Boolean),
+    [featureItems],
   );
-  const onPressAddressBook = useShowAddressBook({
-    useNewModal: true,
-  });
-  const handleAddressBook = useCallback(() => {
-    void onPressAddressBook(navigation);
-  }, [onPressAddressBook, navigation]);
-
-  const { user, isPrimeActive, isPrimeSubscriptionActive } = useOneKeyAuth();
-  const isPrimeUser = isPrimeActive && user?.onekeyUserId;
-  // Access without free-trial metering (E2E / Prime); free users go through
-  // the gate.
-  const hasBulkSendAccess = canAccessBulkSend({
-    isE2E: platformEnv.isE2E === true,
-    isPrimeActive: Boolean(isPrimeSubscriptionActive),
-    oneKeyUserId: user?.onekeyUserId,
-  });
-  const {
-    activeAccount: { account, network, wallet, indexedAccount },
-  } = useActiveAccount({ num: 0 });
-  const { ensureFeatureAccess } = usePrimeFeatureAccess();
-  // Latest selection, compared after the gate's async steps so a changed
-  // context does not continue the old action. Each entry passes the parts it
-  // acts on.
-  const activeContextRef = useRef<IMoreActionActiveContext>({});
-  activeContextRef.current = {
-    walletId: wallet?.id,
-    networkId: network?.id,
-    accountId: account?.id,
-    indexedAccountId: indexedAccount?.id,
-  };
-  const isSameActiveContext = useCallback(
-    (context: IMoreActionActiveContext) => () =>
-      (Object.keys(context) as (keyof IMoreActionActiveContext)[]).every(
-        (key) => activeContextRef.current[key] === context[key],
-      ),
-    [],
-  );
-  const openBulkCopyAddressesModule = useCallback(async () => {
-    const networkId = networkUtils.toNetworkIdFallback({
-      networkId: network?.id,
-      allNetworkFallbackToBtc: true,
-    });
-
-    if (!networkId) return;
-
-    const access = await ensureFeatureAccess({
-      featureId: EPrimeFeatures.BulkCopyAddresses,
-      networkId: network?.id,
-      isContextValid: isSameActiveContext({
-        walletId: wallet?.id,
-        networkId: network?.id,
-      }),
-      extPopup: {
-        mode: 'pendingAction',
-        action: {
-          type: EPrimeFreeTrialPendingActionType.BulkCopyAddresses,
-          walletId: wallet?.id,
-          networkId,
-        },
-      },
-    });
-    if (!access.granted) return;
-
-    navigation.pushModal(EModalRoutes.BulkCopyAddressesModal, {
-      screen: EModalBulkCopyAddressesRoutes.BulkCopyAddressesModal,
-      params: {
-        walletId: wallet?.id,
-        networkId,
-      },
-    });
-  }, [
-    network?.id,
-    ensureFeatureAccess,
-    isSameActiveContext,
-    navigation,
-    wallet?.id,
-  ]);
-
-  const openBulkSendModule = useCallback(async () => {
-    if (!hasBulkSendAccess) {
-      // The bulk send pages open in the extension expand tab, which runs the
-      // login and page-level gate itself.
-      const access = await ensureFeatureAccess({
-        featureId: EPrimeFeatures.BulkSend,
-        networkId: network?.id,
-        // Bulk send opens with this account as the sender.
-        isContextValid: isSameActiveContext({
-          walletId: wallet?.id,
-          networkId: network?.id,
-          accountId: account?.id,
-          indexedAccountId: indexedAccount?.id,
-        }),
-        extPopup: { mode: 'passThrough' },
-      });
-      if (!access.granted) {
-        return;
-      }
-    }
-
-    showBulkSendModeDialog({
-      onSelect: (mode) => {
-        void navigateToBulkSend({
-          networkId: network?.id,
-          accountId: account?.id,
-          indexedAccountId: indexedAccount?.id,
-          bulkSendMode: mode,
-        });
-      },
-    });
-  }, [
-    network?.id,
-    account?.id,
-    indexedAccount?.id,
-    wallet?.id,
-    navigateToBulkSend,
-    showBulkSendModeDialog,
-    ensureFeatureAccess,
-    isSameActiveContext,
-    hasBulkSendAccess,
-  ]);
-
-  const openAddressRiskCheckModule = useCallback(async () => {
-    const access = await ensureFeatureAccess({
-      featureId: EPrimeFeatures.AddressRiskCheck,
-      networkId: network?.id,
-      loginOnly: true,
-      isContextValid: isSameActiveContext({
-        walletId: wallet?.id,
-        networkId: network?.id,
-      }),
-      extPopup: {
-        mode: 'pendingAction',
-        action: {
-          type: EPrimeFreeTrialPendingActionType.AddressRiskCheck,
-          networkId: network?.id,
-        },
-      },
-    });
-    if (!access.granted) {
-      return;
-    }
-    navigation.pushModal(EModalRoutes.AddressRiskCheckModal, {
-      screen: EModalAddressRiskCheckRoutes.AddressRiskCheckInput,
-      params: { networkId: network?.id },
-    });
-  }, [
-    ensureFeatureAccess,
-    isSameActiveContext,
-    navigation,
-    network?.id,
-    wallet?.id,
-  ]);
-
-  const items = useMemo(() => {
-    return [
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({ id: ETranslations.global_backup }),
-            icon: 'CloudUploadOutline' as const,
-            onPress: () => openSettingsCategory(ESettingsTabNames.Backup),
-            trackID: 'wallet-backup',
-          },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({
-              id: ETranslations.settings_address_book,
-            }),
-            icon: 'ContactsOutline' as const,
-            onPress: handleAddressBook,
-            trackID: 'wallet-address-book',
-          },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({ id: ETranslations.global_network }),
-            icon: 'GlobusOutline' as const,
-            onPress: () => openSettingsCategory(ESettingsTabNames.Network),
-            trackID: 'wallet-network',
-          },
-      {
-        title: intl.formatMessage({ id: ETranslations.global_preferences }),
-        icon: 'SliderThreeOutline' as const,
-        onPress: () => openSettingsCategory(ESettingsTabNames.Preferences),
-        trackID: 'wallet-preferences',
-      },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({ id: ETranslations.global_security }),
-            icon: 'Shield2CheckOutline' as const,
-            onPress: () => openSettingsCategory(ESettingsTabNames.Security),
-            trackID: 'wallet-security',
-          },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({
-              id: ETranslations.global_bulk_copy_addresses,
-            }),
-            icon: 'Copy3Outline' as const,
-            onPress: () => {
-              if (!isPrimeUser) {
-                defaultLogger.prime.subscription.primeEntryClick({
-                  featureName: EPrimeFeatures.BulkCopyAddresses,
-                  entryPoint: 'moreActions',
-                  isPrimeActive,
-                });
-              }
-              void openBulkCopyAddressesModule();
-            },
-            trackID: 'bulk-copy-addresses-in-more-action',
-            isPrimeFeature: true,
-          },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({
-              id: ETranslations.wallet_bulk_send_title,
-            }),
-            icon: 'ChevronDoubleUpOutline' as const,
-            onPress: () => {
-              if (!hasBulkSendAccess) {
-                defaultLogger.prime.subscription.primeEntryClick({
-                  featureName: EPrimeFeatures.BulkSend,
-                  entryPoint: 'moreActions',
-                  isPrimeActive,
-                });
-              }
-              void openBulkSendModule();
-            },
-            trackID: 'bulk-send-in-more-action',
-            isPrimeFeature: !platformEnv.isE2E,
-          },
-      platformEnv.isWebDappMode
-        ? undefined
-        : {
-            title: intl.formatMessage({
-              id: ETranslations.address_risk_check__title,
-            }),
-            icon: 'ChecklistBoxSearchOutline' as const,
-            onPress: () => {
-              if (!isPrimeUser) {
-                defaultLogger.prime.subscription.primeEntryClick({
-                  featureName: EPrimeFeatures.AddressRiskCheck,
-                  entryPoint: 'moreActions',
-                  isPrimeActive,
-                });
-              }
-              void openAddressRiskCheckModule();
-            },
-            trackID: 'address-risk-check-in-more-action',
-            isPrimeFeature: true,
-          },
-    ].filter(Boolean);
-  }, [
-    handleAddressBook,
-    intl,
-    openSettingsCategory,
-    isPrimeActive,
-    isPrimeUser,
-    hasBulkSendAccess,
-    openBulkCopyAddressesModule,
-    openBulkSendModule,
-    openAddressRiskCheckModule,
-  ]);
   return (
     <BaseMoreActionGrid
       title={intl.formatMessage({ id: ETranslations.global_wallet })}
       items={items}
     />
   );
-};
+}
 
 // Ext popup/side panel hides the bottom tab bar, so the Developer tab loses its
 // only entry point there; surface it in this More menu in dev builds instead.
@@ -1484,7 +1151,11 @@ const showDevModeEntryInMoreMenu =
   platformEnv.isDev &&
   (platformEnv.isExtensionUiPopup || platformEnv.isExtensionUiSidePanel);
 
-const MoreActionMoreGrid = () => {
+function MoreActionMoreGrid({
+  featureItems,
+}: {
+  featureItems: IMoreActionFeatureItems;
+}) {
   const intl = useIntl();
   const showReviewControlledFeatures = useReviewControl();
   const navigation = useAppNavigation();
@@ -1492,11 +1163,6 @@ const MoreActionMoreGrid = () => {
   const handleHelpAndSupport = useCallback(() => {
     void showIntercom();
   }, []);
-  const themeVariant = useThemeVariant();
-  const { toReferFriendsPage } = useReferFriends();
-  const handleReferFriends = useCallback(() => {
-    void toReferFriendsPage();
-  }, [toReferFriendsPage]);
 
   const handleRedeem = useCallback(async () => {
     await closePopover?.();
@@ -1518,15 +1184,7 @@ const MoreActionMoreGrid = () => {
         onPress: handleHelpAndSupport,
         trackID: 'wallet-customer-support',
       },
-
-      {
-        title: intl.formatMessage({ id: ETranslations.sidebar_refer_a_friend }),
-        lottieSrc:
-          themeVariant === 'light' ? GiftExpandOnLight : GiftExpandOnDark,
-        testID: 'referral' as const,
-        onPress: handleReferFriends,
-        trackID: 'wallet-referral',
-      },
+      featureItems[ERecentFeatureId.Referral],
       ...(showReviewControlledFeatures
         ? [
             {
@@ -1547,13 +1205,12 @@ const MoreActionMoreGrid = () => {
             },
           ]
         : []),
-    ];
+    ].filter(Boolean);
   }, [
+    featureItems,
     handleHelpAndSupport,
     handleRedeem,
     intl,
-    themeVariant,
-    handleReferFriends,
     handleDevMode,
     showReviewControlledFeatures,
   ]);
@@ -1563,13 +1220,12 @@ const MoreActionMoreGrid = () => {
       items={items}
     />
   );
-};
+}
 
-function MoreActionMenuCard({
+function MoreActionCard({
   isDesktopMode = false,
-}: {
-  isDesktopMode?: boolean;
-}) {
+  children,
+}: PropsWithChildren<{ isDesktopMode?: boolean }>) {
   return (
     <YStack
       mx={isDesktopMode ? '$0' : '$5'}
@@ -1581,10 +1237,147 @@ function MoreActionMenuCard({
       borderCurve="continuous"
       overflow="hidden"
     >
-      <MoreActionGeneralGrid />
-      <MoreActionWalletGrid />
-      <MoreActionMoreGrid />
+      {children}
     </YStack>
+  );
+}
+
+type IKnownRecentFeatureRecord = {
+  featureId: ERecentFeatureId;
+  updatedAt: number;
+};
+
+function MoreActionRecentCardContent({
+  records,
+  featureItems,
+  isDesktopMode,
+  onClear,
+}: {
+  records: IKnownRecentFeatureRecord[];
+  featureItems: IMoreActionFeatureItems;
+  isDesktopMode: boolean;
+  onClear: () => void;
+}) {
+  const intl = useIntl();
+  const { isPrimeAvailable } = usePrimeAvailable();
+  const featureIds = useMemo(
+    () => records.map((record) => record.featureId),
+    [records],
+  );
+  const recentItems = useRecentFeatureItems({ featureItems, featureIds });
+
+  const displayedItems = useMemo(() => {
+    const isTravelMode =
+      travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
+      'travel-mode';
+    const candidates = records.flatMap(({ featureId, updatedAt }) => {
+      const item = recentItems[featureId];
+      if (
+        !item ||
+        !isMoreActionItemVisible(item, isPrimeAvailable) ||
+        (isTravelMode && TRAVEL_MODE_IGNORED_MORE_ACTIONS.has(item.trackID))
+      ) {
+        return [];
+      }
+      return [
+        {
+          featureId,
+          item: {
+            ...item,
+            trackID: `recent-${featureId}`,
+            subtitle: formatDistanceToNow(updatedAt),
+          },
+        },
+      ];
+    });
+    return selectDisplayedRecentFeatures(candidates).map(({ item }) => item);
+  }, [isPrimeAvailable, recentItems, records]);
+
+  if (displayedItems.length === 0) {
+    return null;
+  }
+
+  return (
+    <MoreActionCard isDesktopMode={isDesktopMode}>
+      <BaseMoreActionGrid
+        title={intl.formatMessage({
+          id: ETranslations.network_recent_used_network,
+        })}
+        items={displayedItems}
+        headerRight={
+          <SizableText
+            size="$bodyMdMedium"
+            color="$textSubdued"
+            onPress={onClear}
+            hoverStyle={MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE}
+            pressStyle={MORE_ACTION_ITEM_PRESS_STYLE}
+            cursor="pointer"
+            userSelect="none"
+          >
+            {intl.formatMessage({ id: ETranslations.global_clear })}
+          </SizableText>
+        }
+      />
+    </MoreActionCard>
+  );
+}
+
+function MoreActionRecentCard({
+  featureItems,
+  isDesktopMode = false,
+}: {
+  featureItems: IMoreActionFeatureItems;
+  isDesktopMode?: boolean;
+}) {
+  const { result: records, run } = usePromiseResult(
+    () => backgroundApiProxy.simpleDb.recentFeatures.getRecentFeatures(),
+    [],
+    { initResult: [], revalidateOnFocus: true },
+  );
+  const knownRecords = useMemo(
+    () =>
+      records.filter((record): record is IKnownRecentFeatureRecord =>
+        isRecentFeatureId(record.featureId),
+      ),
+    [records],
+  );
+
+  const handleClear = useCallback(async () => {
+    defaultLogger.ui.button.click({ trackId: 'recent-features-clear' });
+    await backgroundApiProxy.simpleDb.recentFeatures.clearRecentFeatures();
+    await run({ alwaysSetState: true });
+  }, [run]);
+
+  // Item hooks only mount once there is something to show.
+  if (knownRecords.length === 0) {
+    return null;
+  }
+
+  return (
+    <MoreActionRecentCardContent
+      records={knownRecords}
+      featureItems={featureItems}
+      isDesktopMode={isDesktopMode}
+      onClear={() => {
+        void handleClear();
+      }}
+    />
+  );
+}
+
+function MoreActionMenuCard({
+  featureItems,
+  isDesktopMode = false,
+}: {
+  featureItems: IMoreActionFeatureItems;
+  isDesktopMode?: boolean;
+}) {
+  return (
+    <MoreActionCard isDesktopMode={isDesktopMode}>
+      <MoreActionGeneralGrid featureItems={featureItems} />
+      <MoreActionWalletGrid featureItems={featureItems} />
+      <MoreActionMoreGrid featureItems={featureItems} />
+    </MoreActionCard>
   );
 }
 
@@ -1758,6 +1551,7 @@ function BaseMoreActionContent({ fixedFooter }: { fixedFooter: boolean }) {
   const isTravelMode =
     travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
     'travel-mode';
+  const featureItems = useMoreActionFeatureItems();
   const body = (
     <>
       {platformEnv.isWebDappMode ? null : <UpdateReminders />}
@@ -1771,7 +1565,14 @@ function BaseMoreActionContent({ fixedFooter }: { fixedFooter: boolean }) {
         pb={isDesktopMode ? '$0' : '$5'}
       >
         {isDesktopMode || isTravelMode ? null : <MoreActionDevice />}
-        <MoreActionMenuCard isDesktopMode={isDesktopMode} />
+        <MoreActionRecentCard
+          featureItems={featureItems}
+          isDesktopMode={isDesktopMode}
+        />
+        <MoreActionMenuCard
+          featureItems={featureItems}
+          isDesktopMode={isDesktopMode}
+        />
         {fixedFooter ? null : (
           <MoreActionAboutCard isDesktopMode={isDesktopMode} />
         )}

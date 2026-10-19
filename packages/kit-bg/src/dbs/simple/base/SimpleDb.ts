@@ -656,6 +656,19 @@ export class SimpleDb {
     return value;
   }
 
+  get recentFeatures() {
+    const value = createLazyServiceProxy({
+      serviceName: 'simpleDb@recentFeatures',
+      loader: () =>
+        import('../entity/SimpleDbEntityRecentFeatures').then(
+          ({ SimpleDbEntityRecentFeatures }) =>
+            new SimpleDbEntityRecentFeatures(),
+        ),
+    });
+    Object.defineProperty(this, 'recentFeatures', { value });
+    return value;
+  }
+
   get addressRiskCheck() {
     const value = createLazyServiceProxy({
       serviceName: 'simpleDb@addressRiskCheck',

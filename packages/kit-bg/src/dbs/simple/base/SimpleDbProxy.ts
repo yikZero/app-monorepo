@@ -55,6 +55,7 @@ import type { SimpleDbEntityPrime } from '../entity/SimpleDbEntityPrime';
 import type { SimpleDbEntityPrimeFreeTrial } from '../entity/SimpleDbEntityPrimeFreeTrial';
 import type { SimpleDbEntityPrimeTransfer } from '../entity/SimpleDbEntityPrimeTransfer';
 import type { SimpleDbEntityReceiveArrivalConfig } from '../entity/SimpleDbEntityReceiveArrivalConfig';
+import type { SimpleDbEntityRecentFeatures } from '../entity/SimpleDbEntityRecentFeatures';
 import type { SimpleDbEntityRecentNetworks } from '../entity/SimpleDbEntityRecentNetworks';
 import type { SimpleDbEntityReferralCode } from '../entity/SimpleDbEntityReferralCode';
 import type { SimpleDbEntityRiskTokenManagement } from '../entity/SimpleDbEntityRiskTokenManagement';
@@ -266,6 +267,10 @@ export class SimpleDbProxy
   recentNetworks = this._createProxyService(
     'recentNetworks',
   ) as SimpleDbEntityRecentNetworks;
+
+  recentFeatures = this._createProxyService(
+    'recentFeatures',
+  ) as SimpleDbEntityRecentFeatures;
 
   addressRiskCheck = this._createProxyService(
     'addressRiskCheck',

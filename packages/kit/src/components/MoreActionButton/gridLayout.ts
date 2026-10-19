@@ -1,10 +1,17 @@
-const MAX_COLUMN_COUNT = 4;
+export const MAX_COLUMN_COUNT = 4;
+
+export function isMoreActionItemVisible(
+  item: { isPrimeFeature?: boolean },
+  isPrimeAvailable: boolean,
+) {
+  return !item.isPrimeFeature || isPrimeAvailable;
+}
 
 export function buildMoreActionGridLayout<
   T extends { isPrimeFeature?: boolean },
 >(items: readonly T[], isPrimeAvailable: boolean): Array<Array<T | null>> {
-  const visibleItems = items.filter(
-    (item) => !item.isPrimeFeature || isPrimeAvailable,
+  const visibleItems = items.filter((item) =>
+    isMoreActionItemVisible(item, isPrimeAvailable),
   );
 
   if (visibleItems.length === 0) {

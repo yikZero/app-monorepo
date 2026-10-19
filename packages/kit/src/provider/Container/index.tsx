@@ -38,6 +38,7 @@ import { PerpsUnifoldDepositTerminalDeliveryContainer } from './PerpsUnifoldDepo
 import { PrevCheckBeforeSendingContainer } from './PrevCheckBeforeSendingContainer';
 import { PrimeGlobalEffectLazy } from './PrimeGlobalEffectLazy';
 import { PrimeLoginContainerLazy } from './PrimeLoginContainer';
+import RecentFeatureTrackerContainer from './RecentFeatureTrackerContainer';
 import { RookieShareContainerLazy } from './RookieShareContainer/Lazy';
 import { SplitViewPerpTabSync } from './SplitViewPerpTabSync';
 import { TableSplitViewContainer } from './TableSplitViewContainer';
@@ -89,6 +90,7 @@ function DetailRouter() {
 
       {/* <PortalBodyContainer /> */}
       <PageTrackerContainer />
+      <RecentFeatureTrackerContainer />
       <ErrorToastContainer />
       <PerpsUnifoldDepositTerminalDeliveryContainer />
       <GlobalErrorHandlerContainer />
