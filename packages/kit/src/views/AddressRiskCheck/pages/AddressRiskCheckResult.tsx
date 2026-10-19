@@ -107,7 +107,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
-    <YStack gap="$0.5" flexShrink={1} minWidth={0}>
+    <YStack flex={1} gap="$0.5" minWidth={0}>
       <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
         {label}
       </SizableText>
@@ -347,7 +347,7 @@ function AddressRiskCheckResultContent({
                   ) : null}
                   {score !== undefined && showExposures ? <Divider /> : null}
                   {showExposures ? (
-                    <XStack gap="$8">
+                    <XStack gap="$3">
                       <StatItem
                         label={intl.formatMessage({
                           id: ETranslations.address_risk_check_stats_exposures__title,
