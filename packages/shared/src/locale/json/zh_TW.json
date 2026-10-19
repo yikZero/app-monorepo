@@ -176,7 +176,7 @@
   "address_risk_check_summary_low__desc": "與風險實體僅有少量關聯，轉帳前仍要核對完整地址",
   "address_risk_check_summary_moderate__desc": "與風險實體有一定關聯，轉帳前查看下方關聯明細",
   "address_risk_check_summary_severe__desc": "與受制裁或遭駭客控制的地址關聯較深",
-  "address_risk_check_tagged_address__desc": "該地址被標記為 {tags}",
+  "address_risk_check_tagged_address__desc": "該地址被標記為：{tags}",
   "address_risk_check_theft__title": "盜竊",
   "address_risk_check_txs__msg": "{count} 筆交易",
   "address_type": "地址類型",
