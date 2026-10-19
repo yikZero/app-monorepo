@@ -113,6 +113,22 @@ export function getRiskFactorDisplay(factors: IKytRiskFactor[]) {
   };
 }
 
+// A provider tags an address itself (a hacker, mixer pool, gambling site…) by
+// returning only direct exposures with a 100% share and no volume. Showing
+// those as exposure stats says nothing; the page shows the tag instead.
+export function isRiskTaggedAddress(factors: IKytRiskFactor[]) {
+  return (
+    factors.length > 0 &&
+    factors.every(
+      (factor) =>
+        factor.exposureType === 'direct' &&
+        factor.percent !== undefined &&
+        factor.percent >= 100 &&
+        !factor.amountUsd,
+    )
+  );
+}
+
 export function getRiskExposureStats(factors: IKytRiskFactor[]) {
   const percents = factors
     .map((factor) => factor.percent)
@@ -132,6 +148,9 @@ export function formatRiskPercent(percent: number | undefined) {
   // down, so anything below 0.01% reads as "<0.01%".
   if (percent < 0.01) {
     return '<0.01%';
+  }
+  if (percent >= 100) {
+    return '100%';
   }
   return `${new BigNumber(percent).toFixed(2)}%`;
 }

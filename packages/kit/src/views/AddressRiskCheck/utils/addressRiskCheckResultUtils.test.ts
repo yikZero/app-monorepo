@@ -9,6 +9,7 @@ import {
   getRiskExposureStats,
   getRiskFactorDisplay,
   getRiskScoreMeterPosition,
+  isRiskTaggedAddress,
 } from './addressRiskCheckResultUtils';
 
 describe('getAddressRiskCheckPendingMessageIds', () => {
@@ -138,7 +139,8 @@ describe('formatRiskPercent', () => {
     [0.448, '0.45%'],
     [3.1, '3.10%'],
     [45.652, '45.65%'],
-    [100, '100.00%'],
+    [99.999, '100.00%'],
+    [100, '100%'],
   ] as const)('%s -> %s', (input, expected) => {
     expect(formatRiskPercent(input)).toBe(expected);
   });
@@ -159,5 +161,36 @@ describe('getRiskScoreMeterPosition', () => {
     const result = getRiskScoreMeterPosition(score);
     expect(result.bandIndex).toBe(bandIndex);
     expect(result.positionPercent).toBeCloseTo(position);
+  });
+});
+
+describe('isRiskTaggedAddress', () => {
+  it('treats direct 100% exposures without volume as an address tag', () => {
+    expect(
+      isRiskTaggedAddress([
+        factor({
+          entity: 'Theft',
+          exposureType: 'direct',
+          hops: 1,
+          amountUsd: 0,
+          percent: 100,
+        }),
+      ]),
+    ).toBe(true);
+  });
+
+  it('rejects mixed, partial or volume-backed exposures', () => {
+    expect(isRiskTaggedAddress([])).toBe(false);
+    expect(
+      isRiskTaggedAddress([
+        factor({ exposureType: 'direct', amountUsd: 0, percent: 100 }),
+        factor({ exposureType: 'indirect', amountUsd: 12, percent: 3 }),
+      ]),
+    ).toBe(false);
+    expect(
+      isRiskTaggedAddress([
+        factor({ exposureType: 'direct', amountUsd: 75_130, percent: 100 }),
+      ]),
+    ).toBe(false);
   });
 });

@@ -23,6 +23,7 @@ import type { IFooterActionsProps } from '@onekeyhq/components/src/layouts/Page/
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
+import { formatKytRiskFactorCategory } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
 import { KYT_LEVEL_TEXT_COLOR } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -45,6 +46,7 @@ import {
   getAddressRiskCheckPendingMessageIds,
   getAddressRiskSummaryVariant,
   getRiskExposureStats,
+  isRiskTaggedAddress,
 } from '../utils/addressRiskCheckResultUtils';
 
 import type { IAddressRiskSummaryVariant } from '../utils/addressRiskCheckResultUtils';
@@ -145,9 +147,26 @@ function AddressRiskCheckResultContent({
   });
   const summaryContent = SUMMARY_CONTENT[variant];
   const titleText = intl.formatMessage({ id: summaryContent.title });
-  const descriptionText = summaryContent.description
-    ? intl.formatMessage({ id: summaryContent.description })
-    : undefined;
+  const isTaggedAddress = isRiskTaggedAddress(result.reasons);
+  let descriptionText: string | undefined;
+  if (isTaggedAddress) {
+    // Name the tag instead of describing exposures the page no longer lists.
+    const tags = Array.from(
+      new Set(
+        result.reasons.map(
+          (factor) =>
+            factor.entity ||
+            formatKytRiskFactorCategory({ category: factor.category, intl }),
+        ),
+      ),
+    );
+    descriptionText = intl.formatMessage(
+      { id: ETranslations.address_risk_check_tagged_address__desc },
+      { tags: tags.join(', ') },
+    );
+  } else if (summaryContent.description) {
+    descriptionText = intl.formatMessage({ id: summaryContent.description });
+  }
   const isHighOrSevere = variant === 'high' || variant === 'severe';
   const canContinueToSend =
     isSendFlow &&
@@ -156,6 +175,7 @@ function AddressRiskCheckResultContent({
     () => getRiskExposureStats(result.reasons),
     [result.reasons],
   );
+  const showExposures = stats.total > 0 && !isTaggedAddress;
   const score =
     variant !== 'unknown' &&
     result.score !== undefined &&
@@ -278,6 +298,11 @@ function AddressRiskCheckResultContent({
                 >
                   {titleText}
                 </SizableText>
+                {descriptionText ? (
+                  <SizableText size="$bodyMd" color="$textSubdued">
+                    {descriptionText}
+                  </SizableText>
+                ) : null}
                 {isHighOrSevere ? (
                   <SizableText size="$bodyMd">
                     {variant === 'severe' ? (
@@ -292,11 +317,6 @@ function AddressRiskCheckResultContent({
                     })}
                   </SizableText>
                 ) : null}
-                {descriptionText ? (
-                  <SizableText size="$bodyMd" color="$textSubdued">
-                    {descriptionText}
-                  </SizableText>
-                ) : null}
                 {isHistoryResult ? (
                   <SizableText size="$bodyMd" color="$textCaution" pt="$1.5">
                     {intl.formatMessage({
@@ -306,7 +326,7 @@ function AddressRiskCheckResultContent({
                 ) : null}
               </YStack>
 
-              {score !== undefined || stats.total > 0 ? (
+              {score !== undefined || showExposures ? (
                 <YStack
                   p="$4"
                   gap="$4"
@@ -317,8 +337,8 @@ function AddressRiskCheckResultContent({
                   {score !== undefined ? (
                     <RiskScoreMeter score={score} level={result.level} />
                   ) : null}
-                  {score !== undefined && stats.total > 0 ? <Divider /> : null}
-                  {stats.total > 0 ? (
+                  {score !== undefined && showExposures ? <Divider /> : null}
+                  {showExposures ? (
                     <XStack gap="$3">
                       <StatItem
                         label={intl.formatMessage({
@@ -344,7 +364,7 @@ function AddressRiskCheckResultContent({
               ) : null}
             </YStack>
 
-            {result.reasons.length > 0 ? (
+            {showExposures ? (
               <RiskExposureList factors={result.reasons} />
             ) : null}
 
