@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "Data from {provider}. For reference only.",
   "address_risk_check_stats_exposures__title": "Exposures",
   "address_risk_check_stats_largest_share__title": "Largest share",
+  "address_risk_check_stats_top_exposure__title": "Top exposure",
   "address_risk_check_summary_clean__desc": "Still verify the full address before sending.",
   "address_risk_check_summary_high__desc": "Significant exposure to high-risk entities.",
   "address_risk_check_summary_low__desc": "Only minor exposure to risk entities. Still verify the full address.",

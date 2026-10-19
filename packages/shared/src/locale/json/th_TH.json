@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "ข้อมูลจาก {provider}. ใช้สำหรับอ้างอิงเท่านั้น.",
   "address_risk_check_stats_exposures__title": "การเปิดรับความเสี่ยง",
   "address_risk_check_stats_largest_share__title": "สัดส่วนสูงสุด",
+  "address_risk_check_stats_top_exposure__title": "ความเสี่ยงหลัก",
   "address_risk_check_summary_clean__desc": "ยังคงต้องตรวจสอบที่อยู่แบบเต็มก่อนส่ง.",
   "address_risk_check_summary_high__desc": "มีการเปิดรับความเสี่ยงต่อเอนทิตีความเสี่ยงสูงอย่างมีนัยสำคัญ.",
   "address_risk_check_summary_low__desc": "มีการเปิดรับความเสี่ยงต่อเอนทิตีที่มีความเสี่ยงเพียงเล็กน้อย ยังคงต้องตรวจสอบที่อยู่แบบเต็มก่อนส่ง",

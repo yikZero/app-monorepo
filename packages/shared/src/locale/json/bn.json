@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "তথ্য {provider} থেকে প্রাপ্ত। শুধুমাত্র রেফারেন্সের জন্য।",
   "address_risk_check_stats_exposures__title": "এক্সপোজার",
   "address_risk_check_stats_largest_share__title": "সর্বোচ্চ অনুপাত",
+  "address_risk_check_stats_top_exposure__title": "শীর্ষ এক্সপোজার",
   "address_risk_check_summary_clean__desc": "পাঠানোর আগে সম্পূর্ণ ঠিকানা যাচাই করুন।",
   "address_risk_check_summary_high__desc": "উচ্চ-ঝুঁকির সত্তার সাথে উল্লেখযোগ্য এক্সপোজার।",
   "address_risk_check_summary_low__desc": "ঝুঁকিপূর্ণ সত্তার সাথে সামান্য এক্সপোজার রয়েছে। পাঠানোর আগে সম্পূর্ণ ঠিকানা যাচাই করুন।",

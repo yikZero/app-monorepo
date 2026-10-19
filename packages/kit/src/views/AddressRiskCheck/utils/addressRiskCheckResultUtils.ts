@@ -139,13 +139,11 @@ export function isRiskTaggedAddress(factors: IKytRiskFactor[]) {
 }
 
 export function getRiskExposureStats(factors: IKytRiskFactor[]) {
-  const percents = factors
-    .map((factor) => factor.percent)
-    .filter((percent): percent is number => percent !== undefined);
   return {
     total: factors.length,
     direct: factors.filter((factor) => factor.exposureType === 'direct').length,
-    largestPercent: percents.length ? Math.max(...percents) : undefined,
+    // Same order as the breakdown list, so the top item matches its first row.
+    top: sortRiskFactors(factors)[0] as IKytRiskFactor | undefined,
   };
 }
 

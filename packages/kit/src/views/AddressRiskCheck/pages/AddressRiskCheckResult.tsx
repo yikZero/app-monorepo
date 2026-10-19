@@ -108,13 +108,21 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   misttrack: 'MistTrack',
 };
 
-function StatItem({ label, value }: { label: string; value: string }) {
+function StatItem({
+  label,
+  value,
+  valueNumberOfLines = 1,
+}: {
+  label: string;
+  value: string;
+  valueNumberOfLines?: number;
+}) {
   return (
     <YStack flex={1} gap="$0.5" minWidth={0}>
       <SizableText size="$bodySm" color="$textSubdued" numberOfLines={1}>
         {label}
       </SizableText>
-      <SizableText size="$bodyMdMedium" numberOfLines={1}>
+      <SizableText size="$bodyMdMedium" numberOfLines={valueNumberOfLines}>
         {value}
       </SizableText>
     </YStack>
@@ -195,6 +203,17 @@ function AddressRiskCheckResultContent({
     [result.reasons],
   );
   const showExposures = stats.total > 0 && !isTaggedAddress;
+  // Name the top exposure with its share so the stat reads on its own.
+  let topExposureText = '-';
+  if (stats.top) {
+    const topName = stats.top.entity
+      ? formatKytRiskFactorEntity({ entity: stats.top.entity, intl })
+      : formatKytRiskFactorCategory({ category: stats.top.category, intl });
+    topExposureText =
+      stats.top.percent === undefined
+        ? topName
+        : `${topName} ${formatRiskPercent(stats.top.percent)}`;
+  }
   const score =
     variant !== 'unknown' &&
     result.score !== undefined &&
@@ -371,9 +390,10 @@ function AddressRiskCheckResultContent({
                       />
                       <StatItem
                         label={intl.formatMessage({
-                          id: ETranslations.address_risk_check_stats_largest_share__title,
+                          id: ETranslations.address_risk_check_stats_top_exposure__title,
                         })}
-                        value={formatRiskPercent(stats.largestPercent)}
+                        value={topExposureText}
+                        valueNumberOfLines={2}
                       />
                     </XStack>
                   ) : null}

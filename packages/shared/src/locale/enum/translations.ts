@@ -177,6 +177,7 @@ export enum ETranslations {
   address_risk_check_source_disclaimer__desc = 'address_risk_check_source_disclaimer__desc',
   address_risk_check_stats_exposures__title = 'address_risk_check_stats_exposures__title',
   address_risk_check_stats_largest_share__title = 'address_risk_check_stats_largest_share__title',
+  address_risk_check_stats_top_exposure__title = 'address_risk_check_stats_top_exposure__title',
   address_risk_check_summary_clean__desc = 'address_risk_check_summary_clean__desc',
   address_risk_check_summary_high__desc = 'address_risk_check_summary_high__desc',
   address_risk_check_summary_low__desc = 'address_risk_check_summary_low__desc',

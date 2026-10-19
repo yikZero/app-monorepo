@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "Datos de {provider}. Solo como referencia.",
   "address_risk_check_stats_exposures__title": "Exposiciones",
   "address_risk_check_stats_largest_share__title": "Mayor proporción",
+  "address_risk_check_stats_top_exposure__title": "Exposición principal",
   "address_risk_check_summary_clean__desc": "Verifica la dirección completa antes de enviar.",
   "address_risk_check_summary_high__desc": "Exposición significativa a entidades de alto riesgo.",
   "address_risk_check_summary_low__desc": "Solo una leve exposición a entidades de riesgo. Aun así, verifica la dirección completa.",

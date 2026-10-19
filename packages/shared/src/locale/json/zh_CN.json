@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "数据来自 {provider}，仅供参考",
   "address_risk_check_stats_exposures__title": "关联项",
   "address_risk_check_stats_largest_share__title": "最高占比",
+  "address_risk_check_stats_top_exposure__title": "主要关联",
   "address_risk_check_summary_clean__desc": "转账前仍要核对完整地址",
   "address_risk_check_summary_high__desc": "与高风险实体关联较多",
   "address_risk_check_summary_low__desc": "与风险实体仅有少量关联，转账前仍要核对完整地址",

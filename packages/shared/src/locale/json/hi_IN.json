@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "{provider} से प्राप्त डेटा। केवल संदर्भ के लिए।",
   "address_risk_check_stats_exposures__title": "एक्सपोज़र",
   "address_risk_check_stats_largest_share__title": "सबसे बड़ा हिस्सा",
+  "address_risk_check_stats_top_exposure__title": "शीर्ष एक्सपोज़र",
   "address_risk_check_summary_clean__desc": "भेजने से पहले पूरे पते की पुष्टि करें।",
   "address_risk_check_summary_high__desc": "उच्च-जोखिम वाली इकाइयों से महत्वपूर्ण एक्सपोज़र।",
   "address_risk_check_summary_low__desc": "जोखिम वाली इकाइयों से केवल मामूली एक्सपोज़र। भेजने से पहले पूरे पते की पुष्टि करें।",

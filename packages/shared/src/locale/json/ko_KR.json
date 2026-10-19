@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "{provider}의 데이터입니다. 참고용으로만 제공됩니다.",
   "address_risk_check_stats_exposures__title": "노출 항목",
   "address_risk_check_stats_largest_share__title": "최대 비중",
+  "address_risk_check_stats_top_exposure__title": "주요 노출",
   "address_risk_check_summary_clean__desc": "전송 전 전체 주소를 확인하세요.",
   "address_risk_check_summary_high__desc": "고위험 엔티티에 상당한 노출이 있습니다.",
   "address_risk_check_summary_low__desc": "위험 엔티티 노출이 적습니다. 전송 전 전체 주소를 확인하세요.",

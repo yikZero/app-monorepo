@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "Data dari {provider}. Hanya untuk referensi.",
   "address_risk_check_stats_exposures__title": "Eksposur",
   "address_risk_check_stats_largest_share__title": "Proporsi terbesar",
+  "address_risk_check_stats_top_exposure__title": "Eksposur utama",
   "address_risk_check_summary_clean__desc": "Tetap verifikasi alamat lengkap sebelum mengirim.",
   "address_risk_check_summary_high__desc": "Eksposur signifikan terhadap entitas berisiko tinggi.",
   "address_risk_check_summary_low__desc": "Hanya sedikit eksposur terhadap entitas berisiko. Tetap verifikasi alamat lengkap sebelum mengirim.",

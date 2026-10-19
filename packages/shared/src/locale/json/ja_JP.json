@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "{provider} のデータに基づきます。参考情報です。",
   "address_risk_check_stats_exposures__title": "エクスポージャー",
   "address_risk_check_stats_largest_share__title": "最大割合",
+  "address_risk_check_stats_top_exposure__title": "主要エクスポージャー",
   "address_risk_check_summary_clean__desc": "送信前に完全なアドレスを確認してください。",
   "address_risk_check_summary_high__desc": "高リスクエンティティとの重大なエクスポージャーがあります。",
   "address_risk_check_summary_low__desc": "リスクエンティティとの関連はわずかです。送信前に完全なアドレスを確認してください。",

@@ -117,18 +117,23 @@ describe('getRiskFactorDisplay', () => {
 });
 
 describe('getRiskExposureStats', () => {
-  it('counts direct exposures and the largest share', () => {
+  it('counts direct exposures and picks the largest share', () => {
+    const top = factor({
+      entity: 'Theft',
+      exposureType: 'indirect',
+      percent: 3.1,
+    });
     expect(
       getRiskExposureStats([
         factor({ exposureType: 'direct', percent: 1.97 }),
-        factor({ exposureType: 'indirect', percent: 3.1 }),
+        top,
         factor({ exposureType: 'indirect' }),
       ]),
-    ).toEqual({ total: 3, direct: 1, largestPercent: 3.1 });
+    ).toEqual({ total: 3, direct: 1, top });
   });
 
-  it('returns no largest share when none is reported', () => {
-    expect(getRiskExposureStats([factor({})]).largestPercent).toBeUndefined();
+  it('has no top exposure when the list is empty', () => {
+    expect(getRiskExposureStats([]).top).toBeUndefined();
   });
 });
 

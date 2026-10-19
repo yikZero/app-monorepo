@@ -172,6 +172,7 @@
   "address_risk_check_source_disclaimer__desc": "Данные от {provider}. Только для справки.",
   "address_risk_check_stats_exposures__title": "Экспозиции",
   "address_risk_check_stats_largest_share__title": "Макс. доля",
+  "address_risk_check_stats_top_exposure__title": "Основная экспозиция",
   "address_risk_check_summary_clean__desc": "Все равно проверьте полный адрес перед отправкой.",
   "address_risk_check_summary_high__desc": "Значительная экспозиция к высокорисковым сущностям.",
   "address_risk_check_summary_low__desc": "Незначительная связь с рисковыми сущностями. Все равно проверьте полный адрес перед отправкой.",
