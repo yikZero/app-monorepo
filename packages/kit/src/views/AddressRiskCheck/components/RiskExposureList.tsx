@@ -12,7 +12,10 @@ import {
   XStack,
   YStack,
 } from '@onekeyhq/components';
-import { formatKytRiskFactorCategory } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
+import {
+  formatKytRiskFactorCategory,
+  formatKytRiskFactorEntity,
+} from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
@@ -73,7 +76,7 @@ function ExposureGlossaryContent({
     <YStack px="$5" pb="$5" pt={platformEnv.isNative ? '$0' : '$5'} gap="$3">
       <GlossaryRow
         title={intl.formatMessage({
-          id: ETranslations.address_risk_check_exposure_direct__title,
+          id: ETranslations.address_risk_check_exposure_direct__msg,
         })}
         desc={intl.formatMessage({
           id: ETranslations.address_risk_check_exposure_direct__desc,
@@ -81,7 +84,7 @@ function ExposureGlossaryContent({
       />
       <GlossaryRow
         title={intl.formatMessage({
-          id: ETranslations.address_risk_check_exposure_indirect__title,
+          id: ETranslations.address_risk_check_exposure_indirect__msg,
         })}
         desc={intl.formatMessage({
           id: ETranslations.address_risk_check_exposure_indirect__desc,
@@ -114,18 +117,18 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
   const intl = useIntl();
   const meta: string[] = [];
   if (factor.entity) {
-    meta.push(factor.entity);
+    meta.push(formatKytRiskFactorEntity({ entity: factor.entity, intl }));
   }
   if (factor.exposureType === 'direct') {
     meta.push(
       intl.formatMessage({
-        id: ETranslations.address_risk_check_exposure_direct__title,
+        id: ETranslations.address_risk_check_exposure_direct__msg,
       }),
     );
   } else if (factor.exposureType === 'indirect') {
     meta.push(
       intl.formatMessage({
-        id: ETranslations.address_risk_check_exposure_indirect__title,
+        id: ETranslations.address_risk_check_exposure_indirect__msg,
       }),
     );
     if (factor.hops !== undefined) {

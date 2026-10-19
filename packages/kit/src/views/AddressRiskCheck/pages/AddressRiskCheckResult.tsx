@@ -24,7 +24,10 @@ import type { IFooterActionsProps } from '@onekeyhq/components/src/layouts/Page/
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
-import { formatKytRiskFactorCategory } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
+import {
+  formatKytRiskFactorCategory,
+  formatKytRiskFactorEntity,
+} from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
 import { KYT_LEVEL_TEXT_COLOR } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -154,10 +157,10 @@ function AddressRiskCheckResultContent({
     // Name the tag instead of describing exposures the page no longer lists.
     const tags = Array.from(
       new Set(
-        result.reasons.map(
-          (factor) =>
-            factor.entity ||
-            formatKytRiskFactorCategory({ category: factor.category, intl }),
+        result.reasons.map((factor) =>
+          factor.entity
+            ? formatKytRiskFactorEntity({ entity: factor.entity, intl })
+            : formatKytRiskFactorCategory({ category: factor.category, intl }),
         ),
       ),
     );
@@ -176,6 +179,14 @@ function AddressRiskCheckResultContent({
     descriptionText = intl.formatMessage({ id: summaryContent.description });
   }
   const isHighOrSevere = variant === 'high' || variant === 'severe';
+  const severeAdvice = intl.formatMessage({
+    id: ETranslations.address_risk_check_severe_advice__desc,
+  });
+  // The advice runs into the next sentence; CJK full-width punctuation
+  // already separates them, Latin text needs a space.
+  const severeAdviceText = /[\u3002\uff01\uff1f]$/.test(severeAdvice)
+    ? severeAdvice
+    : `${severeAdvice} `;
   const canContinueToSend =
     isSendFlow &&
     (variant === 'clean' || variant === 'low' || variant === 'moderate');
@@ -315,9 +326,7 @@ function AddressRiskCheckResultContent({
                   <SizableText size="$bodyMd">
                     {variant === 'severe' ? (
                       <SizableText size="$bodyMdMedium">
-                        {`${intl.formatMessage({
-                          id: ETranslations.address_risk_check_severe_advice__desc,
-                        })} `}
+                        {severeAdviceText}
                       </SizableText>
                     ) : null}
                     {intl.formatMessage({
