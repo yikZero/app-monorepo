@@ -1,4 +1,5 @@
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
 import type { IntlShape } from 'react-intl';
 
@@ -55,4 +56,18 @@ export function formatKytRiskFactorEntity({
     .replace(/[_\s]+/g, ' ');
   const translationId = KYT_RISK_ENTITY_TRANSLATIONS[normalized];
   return translationId ? intl.formatMessage({ id: translationId }) : entity;
+}
+
+// Short name for one factor: the entity when the provider gives one,
+// otherwise its category.
+export function formatKytRiskFactorName({
+  factor,
+  intl,
+}: {
+  factor: Pick<IKytRiskFactor, 'entity' | 'category'>;
+  intl: IntlShape;
+}) {
+  return factor.entity
+    ? formatKytRiskFactorEntity({ entity: factor.entity, intl })
+    : formatKytRiskFactorCategory({ category: factor.category, intl });
 }

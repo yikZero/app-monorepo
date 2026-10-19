@@ -187,6 +187,11 @@ function ExposureRow({ factor }: { factor: IKytRiskFactor }) {
   );
 }
 
+// Stable reference so the tooltip trigger stays memoized.
+const EXPOSURE_INFO_TRIGGER_PROPS = {
+  testID: 'address-risk-check-exposure-info',
+};
+
 export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
   const intl = useIntl();
   const [expanded, setExpanded] = useState(false);
@@ -221,7 +226,7 @@ export function RiskExposureList({ factors }: { factors: IKytRiskFactor[] }) {
           placement="bottom"
           iconSize="$4"
           renderContent={glossaryContent}
-          triggerProps={{ testID: 'address-risk-check-exposure-info' }}
+          triggerProps={EXPOSURE_INFO_TRIGGER_PROPS}
         />
       </XStack>
       <YStack

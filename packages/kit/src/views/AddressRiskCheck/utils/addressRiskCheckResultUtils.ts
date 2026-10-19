@@ -1,6 +1,5 @@
-import BigNumber from 'bignumber.js';
-
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { numberFormat } from '@onekeyhq/shared/src/utils/numberUtils';
 import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 import type { IKytRiskFactor } from '@onekeyhq/shared/types/kyt';
 
@@ -81,12 +80,16 @@ export function getAddressRiskSummaryVariant({
   }
 }
 
-function sortRiskFactors(factors: IKytRiskFactor[]): IKytRiskFactor[] {
-  return factors.toSorted(
-    (a, b) =>
-      (b.percent ?? -1) - (a.percent ?? -1) ||
-      (b.amountUsd ?? -1) - (a.amountUsd ?? -1),
+// Largest share first, then largest amount.
+function compareRiskFactors(a: IKytRiskFactor, b: IKytRiskFactor) {
+  return (
+    (b.percent ?? -1) - (a.percent ?? -1) ||
+    (b.amountUsd ?? -1) - (a.amountUsd ?? -1)
   );
+}
+
+function sortRiskFactors(factors: IKytRiskFactor[]): IKytRiskFactor[] {
+  return factors.toSorted(compareRiskFactors);
 }
 
 function isMinorRiskFactor(factor: IKytRiskFactor) {
@@ -142,8 +145,13 @@ export function getRiskExposureStats(factors: IKytRiskFactor[]) {
   return {
     total: factors.length,
     direct: factors.filter((factor) => factor.exposureType === 'direct').length,
-    // Same order as the breakdown list, so the top item matches its first row.
-    top: sortRiskFactors(factors)[0] as IKytRiskFactor | undefined,
+    // Same comparator as the breakdown list, so the top item matches its
+    // first row.
+    top: factors.reduce<IKytRiskFactor | undefined>(
+      (best, factor) =>
+        !best || compareRiskFactors(factor, best) < 0 ? factor : best,
+      undefined,
+    ),
   };
 }
 
@@ -159,7 +167,7 @@ export function formatRiskPercent(percent: number | undefined) {
   if (percent >= 100) {
     return '100%';
   }
-  return `${new BigNumber(percent).toFixed(2)}%`;
+  return numberFormat(String(percent), { formatter: 'priceChange' });
 }
 
 // Position of the score on the meter (0-100), mapped piecewise so every band

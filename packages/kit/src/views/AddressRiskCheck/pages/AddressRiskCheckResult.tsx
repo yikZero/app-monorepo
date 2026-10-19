@@ -24,10 +24,7 @@ import type { IFooterActionsProps } from '@onekeyhq/components/src/layouts/Page/
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { NetworkAvatar } from '@onekeyhq/kit/src/components/NetworkAvatar';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
-import {
-  formatKytRiskFactorCategory,
-  formatKytRiskFactorEntity,
-} from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
+import { formatKytRiskFactorName } from '@onekeyhq/kit/src/utils/kytRiskFactorUtils';
 import { KYT_LEVEL_TEXT_COLOR } from '@onekeyhq/kit/src/utils/kytRiskLevelColorUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
@@ -166,9 +163,7 @@ function AddressRiskCheckResultContent({
     const tags = Array.from(
       new Set(
         result.reasons.map((factor) =>
-          factor.entity
-            ? formatKytRiskFactorEntity({ entity: factor.entity, intl })
-            : formatKytRiskFactorCategory({ category: factor.category, intl }),
+          formatKytRiskFactorName({ factor, intl }),
         ),
       ),
     );
@@ -198,17 +193,12 @@ function AddressRiskCheckResultContent({
   const canContinueToSend =
     isSendFlow &&
     (variant === 'clean' || variant === 'low' || variant === 'moderate');
-  const stats = useMemo(
-    () => getRiskExposureStats(result.reasons),
-    [result.reasons],
-  );
+  const stats = getRiskExposureStats(result.reasons);
   const showExposures = stats.total > 0 && !isTaggedAddress;
   // Name the top exposure with its share so the stat reads on its own.
   let topExposureText = '-';
   if (stats.top) {
-    const topName = stats.top.entity
-      ? formatKytRiskFactorEntity({ entity: stats.top.entity, intl })
-      : formatKytRiskFactorCategory({ category: stats.top.category, intl });
+    const topName = formatKytRiskFactorName({ factor: stats.top, intl });
     topExposureText =
       stats.top.percent === undefined
         ? topName
@@ -293,26 +283,27 @@ function AddressRiskCheckResultContent({
     );
   } else if (isSendFlow && isHighOrSevere) {
     // High may continue after a confirmation; Severe can only go back.
-    const canContinueAnyway = variant === 'high';
+    const continueAnywayProps: Partial<IFooterActionsProps> =
+      variant === 'high'
+        ? {
+            stacked: true,
+            onCancel: handleContinueAnyway,
+            onCancelText: intl.formatMessage({
+              id: ETranslations.global_continue_anyway,
+            }),
+            cancelButtonProps: {
+              testID: 'address-risk-check-continue-anyway-action',
+            },
+          }
+        : {};
     footer = (
       <Page.FooterActions
-        stacked={canContinueAnyway}
         onConfirm={backToEdit}
         onConfirmText={intl.formatMessage({ id: ETranslations.global_back })}
         confirmButtonProps={{
           testID: 'address-risk-check-back-action',
         }}
-        onCancel={canContinueAnyway ? handleContinueAnyway : undefined}
-        onCancelText={
-          canContinueAnyway
-            ? intl.formatMessage({ id: ETranslations.global_continue_anyway })
-            : undefined
-        }
-        cancelButtonProps={
-          canContinueAnyway
-            ? { testID: 'address-risk-check-continue-anyway-action' }
-            : undefined
-        }
+        {...continueAnywayProps}
       />
     );
   }

@@ -6,7 +6,7 @@ import { EKytRiskLevel } from '@onekeyhq/shared/types/kyt';
 // design system has no semantic orange, so these follow the same palette steps
 // the semantic tokens use: 11 for text, 9 for solid fills and 3 for subtle
 // backgrounds. Palette tokens switch with the light/dark theme.
-export const KYT_HIGH_RISK_COLOR = {
+const KYT_HIGH_RISK_COLOR = {
   text: '$orange11',
   solid: '$orange9',
   subtle: '$orange3',

@@ -1,6 +1,9 @@
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 
-import { formatKytRiskFactorEntity } from './kytRiskFactorUtils';
+import {
+  formatKytRiskFactorEntity,
+  formatKytRiskFactorName,
+} from './kytRiskFactorUtils';
 
 import type { IntlShape } from 'react-intl';
 
@@ -36,4 +39,18 @@ describe('formatKytRiskFactorEntity', () => {
       expect(formatKytRiskFactorEntity({ entity, intl })).toBe(entity);
     },
   );
+});
+
+describe('formatKytRiskFactorName', () => {
+  it('prefers the entity and falls back to the category', () => {
+    expect(
+      formatKytRiskFactorName({
+        factor: { entity: 'Theft', category: 'illicit_activity' },
+        intl,
+      }),
+    ).toBe(`t:${ETranslations.kyt_risk_entity_theft__title}`);
+    expect(
+      formatKytRiskFactorName({ factor: { category: 'mixer' }, intl }),
+    ).toBe(`t:${ETranslations.kyt_risk_factor_mixer__title}`);
+  });
 });

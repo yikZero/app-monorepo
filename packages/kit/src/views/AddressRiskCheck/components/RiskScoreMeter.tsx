@@ -63,6 +63,9 @@ function RiskScoreTooltipContent() {
 // parent re-renders.
 const RISK_SCORE_TOOLTIP_CONTENT = <RiskScoreTooltipContent />;
 
+// Stable reference so the tooltip trigger stays memoized.
+const SCORE_INFO_TRIGGER_PROPS = { testID: 'address-risk-check-score-info' };
+
 export function RiskScoreMeter({
   score,
   level,
@@ -92,7 +95,7 @@ export function RiskScoreMeter({
             placement="bottom"
             iconSize="$4"
             renderContent={RISK_SCORE_TOOLTIP_CONTENT}
-            triggerProps={{ testID: 'address-risk-check-score-info' }}
+            triggerProps={SCORE_INFO_TRIGGER_PROPS}
           />
         </XStack>
         <SizableText size="$headingMd">
