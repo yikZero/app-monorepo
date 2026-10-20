@@ -20,7 +20,6 @@ import {
   IconButton,
   Image,
   LottieView,
-  NATIVE_HIT_SLOP,
   NavBackButton,
   Page,
   Popover,
@@ -1238,6 +1237,12 @@ function MoreActionCard({
   );
 }
 
+// The Clear label is about 20pt tall; this brings its native touch target to
+// the 44pt minimum without changing layout.
+const RECENT_CLEAR_HIT_SLOP = platformEnv.isNative
+  ? { top: 12, bottom: 12, left: 8, right: 8 }
+  : undefined;
+
 type IKnownRecentFeatureRecord = IRecentFeatureRecord & {
   featureId: ERecentFeatureId;
 };
@@ -1297,7 +1302,7 @@ function MoreActionRecentCardContent({
       headerRight={
         <Stack
           onPress={onClear}
-          hitSlop={NATIVE_HIT_SLOP}
+          hitSlop={RECENT_CLEAR_HIT_SLOP}
           pressStyle={MORE_ACTION_ITEM_PRESS_STYLE}
           cursor="pointer"
           flexShrink={0}
