@@ -70,7 +70,6 @@ import {
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
-import { formatDistanceToNowStrict } from '@onekeyhq/shared/src/utils/dateUtils';
 import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import extUtils from '@onekeyhq/shared/src/utils/extUtils';
 import { swrKeys } from '@onekeyhq/shared/src/utils/swrCacheUtils';
@@ -523,7 +522,6 @@ function MoreActionContentGridItem({
   lottieSrc,
   isPrimeFeature,
   hidePrimeBadge,
-  subtitle,
   isDesktopMode,
   isDarkTheme,
 }: IMoreActionContentGridItemProps & {
@@ -693,21 +691,11 @@ function MoreActionContentGridItem({
           $group-press={
             isDesktopMode ? MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE : undefined
           }
-          numberOfLines={subtitle ? 1 : 2}
+          numberOfLines={2}
           textAlign="center"
         >
           {title}
         </SizableText>
-        {subtitle ? (
-          <SizableText
-            size="$bodySm"
-            color="$textDisabled"
-            numberOfLines={1}
-            textAlign="center"
-          >
-            {subtitle}
-          </SizableText>
-        ) : null}
       </YStack>
     </YStack>
   );
@@ -1249,16 +1237,6 @@ function MoreActionCard({
   );
 }
 
-// Short, exact relative time ("2 minutes ago") that fits one grid column;
-// under a minute reads as "1 minute ago" instead of a seconds count.
-const formatRecentFeatureTime = (updatedAt: number) =>
-  Date.now() - updatedAt < 60 * 1000
-    ? formatDistanceToNowStrict(updatedAt, {
-        unit: 'minute',
-        roundingMethod: 'ceil',
-      })
-    : formatDistanceToNowStrict(updatedAt, { roundingMethod: 'floor' });
-
 type IKnownRecentFeatureRecord = IRecentFeatureRecord & {
   featureId: ERecentFeatureId;
 };
@@ -1284,7 +1262,7 @@ function MoreActionRecentCardContent({
 
   const displayedItems = useMemo(() => {
     const isTravelMode = isTravelModeActive();
-    const candidates = records.flatMap(({ featureId, updatedAt }) => {
+    const candidates = records.flatMap(({ featureId }) => {
       const item = recentItems[featureId];
       if (
         !item ||
@@ -1298,11 +1276,7 @@ function MoreActionRecentCardContent({
       return [
         {
           featureId,
-          item: {
-            ...item,
-            trackID: `recent-${featureId}`,
-            subtitle: formatRecentFeatureTime(updatedAt),
-          },
+          item: { ...item, trackID: `recent-${featureId}` },
         },
       ];
     });

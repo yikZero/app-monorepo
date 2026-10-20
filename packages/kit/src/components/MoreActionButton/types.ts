@@ -13,5 +13,4 @@ export interface IMoreActionContentGridItemProps {
   lottieSrc?: any;
   isPrimeFeature?: boolean;
   hidePrimeBadge?: boolean;
-  subtitle?: string;
 }
