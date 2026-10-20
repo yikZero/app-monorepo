@@ -41,6 +41,7 @@ import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKey
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector/atoms';
 import { HomeTokenListProviderMirror } from '@onekeyhq/kit/src/views/Home/components/HomeTokenListProvider/HomeTokenListProviderMirror';
+import type { IRecentFeatureRecord } from '@onekeyhq/kit-bg/src/dbs/simple/entity/SimpleDbEntityRecentFeatures';
 import {
   useHardwareWalletXfpStatusAtom,
   useNotificationsAtom,
@@ -71,6 +72,7 @@ import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { formatDistanceToNow } from '@onekeyhq/shared/src/utils/dateUtils';
 import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import extUtils from '@onekeyhq/shared/src/utils/extUtils';
+import { swrKeys } from '@onekeyhq/shared/src/utils/swrCacheUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
 import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
@@ -78,6 +80,10 @@ import { useOnLock } from '../../hooks/useOnLock';
 import { usePromiseResult } from '../../hooks/usePromiseResult';
 import { useThemeVariant } from '../../hooks/useThemeVariant';
 import { getDeviceManagementWallets } from '../../states/jotai/contexts/deviceDetails/deviceStateManagement';
+import {
+  ERecentFeatureId,
+  isRecentFeatureId,
+} from '../../views/ActionCenter/recentFeatures/recentFeatureRegistry';
 import { useDeviceManagerNavigation } from '../../views/DeviceManagement/hooks/useDeviceManagerNavigation';
 import { useFirmwareUpdateDetectStatus } from '../../views/FirmwareUpdate/hooks/useFirmwareUpdateDetectStatus';
 import { WalletXfpStatusReminder } from '../../views/Home/components/WalletXfpStatusReminder/WalletXfpStatusReminder';
@@ -99,13 +105,8 @@ import {
   buildMoreActionGridLayout,
   isMoreActionItemVisible,
 } from './gridLayout';
-import {
-  ERecentFeatureId,
-  isRecentFeatureId,
-  selectDisplayedRecentFeatures,
-} from './recentFeatures/recentFeatureRoutes';
+import { selectDisplayedRecentFeatures } from './recentFeatures/selectDisplayedRecentFeatures';
 import { useRecentFeatureItems } from './recentFeatures/useRecentFeatureItems';
-import { TRAVEL_MODE_IGNORED_MORE_ACTIONS } from './types';
 import {
   useMoreActionFeatureItems,
   useMoreActionScan,
@@ -194,6 +195,19 @@ function pickDesktopThemeStyle<TDark, TLight>(
   return isDarkTheme ? darkStyle : lightStyle;
 }
 
+const isTravelModeActive = () =>
+  travelModeManager.getRuntimeEnvironmentSync().profile.kind === 'travel-mode';
+
+const TRAVEL_MODE_IGNORED_MORE_ACTIONS: ReadonlySet<string> = new Set([
+  'wallet-customer-support',
+  'wallet-lock-now',
+  'wallet-backup',
+  'wallet-address-book',
+  'wallet-network',
+  'wallet-referral',
+  'wallet-redeem',
+]);
+
 function MoreActionContentHeaderItem({
   onPress,
   ignorePress,
@@ -228,9 +242,7 @@ function MoreActionContentHeader({
 }) {
   const intl = useIntl();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
+  const isTravelMode = isTravelModeActive();
 
   const handleCustomerSupport = useCallback(() => {
     if (isTravelMode) {
@@ -419,9 +431,7 @@ function MoreActionAboutCard({
   const intl = useIntl();
   const navigation = useAppNavigation();
   const { closePopover } = usePopoverContext();
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
+  const isTravelMode = isTravelModeActive();
   const version = useMemo(() => {
     return `${platformEnv.version ?? ''} ${platformEnv.buildNumber ?? ''}`;
   }, []);
@@ -707,9 +717,7 @@ function MoreActionOneKeyId() {
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   const { user, isLoggedIn, loginOneKeyId } = useOneKeyAuth();
   const { closePopover } = usePopoverContext();
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
+  const isTravelMode = isTravelModeActive();
   const rowHoverStyle = isDesktopMode
     ? MORE_ACTION_DESKTOP_ROW_HOVER_STYLE
     : MORE_ACTION_ITEM_HOVER_STYLE;
@@ -980,9 +988,7 @@ function BaseMoreActionGrid({
   const { isPrimeAvailable } = usePrimeAvailable();
   const isDesktopMode = useIsDesktopModeUIInTabPages();
   const isDarkTheme = useThemeVariant() === 'dark';
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
+  const isTravelMode = isTravelModeActive();
   const rows = useMemo(
     () =>
       buildMoreActionGridLayout(
@@ -1068,9 +1074,7 @@ function MoreActionGeneralGrid({
   const intl = useIntl();
   const navigation = useAppNavigation();
   const onLock = useOnLock();
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
+  const isTravelMode = isTravelModeActive();
 
   const handleSettings = useCallback(() => {
     navigation.pushModal(EModalRoutes.SettingModal, {
@@ -1242,9 +1246,8 @@ function MoreActionCard({
   );
 }
 
-type IKnownRecentFeatureRecord = {
+type IKnownRecentFeatureRecord = IRecentFeatureRecord & {
   featureId: ERecentFeatureId;
-  updatedAt: number;
 };
 
 function MoreActionRecentCardContent({
@@ -1267,15 +1270,15 @@ function MoreActionRecentCardContent({
   const recentItems = useRecentFeatureItems({ featureItems, featureIds });
 
   const displayedItems = useMemo(() => {
-    const isTravelMode =
-      travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-      'travel-mode';
+    const isTravelMode = isTravelModeActive();
     const candidates = records.flatMap(({ featureId, updatedAt }) => {
       const item = recentItems[featureId];
       if (
         !item ||
         !isMoreActionItemVisible(item, isPrimeAvailable) ||
-        (isTravelMode && TRAVEL_MODE_IGNORED_MORE_ACTIONS.has(item.trackID))
+        (isTravelMode &&
+          item.trackID &&
+          TRAVEL_MODE_IGNORED_MORE_ACTIONS.has(item.trackID))
       ) {
         return [];
       }
@@ -1332,7 +1335,13 @@ function MoreActionRecentCard({
   const { result: records, run } = usePromiseResult(
     () => backgroundApiProxy.simpleDb.recentFeatures.getRecentFeatures(),
     [],
-    { initResult: [], revalidateOnFocus: true },
+    {
+      initResult: [],
+      revalidateOnFocus: true,
+      // Paints the last list on the first frame so the menu below does not
+      // jump when the card appears.
+      swrKey: swrKeys.recentFeatures(),
+    },
   );
   const knownRecords = useMemo(
     () =>
@@ -1378,6 +1387,24 @@ function MoreActionMenuCard({
       <MoreActionWalletGrid featureItems={featureItems} />
       <MoreActionMoreGrid featureItems={featureItems} />
     </MoreActionCard>
+  );
+}
+
+// Owns the feature item subscriptions (account, token list, auth) so their
+// updates re-render only the cards that use them.
+function MoreActionFeatureCards({ isDesktopMode }: { isDesktopMode: boolean }) {
+  const featureItems = useMoreActionFeatureItems();
+  return (
+    <>
+      <MoreActionRecentCard
+        featureItems={featureItems}
+        isDesktopMode={isDesktopMode}
+      />
+      <MoreActionMenuCard
+        featureItems={featureItems}
+        isDesktopMode={isDesktopMode}
+      />
+    </>
   );
 }
 
@@ -1548,10 +1575,7 @@ function MoreActionFixedFooter({ isDesktopMode }: { isDesktopMode: boolean }) {
 
 function BaseMoreActionContent({ fixedFooter }: { fixedFooter: boolean }) {
   const isDesktopMode = useIsDesktopModeUIInTabPages();
-  const isTravelMode =
-    travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
-    'travel-mode';
-  const featureItems = useMoreActionFeatureItems();
+  const isTravelMode = isTravelModeActive();
   const body = (
     <>
       {platformEnv.isWebDappMode ? null : <UpdateReminders />}
@@ -1565,14 +1589,7 @@ function BaseMoreActionContent({ fixedFooter }: { fixedFooter: boolean }) {
         pb={isDesktopMode ? '$0' : '$5'}
       >
         {isDesktopMode || isTravelMode ? null : <MoreActionDevice />}
-        <MoreActionRecentCard
-          featureItems={featureItems}
-          isDesktopMode={isDesktopMode}
-        />
-        <MoreActionMenuCard
-          featureItems={featureItems}
-          isDesktopMode={isDesktopMode}
-        />
+        <MoreActionFeatureCards isDesktopMode={isDesktopMode} />
         {fixedFooter ? null : (
           <MoreActionAboutCard isDesktopMode={isDesktopMode} />
         )}

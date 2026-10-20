@@ -1,6 +1,6 @@
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 
-import type { ERecentFeatureId } from './recentFeatureRoutes';
+import type { ERecentFeatureId } from './recentFeatureRegistry';
 
 export function recordRecentFeature(featureId: ERecentFeatureId) {
   backgroundApiProxy.simpleDb.recentFeatures

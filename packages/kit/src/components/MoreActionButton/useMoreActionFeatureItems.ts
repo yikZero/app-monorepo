@@ -25,15 +25,14 @@ import { EPrimeFreeTrialPendingActionType } from '@onekeyhq/shared/types/prime/p
 
 import { useReferFriends } from '../../hooks/useReferFriends';
 import { useThemeVariant } from '../../hooks/useThemeVariant';
+import { ERecentFeatureId } from '../../views/ActionCenter/recentFeatures/recentFeatureRegistry';
+import { recordRecentFeature } from '../../views/ActionCenter/recentFeatures/recordRecentFeature';
 import { canAccessBulkSend } from '../../views/BulkSend/access';
 import { useBulkSendModeDialog } from '../../views/BulkSend/hooks/useBulkSendModeDialog';
 import { useNavigateToBulkSend } from '../../views/BulkSend/hooks/useNavigateToBulkSend';
 import { usePrimeFeatureAccess } from '../../views/Prime/hooks/usePrimeFeatureAccess';
 import useScanQrCodeLazy from '../../views/ScanQrCode/hooks/useScanQrCodeLazy';
 import { logSettingCategoryOpened } from '../../views/Setting/pages/Tab/settingsAnalytics';
-
-import { ERecentFeatureId } from './recentFeatures/recentFeatureRoutes';
-import { recordRecentFeature } from './recentFeatures/recordRecentFeature';
 
 import type { IMoreActionContentGridItemProps } from './types';
 
@@ -43,22 +42,27 @@ export function useMoreActionScan() {
   } = useActiveAccount({ num: 0 });
   const { tokens, keys, map } = useHomeTokenListSnapshot();
   const scanQrCode = useScanQrCodeLazy();
+  // Read at press time so token list updates do not change the handler, and
+  // with it every Action Center item.
+  const contextRef = useRef({ account, network, tokens, keys, map });
+  contextRef.current = { account, network, tokens, keys, map };
 
   return useCallback(async () => {
     // Scan has no landing route, so it is recorded on press.
     recordRecentFeature(ERecentFeatureId.Scan);
+    const context = contextRef.current;
     await scanQrCode.start({
       handlers: scanQrCode.PARSE_HANDLER_NAMES.all,
       autoExecuteParsedAction: true,
-      account,
-      network,
+      account: context.account,
+      network: context.network,
       tokens: {
-        data: tokens,
-        keys,
-        map,
+        data: context.tokens,
+        keys: context.keys,
+        map: context.map,
       },
     });
-  }, [scanQrCode, account, network, tokens, keys, map]);
+  }, [scanQrCode]);
 }
 
 type IMoreActionActiveContext = {

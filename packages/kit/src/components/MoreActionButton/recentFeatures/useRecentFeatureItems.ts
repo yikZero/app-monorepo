@@ -15,14 +15,24 @@ import {
 import { EModalBulkExportHistoryRoutes } from '@onekeyhq/shared/src/routes/bulkExportHistory';
 
 import { usePerpTabConfig } from '../../../hooks/usePerpTabConfig';
-import { getTabVisibility } from '../../../routes/Tab/tabVisibility';
+import {
+  MAIN_TAB_META,
+  getPerpTabRoute,
+  getTabVisibility,
+} from '../../../routes/Tab/tabPlatformConfig';
+import { ERecentFeatureId } from '../../../views/ActionCenter/recentFeatures/recentFeatureRegistry';
 import { useNavigateToApprovalList } from '../../../views/Home/hooks/useNavigateToApprovalList';
 import { useSignAndVerify } from '../../../views/SignAndVerifyMessage/hooks/useSignAndVerify';
 
-import { ERecentFeatureId } from './recentFeatureRoutes';
-
 import type { IMoreActionContentGridItemProps } from '../types';
 import type { IMoreActionFeatureItems } from '../useMoreActionFeatureItems';
+
+// The card assigns `recent-${featureId}` as the trackID; shared items keep
+// theirs only so travel-mode rules keyed by trackID still apply.
+export type IRecentFeatureItem = Omit<
+  IMoreActionContentGridItemProps,
+  'trackID'
+> & { trackID?: string };
 
 /**
  * Grid items for every recent feature: the shared Action Center items plus
@@ -37,7 +47,7 @@ export function useRecentFeatureItems({
 }: {
   featureItems: IMoreActionFeatureItems;
   featureIds: ERecentFeatureId[];
-}): Record<ERecentFeatureId, IMoreActionContentGridItemProps | undefined> {
+}): Record<ERecentFeatureId, IRecentFeatureItem | undefined> {
   const intl = useIntl();
   const { md } = useMedia();
   const navigation = useAppNavigation();
@@ -74,70 +84,40 @@ export function useRecentFeatureItems({
       isMarketTabIconHidden,
       isShowDesktopDiscover,
       isShowMDDiscover,
-      discoverTranslationId,
     } = getTabVisibility({ md });
     const walletAvailable = !platformEnv.isWebDappMode;
     const tabItem = (
-      featureId: ERecentFeatureId,
-      route: ETabRoutes,
-      title: string,
-      icon: IMoreActionContentGridItemProps['icon'],
-    ): IMoreActionContentGridItemProps => ({
-      title,
-      icon,
-      trackID: `recent-${featureId}`,
+      metaTab: keyof typeof MAIN_TAB_META,
+      route: ETabRoutes = metaTab,
+    ): IRecentFeatureItem => ({
+      title: intl.formatMessage({ id: MAIN_TAB_META[metaTab].translationId }),
+      icon: MAIN_TAB_META[metaTab].outlineIcon,
       onPress: () => {
         void navigation.switchTabAsync(route);
       },
     });
-    const pick = (available: boolean, item: IMoreActionContentGridItemProps) =>
+    const pick = (available: boolean, item: IRecentFeatureItem) =>
       available ? item : undefined;
 
     return {
       ...featureItems,
-      [ERecentFeatureId.Swap]: tabItem(
-        ERecentFeatureId.Swap,
-        ETabRoutes.Swap,
-        intl.formatMessage({ id: ETranslations.global_trade }),
-        'SwitchHorOutline',
-      ),
+      [ERecentFeatureId.Swap]: tabItem(ETabRoutes.Swap),
       [ERecentFeatureId.Market]: pick(
         shouldShowMarketTab && !isMarketTabIconHidden,
-        tabItem(
-          ERecentFeatureId.Market,
-          ETabRoutes.Market,
-          intl.formatMessage({ id: ETranslations.global_market }),
-          'TradingViewCandlesOutline',
-        ),
+        tabItem(ETabRoutes.Market),
       ),
-      [ERecentFeatureId.Earn]: tabItem(
-        ERecentFeatureId.Earn,
-        ETabRoutes.Earn,
-        intl.formatMessage({ id: ETranslations.global_earn }),
-        'CoinsOutline',
-      ),
+      [ERecentFeatureId.Earn]: tabItem(ETabRoutes.Earn),
       [ERecentFeatureId.Perp]: pick(
         !perpDisabled,
-        tabItem(
-          ERecentFeatureId.Perp,
-          perpTabShowWeb ? ETabRoutes.WebviewPerpTrade : ETabRoutes.Perp,
-          intl.formatMessage({ id: ETranslations.global_perp }),
-          'TradeOutline',
-        ),
+        tabItem(ETabRoutes.Perp, getPerpTabRoute({ perpTabShowWeb })),
       ),
       [ERecentFeatureId.Discovery]: pick(
         isShowDesktopDiscover || isShowMDDiscover,
-        tabItem(
-          ERecentFeatureId.Discovery,
-          ETabRoutes.Discovery,
-          intl.formatMessage({ id: discoverTranslationId }),
-          'CompassOutline',
-        ),
+        tabItem(ETabRoutes.Discovery),
       ),
       [ERecentFeatureId.Approvals]: pick(walletAvailable && hasAccount, {
         title: intl.formatMessage({ id: ETranslations.global_approvals }),
         icon: 'ShieldCheckDoneOutline',
-        trackID: 'recent-approvals',
         onPress: handleApprovals,
       }),
       [ERecentFeatureId.DAppConnections]: pick(walletAvailable, {
@@ -145,7 +125,6 @@ export function useRecentFeatureItems({
           id: ETranslations.explore_dapp_connections,
         }),
         icon: 'LinkOutline',
-        trackID: 'recent-dapp-connections',
         onPress: () => {
           navigation.pushModal(EModalRoutes.SettingModal, {
             screen: EModalSettingRoutes.SettingDAppConnectionList,
@@ -159,7 +138,6 @@ export function useRecentFeatureItems({
             id: ETranslations.message_signing_main_title,
           }),
           icon: 'SignatureOutline',
-          trackID: 'recent-sign-and-verify',
           onPress: () => {
             signAndVerify.open();
           },
@@ -170,7 +148,6 @@ export function useRecentFeatureItems({
           id: ETranslations.global_export_transaction_history,
         }),
         icon: 'DownloadOutline',
-        trackID: 'recent-export-history',
         isPrimeFeature: true,
         onPress: () => {
           navigation.pushModal(EModalRoutes.BulkExportHistoryModal, {

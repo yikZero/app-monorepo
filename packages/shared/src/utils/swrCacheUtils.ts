@@ -1286,6 +1286,8 @@ export const swrKeys = {
     [NS.marketHomeBanners, 'v1', locale, mock ? 'mock' : 'live'].join(':'),
   marketHomeConfig: (locale: string) =>
     [NS.marketHomeConfig, 'v1', locale].join(':'),
+  // Recently used Action Center features; one list per device.
+  recentFeatures: () => [NS.recentFeatures, 'v1'].join(':'),
   marketHomeStocks: (queryKey: string) =>
     [NS.marketHomeStocks, 'v1', queryKey].join(':'),
   marketStockDetail: ({

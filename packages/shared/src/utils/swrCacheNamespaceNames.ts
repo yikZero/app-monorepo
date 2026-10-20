@@ -11,6 +11,7 @@ const NS = {
   unifiedNetworkSelectorValues: 'unsValues',
   networkContentData: 'netContent',
   recentNetworks: 'recentNets',
+  recentFeatures: 'recentFeatures',
   walletListSideBar: 'walletList',
   accountSelectorList: 'accSelList',
   accountSelectorValues: 'accSelValues',

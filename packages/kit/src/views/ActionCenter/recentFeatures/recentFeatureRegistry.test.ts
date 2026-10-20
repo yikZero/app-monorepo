@@ -13,11 +13,11 @@ import {
   ERecentFeatureId,
   RECENT_FEATURE_RECORDING,
   getTabFeature,
+  isMainTabFeature,
   isRecentFeatureId,
   resolveActiveTabFromRoutePath,
   resolveScreenFeatureFromRoutePath,
-  selectDisplayedRecentFeatures,
-} from './recentFeatureRoutes';
+} from './recentFeatureRegistry';
 
 describe('RECENT_FEATURE_RECORDING', () => {
   it.each(Object.entries(RECENT_FEATURE_RECORDING))(
@@ -172,42 +172,10 @@ describe('isRecentFeatureId', () => {
   });
 });
 
-describe('selectDisplayedRecentFeatures', () => {
-  const records = (ids: ERecentFeatureId[]) =>
-    ids.map((featureId) => ({ featureId }));
-
-  it('keeps at most four items in order', () => {
-    const result = selectDisplayedRecentFeatures(
-      records([
-        ERecentFeatureId.Scan,
-        ERecentFeatureId.AddressBook,
-        ERecentFeatureId.SettingNetwork,
-        ERecentFeatureId.Prime,
-        ERecentFeatureId.BulkSend,
-      ]),
-    );
-    expect(result.map((item) => item.featureId)).toEqual([
-      ERecentFeatureId.Scan,
-      ERecentFeatureId.AddressBook,
-      ERecentFeatureId.SettingNetwork,
-      ERecentFeatureId.Prime,
-    ]);
-  });
-
-  it('keeps only the newest main tab', () => {
-    const result = selectDisplayedRecentFeatures(
-      records([
-        ERecentFeatureId.Swap,
-        ERecentFeatureId.Market,
-        ERecentFeatureId.AddressRiskCheck,
-        ERecentFeatureId.Earn,
-        ERecentFeatureId.Referral,
-      ]),
-    );
-    expect(result.map((item) => item.featureId)).toEqual([
-      ERecentFeatureId.Swap,
-      ERecentFeatureId.AddressRiskCheck,
-      ERecentFeatureId.Referral,
-    ]);
+describe('isMainTabFeature', () => {
+  it('marks frequently switched tabs only', () => {
+    expect(isMainTabFeature(ERecentFeatureId.Swap)).toBe(true);
+    expect(isMainTabFeature(ERecentFeatureId.Referral)).toBe(false);
+    expect(isMainTabFeature(ERecentFeatureId.Scan)).toBe(false);
   });
 });

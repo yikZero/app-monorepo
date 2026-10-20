@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
@@ -69,5 +69,8 @@ export function useSignAndVerify({
     wallet,
   ]);
 
-  return { isAvailable: Boolean(isAvailable), open };
+  return useMemo(
+    () => ({ isAvailable: Boolean(isAvailable), open }),
+    [isAvailable, open],
+  );
 }

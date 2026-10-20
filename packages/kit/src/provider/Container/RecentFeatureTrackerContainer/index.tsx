@@ -2,16 +2,16 @@ import { useRef } from 'react';
 
 import { useOnRouterChange } from '@onekeyhq/components';
 
+import { getActiveRoutePath } from '../../../routes/activeRoutePath';
 import {
   getTabFeature,
   resolveActiveTabFromRoutePath,
   resolveScreenFeatureFromRoutePath,
-} from '../../../components/MoreActionButton/recentFeatures/recentFeatureRoutes';
-import { recordRecentFeature } from '../../../components/MoreActionButton/recentFeatures/recordRecentFeature';
-import { getActiveRoutePath } from '../../../routes/activeRoutePath';
+} from '../../../views/ActionCenter/recentFeatures/recentFeatureRegistry';
+import { recordRecentFeature } from '../../../views/ActionCenter/recentFeatures/recordRecentFeature';
 
-import type { ERecentFeatureId } from '../../../components/MoreActionButton/recentFeatures/recentFeatureRoutes';
 import type { INavigationStateLike } from '../../../routes/activeRoutePath';
+import type { ERecentFeatureId } from '../../../views/ActionCenter/recentFeatures/recentFeatureRegistry';
 
 export default function RecentFeatureTrackerContainer() {
   // Undefined until the first state, which is restored on launch and is not

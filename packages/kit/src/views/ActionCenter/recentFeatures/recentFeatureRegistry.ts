@@ -17,8 +17,6 @@ import { EModalSignAndVerifyRoutes } from '@onekeyhq/shared/src/routes/signAndVe
 import { ETabRoutes } from '@onekeyhq/shared/src/routes/tab';
 import { ETabHomeRoutes } from '@onekeyhq/shared/src/routes/tabHome';
 
-import { MAX_COLUMN_COUNT } from '../gridLayout';
-
 import type { IActiveRoute } from '../../../routes/activeRoutePath';
 
 // Persisted as plain strings in SimpleDb; never rename existing values.
@@ -48,21 +46,21 @@ export enum ERecentFeatureId {
 /**
  * How a visit to each feature is detected (at least one source each):
  * - `tabs`: switching to one of these tabs.
- * - `screens`: reaching one of these `parentRoute/screen` pairs. Keying by the
- *   parent keeps generic names such as `ListItemModal` inside their stack.
+ * - `screens`: reaching one of these `[parentRoute, screen]` pairs. Keying by
+ *   the parent keeps generic names such as `ListItemModal` inside their stack.
  * - `settingCategory`: the settings sub page for this category.
  * - `onPress`: no landing route; the entry calls `recordRecentFeature`.
  * `isMainTab` marks frequently switched tabs; the card shows at most one.
  */
 export type IRecentFeatureRecording = {
   tabs?: ETabRoutes[];
-  screens?: string[];
+  screens?: Array<[parent: EModalRoutes | ETabRoutes, screen: string]>;
   settingCategory?: ESettingsTabNames;
   onPress?: true;
   isMainTab?: true;
 };
 
-const screen = (parent: string, name: string) => `${parent}/${name}`;
+const screenKey = (parent: string, name: string) => `${parent}/${name}`;
 
 export const RECENT_FEATURE_RECORDING: Record<
   ERecentFeatureId,
@@ -70,39 +68,33 @@ export const RECENT_FEATURE_RECORDING: Record<
 > = {
   [ERecentFeatureId.AddressRiskCheck]: {
     screens: [
-      screen(
+      [
         EModalRoutes.AddressRiskCheckModal,
         EModalAddressRiskCheckRoutes.AddressRiskCheckInput,
-      ),
+      ],
     ],
   },
   [ERecentFeatureId.BulkSend]: {
     screens: [
-      screen(
-        EModalRoutes.BulkSendModal,
-        EModalBulkSendRoutes.BulkSendAddressesInput,
-      ),
-      screen(ETabRoutes.Home, ETabHomeRoutes.TabHomeBulkSendAddressesInput),
+      [EModalRoutes.BulkSendModal, EModalBulkSendRoutes.BulkSendAddressesInput],
+      [ETabRoutes.Home, ETabHomeRoutes.TabHomeBulkSendAddressesInput],
     ],
   },
   [ERecentFeatureId.BulkCopyAddresses]: {
     screens: [
-      screen(
+      [
         EModalRoutes.BulkCopyAddressesModal,
         EModalBulkCopyAddressesRoutes.BulkCopyAddressesModal,
-      ),
+      ],
     ],
   },
   [ERecentFeatureId.AddressBook]: {
     screens: [
-      screen(
-        EModalRoutes.AddressBookModal,
-        EModalAddressBookRoutes.ListItemModal,
-      ),
+      [EModalRoutes.AddressBookModal, EModalAddressBookRoutes.ListItemModal],
     ],
   },
   [ERecentFeatureId.Prime]: {
-    screens: [screen(EModalRoutes.PrimeModal, EPrimePages.PrimeDashboard)],
+    screens: [[EModalRoutes.PrimeModal, EPrimePages.PrimeDashboard]],
   },
   [ERecentFeatureId.SettingNetwork]: {
     settingCategory: ESettingsTabNames.Network,
@@ -132,47 +124,41 @@ export const RECENT_FEATURE_RECORDING: Record<
     // Native opens a modal; other platforms switch to the ReferFriends tab.
     tabs: [ETabRoutes.ReferFriends],
     screens: [
-      screen(
-        EModalRoutes.ReferFriendsModal,
-        EModalReferFriendsRoutes.ReferAFriend,
-      ),
+      [EModalRoutes.ReferFriendsModal, EModalReferFriendsRoutes.ReferAFriend],
     ],
   },
   [ERecentFeatureId.Approvals]: {
     screens: [
-      screen(
+      [
         EModalRoutes.ApprovalManagementModal,
         EModalApprovalManagementRoutes.ApprovalList,
-      ),
-      screen(ETabRoutes.Home, ETabHomeRoutes.TabHomeApprovalList),
+      ],
+      [ETabRoutes.Home, ETabHomeRoutes.TabHomeApprovalList],
     ],
   },
   [ERecentFeatureId.DAppConnections]: {
     screens: [
-      screen(
+      [
         EModalRoutes.SettingModal,
         EModalSettingRoutes.SettingDAppConnectionList,
-      ),
-      screen(
-        EModalRoutes.DAppConnectionModal,
-        EDAppConnectionModal.ConnectionList,
-      ),
+      ],
+      [EModalRoutes.DAppConnectionModal, EDAppConnectionModal.ConnectionList],
     ],
   },
   [ERecentFeatureId.SignAndVerify]: {
     screens: [
-      screen(
+      [
         EModalRoutes.SignAndVerifyModal,
         EModalSignAndVerifyRoutes.SignAndVerifyMessage,
-      ),
+      ],
     ],
   },
   [ERecentFeatureId.ExportHistory]: {
     screens: [
-      screen(
+      [
         EModalRoutes.BulkExportHistoryModal,
         EModalBulkExportHistoryRoutes.BulkExportHistoryModal,
-      ),
+      ],
     ],
   },
 };
@@ -185,7 +171,9 @@ for (const [featureId, recording] of Object.entries(
   RECENT_FEATURE_RECORDING,
 ) as [ERecentFeatureId, IRecentFeatureRecording][]) {
   recording.tabs?.forEach((tab) => featureByTab.set(tab, featureId));
-  recording.screens?.forEach((key) => featureByScreen.set(key, featureId));
+  recording.screens?.forEach(([parent, name]) =>
+    featureByScreen.set(screenKey(parent, name), featureId),
+  );
   if (recording.settingCategory) {
     featureBySettingCategory.set(recording.settingCategory, featureId);
   }
@@ -238,24 +226,10 @@ export function resolveScreenFeatureFromRoutePath(
       ? featureBySettingCategory.get(category)
       : undefined;
   }
-  return featureByScreen.get(screen(parent.name, leaf.name));
+  return featureByScreen.get(screenKey(parent.name, leaf.name));
 }
 
-/** The first row of the card: newest first, with at most one main tab. */
-export function selectDisplayedRecentFeatures<
-  T extends { featureId: ERecentFeatureId },
->(candidates: readonly T[]): T[] {
-  const result: T[] = [];
-  let hasTab = false;
-  for (const candidate of candidates) {
-    if (result.length >= MAX_COLUMN_COUNT) {
-      break;
-    }
-    const isTab = mainTabFeatureIds.has(candidate.featureId);
-    if (!(isTab && hasTab)) {
-      hasTab = hasTab || isTab;
-      result.push(candidate);
-    }
-  }
-  return result;
+/** Main tabs are switched often, so the card shows at most one of them. */
+export function isMainTabFeature(featureId: ERecentFeatureId) {
+  return mainTabFeatureIds.has(featureId);
 }

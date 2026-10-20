@@ -27,7 +27,7 @@ import { marketRouters } from './Marktet/router';
 import { multiTabBrowserRouters } from './MultiTabBrowser/router';
 import { referFriendsRouters } from './ReferFriends/router';
 import { swapRouters } from './Swap/router';
-import { getTabVisibility } from './tabVisibility';
+import { MAIN_TAB_META, getTabVisibility } from './tabPlatformConfig';
 
 // Native tab icons using SVG files from @onekeyhq/components/svg
 // The native tab bar will tint icons using tabBarActiveTintColor/tabBarInactiveTintColor
@@ -62,6 +62,15 @@ const nativeTabIcons = {
       : require('@onekeyhq/components/svg/outline/code-brackets.svg'),
 };
 
+const mainTabMetaProps = (tab: keyof typeof MAIN_TAB_META) => {
+  const meta = MAIN_TAB_META[tab];
+  return {
+    tabBarIcon: (focused?: boolean) =>
+      focused ? meta.solidIcon : meta.outlineIcon,
+    translationId: meta.translationId,
+  };
+};
+
 type IGetTabRouterParams = {
   freezeOnBlur?: boolean;
 };
@@ -86,10 +95,8 @@ const getDiscoverRouterConfig = (
   name: ETabRoutes.Discovery,
   rewrite: '/discovery',
   exact: true,
-  tabBarIcon: (focused?: boolean) =>
-    focused ? 'CompassSolid' : 'CompassOutline',
+  ...mainTabMetaProps(ETabRoutes.Discovery),
   nativeTabBarIcon: nativeTabIcons.discover,
-  translationId: getTabVisibility({ md: false }).discoverTranslationId,
   freezeOnBlur: Boolean(params?.freezeOnBlur),
   children: discoveryRouters,
   tabBarStyle,
@@ -157,9 +164,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
       shouldShowMarketTab
         ? {
             name: ETabRoutes.Market,
-            tabBarIcon: (focused?: boolean) =>
-              focused ? 'TradingViewCandlesSolid' : 'TradingViewCandlesOutline',
-            translationId: ETranslations.global_market,
+            ...mainTabMetaProps(ETabRoutes.Market),
             freezeOnBlur: Boolean(params?.freezeOnBlur),
             rewrite: '/market',
             exact: true,
@@ -176,10 +181,8 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
         : undefined,
       {
         name: ETabRoutes.Swap,
-        tabBarIcon: (focused?: boolean) =>
-          focused ? 'SwitchHorSolid' : 'SwitchHorOutline',
+        ...mainTabMetaProps(ETabRoutes.Swap),
         nativeTabBarIcon: nativeTabIcons.swap,
-        translationId: ETranslations.global_trade,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: '/swap',
         exact: true,
@@ -188,9 +191,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
       },
       {
         name: ETabRoutes.WebviewPerpTrade,
-        tabBarIcon: (focused?: boolean) =>
-          focused ? 'TradeSolid' : 'TradeOutline',
-        translationId: ETranslations.global_perp,
+        ...mainTabMetaProps(ETabRoutes.Perp),
         nativeTabBarIcon: nativeTabIcons.perp,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: perpTabShowWeb ? '/perps' : undefined,
@@ -201,9 +202,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
       },
       {
         name: ETabRoutes.Perp,
-        tabBarIcon: (focused?: boolean) =>
-          focused ? 'TradeSolid' : 'TradeOutline',
-        translationId: ETranslations.global_perp,
+        ...mainTabMetaProps(ETabRoutes.Perp),
         nativeTabBarIcon: nativeTabIcons.perp,
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         children: perpRouters,
@@ -214,9 +213,7 @@ export const useTabRouterConfig = (params?: IGetTabRouterParams) => {
       },
       {
         name: ETabRoutes.Earn,
-        tabBarIcon: (focused?: boolean) =>
-          focused ? 'CoinsSolid' : 'CoinsOutline',
-        translationId: ETranslations.global_earn,
+        ...mainTabMetaProps(ETabRoutes.Earn),
         freezeOnBlur: Boolean(params?.freezeOnBlur),
         rewrite: '/defi',
         exact: true,
