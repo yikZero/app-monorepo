@@ -996,6 +996,7 @@ function BaseMoreActionGrid({
     <SizableText
       size="$headingMd"
       color="$text"
+      flexShrink={1}
       numberOfLines={1}
       ellipsizeMode="middle"
       userSelect="none"
@@ -1299,12 +1300,12 @@ function MoreActionRecentCardContent({
           hitSlop={NATIVE_HIT_SLOP}
           pressStyle={MORE_ACTION_ITEM_PRESS_STYLE}
           cursor="pointer"
-          group
+          flexShrink={0}
         >
           <SizableText
             size="$bodyMdMedium"
             color="$textSubdued"
-            $group-hover={MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE}
+            hoverStyle={MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE}
             userSelect="none"
           >
             {intl.formatMessage({ id: ETranslations.global_clear })}
