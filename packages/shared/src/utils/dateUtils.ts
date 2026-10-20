@@ -162,11 +162,12 @@ export function formatDistanceToNowStrict(
     locale?: Locale;
   },
 ) {
-  const { addSuffix = true, roundingMethod = 'ceil' } = params || {};
+  const { addSuffix = true, roundingMethod = 'ceil', unit } = params || {};
   const locale = appLocale.getLocale();
   const distance = fnsFormatDistanceToNowStrict(date, {
     addSuffix,
     roundingMethod,
+    unit,
     locale: parseToDateFnsLocale(locale),
   });
   return distance ?? '';

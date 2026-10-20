@@ -20,6 +20,7 @@ import {
   IconButton,
   Image,
   LottieView,
+  NATIVE_HIT_SLOP,
   NavBackButton,
   Page,
   Popover,
@@ -69,7 +70,7 @@ import {
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
-import { formatDistanceToNow } from '@onekeyhq/shared/src/utils/dateUtils';
+import { formatDistanceToNowStrict } from '@onekeyhq/shared/src/utils/dateUtils';
 import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import extUtils from '@onekeyhq/shared/src/utils/extUtils';
 import { swrKeys } from '@onekeyhq/shared/src/utils/swrCacheUtils';
@@ -692,7 +693,7 @@ function MoreActionContentGridItem({
           $group-press={
             isDesktopMode ? MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE : undefined
           }
-          numberOfLines={2}
+          numberOfLines={subtitle ? 1 : 2}
           textAlign="center"
         >
           {title}
@@ -1019,7 +1020,9 @@ function BaseMoreActionGrid({
     return null;
   }
 
-  const headerEndPadding = headerRight ? '$5' : '$0';
+  // Matches the title inset so a trailing action lines up with the last
+  // icon column.
+  const headerEndPadding = headerRight ? '$6' : '$0';
 
   return (
     <YStack gap={isDesktopMode ? '$0.5' : '$1'}>
@@ -1246,6 +1249,16 @@ function MoreActionCard({
   );
 }
 
+// Short, exact relative time ("2 minutes ago") that fits one grid column;
+// under a minute reads as "1 minute ago" instead of a seconds count.
+const formatRecentFeatureTime = (updatedAt: number) =>
+  Date.now() - updatedAt < 60 * 1000
+    ? formatDistanceToNowStrict(updatedAt, {
+        unit: 'minute',
+        roundingMethod: 'ceil',
+      })
+    : formatDistanceToNowStrict(updatedAt, { roundingMethod: 'floor' });
+
 type IKnownRecentFeatureRecord = IRecentFeatureRecord & {
   featureId: ERecentFeatureId;
 };
@@ -1288,7 +1301,7 @@ function MoreActionRecentCardContent({
           item: {
             ...item,
             trackID: `recent-${featureId}`,
-            subtitle: formatDistanceToNow(updatedAt),
+            subtitle: formatRecentFeatureTime(updatedAt),
           },
         },
       ];
@@ -1300,28 +1313,37 @@ function MoreActionRecentCardContent({
     return null;
   }
 
-  return (
-    <MoreActionCard isDesktopMode={isDesktopMode}>
-      <BaseMoreActionGrid
-        title={intl.formatMessage({
-          id: ETranslations.network_recent_used_network,
-        })}
-        items={displayedItems}
-        headerRight={
+  const section = (
+    <BaseMoreActionGrid
+      title={intl.formatMessage({
+        id: ETranslations.network_recent_used_network,
+      })}
+      items={displayedItems}
+      headerRight={
+        <Stack
+          onPress={onClear}
+          hitSlop={NATIVE_HIT_SLOP}
+          pressStyle={MORE_ACTION_ITEM_PRESS_STYLE}
+          cursor="pointer"
+          group
+        >
           <SizableText
             size="$bodyMdMedium"
             color="$textSubdued"
-            onPress={onClear}
-            hoverStyle={MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE}
-            pressStyle={MORE_ACTION_ITEM_PRESS_STYLE}
-            cursor="pointer"
+            $group-hover={MORE_ACTION_DESKTOP_TEXT_ACTIVE_STYLE}
             userSelect="none"
           >
             {intl.formatMessage({ id: ETranslations.global_clear })}
           </SizableText>
-        }
-      />
-    </MoreActionCard>
+        </Stack>
+      }
+    />
+  );
+  // Desktop renders it as the first section of the menu card.
+  return isDesktopMode ? (
+    section
+  ) : (
+    <MoreActionCard isDesktopMode={isDesktopMode}>{section}</MoreActionCard>
   );
 }
 
@@ -1377,12 +1399,15 @@ function MoreActionRecentCard({
 function MoreActionMenuCard({
   featureItems,
   isDesktopMode = false,
+  leadingSection,
 }: {
   featureItems: IMoreActionFeatureItems;
   isDesktopMode?: boolean;
+  leadingSection?: ReactNode;
 }) {
   return (
     <MoreActionCard isDesktopMode={isDesktopMode}>
+      {leadingSection}
       <MoreActionGeneralGrid featureItems={featureItems} />
       <MoreActionWalletGrid featureItems={featureItems} />
       <MoreActionMoreGrid featureItems={featureItems} />
@@ -1394,16 +1419,24 @@ function MoreActionMenuCard({
 // updates re-render only the cards that use them.
 function MoreActionFeatureCards({ isDesktopMode }: { isDesktopMode: boolean }) {
   const featureItems = useMoreActionFeatureItems();
-  return (
+  const recent = (
+    <MoreActionRecentCard
+      featureItems={featureItems}
+      isDesktopMode={isDesktopMode}
+    />
+  );
+  // Mobile shows Recent as its own card above the menu; the desktop popover
+  // has no cards, so it joins the menu with the same section spacing.
+  return isDesktopMode ? (
+    <MoreActionMenuCard
+      featureItems={featureItems}
+      isDesktopMode
+      leadingSection={recent}
+    />
+  ) : (
     <>
-      <MoreActionRecentCard
-        featureItems={featureItems}
-        isDesktopMode={isDesktopMode}
-      />
-      <MoreActionMenuCard
-        featureItems={featureItems}
-        isDesktopMode={isDesktopMode}
-      />
+      {recent}
+      <MoreActionMenuCard featureItems={featureItems} />
     </>
   );
 }
