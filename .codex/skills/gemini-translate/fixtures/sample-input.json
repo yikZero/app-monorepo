@@ -1,0 +1,64 @@
+{
+  "sourceLanguage": "en",
+  "targetLanguages": ["zh-CN", "ja", "de"],
+  "context": "Wallet app UI. Keep product name OneKey unchanged. Network means a blockchain network unless a string says otherwise.",
+  "glossary": {
+    "OneKey": {
+      "zh-CN": "OneKey",
+      "ja": "OneKey",
+      "de": "OneKey"
+    }
+  },
+  "items": [
+    {
+      "id": "confirm_action",
+      "text": "Confirm",
+      "context": "Primary button that commits the current form"
+    },
+    {
+      "id": "cancel_action",
+      "text": "Cancel",
+      "context": "Secondary button that discards the current form"
+    },
+    {
+      "id": "send_amount",
+      "text": "Send {amount} {symbol}",
+      "context": "Button on the send-asset review screen"
+    },
+    {
+      "id": "receive_amount",
+      "text": "You received {amount} {symbol}",
+      "context": "Success toast after an inbound transfer"
+    },
+    {
+      "id": "network_fee",
+      "text": "Network fee {amount} {symbol}",
+      "context": "Fee row on transaction review; not a social network"
+    },
+    {
+      "id": "pair_quote",
+      "text": "{amount} {symbol} ≈ {amount} {symbol}",
+      "context": "Swap quote: from-token amount/symbol, then to-token amount/symbol"
+    },
+    {
+      "id": "done_button",
+      "text": "Done",
+      "context": "Toolbar button on a completed send receipt, not an in-progress state"
+    },
+    {
+      "id": "network_label",
+      "text": "Network",
+      "context": "Blockchain network selector label, not Wi-Fi or social networking"
+    },
+    {
+      "id": "open_wallet",
+      "text": "Open OneKey",
+      "context": "Button that launches the wallet app"
+    },
+    {
+      "id": "available_balance",
+      "text": "Available {amount} {symbol}",
+      "context": "Spendable balance shown above the amount field"
+    }
+  ]
+}

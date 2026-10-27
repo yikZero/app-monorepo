@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "en_US",
+  "context": "Wallet app UI. Keep product name OneKey unchanged. Network means a blockchain network unless a string says otherwise.",
+  "glossary": {
+    "OneKey": {
+      "zh_CN": "OneKey",
+      "zh_TW": "OneKey",
+      "zh_HK": "OneKey"
+    }
+  },
+  "items": [
+    {
+      "id": "confirm_action",
+      "text": "Confirm",
+      "context": "Primary button that commits the current form"
+    },
+    {
+      "id": "send_amount",
+      "text": "Send {amount} {symbol}",
+      "context": "Button on the send-asset review screen"
+    }
+  ]
+}

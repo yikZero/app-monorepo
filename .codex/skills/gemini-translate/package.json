@@ -1,0 +1,20 @@
+{
+  "name": "gemini-translate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-installable Gemini translation CLI for the gemini-translate skill",
+  "bin": {
+    "gemini-translate": "./scripts/cli.mjs"
+  },
+  "scripts": {
+    "translate": "node scripts/cli.mjs",
+    "test": "node --import ./tests/test-project-env.mjs --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0"
+  }
+}
