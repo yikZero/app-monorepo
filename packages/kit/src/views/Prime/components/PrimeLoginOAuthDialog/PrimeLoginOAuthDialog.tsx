@@ -30,6 +30,7 @@ import {
   EOneKeyIdLoginWithLocalKeylessPrepareStatus,
 } from '@onekeyhq/shared/src/keylessWallet/keylessWalletTypes';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import type { IOneKeyIdLoginMethod as IOneKeyIdLoginAnalyticsMethod } from '@onekeyhq/shared/src/logger/scopes/prime/scenes/subscription';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { shouldClearKeylessOAuthSessionAfterError } from '@onekeyhq/shared/src/utils/keylessOAuthSessionUtils';
 import type {
@@ -69,6 +70,7 @@ function PrimeLoginOAuthDialog(props: {
   localKeylessLoginPrepareResult?: IOneKeyIdLoginWithLocalKeylessPrepareResult;
   localKeylessLoginPrepareErrorMessage?: string;
   toOneKeyIdPageOnLoginSuccess?: boolean;
+  onLoginMethodSelected?: (method: IOneKeyIdLoginAnalyticsMethod) => void;
 }) {
   const {
     onComplete,
@@ -79,6 +81,7 @@ function PrimeLoginOAuthDialog(props: {
     localKeylessLoginPrepareResult,
     localKeylessLoginPrepareErrorMessage,
     toOneKeyIdPageOnLoginSuccess,
+    onLoginMethodSelected,
   } = props;
   const intl = useIntl();
   const { run: runIdentityExit } = useIdentityExitFlow();
@@ -102,10 +105,13 @@ function PrimeLoginOAuthDialog(props: {
   loggingInProviderRef.current = loggingInProvider;
   const handleEmailSubmittingChange = useCallback(
     (nextIsEmailLoginStarting: boolean) => {
+      if (nextIsEmailLoginStarting) {
+        onLoginMethodSelected?.('email');
+      }
       isEmailLoginStartingRef.current = nextIsEmailLoginStarting;
       setIsEmailLoginStarting(nextIsEmailLoginStarting);
     },
-    [],
+    [onLoginMethodSelected],
   );
   const handleAccountMismatch = useCallback(() => {
     accountMismatchDetectedRef.current = true;
@@ -585,6 +591,11 @@ function PrimeLoginOAuthDialog(props: {
     const providerName =
       method.provider === EOAuthSocialLoginProvider.Google ? 'Google' : 'Apple';
     const handleOAuthPress = () => {
+      onLoginMethodSelected?.(
+        method.provider === EOAuthSocialLoginProvider.Google
+          ? 'google'
+          : 'apple',
+      );
       if (method.requiresMalformedKeylessRecovery) {
         void handleMalformedKeylessOAuth(method.provider);
         return;

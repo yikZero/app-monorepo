@@ -1,7 +1,10 @@
 /* cspell:ignore Infini */
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type { ISubscriptionPeriod } from '@onekeyhq/kit/src/views/Prime/hooks/usePrimePaymentTypes';
-import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type {
+  EPrimeFeatures,
+  IPrimeDashboardEntrySource,
+} from '@onekeyhq/shared/src/routes/prime';
 import { sanitizeCaptchaDiagnostic } from '@onekeyhq/shared/src/utils/captchaDiagnostics';
 import type { ICaptchaDiagnostic } from '@onekeyhq/shared/src/utils/captchaDiagnostics';
 import type {
@@ -37,6 +40,8 @@ import type {
   IOneKeyIdAuthFailureRepeatSummary,
 } from '../oneKeyIdAuthFailureLogLimiter';
 import type {
+  IOneKeyIdLoginDialogResult,
+  IOneKeyIdLoginSource,
   IPrimeEntitlementSource,
   IPrimeFreeTrialExhaustedTrigger,
   IPrimeFreeTrialLoginResult,
@@ -315,18 +320,21 @@ export class PrimeSubscriptionScene extends BaseScene {
     isPrimeActive,
     entitlementSource,
     freeTrialReason,
+    entrySource,
   }: {
     featureName?: EPrimeFeatures;
     isPrimeActive: boolean;
     // Set when the dashboard is opened by the free-trial flow
     entitlementSource?: IPrimeEntitlementSource;
     freeTrialReason?: 'exhausted' | 'notOpen';
+    entrySource?: IPrimeDashboardEntrySource;
   }) {
     return {
       featureName,
       isPrimeActive,
       entitlementSource,
       freeTrialReason,
+      entrySource,
     };
   }
 
@@ -507,18 +515,38 @@ export class PrimeSubscriptionScene extends BaseScene {
     featureName,
     isLoggedIn,
     paymentMethod,
+    hasFreeTrial,
   }: {
     subscriptionPeriod: ISubscriptionPeriod;
     featureName?: EPrimeFeatures;
     isLoggedIn: boolean;
     paymentMethod?: IPrimePaymentMethod;
+    // Whether the selected package offers an introductory free trial.
+    hasFreeTrial?: boolean;
   }) {
     return {
       subscriptionPeriod,
       featureName,
       isLoggedIn,
       paymentMethod,
+      hasFreeTrial,
     };
+  }
+
+  /**
+   * Prime plan switched on the subscription plan picker.
+   * The picker defaults to yearly; this shows who moves to another plan
+   * before (or instead of) subscribing.
+   */
+  @LogToServer()
+  public primePlanSelect(params: {
+    fromPeriod: ISubscriptionPeriod;
+    toPeriod: ISubscriptionPeriod;
+    hasFreeTrial: boolean;
+    featureName?: EPrimeFeatures;
+    source: 'dashboard' | 'purchaseDialog';
+  }) {
+    return params;
   }
 
   /**
@@ -764,6 +792,35 @@ export class PrimeSubscriptionScene extends BaseScene {
   @LogToServer()
   public onekeyIdLoginSuccess({ method }: { method: IOneKeyIdLoginMethod }) {
     return { method };
+  }
+
+  /**
+   * OneKey ID login dialog opened for a logged-out user.
+   * Pairs with onekeyIdLoginDialogResult (same flowId) to measure where the
+   * login step loses users, per requesting surface.
+   */
+  @LogToServer()
+  public onekeyIdLoginDialogShow(params: {
+    flowId: string;
+    source: IOneKeyIdLoginSource;
+  }) {
+    return params;
+  }
+
+  /**
+   * Final outcome of one login dialog flow. attemptedMethod is the last
+   * sign-in method the user started; absent means the dialog was closed
+   * without trying any method.
+   */
+  @LogToServer()
+  public onekeyIdLoginDialogResult(params: {
+    flowId: string;
+    source: IOneKeyIdLoginSource;
+    result: IOneKeyIdLoginDialogResult;
+    attemptedMethod?: IOneKeyIdLoginMethod;
+    durationMs: number;
+  }) {
+    return params;
   }
 
   /**

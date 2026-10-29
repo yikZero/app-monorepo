@@ -797,6 +797,8 @@ export const PrimePurchaseDialog = (props: {
           packages={packages}
           selectedSubscriptionPeriod={selectedSubscriptionPeriod}
           onSubscriptionPeriodSelected={setSelectedSubscriptionPeriod}
+          analyticsSource="purchaseDialog"
+          featureName={featureName}
         />
       ) : (
         <YStack gap="$2.5">

@@ -402,7 +402,7 @@ function AppDataSection() {
     const isPrimeLoggedIn = await backgroundApiProxy.servicePrime.isLoggedIn();
     if (!isPrimeLoggedIn) {
       try {
-        await loginOneKeyId();
+        await loginOneKeyId({ source: 'cloudSync' });
       } catch (error) {
         errorUtils.autoPrintErrorIgnore(error);
       }
@@ -414,6 +414,7 @@ function AppDataSection() {
     if (!isPrimeSubscriptionActive) {
       navigation.push(EPrimePages.PrimeDashboard, {
         fromFeature: EPrimeFeatures.OneKeyCloud,
+        entrySource: 'cloudSync',
       });
       return false;
     }

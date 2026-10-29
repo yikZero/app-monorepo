@@ -17,6 +17,8 @@ export type IRevenueCatCustomerInfo = {
         willRenew: boolean;
         isSandbox: boolean;
         expirationDateMillis: number | null;
+        // 'TRIAL' / 'INTRO' / 'NORMAL'; absent when the SDK bridge omits it.
+        periodType?: string;
       }
     >;
   };

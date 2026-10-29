@@ -13,6 +13,8 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 
 import type {
   IPackage,
@@ -112,12 +114,16 @@ export function PrimeSubscriptionPlans({
   packages,
   selectedSubscriptionPeriod,
   onSubscriptionPeriodSelected,
+  analyticsSource,
+  featureName,
 }: {
   packages?: IPackage[];
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   onSubscriptionPeriodSelected: (
     subscriptionPeriod: ISubscriptionPeriod,
   ) => void;
+  analyticsSource: 'dashboard' | 'purchaseDialog';
+  featureName?: EPrimeFeatures;
 }) {
   const intl = useIntl();
 
@@ -166,6 +172,15 @@ export function PrimeSubscriptionPlans({
               pricePerMonthString={p.pricePerMonthString}
               priceTotalPerYearString={p.priceTotalPerYearString}
               onPress={() => {
+                if (p.subscriptionPeriod !== selectedSubscriptionPeriod) {
+                  defaultLogger.prime.subscription.primePlanSelect({
+                    fromPeriod: selectedSubscriptionPeriod,
+                    toPeriod: p.subscriptionPeriod,
+                    hasFreeTrial: Boolean(p.freeTrial),
+                    featureName,
+                    source: analyticsSource,
+                  });
+                }
                 onSubscriptionPeriodSelected(p.subscriptionPeriod);
               }}
             />

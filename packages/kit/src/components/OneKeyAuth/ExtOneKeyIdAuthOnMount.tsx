@@ -72,6 +72,7 @@ function ExtOneKeyIdAuthOnMountCmp() {
               await loginOneKeyId({
                 toOneKeyIdPageOnLoginSuccess:
                   flowInfo.toOneKeyIdPageOnLoginSuccess,
+                source: 'extExpandTab',
               });
             } catch (loginError) {
               if (loginError instanceof PrimeLoginDialogCancelError) {

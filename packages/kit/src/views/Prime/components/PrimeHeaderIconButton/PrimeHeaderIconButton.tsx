@@ -28,6 +28,7 @@ export function useOnPrimeButtonPressed({
       screen: EPrimePages.PrimeDashboard,
       params: {
         networkId,
+        entrySource: 'headerIcon',
       },
     });
 

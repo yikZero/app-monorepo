@@ -454,6 +454,7 @@ function OneKeyIdPage() {
               screen: EModalRoutes.PrimeModal,
               params: {
                 screen: EPrimePages.PrimeDashboard,
+                params: { entrySource: 'oneKeyIdPage' },
               },
             });
           } else {
@@ -461,6 +462,7 @@ function OneKeyIdPage() {
               screen: EModalRoutes.PrimeModal,
               params: {
                 screen: EPrimePages.PrimeDashboard,
+                params: { entrySource: 'oneKeyIdPage' },
               },
             });
           }

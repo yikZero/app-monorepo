@@ -790,6 +790,7 @@ function MoreActionOneKeyId() {
       () =>
         loginOneKeyId({
           toOneKeyIdPageOnLoginSuccess: false,
+          source: 'moreActions',
         }),
       { waitForAnimation: false },
     );
@@ -1140,6 +1141,7 @@ function MoreActionGeneralGrid() {
       screen: EPrimePages.PrimeDashboard,
       params: {
         networkId: network?.id,
+        entrySource: 'moreActions',
       },
     });
   }, [navigation, network?.id]);

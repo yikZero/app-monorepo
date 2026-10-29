@@ -629,7 +629,7 @@ function BulkExportHistoryTaskList({
   const selectorSceneUrl = TASK_LIST_SELECTOR_SCENE_URL;
 
   const handleSignIn = useCallback(() => {
-    void loginOneKeyId().catch((error) => {
+    void loginOneKeyId({ source: 'historyExport' }).catch((error) => {
       showOneKeyIdLoginFailedToast({ error, intl });
     });
   }, [intl, loginOneKeyId]);

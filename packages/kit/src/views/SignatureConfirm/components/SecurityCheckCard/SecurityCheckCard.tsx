@@ -164,6 +164,7 @@ function useOpenPrimeTransactionSecurity() {
       screen: EPrimePages.PrimeDashboard,
       params: {
         fromFeature: EPrimeFeatures.TransactionSecurityCheck,
+        entrySource: 'featureGate',
       },
     });
   }, [navigation]);

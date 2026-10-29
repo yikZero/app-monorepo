@@ -730,6 +730,7 @@ export function PrimeFeatureIntroContent({
       subscriptionPeriod,
       featureName: activeFeature.id,
       isLoggedIn,
+      hasFreeTrial: Boolean(selectedPackage?.freeTrial),
     });
     await ensurePrimeSubscriptionActive({
       skipDialogConfirm: true,

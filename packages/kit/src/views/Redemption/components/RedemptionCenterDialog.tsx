@@ -153,7 +153,7 @@ function RedemptionCenterDialogContent({
         // (the redemption center entry no longer gates on login).
         if (!isLoggedIn) {
           try {
-            await loginOneKeyId();
+            await loginOneKeyId({ source: 'redeem' });
           } catch (loginError) {
             if (loginError instanceof PrimeLoginDialogCancelError) {
               preventClose?.();

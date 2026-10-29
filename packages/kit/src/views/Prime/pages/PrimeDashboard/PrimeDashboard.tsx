@@ -118,6 +118,7 @@ export default function PrimeDashboard({
     networkId,
     freeTrialReason,
     fromDeepLink,
+    entrySource,
     selectedSubscriptionPeriod: routeSelectedSubscriptionPeriod,
   } = route.params || {};
   const isTravelMode =
@@ -249,7 +250,9 @@ export default function PrimeDashboard({
 
   const ensureDashboardLogin = useCallback(() => {
     if (!loginInFlightRef.current) {
-      loginInFlightRef.current = loginOneKeyId().finally(() => {
+      loginInFlightRef.current = loginOneKeyId({
+        source: 'primeDashboardLogin',
+      }).finally(() => {
         loginInFlightRef.current = null;
       });
     }
@@ -350,8 +353,9 @@ export default function PrimeDashboard({
       isPrimeActive,
       entitlementSource: freeTrialReason ? 'freeTrial' : undefined,
       freeTrialReason,
+      entrySource,
     });
-  }, [freeTrialReason, fromFeature, isAuthReady, isPrimeActive]);
+  }, [entrySource, freeTrialReason, fromFeature, isAuthReady, isPrimeActive]);
 
   useEffect(() => {
     const fn = async () => {
@@ -466,6 +470,7 @@ export default function PrimeDashboard({
         subscriptionPeriod: selectedSubscriptionPeriod,
         featureName: fromFeature,
         isLoggedIn,
+        hasFreeTrial: Boolean(selectedPackage?.freeTrial),
       });
 
       if (isLoggedIn || pendingLogin) {
@@ -595,6 +600,8 @@ export default function PrimeDashboard({
                   packages={packages}
                   selectedSubscriptionPeriod={selectedSubscriptionPeriod}
                   onSubscriptionPeriodSelected={setSelectedSubscriptionPeriod}
+                  analyticsSource="dashboard"
+                  featureName={fromFeature}
                 />
               </Stack>
             ) : null}

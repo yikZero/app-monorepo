@@ -111,7 +111,10 @@ async function openPrimeInfiniSubscriptionFromDeepLink({
     EModalRoutes.PrimeModal,
     isLoggedIn
       ? { screen: EPrimePages.PrimeInfiniSubscription }
-      : { screen: EPrimePages.PrimeDashboard, params: { fromDeepLink: true } },
+      : {
+          screen: EPrimePages.PrimeDashboard,
+          params: { fromDeepLink: true, entrySource: 'deepLink' },
+        },
   );
 }
 

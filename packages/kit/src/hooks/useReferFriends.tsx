@@ -200,7 +200,10 @@ export const useReferFriends = () => {
           });
         }
       } else {
-        void loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
+        void loginOneKeyId({
+          toOneKeyIdPageOnLoginSuccess: false,
+          source: 'referral',
+        });
       }
     },
     [loginOneKeyId, navigation],
@@ -231,7 +234,10 @@ export const useReferFriends = () => {
           );
         }
       } else {
-        void loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
+        void loginOneKeyId({
+          toOneKeyIdPageOnLoginSuccess: false,
+          source: 'referral',
+        });
       }
     },
     [loginOneKeyId, navigation],
@@ -361,7 +367,10 @@ export const useReferFriends = () => {
           }
         } else {
           try {
-            await loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: false });
+            await loginOneKeyId({
+              toOneKeyIdPageOnLoginSuccess: false,
+              source: 'referral',
+            });
             void shareReferRewards(_onSuccess, _onFail, source, copyAsUrl);
           } catch {
             // User cancelled login, do nothing

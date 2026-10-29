@@ -51,10 +51,23 @@ export enum EPrimeFeatures {
   AddressRiskCheck = 'AddressRiskCheck',
 }
 
+// Where the Prime dashboard was opened from (analytics only).
+export type IPrimeDashboardEntrySource =
+  | 'moreActions'
+  | 'headerIcon'
+  | 'homeUpgrade'
+  | 'oneKeyIdPage'
+  | 'featureGate'
+  | 'freeTrialUpgrade'
+  | 'cloudSync'
+  | 'deepLink'
+  | 'extensionHandoff';
+
 export type IPrimeParamList = {
   [EPrimePages.PrimeDashboard]: {
     networkId?: string;
     fromFeature?: EPrimeFeatures;
+    entrySource?: IPrimeDashboardEntrySource;
     // Set when a free-trial entry opened the dashboard (analytics only)
     freeTrialReason?: 'exhausted' | 'notOpen';
     fromDeepLink?: boolean;

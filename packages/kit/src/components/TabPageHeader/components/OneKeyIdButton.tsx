@@ -14,7 +14,10 @@ export function OneKeyIdButton({
   const { loginOneKeyId } = useOneKeyAuth();
 
   const handlePress = useCallback(async () => {
-    await loginOneKeyId({ toOneKeyIdPageOnLoginSuccess: true });
+    await loginOneKeyId({
+      toOneKeyIdPageOnLoginSuccess: true,
+      source: 'headerButton',
+    });
   }, [loginOneKeyId]);
 
   return (

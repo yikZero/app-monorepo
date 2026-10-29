@@ -30,6 +30,7 @@ export function usePrimeFreeTrialUpgrade() {
         fromFeature: featureId,
         networkId,
         freeTrialReason,
+        entrySource: 'freeTrialUpgrade' as const,
       };
       if (afterPageExit) {
         rootNavigationRef.current?.navigate(ERootRoutes.iOSFullScreen, {

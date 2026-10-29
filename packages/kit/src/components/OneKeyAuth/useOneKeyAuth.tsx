@@ -24,9 +24,16 @@ import {
   type IOneKeyIdLoginWithLocalKeylessPrepareResult,
 } from '@onekeyhq/shared/src/keylessWallet/keylessWalletTypes';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import type { IOneKeyIdLoginMethod } from '@onekeyhq/shared/src/logger/scopes/prime/scenes/subscription';
+import type {
+  IOneKeyIdLoginDialogResult,
+  IOneKeyIdLoginSource,
+} from '@onekeyhq/shared/src/logger/scopes/prime/types';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
+import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { IPrimeUserInfo } from '@onekeyhq/shared/types/prime/primeTypes';
 
@@ -136,9 +143,11 @@ export function useOneKeyAuth() {
     async ({
       toOneKeyIdPageOnLoginSuccess,
       keepFreeTrialPendingAction,
+      source,
       renderContent,
     }: {
       toOneKeyIdPageOnLoginSuccess?: boolean;
+      source: IOneKeyIdLoginSource;
       // Extension popup only: the caller just saved the free-trial action
       // the expand tab should continue after this login.
       keepFreeTrialPendingAction?: boolean;
@@ -150,6 +159,7 @@ export function useOneKeyAuth() {
           showKeylessLogoutAction?: boolean;
         }) => void;
         initialShowKeylessLogoutAction?: boolean;
+        onLoginMethodSelected: (method: IOneKeyIdLoginMethod) => void;
       }) => ReactNode;
     }) => {
       const isLoggedIn = await backgroundApiProxy.servicePrime.isLoggedIn();
@@ -161,6 +171,19 @@ export function useOneKeyAuth() {
         }
         return;
       }
+
+      const flowId = generateUUID();
+      const flowStartedAt = Date.now();
+      let attemptedMethod: IOneKeyIdLoginMethod | undefined;
+      const logLoginDialogResult = (result: IOneKeyIdLoginDialogResult) => {
+        defaultLogger.prime.subscription.onekeyIdLoginDialogResult({
+          flowId,
+          source,
+          result,
+          attemptedMethod,
+          durationMs: Date.now() - flowStartedAt,
+        });
+      };
 
       // The extension action popup dies on focus loss, which destroys the
       // pending launchWebAuthFlow OAuth flow (see extOneKeyIdAuthExpandTab).
@@ -180,8 +203,15 @@ export function useOneKeyAuth() {
           flow: EExtOneKeyIdAuthFlow.Login,
           toOneKeyIdPageOnLoginSuccess,
         });
+        // No dialog here: the expand tab runs its own flow (source extExpandTab).
+        logLoginDialogResult('handedOffToExpandTab');
         throw new PrimeLoginHandedOffToExtExpandTabError();
       }
+
+      defaultLogger.prime.subscription.onekeyIdLoginDialogShow({
+        flowId,
+        source,
+      });
 
       return new Promise<void>((resolve, reject) => {
         let isSettled = false;
@@ -190,6 +220,7 @@ export function useOneKeyAuth() {
             return;
           }
           isSettled = true;
+          logLoginDialogResult('success');
           await timerUtils.wait(200);
           if (toOneKeyIdPageOnLoginSuccess) {
             toOneKeyIdPage();
@@ -201,6 +232,7 @@ export function useOneKeyAuth() {
             return;
           }
           isSettled = true;
+          logLoginDialogResult('cancelled');
           reject(new PrimeLoginDialogCancelError());
         };
         const showLoginDialog = (
@@ -244,6 +276,9 @@ export function useOneKeyAuth() {
               onCancel: onCancelFn,
               onReopenAfterOAuthFailure: showLoginDialog,
               initialShowKeylessLogoutAction: options.showKeylessLogoutAction,
+              onLoginMethodSelected: (method) => {
+                attemptedMethod = method;
+              },
             }),
           });
         };
@@ -258,9 +293,11 @@ export function useOneKeyAuth() {
     async ({
       toOneKeyIdPageOnLoginSuccess,
       keepFreeTrialPendingAction,
+      source = 'other',
     }: {
       toOneKeyIdPageOnLoginSuccess?: boolean;
       keepFreeTrialPendingAction?: boolean;
+      source?: IOneKeyIdLoginSource;
     } = {}) => {
       let localKeylessLoginPrepareResult: IOneKeyIdLoginWithLocalKeylessPrepareResult;
       let localKeylessLoginPrepareErrorMessage: string | undefined;
@@ -293,12 +330,14 @@ export function useOneKeyAuth() {
       return showOneKeyIdLoginDialog({
         toOneKeyIdPageOnLoginSuccess,
         keepFreeTrialPendingAction,
+        source,
         renderContent: ({
           onComplete,
           onLoginSuccess,
           onCancel,
           onReopenAfterOAuthFailure,
           initialShowKeylessLogoutAction,
+          onLoginMethodSelected,
         }) => (
           <PrimeLoginOAuthDialog
             onComplete={onComplete}
@@ -311,6 +350,7 @@ export function useOneKeyAuth() {
               localKeylessLoginPrepareErrorMessage
             }
             toOneKeyIdPageOnLoginSuccess={toOneKeyIdPageOnLoginSuccess}
+            onLoginMethodSelected={onLoginMethodSelected}
           />
         ),
       });
@@ -326,6 +366,7 @@ export function useOneKeyAuth() {
     } = {}) =>
       showOneKeyIdLoginDialog({
         toOneKeyIdPageOnLoginSuccess,
+        source: 'other',
         renderContent: ({ onComplete, onLoginSuccess, onCancel }) => (
           <PrimeLoginEmailDialogV2
             onComplete={onComplete}

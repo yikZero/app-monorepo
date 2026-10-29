@@ -36,6 +36,7 @@ async function continuePrimeCardCheckout({
     params: {
       selectedSubscriptionPeriod,
       fromFeature: featureName,
+      entrySource: 'extensionHandoff',
     },
   });
   if (!fallbackFrom) {

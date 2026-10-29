@@ -13,6 +13,7 @@ import {
   EOneKeyIdLoginWithLocalKeylessPrepareStatus,
   type IOneKeyIdLoginWithLocalKeylessPrepareResult,
 } from '@onekeyhq/shared/src/keylessWallet/keylessWalletTypes';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 
 import { useOneKeyAuth } from './useOneKeyAuth';
@@ -128,6 +129,7 @@ type ILoginDialogContentProps = {
   onReopenAfterOAuthFailure: (options?: {
     showKeylessLogoutAction?: boolean;
   }) => void;
+  onLoginMethodSelected: (method: 'email' | 'google' | 'apple') => void;
 };
 
 function getDialogContentProps(index: number): ILoginDialogContentProps {
@@ -255,5 +257,115 @@ describe('useOneKeyAuth login dialog lifecycle', () => {
     expect(options?.boundedSheetLayout).toBe(boundedSheetLayout);
     expect(options?.sheetDragArea).toBe(sheetDragArea);
     expect(options?.floatingPanelProps?.width).toBe(isNative ? undefined : 440);
+  });
+});
+
+describe('useOneKeyAuth login dialog analytics', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    platformEnv.isNative = false;
+    platformEnv.isDesktop = false;
+    mockDialogCloses.length = 0;
+    mockIsLoggedIn.mockResolvedValue(false);
+    mockPrepareOneKeyIdLoginWithLocalKeyless.mockResolvedValue({
+      status: EOneKeyIdLoginWithLocalKeylessPrepareStatus.NoLocalKeyless,
+    });
+    jest.mocked(Dialog.show).mockImplementation(() => {
+      const close = jest.fn(async () => undefined);
+      mockDialogCloses.push(close);
+      return {
+        close,
+        getForm: () => undefined,
+        isExist: () => true,
+      };
+    });
+  });
+
+  function spyLoginAnalytics() {
+    const subscription = defaultLogger.prime.subscription;
+    return {
+      show: jest
+        .spyOn(subscription, 'onekeyIdLoginDialogShow')
+        .mockImplementation((params) => params),
+      result: jest
+        .spyOn(subscription, 'onekeyIdLoginDialogResult')
+        .mockImplementation((params) => params),
+    };
+  }
+
+  test('reports a dialog closed without trying any sign-in method', async () => {
+    const analytics = spyLoginAnalytics();
+    const { result } = renderHook(() => useOneKeyAuth());
+    const loginPromise = result.current.loginOneKeyId({
+      source: 'primeSubscribe',
+    });
+
+    await waitFor(() => {
+      expect(Dialog.show).toHaveBeenCalledTimes(1);
+    });
+    act(() => {
+      getDialogContentProps(0).onCancel();
+    });
+    await expect(loginPromise).rejects.toBeInstanceOf(
+      PrimeLoginDialogCancelError,
+    );
+
+    expect(analytics.show).toHaveBeenCalledTimes(1);
+    const { flowId } = analytics.show.mock.calls[0][0];
+    expect(analytics.show).toHaveBeenCalledWith({
+      flowId,
+      source: 'primeSubscribe',
+    });
+    expect(analytics.result).toHaveBeenCalledTimes(1);
+    expect(analytics.result).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flowId,
+        source: 'primeSubscribe',
+        result: 'cancelled',
+        attemptedMethod: undefined,
+      }),
+    );
+  });
+
+  test('reports one flow with the last attempted method across a reopened dialog', async () => {
+    const analytics = spyLoginAnalytics();
+    const { result } = renderHook(() => useOneKeyAuth());
+    const loginPromise = result.current.loginOneKeyId();
+
+    await waitFor(() => {
+      expect(Dialog.show).toHaveBeenCalledTimes(1);
+    });
+    const firstDialog = getDialogContentProps(0);
+    act(() => {
+      firstDialog.onLoginMethodSelected('google');
+    });
+    await act(async () => {
+      await firstDialog.onComplete();
+    });
+    act(() => {
+      firstDialog.onReopenAfterOAuthFailure();
+    });
+    await waitFor(() => {
+      expect(Dialog.show).toHaveBeenCalledTimes(2);
+    });
+    const reopenedDialog = getDialogContentProps(1);
+    act(() => {
+      reopenedDialog.onLoginMethodSelected('email');
+    });
+    await act(async () => {
+      await reopenedDialog.onLoginSuccess();
+    });
+    await expect(loginPromise).resolves.toBeUndefined();
+
+    expect(analytics.show).toHaveBeenCalledTimes(1);
+    expect(analytics.result).toHaveBeenCalledTimes(1);
+    expect(analytics.result).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flowId: analytics.show.mock.calls[0][0].flowId,
+        source: 'other',
+        result: 'success',
+        attemptedMethod: 'email',
+      }),
+    );
   });
 });

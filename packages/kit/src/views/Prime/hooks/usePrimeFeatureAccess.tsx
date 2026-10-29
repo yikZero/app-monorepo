@@ -557,6 +557,7 @@ export function usePrimeFeatureAccess() {
         try {
           await loginOneKeyId({
             keepFreeTrialPendingAction: extPopup?.mode === 'pendingAction',
+            source: 'freeTrial',
           });
         } catch (error) {
           if (error instanceof PrimeLoginHandedOffToExtExpandTabError) {

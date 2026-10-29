@@ -48,7 +48,7 @@ export function usePrimeRequirements({
         await backgroundApiProxy.servicePrime.isLoggedIn();
       if (!isLoggedInInBackground) {
         const onConfirm = async () => {
-          await loginOneKeyId();
+          await loginOneKeyId({ source: 'primeSubscribe' });
         };
         if (!skipDialogConfirm) {
           const dialog = Dialog.show({

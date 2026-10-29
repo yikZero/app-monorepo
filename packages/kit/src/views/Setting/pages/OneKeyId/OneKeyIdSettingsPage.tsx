@@ -37,7 +37,7 @@ function OneKeyIdUserProfile() {
   });
 
   const handleLogin = useCallback(() => {
-    void loginOneKeyId();
+    void loginOneKeyId({ source: 'settings' });
   }, [loginOneKeyId]);
 
   const handlePickAvatar = useCallback(async () => {

@@ -390,6 +390,7 @@ function BulkExportHistoryContent({
         screen: EPrimePages.PrimeDashboard,
         params: {
           fromFeature: EPrimeFeatures.HistoryExport,
+          entrySource: 'featureGate',
         },
       });
       return;

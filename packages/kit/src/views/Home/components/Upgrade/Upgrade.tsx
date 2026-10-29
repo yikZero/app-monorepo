@@ -99,6 +99,7 @@ function Upgrade() {
           onPress={() => {
             appNavigation.pushFullModal(EModalRoutes.PrimeModal, {
               screen: EPrimePages.PrimeDashboard,
+              params: { entrySource: 'homeUpgrade' },
             });
           }}
         >

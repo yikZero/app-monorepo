@@ -535,7 +535,7 @@ function PrimeRedeemLandingPage() {
     }
     isLoginLoadingRef.current = true;
     setIsLoginLoading(true);
-    void loginOneKeyId()
+    void loginOneKeyId({ source: 'redeem' })
       .catch((error) => {
         showOneKeyIdLoginFailedToast({ error, intl });
       })

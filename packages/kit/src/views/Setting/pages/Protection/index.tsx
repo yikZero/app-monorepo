@@ -331,6 +331,7 @@ const SettingProtectionModalContent = () => {
                   screen: EPrimePages.PrimeDashboard,
                   params: {
                     fromFeature: EPrimeFeatures.ReceiveRiskMonitoring,
+                    entrySource: 'featureGate',
                   },
                 });
               },

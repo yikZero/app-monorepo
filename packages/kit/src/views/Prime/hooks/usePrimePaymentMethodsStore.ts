@@ -396,6 +396,10 @@ export function usePrimePaymentMethodsStore<
             featureName,
             // StoreKit / Play Billing in-app purchase
             paymentMethod: 'iap',
+            // Separates a started free trial from an actual paid purchase.
+            periodType:
+              makePurchaseResult.customerInfo.entitlements.active.Prime
+                ?.periodType,
           });
 
           void Dialog.confirm({

@@ -47,7 +47,7 @@ function BasicOneKeyIdTabItem({ selected, onPress }: IOneKeyIdTabItemProps) {
       // Mark that login was attempted from this component
       loginAttemptedRef.current = true;
       // Trigger login flow directly
-      void loginOneKeyId();
+      void loginOneKeyId({ source: 'settings' });
       return;
     }
     // If logged in, navigate to OneKey ID page

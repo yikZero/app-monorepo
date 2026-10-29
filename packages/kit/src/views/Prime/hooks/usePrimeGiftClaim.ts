@@ -500,7 +500,7 @@ export function usePrimeGiftClaim({
     });
     const loginSerialNo = serialNo;
     try {
-      await loginOneKeyId();
+      await loginOneKeyId({ source: 'gift' });
       if (
         contextRef.current.mounted &&
         contextRef.current.serialNo === loginSerialNo
