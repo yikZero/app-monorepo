@@ -17,11 +17,13 @@ const useShowMobileBottomTabBar = platformEnv.isNative
     };
 
 export default function NavigationBar({
+  showSidebarNavLabels,
   ...props
 }: BottomTabBarProps & {
   extraConfig?: ITabNavigatorExtraConfig<string>;
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
+  showSidebarNavLabels?: boolean;
 }) {
   const isShowMobileBottomTabBar = useShowMobileBottomTabBar();
   const { gtMd } = useMedia();
@@ -33,5 +35,10 @@ export default function NavigationBar({
   if (isShowMobileBottomTabBar) {
     return <MobileBottomTabBar {...props} />;
   }
-  return <DesktopLeftSideBar {...props} />;
+  return (
+    <DesktopLeftSideBar
+      {...props}
+      showSidebarNavLabels={showSidebarNavLabels}
+    />
+  );
 }

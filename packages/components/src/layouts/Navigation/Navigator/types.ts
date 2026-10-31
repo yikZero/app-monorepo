@@ -112,4 +112,7 @@ export interface ITabNavigatorProps<RouteName extends string> {
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
   sideAccessory?: ITabBarSideAccessory;
+  // Desktop left sidebar only. Native bottom tabs ignore this.
+  // Undefined matches a missing persisted value: titles stay hidden.
+  showSidebarNavLabels?: boolean;
 }

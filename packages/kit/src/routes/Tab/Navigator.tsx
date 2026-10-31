@@ -14,6 +14,7 @@ import {
   useMedia,
   useSplitSubView,
 } from '@onekeyhq/components';
+import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { showIntercom } from '@onekeyhq/shared/src/modules3rdParty/intercom';
@@ -102,6 +103,7 @@ function FloatingDevModeBackButton() {
 
 export function TabNavigator() {
   const intl = useIntl();
+  const [{ showSidebarNavLabels }] = useSettingsPersistAtom();
   const { freezeOnBlur } = useContext(TabFreezeOnBlurContext);
   // Customer service sits above the tab bar while iOS shows it as a vertical
   // bar in the iPhone Duo side strip; the native tab bar hides it otherwise.
@@ -219,6 +221,7 @@ export function TabNavigator() {
         bottomMenu={<BottomMenu />}
         webPageTabBar={<WebPageTabBar />}
         sideAccessory={sideAccessory}
+        showSidebarNavLabels={showSidebarNavLabels}
       />
       {platformEnv.isDev && shouldHideExtTabBar ? (
         <FloatingDevModeBackButton />

@@ -902,6 +902,14 @@ class ServiceSetting extends ServiceBase {
   }
 
   @backgroundMethod()
+  public async setShowSidebarNavLabels(value: boolean) {
+    await settingsPersistAtom.set((prev) => ({
+      ...prev,
+      showSidebarNavLabels: value,
+    }));
+  }
+
+  @backgroundMethod()
   public async setHapticFeedbackEnabled(value: boolean) {
     await settingsPersistAtom.set((prev) => ({
       ...prev,

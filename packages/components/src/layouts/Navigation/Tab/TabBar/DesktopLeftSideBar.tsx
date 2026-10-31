@@ -19,6 +19,11 @@ import {
 } from '@onekeyhq/components/src/primitives';
 import { ANIMATE_ONLY_OPACITY_TRANSFORM } from '@onekeyhq/components/src/utils/animationConstants';
 import { MIN_SIDEBAR_WIDTH } from '@onekeyhq/components/src/utils/sidebar';
+import {
+  getSidebarMaxVisibleTabCount,
+  getSidebarTabLabel,
+  resolveShowSidebarNavLabels,
+} from '@onekeyhq/components/src/utils/sidebarNavLabels';
 import { appEventBus } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { EAppEventBusNames } from '@onekeyhq/shared/src/eventBus/appEventBusNames';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
@@ -42,9 +47,6 @@ import type {
 import type { NavigationState } from '@react-navigation/routers';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
-// Estimated height per tab item (icon ~40px + gap + label ~16-30px + padding 12px)
-const ESTIMATED_TAB_ITEM_HEIGHT = 70;
-
 const TAB_BAR_STYLE_WIDTH_40 = { width: 40 };
 const TAB_BAR_STYLE_ARRAY_WIDTH_40 = [{ width: 40 }];
 const ENTER_EXIT_STYLE = { scale: 0.95, opacity: 0 };
@@ -65,6 +67,47 @@ const PRESS_STYLE_BG_ACTIVE = { bg: '$bgActive' } as const;
 const PLATFORM_WEB_APP_REGION_DRAG = { 'app-region': 'drag' } as const;
 
 let lastBrowserRoute: string = ETabRoutes.Discovery;
+
+function SidebarTabIconLabel({
+  showLabel,
+  label,
+  numberOfLines,
+  tooltipPlacement = 'right',
+  children,
+}: {
+  showLabel: boolean;
+  label: string;
+  numberOfLines: 1 | 2;
+  tooltipPlacement?: 'right' | 'top';
+  children: ReactElement;
+}) {
+  return (
+    <>
+      {showLabel ? (
+        children
+      ) : (
+        <LazyTooltip
+          placement={tooltipPlacement}
+          renderTrigger={children}
+          renderContent={label}
+        />
+      )}
+      {showLabel ? (
+        <SizableText
+          size="$bodyXsMedium"
+          cursor="default"
+          color="$text"
+          textAlign="center"
+          numberOfLines={numberOfLines}
+          wordWrap="break-word"
+          maxWidth="100%"
+        >
+          {label}
+        </SizableText>
+      ) : null}
+    </>
+  );
+}
 
 function DesktopWinSidebarTop() {
   return (
@@ -111,12 +154,14 @@ function BasicTabItemView({
   onPress,
   onPressOut,
   options,
+  showSidebarNavLabels,
 }: {
   isActive: boolean;
   route: NavigationState['routes'][0];
   onPress: () => void;
   onPressOut?: () => void;
   options: ITabItemOptions;
+  showSidebarNavLabels: boolean;
 }) {
   useEffect(() => {
     // @ts-expect-error
@@ -153,6 +198,7 @@ function BasicTabItemView({
         : TAB_BAR_STYLE_ARRAY_WIDTH_40,
     [options.tabBarStyle],
   );
+  const labelText = getSidebarTabLabel(options, route.name);
 
   const contentMemo = useMemo(
     () =>
@@ -168,31 +214,27 @@ function BasicTabItemView({
           onHoverIn={handleHoverIn}
           onHoverOut={handleHoverOut}
         >
-          <DesktopTabItem
-            isContainerHovered={isContainerHovered}
-            onPress={handlePress}
-            onPressWhenSelected={options.onPressWhenSelected}
-            trackId={options.trackId}
-            aria-current={isActive ? 'page' : undefined}
-            selected={isActive}
-            tabBarStyle={tabBarStyleMemo}
-            // @ts-expect-error
-            icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
-            label=""
-            actionList={options.actionList}
-            testID={route.name.toLowerCase()}
-          />
-          <SizableText
-            size="$bodyXsMedium"
-            cursor="default"
-            color="$text"
-            textAlign="center"
+          <SidebarTabIconLabel
+            showLabel={showSidebarNavLabels}
+            label={labelText}
             numberOfLines={2}
-            wordWrap="break-word"
-            maxWidth="100%"
           >
-            {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
-          </SizableText>
+            <DesktopTabItem
+              isContainerHovered={isContainerHovered}
+              onPress={handlePress}
+              onPressWhenSelected={options.onPressWhenSelected}
+              trackId={options.trackId}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={showSidebarNavLabels ? undefined : labelText}
+              selected={isActive}
+              tabBarStyle={tabBarStyleMemo}
+              // @ts-expect-error
+              icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
+              label=""
+              actionList={options.actionList}
+              testID={route.name.toLowerCase()}
+            />
+          </SidebarTabIconLabel>
         </YStack>
       ),
     [
@@ -201,8 +243,10 @@ function BasicTabItemView({
       handleHoverOut,
       isActive,
       isContainerHovered,
+      labelText,
       options,
       route.name,
+      showSidebarNavLabels,
       tabBarStyleMemo,
     ],
   );
@@ -217,6 +261,7 @@ const TabItemView = memo(
     prev.route === next.route &&
     prev.onPress === next.onPress &&
     prev.onPressOut === next.onPressOut &&
+    prev.showSidebarNavLabels === next.showSidebarNavLabels &&
     areTabOptionsEqual(prev.options, next.options),
 );
 
@@ -288,12 +333,7 @@ function SidebarBottomItem({
 }) {
   // @ts-expect-error tabBarIcon returns icon name string, not ReactNode
   const iconName = options?.tabBarIcon?.(isActive) as IKeyOfIcons;
-  const label =
-    options.collapseTabBarLabel ??
-    (typeof options.tabBarLabel === 'string'
-      ? options.tabBarLabel
-      : undefined) ??
-    route.name;
+  const label = getSidebarTabLabel(options, route.name);
 
   const renderTriggerMemo = useMemo(
     () => (
@@ -341,12 +381,7 @@ function OverflowMenuItem({
 }) {
   // @ts-expect-error tabBarIcon returns icon name string, not ReactNode
   const iconName = options?.tabBarIcon?.(isActive) as IKeyOfIcons;
-  const label =
-    options.collapseTabBarLabel ??
-    (typeof options.tabBarLabel === 'string'
-      ? options.tabBarLabel
-      : undefined) ??
-    route.name;
+  const label = getSidebarTabLabel(options, route.name);
 
   return (
     <XStack
@@ -424,6 +459,7 @@ function OverflowMoreButton({
   descriptors,
   navigation,
   extraConfig,
+  showSidebarNavLabels,
 }: {
   overflowRoutes: NavigationState['routes'];
   isAnyOverflowActive: boolean;
@@ -431,6 +467,7 @@ function OverflowMoreButton({
   descriptors: BottomTabBarProps['descriptors'];
   navigation: BottomTabBarProps['navigation'];
   extraConfig?: ITabNavigatorExtraConfig<string>;
+  showSidebarNavLabels: boolean;
 }) {
   const intl = useIntl();
   const [isOpen, setIsOpen] = useState(false);
@@ -463,27 +500,27 @@ function OverflowMoreButton({
   const overflowPopoverTrigger = useMemo(
     () => (
       <YStack w="100%" ai="center" gap="$0.5" pt={6} pb={6}>
-        <DesktopTabItem
-          isContainerHovered={isOpen}
-          selected={isAnyOverflowActive}
-          tabBarStyle={TAB_BAR_STYLE_WIDTH_40}
-          icon={isAnyOverflowActive ? 'DotHorSolid' : 'DotHorOutline'}
-          label=""
-          showTooltip={false}
-          testID="tab-more"
-        />
-        <SizableText
-          size="$bodyXsMedium"
-          cursor="default"
-          color="$text"
-          textAlign="center"
+        <SidebarTabIconLabel
+          showLabel={showSidebarNavLabels}
+          label={moreLabel}
           numberOfLines={1}
+          // The overflow menu already opens to the right, so the name sits above.
+          tooltipPlacement="top"
         >
-          {moreLabel}
-        </SizableText>
+          <DesktopTabItem
+            isContainerHovered={isOpen}
+            selected={isAnyOverflowActive}
+            tabBarStyle={TAB_BAR_STYLE_WIDTH_40}
+            icon={isAnyOverflowActive ? 'DotHorSolid' : 'DotHorOutline'}
+            label=""
+            showTooltip={false}
+            aria-label={showSidebarNavLabels ? undefined : moreLabel}
+            testID="tab-more"
+          />
+        </SidebarTabIconLabel>
       </YStack>
     ),
-    [isAnyOverflowActive, isOpen, moreLabel],
+    [isAnyOverflowActive, isOpen, moreLabel, showSidebarNavLabels],
   );
 
   const overflowPopoverContent = useMemo(
@@ -543,6 +580,7 @@ function BasicVisibleTabItemView({
   isActive,
   options,
   handleTabPress,
+  showSidebarNavLabels,
 }: {
   route: NavigationState['routes'][0];
   isActive: boolean;
@@ -551,6 +589,7 @@ function BasicVisibleTabItemView({
     route: NavigationState['routes'][0],
     isActive: boolean,
   ) => void;
+  showSidebarNavLabels: boolean;
 }) {
   const handlePress = useCallback(() => {
     // When clicking the Discovery sidebar icon, restore the last
@@ -573,6 +612,7 @@ function BasicVisibleTabItemView({
       onPress={handlePress}
       isActive={isActive}
       options={options}
+      showSidebarNavLabels={showSidebarNavLabels}
     />
   );
 }
@@ -583,6 +623,7 @@ const VisibleTabItemView = memo(
     prev.isActive === next.isActive &&
     prev.route === next.route &&
     prev.handleTabPress === next.handleTabPress &&
+    prev.showSidebarNavLabels === next.showSidebarNavLabels &&
     areTabOptionsEqual(prev.options, next.options),
 );
 
@@ -593,11 +634,16 @@ export function DesktopLeftSideBar({
   extraConfig,
   bottomMenu,
   webPageTabBar,
+  showSidebarNavLabels: showSidebarNavLabelsValue,
 }: BottomTabBarProps & {
   extraConfig?: ITabNavigatorExtraConfig<string>;
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
+  showSidebarNavLabels?: boolean;
 }) {
+  const showSidebarNavLabels = resolveShowSidebarNavLabels(
+    showSidebarNavLabelsValue,
+  );
   const { routes } = state;
   const { top } = useSafeAreaInsets(); // used for ipad
   const handleTabPress = useTabAction(navigation);
@@ -616,13 +662,16 @@ export function DesktopLeftSideBar({
     }
   }, [focusedRouteName, extraConfig?.name]);
 
-  const [maxVisibleCount, setMaxVisibleCount] = useState(0);
+  const [tabsContainerHeight, setTabsContainerHeight] = useState(0);
   const handleTabsContainerLayout = useCallback((event: LayoutChangeEvent) => {
     const height = event.nativeEvent.layout.height;
     if (height <= 0) return;
-    const count = Math.floor(height / ESTIMATED_TAB_ITEM_HEIGHT);
-    setMaxVisibleCount((prev) => (prev === count ? prev : count));
+    setTabsContainerHeight((prev) => (prev === height ? prev : height));
   }, []);
+  const maxVisibleCount = getSidebarMaxVisibleTabCount(
+    tabsContainerHeight,
+    showSidebarNavLabels,
+  );
 
   const { visibleRoutes, overflowRoutes, deviceRoute } = useMemo(() => {
     let currentDeviceRoute: (typeof routes)[0] | undefined;
@@ -744,6 +793,7 @@ export function DesktopLeftSideBar({
                     isActive={isActive}
                     options={descriptors[route.key].options}
                     handleTabPress={handleTabPress}
+                    showSidebarNavLabels={showSidebarNavLabels}
                   />
                 );
               })}
@@ -755,6 +805,7 @@ export function DesktopLeftSideBar({
                   descriptors={descriptors}
                   navigation={navigation}
                   extraConfig={extraConfig}
+                  showSidebarNavLabels={showSidebarNavLabels}
                 />
               ) : null}
             </YStack>

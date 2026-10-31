@@ -77,6 +77,7 @@ import {
   MenuBarTrayListItem,
   ResetAppListItem,
   ResetPinListItem,
+  ShowSidebarNavLabelsListItem,
   SplitViewListItem,
   ThemeListItem,
   TravelModeListItem,
@@ -428,6 +429,16 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               }),
               renderElement: <ThemeListItem />,
             },
+            !platformEnv.isNative && !platformEnv.isWebDappMode
+              ? {
+                  id: 'show-sidebar-labels',
+                  icon: 'LayoutSidebarOutline',
+                  // English is intentional until locale keys are added locally.
+                  title: 'Show sidebar labels',
+                  subtitle: 'Show names under the navigation icons',
+                  renderElement: <ShowSidebarNavLabelsListItem />,
+                }
+              : undefined,
             platformEnv.isNative
               ? {
                   id: 'haptic-feedback',

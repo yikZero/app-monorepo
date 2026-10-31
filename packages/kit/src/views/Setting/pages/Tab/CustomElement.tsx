@@ -38,6 +38,7 @@ import {
   startViewTransition,
   useClipboard,
 } from '@onekeyhq/components';
+import { resolveShowSidebarNavLabels } from '@onekeyhq/components/src/utils/sidebarNavLabels';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import {
   isShowAppUpdateUIWhenUpdating,
@@ -1033,6 +1034,42 @@ export function MenuBarTrayListItem({
         size={ESwitchSize.small}
         value={isEnabled}
         onChange={toggleMenuBarTray}
+      />
+    </TabSettingsListItem>
+  );
+}
+
+export function ShowSidebarNavLabelsListItem({
+  logItemClick,
+  analyticsSource,
+  ...props
+}: ICustomElementProps) {
+  const [{ showSidebarNavLabels }] = useSettingsPersistAtom();
+  const isEnabled = resolveShowSidebarNavLabels(showSidebarNavLabels);
+  const toggleSidebarNavLabels = useCallback(
+    (value: boolean) => {
+      maybeLogSettingsSearchResultClick({
+        source: analyticsSource,
+        logItemClick,
+      });
+      logSettingValueChanged({
+        itemId: 'show-sidebar-labels',
+        from: String(isEnabled),
+        to: String(value),
+      });
+      startViewTransition(() => {
+        void backgroundApiProxy.serviceSetting.setShowSidebarNavLabels(value);
+      });
+    },
+    [analyticsSource, isEnabled, logItemClick],
+  );
+  return (
+    <TabSettingsListItem {...props} userSelect="none">
+      <Switch
+        testID={SettingTestIDs.showSidebarNavLabelsSwitch}
+        size={ESwitchSize.small}
+        value={isEnabled}
+        onChange={toggleSidebarNavLabels}
       />
     </TabSettingsListItem>
   );

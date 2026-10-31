@@ -90,6 +90,7 @@ export function TabStackNavigator<RouteName extends string>({
   showTabBar = true,
   bottomMenu,
   webPageTabBar,
+  showSidebarNavLabels,
 }: ITabNavigatorProps<RouteName>) {
   const intl = useIntl();
   const [tabBarHidden, setTabBarHidden] = useState(false);
@@ -111,9 +112,10 @@ export function TabStackNavigator<RouteName extends string>({
         extraConfig={extraConfig}
         bottomMenu={bottomMenu}
         webPageTabBar={webPageTabBar}
+        showSidebarNavLabels={showSidebarNavLabels}
       />
     ),
-    [webPageTabBar, bottomMenu, extraConfig],
+    [webPageTabBar, bottomMenu, extraConfig, showSidebarNavLabels],
   );
 
   const tabComponents = useMemo(

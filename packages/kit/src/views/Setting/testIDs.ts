@@ -71,6 +71,7 @@ export const SettingTestIDs = {
 
   // Tab custom elements (desktop tab settings)
   tabMenuBarTraySwitch: 'setting-tab-menu-bar-tray-switch',
+  showSidebarNavLabelsSwitch: 'setting-show-sidebar-labels-switch',
   tabUseGasAccountByDefaultSwitch:
     'setting-tab-use-gas-account-by-default-switch',
   tabSplitViewSwitch: 'setting-tab-split-view-switch',
