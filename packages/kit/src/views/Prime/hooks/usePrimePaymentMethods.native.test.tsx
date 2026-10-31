@@ -14,6 +14,7 @@ import enMessages from '@onekeyhq/shared/src/locale/json/en_US.json';
 import zhMessages from '@onekeyhq/shared/src/locale/json/zh_CN.json';
 
 import primePaymentUtils from './primePaymentUtils';
+import { PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS } from './primeWebCheckoutResult';
 import { usePrimePaymentMethods } from './usePrimePaymentMethods.native';
 
 const mockConfigure = jest.fn<void, [unknown]>();
@@ -193,6 +194,8 @@ jest.mock('./revenueCatNativeCompatibility.native', () => ({
 
 type ISuccessDialogOptions = {
   onClose: () => Promise<void>;
+  title?: string;
+  description?: string;
 };
 
 const mockOffering = {
@@ -335,6 +338,10 @@ describe('usePrimePaymentMethods native purchase', () => {
 
       const dialogOptions = mockDialogConfirm.mock
         .calls[0][0] as ISuccessDialogOptions;
+      expect(dialogOptions.title).toBe(ETranslations.prime_payment_successful);
+      expect(dialogOptions.description).toBe(
+        ETranslations.prime_payment_successful_description,
+      );
       await act(async () => {
         await dialogOptions.onClose();
       });
@@ -436,6 +443,111 @@ describe('usePrimePaymentMethods native purchase', () => {
       }),
     ]);
   });
+
+  it.each([
+    {
+      label: 'an entitlement older than this purchase',
+      latestOffset: -(PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS + 1),
+      transactionOffset: undefined,
+      restored: true,
+    },
+    {
+      label: 'an older entitlement and transaction',
+      latestOffset: -(PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS + 1),
+      transactionOffset: -(PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS + 1),
+      restored: true,
+    },
+    {
+      label: 'a purchase during this attempt',
+      latestOffset: 0,
+      transactionOffset: 0,
+      restored: false,
+    },
+    {
+      label: 'a purchase at the clock-skew boundary',
+      latestOffset: -PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS,
+      transactionOffset: undefined,
+      restored: false,
+    },
+    {
+      label: 'a recent transaction with an older entitlement',
+      latestOffset: -(PRIME_WEB_CHECKOUT_PURCHASE_DATE_TOLERANCE_MS + 1),
+      transactionOffset: 0,
+      restored: false,
+    },
+  ])(
+    'classifies $label',
+    async ({ latestOffset, transactionOffset, restored }) => {
+      const purchaseStartedAt = Date.UTC(2026, 9, 31, 12, 0, 0);
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(purchaseStartedAt);
+      try {
+        const purchaseResult = {
+          customerInfo: {
+            entitlements: {
+              active: {
+                Prime: {
+                  isActive: true,
+                  latestPurchaseDateMillis: purchaseStartedAt + latestOffset,
+                },
+              },
+            },
+            managementURL: 'https://subscriptions.example.com',
+          },
+          ...(transactionOffset === undefined
+            ? {}
+            : {
+                transaction: {
+                  purchaseDateMillis: purchaseStartedAt + transactionOffset,
+                },
+              }),
+        };
+        mockPurchasePackage.mockResolvedValue(purchaseResult);
+        const { result } = renderHook(() => usePrimePaymentMethods());
+        await waitFor(() => expect(result.current.isReady).toBe(true));
+
+        await act(async () => {
+          await result.current.purchasePackageNative?.({
+            subscriptionPeriod: 'P1Y',
+          });
+        });
+
+        const dialogOptions = mockDialogConfirm.mock
+          .calls[0][0] as ISuccessDialogOptions;
+        expect(dialogOptions.title).toBe(
+          restored
+            ? ETranslations.prime_restore_successful
+            : ETranslations.prime_payment_successful,
+        );
+        expect(dialogOptions.description).toBe(
+          restored
+            ? undefined
+            : ETranslations.prime_payment_successful_description,
+        );
+        expect(mockFetchPrimeUserInfo).toHaveBeenCalledTimes(1);
+        if (restored) {
+          expect(mockTrackPrimeSubscriptionSuccess).not.toHaveBeenCalled();
+          expect(mockPrimeRestorePurchaseResult).toHaveBeenCalledWith({
+            result: 'success',
+          });
+        } else {
+          expect(mockTrackPrimeSubscriptionSuccess).toHaveBeenCalledWith(
+            expect.objectContaining({ paymentMethod: 'iap' }),
+          );
+          expect(mockPrimeRestorePurchaseResult).not.toHaveBeenCalled();
+        }
+
+        await act(async () => {
+          await dialogOptions.onClose();
+        });
+        expect(mockPurchaseSuccessListener).toHaveBeenCalledWith({
+          claimId: 'purchase-claim',
+          onekeyUserId: 'user-a',
+        });
+      } finally {
+        nowSpy.mockRestore();
+      }
+    },
+  );
 
   it('does not show success or emit without an active Prime entitlement', async () => {
     mockPurchasePackage.mockResolvedValue({

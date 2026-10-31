@@ -34,6 +34,7 @@ import {
 
 import { getPrimePaymentApiKey } from './getPrimePaymentApiKey';
 import primePaymentUtils from './primePaymentUtils';
+import { isExistingStoreSubscriptionPurchase } from './storeSubscriptionPurchase';
 
 import type { IPrimeStorePurchasesSdk } from './storePurchasesSdkTypes';
 import type {
@@ -349,17 +350,25 @@ export function usePrimePaymentMethodsStore<
           throw new OneKeyLocalError('Offering not found');
         }
 
+        const purchaseStartedAt = Date.now();
         const makePurchaseResult = await sdk.purchasePackage(
           offering,
           purchaseUserId,
         );
         await ensureCurrentUser(purchaseUserId);
 
-        if (
-          makePurchaseResult?.customerInfo?.entitlements?.active?.Prime
-            ?.isActive
-        ) {
+        const primeEntitlement =
+          makePurchaseResult?.customerInfo?.entitlements?.active?.Prime;
+        if (primeEntitlement?.isActive) {
           isPurchaseSuccessful = true;
+          const restoredExistingSubscription =
+            isExistingStoreSubscriptionPurchase({
+              latestPurchaseDateMillis:
+                primeEntitlement.latestPurchaseDateMillis,
+              transactionPurchaseDateMillis:
+                makePurchaseResult.transaction?.purchaseDateMillis,
+              startedAt: purchaseStartedAt,
+            });
           const purchaseSuccessPayload =
             await preparePrimeSubscriptionPurchaseSuccess(purchaseUserId);
           await ensureCurrentUser(purchaseUserId);
@@ -380,34 +389,47 @@ export function usePrimePaymentMethodsStore<
           await refreshPrimeUserInfoAfterPurchase();
           await ensureCurrentUser(purchaseUserId);
 
-          const rawPrice =
-            subscriptionPeriod === 'P1Y'
-              ? offering.product.pricePerYear
-              : offering.product.pricePerMonth;
-          const amount = primePaymentUtils.normalizeNativePrice(
-            rawPrice || 0,
-            sdk.getRecurringPriceUnit(),
-          );
+          if (restoredExistingSubscription) {
+            // Reattaching an older store subscription is not a new charge.
+            defaultLogger.prime.subscription.primeRestorePurchaseResult({
+              result: 'success',
+            });
+          } else {
+            const rawPrice =
+              subscriptionPeriod === 'P1Y'
+                ? offering.product.pricePerYear
+                : offering.product.pricePerMonth;
+            const amount = primePaymentUtils.normalizeNativePrice(
+              rawPrice || 0,
+              sdk.getRecurringPriceUnit(),
+            );
 
-          primePaymentUtils.trackPrimeSubscriptionSuccess({
-            amount,
-            currency: offering.product.currencyCode,
-            subscriptionPeriod,
-            featureName,
-            // StoreKit / Play Billing in-app purchase
-            paymentMethod: 'iap',
-          });
+            primePaymentUtils.trackPrimeSubscriptionSuccess({
+              amount,
+              currency: offering.product.currencyCode,
+              subscriptionPeriod,
+              featureName,
+              // StoreKit / Play Billing in-app purchase
+              paymentMethod: 'iap',
+            });
+          }
 
           void Dialog.confirm({
             dismissOnOverlayPress: false,
             icon: 'CheckLargeOutline',
             tone: 'success',
             title: intl.formatMessage({
-              id: ETranslations.prime_payment_successful,
+              id: restoredExistingSubscription
+                ? ETranslations.prime_restore_successful
+                : ETranslations.prime_payment_successful,
             }),
-            description: intl.formatMessage({
-              id: ETranslations.prime_payment_successful_description,
-            }),
+            ...(restoredExistingSubscription
+              ? {}
+              : {
+                  description: intl.formatMessage({
+                    id: ETranslations.prime_payment_successful_description,
+                  }),
+                }),
             onConfirmText: intl.formatMessage({
               id: ETranslations.global_ok,
             }),

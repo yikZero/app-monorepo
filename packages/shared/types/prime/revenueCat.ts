@@ -17,6 +17,7 @@ export type IRevenueCatCustomerInfo = {
         willRenew: boolean;
         isSandbox: boolean;
         expirationDateMillis: number | null;
+        latestPurchaseDateMillis?: number | null;
       }
     >;
   };
@@ -46,6 +47,9 @@ export type IRevenueCatOfferings = {
 
 export type IRevenueCatPurchaseResult = {
   customerInfo: IRevenueCatCustomerInfo;
+  transaction?: {
+    purchaseDateMillis?: number | null;
+  } | null;
 };
 
 export type IRevenueCatRequestMap = {
