@@ -426,6 +426,36 @@ describe('InviteTabContent entry points', () => {
     expect(screen.queryByText(ETranslations.perps_perps)).toBeNull();
   });
 
+  it.each([false, true])(
+    'keeps the perks cross-link in the content unless it is pinned (compact: %s)',
+    (md) => {
+      mockMd = md;
+      const onOpenPerks = jest.fn();
+      const view = render(
+        <InviteTabContent
+          summaryInfo={SUMMARY}
+          fetchSummaryInfo={jest.fn()}
+          levelDetail={undefined}
+          onOpenPerks={onOpenPerks}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId(ReferFriendsTestIDs.toPerksLink));
+      expect(onOpenPerks).toHaveBeenCalledTimes(1);
+
+      view.rerender(
+        <InviteTabContent
+          summaryInfo={SUMMARY}
+          fetchSummaryInfo={jest.fn()}
+          levelDetail={undefined}
+          onOpenPerks={onOpenPerks}
+          pinCrossLink
+        />,
+      );
+      expect(screen.queryByTestId(ReferFriendsTestIDs.toPerksLink)).toBeNull();
+    },
+  );
+
   it('explains hardware pending rewards without repeating the payout date', () => {
     renderTab();
 

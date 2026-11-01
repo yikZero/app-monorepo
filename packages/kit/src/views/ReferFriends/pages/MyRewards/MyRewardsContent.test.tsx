@@ -83,6 +83,7 @@ jest.mock('@onekeyhq/components', () => {
       Heading3Xl: () => null,
       BodyMd: () => null,
     }),
+    Page: { Footer: Primitive, FooterActions: Primitive },
     Stack: Primitive,
     XStack: Primitive,
     YStack: Primitive,
@@ -279,6 +280,8 @@ jest.mock('@onekeyhq/shared/src/logger/logger', () => ({
     },
   },
 }));
+
+import { ReferFriendsTestIDs } from '../../testIDs';
 
 import { MyRewardsContent } from './MyRewardsContent';
 
@@ -1176,6 +1179,40 @@ describe('MyRewardsContent', () => {
       '5',
     );
     await act(async () => {});
+  });
+
+  it.each([false, true])(
+    'keeps the invite cross-link in the content unless it is pinned (compact: %s)',
+    async (compact) => {
+      mockIsCompact = compact;
+      const onOpenInvite = jest.fn();
+      const view = render(<MyRewardsContent onOpenInvite={onOpenInvite} />);
+      await act(async () => {});
+
+      fireEvent.click(screen.getByTestId(ReferFriendsTestIDs.toInviteLink));
+      expect(onOpenInvite).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getAllByTestId(ReferFriendsTestIDs.toInviteLink),
+      ).toHaveLength(1);
+
+      view.rerender(
+        <MyRewardsContent onOpenInvite={onOpenInvite} pinCrossLink />,
+      );
+      await act(async () => {});
+      // Still one link: the footer, not a second copy left in the content.
+      expect(
+        screen.getAllByTestId(ReferFriendsTestIDs.toInviteLink),
+      ).toHaveLength(1);
+      fireEvent.click(screen.getByTestId(ReferFriendsTestIDs.toInviteLink));
+      expect(onOpenInvite).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('does not pin an invite link on the empty-wallet state', async () => {
+    mockActiveAccount = {};
+    render(<MyRewardsContent onOpenInvite={jest.fn()} pinCrossLink />);
+    await act(async () => {});
+    expect(screen.queryByTestId(ReferFriendsTestIDs.toInviteLink)).toBeNull();
   });
 
   it('keeps an unpaid Perps reward out of the empty state', async () => {

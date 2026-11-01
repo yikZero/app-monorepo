@@ -10,6 +10,8 @@ export const ReferFriendsTestIDs = {
   createCodeBtn: 'refer-friends-create-code-btn',
   copyLinkBtn: 'refer-friends-copy-link-btn',
   inviteFriendsFooterBtn: 'refer-friends-invite-friends-footer-btn',
+  toInviteLink: 'refer-friends-to-invite-link',
+  toPerksLink: 'refer-friends-to-perks-link',
   inviteTab: 'refer-friends-tab-invite',
   benefitsTab: 'refer-friends-tab-benefits',
   inviteEarningsCard: 'refer-friends-invite-earnings-card',

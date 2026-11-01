@@ -1,4 +1,7 @@
-import { Icon, SizableText, XStack } from '@onekeyhq/components';
+import { Icon, Page, SizableText, XStack, YStack } from '@onekeyhq/components';
+import type { IPageProps } from '@onekeyhq/components';
+
+import { INVITE_CARD_BORDER_COLOR } from './useInviteCardStyle';
 
 // A quiet line at the end of each tab pointing to the other one, so the two
 // read as the two sides of referrals rather than two versions of one page.
@@ -7,22 +10,25 @@ export function ReferralTabCrossLink({
   action,
   onPress,
   testID,
-  pt = '$8',
+  pinned = false,
+  pt,
 }: {
   prompt: string;
   action: string;
   onPress: () => void;
   testID: string;
-  // Space above the line; the default separates it from a tab's content.
+  // Compact layouts render this in the page footer, so it stays put.
+  pinned?: boolean;
+  // Space above the line. The flow default separates it from tab content.
   pt?: '$8' | '$3';
 }) {
   return (
     <XStack
       px="$pagePadding"
-      pt={pt}
-      // In a page-filling column this pushes the line to the bottom; it
-      // stays right after the content once the page scrolls.
-      mt="auto"
+      pt={pt ?? (pinned ? '$3' : '$8')}
+      // In a page-filling column this pushes the line to the bottom of a
+      // short page. Once that page scrolls, the line stays after the content.
+      mt={pinned ? undefined : 'auto'}
       jc="center"
       ai="center"
       gap="$1.5"
@@ -50,5 +56,40 @@ export function ReferralTabCrossLink({
         <Icon name="ArrowRightOutline" size="$4" color="$textInteractive" />
       </XStack>
     </XStack>
+  );
+}
+
+// Link-only footer. The invite share button uses the same bar with the
+// button added, so this helper stays free of that action.
+export function PinnedReferralCrossLinkFooter({
+  prompt,
+  action,
+  onPress,
+  testID,
+  backgroundColor,
+}: {
+  prompt: string;
+  action: string;
+  onPress: () => void;
+  testID: string;
+  backgroundColor: IPageProps['backgroundColor'];
+}) {
+  return (
+    <Page.Footer>
+      <YStack
+        bg={backgroundColor}
+        borderTopWidth={1}
+        borderTopColor={INVITE_CARD_BORDER_COLOR}
+        pb="$4"
+      >
+        <ReferralTabCrossLink
+          pinned
+          prompt={prompt}
+          action={action}
+          onPress={onPress}
+          testID={testID}
+        />
+      </YStack>
+    </Page.Footer>
   );
 }

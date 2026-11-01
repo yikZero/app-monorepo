@@ -17,24 +17,19 @@ import {
   useMedia,
   usePageWidth,
 } from '@onekeyhq/components';
-import type { IPageProps } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
 import { TabPageHeader } from '@onekeyhq/kit/src/components/TabPageHeader';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
-import {
-  getReferralShareCopy,
-  showReferralShareDialog,
-} from '@onekeyhq/kit/src/views/ReferFriends/components/ReferralShare';
 import { useRedirectWhenNotLoggedIn } from '@onekeyhq/kit/src/views/ReferFriends/hooks/useRedirectWhenNotLoggedIn';
 import { useInviteLevelDetail } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/CurrentLevelCard/hooks/useCurrentLevelCard';
 import { getInviteEarningsState } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/getInviteEarningsState';
 import { InviteLevelPill } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteLevelPill';
 import { InviteTabContent } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteTabContent';
-import { useInviteValueSummary } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/InviteValueLine';
 import { LogoutButton } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/LogoutButton';
 import { ReferralJobTabs } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralJobTabs';
+import { ReferralPageFooter } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ReferralPageFooter';
 import { RulesButton } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/RulesButton';
 import { ScrollEdgeFade } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ScrollEdgeFade';
 import type { IScrollEdgeFadeControl } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/ScrollEdgeFade';
@@ -43,6 +38,7 @@ import {
   useInviteHomeCardStyle,
   useInvitePageCanvas,
 } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/components/useInviteCardStyle';
+import { getReferralHomeFooter } from '@onekeyhq/kit/src/views/ReferFriends/pages/InviteReward/referralHomeFooter';
 import {
   EReferralPageTab,
   type IReferralPageTab,
@@ -54,14 +50,10 @@ import {
   getInviteCodeStepImageHeight,
   getInviteCodeStepImageWidth,
 } from '@onekeyhq/kit/src/views/ReferFriends/pages/ReferAFriend/components/InviteCodeStepImage';
-import { formatInviteUrlForDisplay } from '@onekeyhq/kit/src/views/ReferFriends/utils/inviteUrlUtils';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import type {
-  IInviteLevelDetail,
-  IInviteSummary,
-} from '@onekeyhq/shared/src/referralCode/type';
+import type { IInviteSummary } from '@onekeyhq/shared/src/referralCode/type';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes';
 import type { IInviteRewardRouteParams } from '@onekeyhq/shared/src/routes';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
@@ -74,8 +66,8 @@ import { useNavigateToRewardHistory } from '../RewardDistributionHistory/hooks/u
 
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
-// Short tabs fill the viewport, so the cross-link at their end rests at the
-// bottom.
+// Short pages fill the viewport, so a cross-link left in the flow rests at
+// the bottom. Compact layouts pin that link in the footer instead.
 const SCROLL_FILL_STYLE = { flexGrow: 1 } as const;
 
 const ReferralPageHeader = memo(function ReferralPageHeader({
@@ -346,54 +338,6 @@ function InviteOverviewSkeleton() {
   );
 }
 
-// Inviting is the main action on native. The button opens the share card
-// preview (save, copy link, X, Telegram, system share); copying alone lives
-// on the invite card rows. A component of its own so the card's copy can
-// read the level's rates through hooks once the summary has loaded.
-const INVITE_FOOTER_BUTTON_PROPS = {
-  testID: ReferFriendsTestIDs.inviteFriendsFooterBtn,
-  icon: 'AddPeopleOutline',
-} as const;
-
-const InviteShareFooter = memo(function InviteShareFooter({
-  summaryInfo,
-  levelDetail,
-  backgroundColor,
-}: {
-  summaryInfo: IInviteSummary;
-  levelDetail: IInviteLevelDetail | undefined;
-  backgroundColor: IPageProps['backgroundColor'];
-}) {
-  const { summary } = useInviteValueSummary({
-    rebateConfig: summaryInfo.rebateConfig,
-    rebateLevels: summaryInfo.rebateLevels,
-    levelDetail,
-  });
-  const intl = useIntl();
-  const inviteeRate = summary?.friendRate;
-  const handleInvite = useCallback(() => {
-    showReferralShareDialog({
-      copy: getReferralShareCopy(intl, inviteeRate),
-      inviteCode: summaryInfo.inviteCode,
-      inviteUrl: summaryInfo.inviteUrl,
-      displayUrl: formatInviteUrlForDisplay(summaryInfo.inviteUrl),
-    });
-  }, [intl, inviteeRate, summaryInfo.inviteCode, summaryInfo.inviteUrl]);
-
-  return (
-    <Page.Footer>
-      <Page.FooterActions
-        bg={backgroundColor}
-        onConfirm={handleInvite}
-        onConfirmText={intl.formatMessage({
-          id: ETranslations.referral_invite_friends__action,
-        })}
-        confirmButtonProps={INVITE_FOOTER_BUTTON_PROPS}
-      />
-    </Page.Footer>
-  );
-});
-
 function InviteRewardPage() {
   const intl = useIntl();
   const { md } = useMedia();
@@ -529,8 +473,14 @@ function InviteRewardPage() {
     [],
   );
 
-  const showInviteFooter =
-    platformEnv.isNative && isInviteTab && Boolean(summaryInfo?.inviteUrl);
+  const homeFooter = getReferralHomeFooter({
+    isCompactHeader,
+    isNative: platformEnv.isNative,
+    isInviteTab,
+    benefitsEnabled: IS_BENEFITS_TAB_ENABLED,
+    inviteContentMounted: Boolean(summaryInfo) && !(isInviteTab && isFetching),
+    hasInviteUrl: Boolean(summaryInfo?.inviteUrl),
+  });
 
   let body: ReactNode;
   if (isInviteTab && isFetching) {
@@ -576,6 +526,7 @@ function InviteRewardPage() {
                 fetchSummaryInfo={fetchSummaryInfo}
                 levelDetail={levelDetail}
                 onOpenPerks={IS_BENEFITS_TAB_ENABLED ? openPerks : undefined}
+                pinCrossLink={homeFooter.pinCrossLink}
               />
             </YStack>
           ) : null}
@@ -583,6 +534,7 @@ function InviteRewardPage() {
             <MyRewardsContent
               entry={route.params?.perksEntry ?? 'route'}
               onOpenInvite={openInvite}
+              pinCrossLink={homeFooter.pinCrossLink}
             />
           )}
         </Page.Container>
@@ -647,13 +599,16 @@ function InviteRewardPage() {
           />
         ) : null}
       </Page.Body>
-      {showInviteFooter && summaryInfo ? (
-        <InviteShareFooter
-          summaryInfo={summaryInfo}
-          levelDetail={levelDetail}
-          backgroundColor={pageCanvas.backgroundColor}
-        />
-      ) : null}
+      <ReferralPageFooter
+        pinCrossLink={isInviteTab && homeFooter.pinCrossLink}
+        showShareButton={homeFooter.showShareButton}
+        isInviteTab={isInviteTab}
+        summaryInfo={summaryInfo}
+        levelDetail={levelDetail}
+        backgroundColor={pageCanvas.backgroundColor}
+        onOpenPerks={openPerks}
+        onOpenInvite={openInvite}
+      />
     </Page>
   );
 }

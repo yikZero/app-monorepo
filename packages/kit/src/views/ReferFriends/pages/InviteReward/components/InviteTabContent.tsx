@@ -82,12 +82,15 @@ export const InviteTabContent = memo(function InviteTabContent({
   fetchSummaryInfo,
   levelDetail,
   onOpenPerks,
+  pinCrossLink = false,
 }: {
   summaryInfo: IInviteSummary;
   fetchSummaryInfo: () => unknown;
   levelDetail: IInviteLevelDetail | undefined;
   // Absent while the Perks tab is turned off.
   onOpenPerks?: () => void;
+  // The page footer owns the link on compact layouts.
+  pinCrossLink?: boolean;
 }) {
   const tabCopy = useReferralTabCopy();
   const { md } = useMedia();
@@ -104,7 +107,7 @@ export const InviteTabContent = memo(function InviteTabContent({
   }, [inviteUrl, navigateToInviteCodes]);
 
   return (
-    <YStack flex={1} pb="$6">
+    <YStack flex={1} pb={pinCrossLink ? '$2' : '$6'}>
       <SuspensionAlert
         suspensionNotice={summaryInfo.suspensionNotice}
         suspensionContactLabel={summaryInfo.suspensionContactLabel}
@@ -173,9 +176,9 @@ export const InviteTabContent = memo(function InviteTabContent({
           <InviteRewardRows summaryInfo={summaryInfo} />
         </>
       )}
-      {onOpenPerks ? (
+      {onOpenPerks && !pinCrossLink ? (
         <ReferralTabCrossLink
-          testID="refer-friends-to-perks-link"
+          testID={ReferFriendsTestIDs.toPerksLink}
           prompt={tabCopy.toPerksPrompt}
           action={tabCopy.toPerksAction}
           onPress={onOpenPerks}

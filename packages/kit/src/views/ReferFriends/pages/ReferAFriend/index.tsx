@@ -31,6 +31,7 @@ import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
 
 import { ReferralJobTabs } from '../InviteReward/components/ReferralJobTabs';
 import { ReferralTabCrossLink } from '../InviteReward/components/ReferralTabCrossLink';
+import { getReferralHomeFooter } from '../InviteReward/referralHomeFooter';
 import {
   EReferralPageTab,
   IS_BENEFITS_TAB_ENABLED,
@@ -179,6 +180,19 @@ function ReferAFriendPageWrapper() {
   // Mobile web keeps the global header actions (Connect, search), so the
   // tabs only move into the navigation bar on native and in modals.
   const showTabsInHeader = platformEnv.isNative || isModalMode;
+  // The logged-out perks page shares MyRewardsContent. Pin its cross-link
+  // on the signed-in compact layouts (native or md), not on this page's
+  // wider modal header, and not on the intro, which already has a footer.
+  const pinBenefitsCrossLink =
+    !isInviteTab &&
+    getReferralHomeFooter({
+      isCompactHeader: platformEnv.isNative || md,
+      isNative: platformEnv.isNative,
+      isInviteTab: false,
+      benefitsEnabled: IS_BENEFITS_TAB_ENABLED,
+      inviteContentMounted: true,
+      hasInviteUrl: false,
+    }).pinCrossLink;
   const actions = (
     <ReferAFriendPhaseActions
       phaseState={phaseState}
@@ -255,6 +269,7 @@ function ReferAFriendPageWrapper() {
             <MyRewardsContent
               entry={route.params?.perksEntry ?? 'route'}
               onOpenInvite={openInvite}
+              pinCrossLink={pinBenefitsCrossLink}
             />
           </Page.Container>
         )}

@@ -53,6 +53,7 @@ import type { IEarnSummaryV2, IEarnText } from '@onekeyhq/shared/types/staking';
 import { CompactFieldRow } from '../../components/CompactFieldRow';
 import { InviteeRewardNoWallet } from '../../components/InviteeRewardNoWallet';
 import { ReferralCardEmpty } from '../../components/ReferralCardEmpty';
+import { ReferFriendsTestIDs } from '../../testIDs';
 import {
   BenefitsTabPlaceholder,
   useBenefitsBindStatus,
@@ -60,7 +61,10 @@ import {
 import { INVITE_REWARD_SUBJECT_ICON } from '../InviteReward/components/getInviteRewardRows';
 import { InviteStatCell } from '../InviteReward/components/InviteStatCell';
 import { PartDot } from '../InviteReward/components/PartDot';
-import { ReferralTabCrossLink } from '../InviteReward/components/ReferralTabCrossLink';
+import {
+  PinnedReferralCrossLinkFooter,
+  ReferralTabCrossLink,
+} from '../InviteReward/components/ReferralTabCrossLink';
 import { REFERRAL_USD_SOURCE_PROPS } from '../InviteReward/components/shared/getRewardSummary';
 import {
   COMPACT_ENTRY_TITLE_PROPS,
@@ -1107,6 +1111,8 @@ function useShowModuleDetail({
 interface IMyRewardsContentProps {
   // Absent where there is no invite tab to switch to.
   onOpenInvite?: () => void;
+  // The page footer owns the link on compact layouts.
+  pinCrossLink?: boolean;
   // How this visit was opened. Route opens leave it unset.
   entry?: 'tabs' | 'cross_link' | 'activity_hub' | 'route';
 }
@@ -1122,6 +1128,7 @@ export function MyRewardsContent(props: IMyRewardsContentProps = {}) {
 
 function MyRewardsContentBody({
   onOpenInvite,
+  pinCrossLink = false,
   entry = 'route',
 }: IMyRewardsContentProps) {
   const tabCopy = useReferralTabCopy();
@@ -1403,45 +1410,64 @@ function MyRewardsContentBody({
     unpaid: labels.unpaid,
   };
 
-  const crossLink = onOpenInvite ? (
-    <ReferralTabCrossLink
-      testID="refer-friends-to-invite-link"
-      prompt={tabCopy.toInvitePrompt}
-      action={tabCopy.toInviteAction}
-      onPress={onOpenInvite}
-    />
-  ) : null;
+  const crossLink =
+    onOpenInvite && !pinCrossLink ? (
+      <ReferralTabCrossLink
+        testID={ReferFriendsTestIDs.toInviteLink}
+        prompt={tabCopy.toInvitePrompt}
+        action={tabCopy.toInviteAction}
+        onPress={onOpenInvite}
+      />
+    ) : null;
+  // The in-flow link used the extra bottom padding. A pinned link lives in
+  // the footer, so the content only keeps a small gap above that bar.
+  const contentBottomPadding = pinCrossLink ? '$2' : '$6';
+  // Only the layout below ever showed this link. The no-wallet return above
+  // stays without it, so the pin does not add a switch to that empty state.
+  const pinnedFooter =
+    pinCrossLink && onOpenInvite ? (
+      <PinnedReferralCrossLinkFooter
+        prompt={tabCopy.toInvitePrompt}
+        action={tabCopy.toInviteAction}
+        onPress={onOpenInvite}
+        testID={ReferFriendsTestIDs.toInviteLink}
+        backgroundColor="$bgApp"
+      />
+    ) : null;
 
   if (md) {
     // Compact: the summary card, the campaign slides, then the
     // breakdown under a quiet caption inset like the cards' text. The money
     // leads; the slides sit between it and the details.
     return (
-      <YStack flex={1} pt="$2" pb="$6">
-        <YStack px="$pagePadding" gap="$5">
-          {/* No intro line here: the tab switch in the navigation bar says
+      <>
+        <YStack flex={1} pt="$2" pb={contentBottomPadding}>
+          <YStack px="$pagePadding" gap="$5">
+            {/* No intro line here: the tab switch in the navigation bar says
               who each tab is for. */}
-          <CompactPerksSummaryCard
-            totals={totals}
-            address={walletAddress}
-            unsupported={isUnsupported}
-            payout={payout}
-            labels={summaryLabels}
-          />
-          <PerksCampaignBanner
-            items={bannerItems}
-            loading={isBannerLoading}
-            compact
-          />
-          <YStack gap="$2">
-            <SizableText size="$bodyMdMedium" color="$textSubdued" px="$4">
-              {sectionTitle}
-            </SizableText>
-            {renderBreakdown()}
+            <CompactPerksSummaryCard
+              totals={totals}
+              address={walletAddress}
+              unsupported={isUnsupported}
+              payout={payout}
+              labels={summaryLabels}
+            />
+            <PerksCampaignBanner
+              items={bannerItems}
+              loading={isBannerLoading}
+              compact
+            />
+            <YStack gap="$2">
+              <SizableText size="$bodyMdMedium" color="$textSubdued" px="$4">
+                {sectionTitle}
+              </SizableText>
+              {renderBreakdown()}
+            </YStack>
           </YStack>
+          {crossLink}
         </YStack>
-        {crossLink}
-      </YStack>
+        {pinnedFooter}
+      </>
     );
   }
 
@@ -1449,50 +1475,53 @@ function MyRewardsContentBody({
   // the slides stretched to the card's height. Without slides the card
   // takes the row.
   return (
-    <YStack flex={1} pb="$6">
-      <XStack px="$pagePadding" gap="$5" ai="stretch">
-        {/* Padding stays inside the flex items, so the split holds. */}
-        <XStack flex={2} flexBasis={0} minWidth={0}>
-          <PerksSummaryCard
-            totals={totals}
-            address={walletAddress}
-            unsupported={isUnsupported}
-            payout={payout}
-            labels={summaryLabels}
-          />
-        </XStack>
-        {/* The banner column holds its place while the slides load, so
-            the summary card does not narrow once they arrive. */}
-        {bannerItems.length || isBannerLoading ? (
-          <XStack flex={1} flexBasis={0} minWidth={0}>
-            <PerksCampaignBanner
-              items={bannerItems}
-              loading={isBannerLoading}
-              compact={false}
+    <>
+      <YStack flex={1} pb={contentBottomPadding}>
+        <XStack px="$pagePadding" gap="$5" ai="stretch">
+          {/* Padding stays inside the flex items, so the split holds. */}
+          <XStack flex={2} flexBasis={0} minWidth={0}>
+            <PerksSummaryCard
+              totals={totals}
+              address={walletAddress}
+              unsupported={isUnsupported}
+              payout={payout}
+              labels={summaryLabels}
             />
           </XStack>
-        ) : null}
-      </XStack>
-      {/* A group gap: the summary scopes the table but is not part of it. */}
-      <YStack px="$pagePadding" pt="$8" gap="$3">
-        {/* Whose rewards these are, beside the rewards they describe rather
-            than alone across from the tabs. */}
-        <XStack ai="center" gap="$3" minWidth={0}>
-          <SizableText size="$headingLg" flexShrink={0}>
-            {sectionTitle}
-          </SizableText>
-          <SizableText
-            size="$bodyMd"
-            color="$textSubdued"
-            numberOfLines={1}
-            flexShrink={1}
-          >
-            {tabCopy.perksIntro}
-          </SizableText>
+          {/* The banner column holds its place while the slides load, so
+            the summary card does not narrow once they arrive. */}
+          {bannerItems.length || isBannerLoading ? (
+            <XStack flex={1} flexBasis={0} minWidth={0}>
+              <PerksCampaignBanner
+                items={bannerItems}
+                loading={isBannerLoading}
+                compact={false}
+              />
+            </XStack>
+          ) : null}
         </XStack>
-        {renderBreakdown()}
+        {/* A group gap: the summary scopes the table but is not part of it. */}
+        <YStack px="$pagePadding" pt="$8" gap="$3">
+          {/* Whose rewards these are, beside the rewards they describe rather
+            than alone across from the tabs. */}
+          <XStack ai="center" gap="$3" minWidth={0}>
+            <SizableText size="$headingLg" flexShrink={0}>
+              {sectionTitle}
+            </SizableText>
+            <SizableText
+              size="$bodyMd"
+              color="$textSubdued"
+              numberOfLines={1}
+              flexShrink={1}
+            >
+              {tabCopy.perksIntro}
+            </SizableText>
+          </XStack>
+          {renderBreakdown()}
+        </YStack>
+        {crossLink}
       </YStack>
-      {crossLink}
-    </YStack>
+      {pinnedFooter}
+    </>
   );
 }
