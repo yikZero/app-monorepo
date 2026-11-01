@@ -330,3 +330,15 @@ export function getPrimeFeatureIntroCtaKind({
   }
   return 'featureAction';
 }
+
+export function shouldExplainPrimeBrowserActionOnExtension({
+  isExtension,
+  action,
+  ctaKind,
+}: {
+  isExtension: boolean;
+  action?: IPrimeFeatureIntroAction;
+  ctaKind: IPrimeFeatureIntroCtaKind;
+}): boolean {
+  return isExtension && action === 'browser' && ctaKind === 'featureAction';
+}
