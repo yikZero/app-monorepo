@@ -4216,6 +4216,7 @@ export enum ETranslations {
   prime_enter_verification_code_on_other_device = 'prime.enter_verification_code_on_other_device',
   prime_error_passcode_not_match = 'prime.error_passcode_not_match',
   prime_error_passcode_too_short = 'prime.error_passcode_too_short',
+  prime_feature_browser_unavailable_on_extension__msg = 'prime.feature_browser_unavailable_on_extension__msg',
   prime_feature_bulk_copy_cta__action = 'prime.feature_bulk_copy_cta__action',
   prime_feature_bulk_send_cta__action = 'prime.feature_bulk_send_cta__action',
   prime_feature_notifications_cta__action = 'prime.feature_notifications_cta__action',

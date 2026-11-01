@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "Inserisci il codice di verifica sull'altro tuo dispositivo per continuare",
   "prime.error_passcode_not_match": "Le password non corrispondono",
   "prime.error_passcode_too_short": "La password deve contenere almeno {length} caratteri",
+  "prime.feature_browser_unavailable_on_extension__msg": "L'estensione non ha un browser dApp integrato. Utilizza l'app desktop o mobile.",
   "prime.feature_bulk_copy_cta__action": "Vai alla copia",
   "prime.feature_bulk_send_cta__action": "Vai al trasferimento",
   "prime.feature_notifications_cta__action": "Gestisci notifiche",

@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "চালিয়ে যেতে আপনার অন্য ডিভাইসে যাচাইকরণ কোড লিখুন",
   "prime.error_passcode_not_match": "পাসওয়ার্ড মেলে না",
   "prime.error_passcode_too_short": "পাসওয়ার্ড কমপক্ষে {length} অক্ষরের হতে হবে",
+  "prime.feature_browser_unavailable_on_extension__msg": "এক্সটেনশনে বিল্ট-ইন dApp ব্রাউজার নেই। ডেস্কটপ বা মোবাইল অ্যাপ ব্যবহার করুন।",
   "prime.feature_bulk_copy_cta__action": "কপি করতে যান",
   "prime.feature_bulk_send_cta__action": "ট্রান্সফারে যান",
   "prime.feature_notifications_cta__action": "নোটিফিকেশন পরিচালনা করুন",

@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "続行するには、もう一方のデバイスで確認コードを入力してください",
   "prime.error_passcode_not_match": "パスワードが一致しません",
   "prime.error_passcode_too_short": "パスワードは少なくとも{length}文字でなければなりません",
+  "prime.feature_browser_unavailable_on_extension__msg": "拡張機能には内蔵の dApp ブラウザがありません。デスクトップまたはモバイルアプリを使用してください。",
   "prime.feature_bulk_copy_cta__action": "コピーへ",
   "prime.feature_bulk_send_cta__action": "送金へ",
   "prime.feature_notifications_cta__action": "通知を管理",

@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "Vui lòng nhập mã xác minh trên thiết bị khác của bạn để tiếp tục",
   "prime.error_passcode_not_match": "Mật khẩu không khớp",
   "prime.error_passcode_too_short": "Mật khẩu phải có ít nhất {length} ký tự",
+  "prime.feature_browser_unavailable_on_extension__msg": "Tiện ích mở rộng không có trình duyệt dApp tích hợp. Hãy dùng ứng dụng máy tính hoặc thiết bị di động.",
   "prime.feature_bulk_copy_cta__action": "Đi tới sao chép",
   "prime.feature_bulk_send_cta__action": "Đi tới chuyển khoản",
   "prime.feature_notifications_cta__action": "Quản lý thông báo",

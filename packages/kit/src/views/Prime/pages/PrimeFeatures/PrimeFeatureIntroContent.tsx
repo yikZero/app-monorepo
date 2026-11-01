@@ -1,5 +1,6 @@
 /* cspell:ignore Infini */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { useIntl } from 'react-intl';
 import {
@@ -58,6 +59,7 @@ import { usePrimeSubscriptionPackages } from '../../hooks/usePrimeSubscriptionPa
 import {
   PRIME_FEATURE_INTROS,
   getPrimeFeatureIntroCtaKind,
+  shouldExplainPrimeBrowserActionOnExtension,
 } from './primeFeatureIntroUtils';
 
 import type {
@@ -570,6 +572,12 @@ export function PrimeFeatureIntroContent({
   const shouldUseSubscribeCta = ctaKind === 'subscribe';
   const shouldUseFeatureActionCta = ctaKind === 'featureAction';
   const shouldUseComingSoonCta = ctaKind === 'comingSoon';
+  const shouldExplainBrowserOnExtension =
+    shouldExplainPrimeBrowserActionOnExtension({
+      isExtension: platformEnv.isExtension,
+      action: activeFeature?.action,
+      ctaKind,
+    });
 
   const shouldLoadPackages = shouldUseSubscribeCta;
   const { packages, isPackagesLoading } = usePrimeSubscriptionPackages({
@@ -597,6 +605,10 @@ export function PrimeFeatureIntroContent({
 
   const handleFeatureAction = useCallback(async () => {
     if (!activeFeature?.action) {
+      return;
+    }
+    if (shouldExplainBrowserOnExtension) {
+      featureActionSubmittingRef.current = false;
       return;
     }
     if (featureActionSubmittingRef.current) {
@@ -707,6 +719,7 @@ export function PrimeFeatureIntroContent({
     activeFeature,
     closeIntroForFeatureAction,
     indexedAccount?.id,
+    shouldExplainBrowserOnExtension,
     intl,
     isPrimeActive,
     navigateToApprovalList,
@@ -906,6 +919,20 @@ export function PrimeFeatureIntroContent({
   // double-stack the inset on notched iOS.
   const dialogFooterBottomPadding = DIALOG_FOOTER_BOTTOM_PADDING;
   const shouldShowFooterAction = ctaKind !== 'none';
+  const shouldShowFeatureButton =
+    shouldShowFooterAction && !shouldExplainBrowserOnExtension;
+  const extensionBrowserNotice = shouldExplainBrowserOnExtension ? (
+    <SizableText
+      testID="prime-feature-intro-browser-unavailable"
+      size="$bodyMd"
+      color="$textSubdued"
+      textAlign="center"
+    >
+      {intl.formatMessage({
+        id: ETranslations.prime_feature_browser_unavailable_on_extension__msg,
+      })}
+    </SizableText>
+  ) : null;
   const isFooterActionDisabled =
     shouldUseComingSoonCta ||
     (shouldUseSubscribeCta && (isPackagesLoading || isFooterActionLoading));
@@ -1018,21 +1045,26 @@ export function PrimeFeatureIntroContent({
     </YStack>
   );
 
-  const customFooterAction = shouldShowFooterAction ? (
-    <Button
-      testID="prime-feature-intro-cta"
-      size="large"
-      variant="primary"
-      alignSelf={gtMd ? 'flex-end' : 'stretch'}
-      disabled={isFooterActionDisabled}
-      loading={isFooterActionLoading}
-      onPress={() => {
-        void handleFooterAction();
-      }}
-    >
-      {ctaText}
-    </Button>
-  ) : null;
+  let customFooterAction: ReactNode = null;
+  if (shouldExplainBrowserOnExtension) {
+    customFooterAction = extensionBrowserNotice;
+  } else if (shouldShowFooterAction) {
+    customFooterAction = (
+      <Button
+        testID="prime-feature-intro-cta"
+        size="large"
+        variant="primary"
+        alignSelf={gtMd ? 'flex-end' : 'stretch'}
+        disabled={isFooterActionDisabled}
+        loading={isFooterActionLoading}
+        onPress={() => {
+          void handleFooterAction();
+        }}
+      >
+        {ctaText}
+      </Button>
+    );
+  }
 
   const customFooterContent = (
     <YStack px="$6" pt="$5" pb="$6" gap="$4" bg="$bgApp">
@@ -1061,6 +1093,7 @@ export function PrimeFeatureIntroContent({
       {...(!gtMd ? (dialogContentSwipeResponder.panHandlers as any) : {})}
     >
       {footerInfo}
+      {extensionBrowserNotice}
     </YStack>
   );
 
@@ -1144,9 +1177,10 @@ export function PrimeFeatureIntroContent({
             }}
             buttonContainerProps={{
               justifyContent: 'flex-end',
+              ...(shouldShowFeatureButton ? {} : { display: 'none' }),
             }}
             confirmButtonProps={
-              shouldShowFooterAction
+              shouldShowFeatureButton
                 ? {
                     disabled: isFooterActionDisabled,
                     loading: isFooterActionLoading,
@@ -1155,22 +1189,24 @@ export function PrimeFeatureIntroContent({
                 : undefined
             }
             onConfirm={
-              shouldShowFooterAction
+              shouldShowFeatureButton
                 ? () => {
                     void handleFooterAction();
                   }
                 : undefined
             }
-            onConfirmText={ctaText}
+            onConfirmText={shouldShowFeatureButton ? ctaText : undefined}
           >
             {footerIndicators}
+            {extensionBrowserNotice}
           </Page.FooterActions>
         </Page.Footer>
       ) : null}
       {useDialogFooter ? (
         <Dialog.Footer
           showCancelButton={false}
-          showConfirmButton={shouldShowFooterAction}
+          showFooter={shouldShowFeatureButton}
+          showConfirmButton={shouldShowFeatureButton}
           footerProps={{
             bg: gtMd ? '$bgApp' : PRIME_FEATURE_DIALOG_BG,
             pb: dialogFooterBottomPadding,

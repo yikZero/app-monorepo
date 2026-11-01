@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "जारी रखने के लिए कृपया अपने दूसरे डिवाइस पर सत्यापन कोड दर्ज करें",
   "prime.error_passcode_not_match": "पासवर्ड मेल नहीं खाते",
   "prime.error_passcode_too_short": "पासवर्ड कम से कम {length} अक्षरों का होना चाहिए",
+  "prime.feature_browser_unavailable_on_extension__msg": "एक्सटेंशन में बिल्ट-इन dApp ब्राउज़र नहीं है। डेस्कटॉप या मोबाइल ऐप का उपयोग करें।",
   "prime.feature_bulk_copy_cta__action": "कॉपी पर जाएँ",
   "prime.feature_bulk_send_cta__action": "ट्रांसफ़र पर जाएँ",
   "prime.feature_notifications_cta__action": "सूचनाएँ प्रबंधित करें",

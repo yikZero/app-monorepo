@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "Please enter the verification code on your other device to continue",
   "prime.error_passcode_not_match": "Password do not match",
   "prime.error_passcode_too_short": "Password must be at least {length} characters",
+  "prime.feature_browser_unavailable_on_extension__msg": "The extension has no built-in dApp browser. Use the desktop or mobile app.",
   "prime.feature_bulk_copy_cta__action": "Go to Copy",
   "prime.feature_bulk_send_cta__action": "Go to Transfer",
   "prime.feature_notifications_cta__action": "Manage notifications",

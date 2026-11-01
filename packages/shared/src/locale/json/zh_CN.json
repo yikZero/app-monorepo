@@ -4211,6 +4211,7 @@
   "prime.enter_verification_code_on_other_device": "请在另一台设备上输入验证码以继续",
   "prime.error_passcode_not_match": "密码不匹配",
   "prime.error_passcode_too_short": "密码必须至少包含 {length} 个字符",
+  "prime.feature_browser_unavailable_on_extension__msg": "插件没有内置 dApp 浏览器，请使用桌面端或移动端",
   "prime.feature_bulk_copy_cta__action": "前往复制",
   "prime.feature_bulk_send_cta__action": "前往转账",
   "prime.feature_notifications_cta__action": "管理通知",
