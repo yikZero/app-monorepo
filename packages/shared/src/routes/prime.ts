@@ -32,6 +32,8 @@ export enum EPrimePages {
 
 export enum EPrimeGiftPages {
   PrimeGift = 'PrimeGift',
+  PrimeGiftIntro = 'PrimeGiftIntro',
+  PrimeGiftSelectDevice = 'PrimeGiftSelectDevice',
 }
 
 export enum EPrimeFeatures {
@@ -103,7 +105,9 @@ export type IPrimeGiftParamList = {
   [EPrimeGiftPages.PrimeGift]: {
     device: Omit<SearchDevice, 'commType'>;
     serialNo: string;
-    source: 'onboarding' | 'deviceDetails';
+    source: 'onboarding' | 'deviceDetails' | 'primeDashboard';
     onboardingRouteKey?: string;
   };
+  [EPrimeGiftPages.PrimeGiftIntro]: undefined;
+  [EPrimeGiftPages.PrimeGiftSelectDevice]: undefined;
 };

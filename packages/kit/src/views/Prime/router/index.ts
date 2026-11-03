@@ -42,6 +42,10 @@ const PrimeInfiniSubscription = LazyLoadPage(
   () => import('../pages/PrimeInfiniSubscription'),
 );
 const PrimeGift = LazyLoadPage(() => import('../pages/PrimeGift'));
+const PrimeGiftIntro = LazyLoadPage(() => import('../pages/PrimeGiftIntro'));
+const PrimeGiftSelectDevice = LazyLoadPage(
+  () => import('../pages/PrimeGiftSelectDevice'),
+);
 
 export const PrimeGiftRouter: IModalFlowNavigatorConfig<
   EPrimeGiftPages,
@@ -50,6 +54,20 @@ export const PrimeGiftRouter: IModalFlowNavigatorConfig<
   {
     name: EPrimeGiftPages.PrimeGift,
     component: PrimeGift,
+    options: {
+      headerShown: false,
+    },
+  },
+  {
+    name: EPrimeGiftPages.PrimeGiftIntro,
+    component: PrimeGiftIntro,
+    options: {
+      headerShown: false,
+    },
+  },
+  {
+    name: EPrimeGiftPages.PrimeGiftSelectDevice,
+    component: PrimeGiftSelectDevice,
     options: {
       headerShown: false,
     },

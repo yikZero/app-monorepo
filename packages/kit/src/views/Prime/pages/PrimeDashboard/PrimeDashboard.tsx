@@ -42,6 +42,7 @@ import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
 import { showOneKeyIdLoginFailedToast } from '../../components/oneKeyIdLoginToastUtils';
+import { PrimeGiftDashboardEntry } from '../../components/PrimeGiftDashboardEntry';
 import { PrimeSubscriptionPlans } from '../../components/PrimePurchaseDialog/PrimeSubscriptionPlans';
 import { usePrimeRequirements } from '../../hooks/usePrimeRequirements';
 import { usePrimeSubscriptionPackages } from '../../hooks/usePrimeSubscriptionPackages';
@@ -588,6 +589,8 @@ export default function PrimeDashboard({
               <PrimeBanner isPrimeActive={isPrimeSubscriptionActive} />
               {isLoggedInMaybe ? <PrimeUserInfo /> : null}
             </Stack>
+
+            <PrimeGiftDashboardEntry />
 
             {shouldShowSubscriptionPlans ? (
               <Stack px="$5" pt="$5" pb="$2" gap="$2">

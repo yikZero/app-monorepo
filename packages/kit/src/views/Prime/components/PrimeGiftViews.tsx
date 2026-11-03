@@ -202,7 +202,7 @@ function EligibilityCodeRow({
   );
 }
 
-function openBenefits(intl: IntlShape) {
+export function openBenefits(intl: IntlShape) {
   Dialog.show({
     dialogContainer: ({ ref }) => (
       <PrimeDarkDialogContainer

@@ -150,6 +150,9 @@ jest.mock('./PrimeTermsAndPrivacy', () => ({
   PrimeTermsAndPrivacy: () => null,
 }));
 jest.mock('./PrimeUserInfo', () => ({ PrimeUserInfo: () => null }));
+jest.mock('../../components/PrimeGiftDashboardEntry', () => ({
+  PrimeGiftDashboardEntry: () => null,
+}));
 jest.mock('./primeSubscribeLoadingUtils', () => ({
   runPrimeSubscribeWithMinimumLoadingDuration: (run: () => Promise<void>) =>
     run(),
