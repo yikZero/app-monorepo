@@ -490,16 +490,15 @@ function rewardEmptyDescription(
 }
 
 // Before the first reward every product page is empty too, so the section
-// shows one quiet empty state: what will appear here, plus the one action
-// that changes it. Native already has the share footer, so only the pointer
-// layout gets the button. It takes the card of the rows it stands in for:
-// compact rows sit in a card, the desktop table sits on the page.
+// shows one quiet in-card empty state: what will appear here, plus the one
+// action that changes it. Native already has the share footer, so only the
+// pointer layout gets the button.
 function RewardsEmpty({
   cardStyle,
   onCopyLink,
   scopeItems,
 }: {
-  cardStyle?: IInviteCardStyle;
+  cardStyle: IInviteCardStyle;
   onCopyLink?: () => void;
   scopeItems: readonly IInviteRewardScopeItem[];
 }) {
@@ -655,7 +654,11 @@ export function InviteRewardRows({
             ))}
           </YStack>
         ) : (
-          <RewardsEmpty onCopyLink={copyLink} scopeItems={scopeItems} />
+          <RewardsEmpty
+            cardStyle={cardStyle}
+            onCopyLink={copyLink}
+            scopeItems={scopeItems}
+          />
         )}
       </YStack>
     );
