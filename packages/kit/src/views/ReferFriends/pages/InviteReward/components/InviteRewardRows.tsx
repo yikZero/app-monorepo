@@ -4,9 +4,8 @@ import { useCallback, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 
 import {
-  Button,
+  DashText,
   Icon,
-  NATIVE_HIT_SLOP,
   Popover,
   SizableText,
   Stack,
@@ -173,6 +172,8 @@ function RewardScopesHint({
   items: readonly IInviteRewardScopeItem[];
 }) {
   const intl = useIntl();
+  const { md } = useMedia();
+  const isTouchLayout = platformEnv.isNative || md;
   return (
     <RewardScopePopover
       title={intl.formatMessage({
@@ -181,16 +182,19 @@ function RewardScopesHint({
       items={items}
       placement="top"
       trigger={
-        <Button
+        // Reads as part of the copy above: same size and color, with dashes
+        // marking it as explained on hover or tap. On touch layouts the
+        // padding grows the tap area to 44px and the margin keeps the layout
+        // where it was.
+        <Stack
           testID={ReferFriendsTestIDs.inviteRewardScopeLearnMore}
-          variant="tertiary"
-          size="small"
-          iconAfter="InfoCircleOutline"
-          // The link is 28px tall; the slop brings its touch area to 44px.
-          hitSlop={NATIVE_HIT_SLOP}
+          cursor="default"
+          {...(isTouchLayout ? { py: '$3', my: '$-3' } : null)}
         >
-          {intl.formatMessage({ id: ETranslations.global_learn_more })}
-        </Button>
+          <DashText size="$bodyMd" color="$textSubdued">
+            {intl.formatMessage({ id: ETranslations.global_learn_more })}
+          </DashText>
+        </Stack>
       }
     />
   );
@@ -475,7 +479,6 @@ function rewardEmptyDescription(
   }
   // String descriptions pick up Empty's text style. A custom node does not,
   // so the copy keeps the same size and color beside the scope line.
-  // The link's own padding spaces it from the copy.
   return (
     <YStack ai="center" gap="$1">
       <SizableText size="$bodyMd" textAlign="center" color="$textSubdued">
