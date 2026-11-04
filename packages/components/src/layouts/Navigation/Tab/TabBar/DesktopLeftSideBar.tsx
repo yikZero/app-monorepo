@@ -165,6 +165,38 @@ function BasicTabItemView({
     (typeof options.tabBarLabel === 'string'
       ? options.tabBarLabel
       : route.name);
+  const iconTrigger = useMemo(
+    () => (
+      <DesktopTabItem
+        isContainerHovered={isContainerHovered}
+        onPress={handlePress}
+        onPressWhenSelected={options.onPressWhenSelected}
+        trackId={options.trackId}
+        aria-current={isActive ? 'page' : undefined}
+        aria-label={label}
+        selected={isActive}
+        tabBarStyle={tabBarStyleMemo}
+        // @ts-expect-error
+        icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
+        label=""
+        actionList={options.actionList}
+        testID={route.name.toLowerCase()}
+      />
+    ),
+    [
+      handlePress,
+      isActive,
+      isContainerHovered,
+      label,
+      options,
+      route.name,
+      tabBarStyleMemo,
+    ],
+  );
+  const tooltipContent = useMemo(
+    () => <Tooltip.Text>{label}</Tooltip.Text>,
+    [label],
+  );
   const contentMemo = useMemo(
     () =>
       options.hideOnTabBar ? null : (
@@ -179,21 +211,15 @@ function BasicTabItemView({
           onHoverIn={handleHoverIn}
           onHoverOut={handleHoverOut}
         >
-          <DesktopTabItem
-            isContainerHovered={isContainerHovered}
-            onPress={handlePress}
-            onPressWhenSelected={options.onPressWhenSelected}
-            trackId={options.trackId}
-            aria-current={isActive ? 'page' : undefined}
-            aria-label={label}
-            selected={isActive}
-            tabBarStyle={tabBarStyleMemo}
-            // @ts-expect-error
-            icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
-            label=""
-            actionList={options.actionList}
-            testID={route.name.toLowerCase()}
-          />
+          {showSidebarLabels ? (
+            iconTrigger
+          ) : (
+            <Tooltip
+              placement="right"
+              renderTrigger={iconTrigger}
+              renderContent={tooltipContent}
+            />
+          )}
           <SizableText
             size="$bodyXsMedium"
             cursor="default"
@@ -214,25 +240,15 @@ function BasicTabItemView({
       handlePress,
       handleHoverIn,
       handleHoverOut,
-      isActive,
-      isContainerHovered,
-      options,
-      route.name,
-      tabBarStyleMemo,
+      iconTrigger,
+      options.hideOnTabBar,
       label,
       showSidebarLabels,
+      tooltipContent,
     ],
   );
 
-  return !showSidebarLabels && contentMemo ? (
-    <Tooltip
-      placement="right"
-      renderTrigger={contentMemo}
-      renderContent={label}
-    />
-  ) : (
-    contentMemo
-  );
+  return contentMemo;
 }
 
 const TabItemView = memo(

@@ -1262,3 +1262,10 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries â€
 **Root Cause**: The shared Swap header hid the button only in Desktop Stock modals, so native Stock modals still showed it.
 **Fix**: Extend the existing Stock modal visibility condition to iOS and Android. Regression tests cover hiding the button in native Stock modals and keeping it available in native Swap modals and on the standalone Stock page.
 **Catchable by**: Section 3 (Cross-Platform Impact) and Section 6 (Unit Tests). Test shared header actions across platform, modal versus page, and active trade mode.
+
+## Case: Icon-only sidebar tooltip used the hidden label's bounds (OK-66138)
+**Date**: 2026-11-05 | **Platforms**: Desktop and hover-capable Web sidebar
+**Symptom**: Sidebar tooltip centers were 8px below their icons; content-pane scroll also dismissed a stationary sidebar hint.
+**Root Cause**: The tooltip anchored to the complete row, including the invisible label. String-content tooltip shorthand connected document-wide scroll dismissal to its open state.
+**Fix**: Anchor only the icon trigger and render explicit Tooltip.Text content without the global scroll-dismiss callback. Keep generic string-content tooltip behavior unchanged.
+**Catchable by**: Sections 3, 6, and 8. Measure icon-to-tooltip centers and hover through unrelated content scrolling, then verify real pointer leave and click dismissal.
