@@ -4,7 +4,11 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { LazyPopover, LazyTooltip } from '@onekeyhq/components/src/actions';
+import {
+  LazyPopover,
+  LazyTooltip,
+  Tooltip,
+} from '@onekeyhq/components/src/actions';
 import type {
   IActionListSection,
   IPopoverProps,
@@ -111,12 +115,14 @@ function BasicTabItemView({
   onPress,
   onPressOut,
   options,
+  showSidebarLabels,
 }: {
   isActive: boolean;
   route: NavigationState['routes'][0];
   onPress: () => void;
   onPressOut?: () => void;
   options: ITabItemOptions;
+  showSidebarLabels: boolean;
 }) {
   useEffect(() => {
     // @ts-expect-error
@@ -154,6 +160,11 @@ function BasicTabItemView({
     [options.tabBarStyle],
   );
 
+  const label =
+    options.collapseTabBarLabel ??
+    (typeof options.tabBarLabel === 'string'
+      ? options.tabBarLabel
+      : route.name);
   const contentMemo = useMemo(
     () =>
       options.hideOnTabBar ? null : (
@@ -174,6 +185,7 @@ function BasicTabItemView({
             onPressWhenSelected={options.onPressWhenSelected}
             trackId={options.trackId}
             aria-current={isActive ? 'page' : undefined}
+            aria-label={label}
             selected={isActive}
             tabBarStyle={tabBarStyleMemo}
             // @ts-expect-error
@@ -190,8 +202,11 @@ function BasicTabItemView({
             numberOfLines={2}
             wordWrap="break-word"
             maxWidth="100%"
+            opacity={showSidebarLabels ? 1 : 0}
+            aria-hidden={!showSidebarLabels}
+            pointerEvents="none"
           >
-            {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
+            {label}
           </SizableText>
         </YStack>
       ),
@@ -204,10 +219,20 @@ function BasicTabItemView({
       options,
       route.name,
       tabBarStyleMemo,
+      label,
+      showSidebarLabels,
     ],
   );
 
-  return contentMemo;
+  return !showSidebarLabels && contentMemo ? (
+    <Tooltip
+      placement="right"
+      renderTrigger={contentMemo}
+      renderContent={label}
+    />
+  ) : (
+    contentMemo
+  );
 }
 
 const TabItemView = memo(
@@ -217,6 +242,7 @@ const TabItemView = memo(
     prev.route === next.route &&
     prev.onPress === next.onPress &&
     prev.onPressOut === next.onPressOut &&
+    prev.showSidebarLabels === next.showSidebarLabels &&
     areTabOptionsEqual(prev.options, next.options),
 );
 
@@ -543,10 +569,12 @@ function BasicVisibleTabItemView({
   isActive,
   options,
   handleTabPress,
+  showSidebarLabels,
 }: {
   route: NavigationState['routes'][0];
   isActive: boolean;
   options: ITabItemOptions;
+  showSidebarLabels: boolean;
   handleTabPress: (
     route: NavigationState['routes'][0],
     isActive: boolean,
@@ -573,6 +601,7 @@ function BasicVisibleTabItemView({
       onPress={handlePress}
       isActive={isActive}
       options={options}
+      showSidebarLabels={showSidebarLabels}
     />
   );
 }
@@ -583,6 +612,7 @@ const VisibleTabItemView = memo(
     prev.isActive === next.isActive &&
     prev.route === next.route &&
     prev.handleTabPress === next.handleTabPress &&
+    prev.showSidebarLabels === next.showSidebarLabels &&
     areTabOptionsEqual(prev.options, next.options),
 );
 
@@ -593,10 +623,12 @@ export function DesktopLeftSideBar({
   extraConfig,
   bottomMenu,
   webPageTabBar,
+  showSidebarLabels = true,
 }: BottomTabBarProps & {
   extraConfig?: ITabNavigatorExtraConfig<string>;
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
+  showSidebarLabels?: boolean;
 }) {
   const { routes } = state;
   const { top } = useSafeAreaInsets(); // used for ipad
@@ -744,6 +776,7 @@ export function DesktopLeftSideBar({
                     isActive={isActive}
                     options={descriptors[route.key].options}
                     handleTabPress={handleTabPress}
+                    showSidebarLabels={showSidebarLabels}
                   />
                 );
               })}

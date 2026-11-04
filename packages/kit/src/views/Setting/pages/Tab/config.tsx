@@ -56,6 +56,7 @@ import {
   openUrlExternal,
   openUrlInDiscovery,
 } from '@onekeyhq/shared/src/utils/openUrlUtils';
+import { supportsSidebarLabelHover } from '@onekeyhq/shared/src/utils/sidebarLabels';
 import { EHardwareTransportType } from '@onekeyhq/shared/types';
 
 import { useCloudBackup } from '../../../Onboardingv2/hooks/useCloudBackup';
@@ -78,6 +79,7 @@ import {
   MenuBarTrayListItem,
   ResetAppListItem,
   ResetPinListItem,
+  SidebarLabelsListItem,
   SplitViewListItem,
   ThemeListItem,
   TravelModeListItem,
@@ -443,6 +445,22 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               : undefined,
           ],
           [
+            supportsSidebarLabelHover()
+              ? {
+                  id: 'sidebar-labels',
+                  icon: 'SidebarOutline',
+                  title: intl.formatMessage({
+                    id: ETranslations.settings_sidebar_labels,
+                    defaultMessage: 'Show sidebar labels',
+                  }),
+                  subtitle: intl.formatMessage({
+                    id: ETranslations.settings_sidebar_labels_desc,
+                    defaultMessage:
+                      'Turn off to show icons only. Hover to see the label.',
+                  }),
+                  renderElement: <SidebarLabelsListItem />,
+                }
+              : undefined,
             platformEnv.isSupportDesktopBle
               ? {
                   id: 'desktop-bluetooth',

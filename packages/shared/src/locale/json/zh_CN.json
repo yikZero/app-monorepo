@@ -5529,6 +5529,8 @@
   "settings_prefer_gas_account__title": "优先使用 Gas Account",
   "settings_protection.allowlist_content": "启用此功能后，您只能向钱包内的账户或地址簿中保存的地址发送资金。",
   "settings_protection.allowlist_title": "转账白名单",
+  "settings_sidebar_labels": "显示侧栏标题",
+  "settings_sidebar_labels_desc": "关闭后只显示图标，悬停时显示标题。",
   "settings_split_view": "分屏模式",
   "settings_split_view_desc": "在平板和折叠屏设备上启用左右双栏布局。切换后会重启应用。",
   "setup_choose_option_create_new_wallet": "创建新钱包：如果这是您的第一个钱包",

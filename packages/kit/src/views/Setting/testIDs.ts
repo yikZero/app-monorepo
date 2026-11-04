@@ -8,6 +8,7 @@ export const SettingTestIDs = {
   currencyItem: 'setting-currency',
   languageItem: 'setting-language',
   themeItem: 'setting-theme',
+  tabSidebarLabelsSwitch: 'setting-tab-sidebar-labels-switch',
   notificationsItem: 'setting-notifications',
   securityItem: 'setting-security',
   clearAppCacheItem: 'setting-clear-app-cache',

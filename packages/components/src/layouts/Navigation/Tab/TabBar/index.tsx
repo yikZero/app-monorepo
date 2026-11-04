@@ -22,6 +22,7 @@ export default function NavigationBar({
   extraConfig?: ITabNavigatorExtraConfig<string>;
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
+  showSidebarLabels?: boolean;
 }) {
   const isShowMobileBottomTabBar = useShowMobileBottomTabBar();
   const { gtMd } = useMedia();

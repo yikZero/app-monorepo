@@ -5534,6 +5534,8 @@ export enum ETranslations {
   settings_prefer_gas_account__title = 'settings_prefer_gas_account__title',
   settings_protection_allowlist_content = 'settings_protection.allowlist_content',
   settings_protection_allowlist_title = 'settings_protection.allowlist_title',
+  settings_sidebar_labels = 'settings_sidebar_labels',
+  settings_sidebar_labels_desc = 'settings_sidebar_labels_desc',
   settings_split_view = 'settings_split_view',
   settings_split_view_desc = 'settings_split_view_desc',
   setup_choose_option_create_new_wallet = 'setup_choose_option_create_new_wallet',

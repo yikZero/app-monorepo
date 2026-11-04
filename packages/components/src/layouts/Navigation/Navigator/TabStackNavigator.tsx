@@ -88,6 +88,7 @@ export function TabStackNavigator<RouteName extends string>({
   config,
   extraConfig,
   showTabBar = true,
+  showSidebarLabels,
   bottomMenu,
   webPageTabBar,
 }: ITabNavigatorProps<RouteName>) {
@@ -111,9 +112,10 @@ export function TabStackNavigator<RouteName extends string>({
         extraConfig={extraConfig}
         bottomMenu={bottomMenu}
         webPageTabBar={webPageTabBar}
+        showSidebarLabels={showSidebarLabels}
       />
     ),
-    [webPageTabBar, bottomMenu, extraConfig],
+    [webPageTabBar, bottomMenu, extraConfig, showSidebarLabels],
   );
 
   const tabComponents = useMemo(

@@ -114,6 +114,7 @@ export interface ITabNavigatorProps<RouteName extends string> {
   config: ITabNavigatorConfig<RouteName>[];
   extraConfig?: ITabNavigatorExtraConfig<RouteName>;
   showTabBar?: boolean;
+  showSidebarLabels?: boolean;
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
   sideAccessory?: ITabBarSideAccessory;

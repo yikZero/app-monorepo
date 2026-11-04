@@ -910,6 +910,14 @@ class ServiceSetting extends ServiceBase {
   }
 
   @backgroundMethod()
+  public async setShowSidebarLabels(value: boolean) {
+    await settingsPersistAtom.set((prev) => ({
+      ...prev,
+      showSidebarLabels: value,
+    }));
+  }
+
+  @backgroundMethod()
   public async setEnableSplitView(value: boolean) {
     await settingsPersistAtom.set((prev) => ({
       ...prev,

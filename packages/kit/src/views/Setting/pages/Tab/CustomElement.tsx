@@ -1054,6 +1054,42 @@ export function MenuBarTrayListItem({
   );
 }
 
+export function SidebarLabelsListItem({
+  logItemClick,
+  analyticsSource,
+  ...props
+}: ICustomElementProps) {
+  const [{ showSidebarLabels }] = useSettingsPersistAtom();
+  const isEnabled = showSidebarLabels ?? false;
+  const toggleSidebarLabels = useCallback(
+    (value: boolean) => {
+      maybeLogSettingsSearchResultClick({
+        source: analyticsSource,
+        logItemClick,
+      });
+      logSettingValueChanged({
+        itemId: 'sidebar-labels',
+        from: String(isEnabled),
+        to: String(value),
+      });
+      startViewTransition(() => {
+        void backgroundApiProxy.serviceSetting.setShowSidebarLabels(value);
+      });
+    },
+    [analyticsSource, isEnabled, logItemClick],
+  );
+  return (
+    <TabSettingsListItem {...props} userSelect="none">
+      <Switch
+        testID={SettingTestIDs.tabSidebarLabelsSwitch}
+        size={ESwitchSize.small}
+        value={isEnabled}
+        onChange={toggleSidebarLabels}
+      />
+    </TabSettingsListItem>
+  );
+}
+
 export function HapticFeedbackListItem({
   logItemClick,
   analyticsSource,
