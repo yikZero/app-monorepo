@@ -450,13 +450,10 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                   id: 'sidebar-labels',
                   icon: 'SidebarOutline',
                   title: intl.formatMessage({
-                    id: ETranslations.settings_sidebar_labels,
-                    defaultMessage: 'Show sidebar labels',
+                    id: ETranslations.settings_sidebar_labels__title,
                   }),
                   subtitle: intl.formatMessage({
-                    id: ETranslations.settings_sidebar_labels_desc,
-                    defaultMessage:
-                      'Turn off to show icons only. Hover to see the label.',
+                    id: ETranslations.settings_sidebar_labels__desc,
                   }),
                   renderElement: <SidebarLabelsListItem />,
                 }
