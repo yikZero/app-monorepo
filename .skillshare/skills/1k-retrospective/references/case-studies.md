@@ -1265,7 +1265,14 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries â€
 
 ## Case: Icon-only sidebar tooltip used the hidden label's bounds (OK-66138)
 **Date**: 2026-11-05 | **Platforms**: Desktop and hover-capable Web sidebar
-**Symptom**: Sidebar tooltip centers were 8px below their icons; content-pane scroll also dismissed a stationary sidebar hint.
-**Root Cause**: The tooltip anchored to the complete row, including the invisible label. String-content tooltip shorthand connected document-wide scroll dismissal to its open state.
-**Fix**: Anchor only the icon trigger and render explicit Tooltip.Text content without the global scroll-dismiss callback. Keep generic string-content tooltip behavior unchanged.
-**Catchable by**: Sections 3, 6, and 8. Measure icon-to-tooltip centers and hover through unrelated content scrolling, then verify real pointer leave and click dismissal.
+**Symptom**: Sidebar tooltip centers were 8px below their icons; the interim Tooltip.Text workaround kept hints open across scrolling.
+**Root Cause**: The tooltip anchored to the complete row, including the invisible label. Passing Tooltip.Text bypassed the string-content scroll-dismiss callback, making scroll retention depend on an internal implementation detail.
+**Fix**: Anchor only the icon trigger and use LazyTooltip with string content and explicit closeOnScroll, matching SidebarBottomItem. Any content or sidebar scroll closes the hint; the earlier scroll-retention workaround is superseded.
+**Catchable by**: Sections 3, 6, and 8. Measure icon-to-tooltip centers, test the first hover after cold startup, and verify content/sidebar scroll and wheel input close hints before another icon moves under the pointer; also check pointer leave and click dismissal.
+
+## Case: Icon-only sidebar retained label spacing and collapsed early (OK-66138)
+**Date**: 2026-11-05 | **Platforms**: Desktop, hover-capable Web and expanded browser extension UI
+**Symptom**: Hiding navigation labels retained 68px spacing and the overflow threshold still assumed 70px. Touch-capable laptops and expanded extension tabs could not use the preference.
+**Root Cause**: Invisible label placeholders occupied layout space, overflow capacity was stored using a fixed item height, and touch-device flags were used instead of current media capabilities.
+**Fix**: Omit hidden labels and their gap for 52px items, derive overflow capacity from the measured height and current label mode, and share a reactive hover/pointer hook across navigation and settings. The review deliberately supersedes the earlier scroll-retention choice: use icon-anchored LazyTooltip string content with explicit closeOnScroll, accepting dismissal when content or sidebar scrolls.
+**Catchable by**: Sections 3, 6, and 8. Test runtime media changes, extension eligibility, live preference toggling, both overflow thresholds, tooltip centers, and scroll dismissal.

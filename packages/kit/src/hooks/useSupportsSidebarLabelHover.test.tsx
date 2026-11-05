@@ -15,6 +15,8 @@ jest.mock('@onekeyhq/shared/src/platformEnv', () => ({
     isDesktop: false,
     isWeb: false,
     isExtension: false,
+    isExtensionUiPopup: false,
+    isExtensionUiSidePanel: false,
   },
 }));
 
@@ -23,6 +25,8 @@ const mockedPlatformEnv = platformEnv as {
   isDesktop: boolean;
   isWeb: boolean;
   isExtension: boolean;
+  isExtensionUiPopup: boolean;
+  isExtensionUiSidePanel: boolean;
 };
 const mockedUseMedia = jest.mocked(useMedia);
 
@@ -40,6 +44,8 @@ describe('useSupportsSidebarLabelHover', () => {
       isDesktop: false,
       isWeb: false,
       isExtension: false,
+      isExtensionUiPopup: false,
+      isExtensionUiSidePanel: false,
     });
     setMedia(false, false);
   });
@@ -75,6 +81,16 @@ describe('useSupportsSidebarLabelHover', () => {
       setMedia(false, false);
       rerender();
       expect(result.current).toBe(true);
+    },
+  );
+
+  it.each(['isExtensionUiPopup', 'isExtensionUiSidePanel'] as const)(
+    'hides the preference on %s because it uses bottom tabs',
+    (surface) => {
+      mockedPlatformEnv.isExtension = true;
+      mockedPlatformEnv[surface] = true;
+      const { result } = renderHook(useSupportsSidebarLabelHover);
+      expect(result.current).toBe(false);
     },
   );
 

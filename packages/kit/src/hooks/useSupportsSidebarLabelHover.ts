@@ -11,7 +11,10 @@ export function useSupportsSidebarLabelHover(): boolean {
     return true;
   }
   return Boolean(
-    (platformEnv.isWeb || platformEnv.isExtension) &&
+    (platformEnv.isWeb ||
+      (platformEnv.isExtension &&
+        !platformEnv.isExtensionUiPopup &&
+        !platformEnv.isExtensionUiSidePanel)) &&
     !hoverNone &&
     !pointerCoarse,
   );

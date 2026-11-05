@@ -42,8 +42,8 @@ import type {
 import type { NavigationState } from '@react-navigation/routers';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
-// Estimated height per tab item (icon ~40px + gap + label ~16-30px + padding 12px)
-const ESTIMATED_TAB_ITEM_HEIGHT = 70;
+// Labeled item estimate: 40px icon, gap, label, and 12px vertical padding.
+const LABELED_TAB_ITEM_HEIGHT = 70;
 const COMPACT_TAB_ITEM_HEIGHT = 52;
 
 const TAB_BAR_STYLE_WIDTH_40 = { width: 40 };
@@ -689,7 +689,7 @@ export function DesktopLeftSideBar({
   const [tabsContainerHeight, setTabsContainerHeight] = useState(0);
   const maxVisibleCount = Math.floor(
     tabsContainerHeight /
-      (showSidebarLabels ? ESTIMATED_TAB_ITEM_HEIGHT : COMPACT_TAB_ITEM_HEIGHT),
+      (showSidebarLabels ? LABELED_TAB_ITEM_HEIGHT : COMPACT_TAB_ITEM_HEIGHT),
   );
   const handleTabsContainerLayout = useCallback((event: LayoutChangeEvent) => {
     const height = event.nativeEvent.layout.height;
