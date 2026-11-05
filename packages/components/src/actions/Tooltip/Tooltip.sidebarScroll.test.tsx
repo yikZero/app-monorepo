@@ -10,6 +10,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 
+import { LazyTooltip, preloadLazyTooltip } from '../LazyTooltip';
+
 jest.mock('../../primitives', () => {
   const React = jest.requireActual<typeof import('react')>('react');
   const Box = React.forwardRef<HTMLDivElement, { children?: ReactNode }>(
@@ -53,7 +55,9 @@ jest.mock('@onekeyfe/react-native-native-overlay', () => ({
 }));
 
 const trigger = <button>Wallet</button>;
-const sidebarContent = <Tooltip.Text>Wallet title</Tooltip.Text>;
+jest.mock('@onekeyhq/shared/src/logger/logger', () => ({
+  defaultLogger: { app: { error: { log: jest.fn() } } },
+}));
 
 function hoverTrigger() {
   const button = screen.getByRole('button', { name: 'Wallet' });
@@ -66,21 +70,42 @@ function hoverTrigger() {
   return wrapper;
 }
 
-it('keeps a fixed sidebar hint open when an unrelated content pane scrolls', () => {
+it.each(['content-pane', 'sidebar'])(
+  'dismisses the icon-only sidebar hint when %s scrolls',
+  async (scrollTarget) => {
+    await preloadLazyTooltip();
+    render(
+      <>
+        <div data-testid="sidebar">
+          <LazyTooltip
+            placement="right"
+            closeOnScroll
+            renderTrigger={trigger}
+            renderContent="Wallet title"
+          />
+        </div>
+        <div data-testid="content-pane" />
+      </>,
+    );
+    hoverTrigger();
+    expect(screen.getByRole('tooltip').textContent).toBe('Wallet title');
+    fireEvent.scroll(screen.getByTestId(scrollTarget));
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  },
+);
+
+it('closes the sidebar hint before wheel input can move a different icon under the pointer', async () => {
+  await preloadLazyTooltip();
   render(
-    <>
-      <Tooltip renderTrigger={trigger} renderContent={sidebarContent} />
-      <div data-testid="content-pane" />
-    </>,
+    <LazyTooltip
+      closeOnScroll
+      renderTrigger={trigger}
+      renderContent="Wallet title"
+    />,
   );
   const wrapper = hoverTrigger();
   expect(screen.getByRole('tooltip').textContent).toBe('Wallet title');
-  fireEvent.scroll(screen.getByTestId('content-pane'));
-  expect(screen.getByRole('tooltip').textContent).toBe('Wallet title');
-  fireEvent(
-    wrapper,
-    Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
-  );
+  fireEvent.wheel(wrapper, { deltaY: 52 });
   expect(screen.queryByRole('tooltip')).toBeNull();
 });
 

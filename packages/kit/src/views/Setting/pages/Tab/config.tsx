@@ -22,6 +22,7 @@ import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
 import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
+import { useSupportsSidebarLabelHover } from '@onekeyhq/kit/src/hooks/useSupportsSidebarLabelHover';
 import {
   useDevSettingsPersistAtom,
   usePasswordBiologyAuthInfoAtom,
@@ -56,7 +57,6 @@ import {
   openUrlExternal,
   openUrlInDiscovery,
 } from '@onekeyhq/shared/src/utils/openUrlUtils';
-import { supportsSidebarLabelHover } from '@onekeyhq/shared/src/utils/sidebarLabels';
 import { EHardwareTransportType } from '@onekeyhq/shared/types';
 
 import { useCloudBackup } from '../../../Onboardingv2/hooks/useCloudBackup';
@@ -220,6 +220,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
   }, [appUpdateInfo.data.updateStrategy, appUpdateInfo.data.status]);
   const shouldShowUpdate = isShowAppUpdateUI && appUpdateInfo.isNeedUpdate;
   const intl = useIntl();
+  const supportsSidebarLabelHover = useSupportsSidebarLabelHover();
   const languageSearchKeywords = useLanguageSearchKeywords();
   const { isMobileLayout } = useSettingsLayout();
   const onPressAddressBook = useShowAddressBook({
@@ -445,7 +446,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               : undefined,
           ],
           [
-            supportsSidebarLabelHover()
+            supportsSidebarLabelHover
               ? {
                   id: 'sidebar-labels',
                   icon: 'SidebarOutline',
@@ -1235,6 +1236,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
     });
   }, [
     intl,
+    supportsSidebarLabelHover,
     cloudBackupFeatureInfo?.supportCloudBackup,
     cloudBackupFeatureInfo?.icon,
     cloudBackupFeatureInfo?.title,

@@ -4,11 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import {
-  LazyPopover,
-  LazyTooltip,
-  Tooltip,
-} from '@onekeyhq/components/src/actions';
+import { LazyPopover, LazyTooltip } from '@onekeyhq/components/src/actions';
 import type {
   IActionListSection,
   IPopoverProps,
@@ -48,6 +44,7 @@ import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
 // Estimated height per tab item (icon ~40px + gap + label ~16-30px + padding 12px)
 const ESTIMATED_TAB_ITEM_HEIGHT = 70;
+const COMPACT_TAB_ITEM_HEIGHT = 52;
 
 const TAB_BAR_STYLE_WIDTH_40 = { width: 40 };
 const TAB_BAR_STYLE_ARRAY_WIDTH_40 = [{ width: 40 }];
@@ -173,7 +170,7 @@ function BasicTabItemView({
         onPressWhenSelected={options.onPressWhenSelected}
         trackId={options.trackId}
         aria-current={isActive ? 'page' : undefined}
-        aria-label={label}
+        aria-label={showSidebarLabels ? undefined : label}
         selected={isActive}
         tabBarStyle={tabBarStyleMemo}
         // @ts-expect-error
@@ -190,12 +187,9 @@ function BasicTabItemView({
       label,
       options,
       route.name,
+      showSidebarLabels,
       tabBarStyleMemo,
     ],
-  );
-  const tooltipContent = useMemo(
-    () => <Tooltip.Text>{label}</Tooltip.Text>,
-    [label],
   );
   const contentMemo = useMemo(
     () =>
@@ -204,7 +198,7 @@ function BasicTabItemView({
           className="sidebar-tab-item"
           w="100%"
           ai="center"
-          gap="$0.5"
+          gap={showSidebarLabels ? '$0.5' : undefined}
           pt={6}
           pb={6}
           onPress={handlePress}
@@ -214,26 +208,27 @@ function BasicTabItemView({
           {showSidebarLabels ? (
             iconTrigger
           ) : (
-            <Tooltip
+            <LazyTooltip
               placement="right"
+              closeOnScroll
               renderTrigger={iconTrigger}
-              renderContent={tooltipContent}
+              renderContent={label}
             />
           )}
-          <SizableText
-            size="$bodyXsMedium"
-            cursor="default"
-            color="$text"
-            textAlign="center"
-            numberOfLines={2}
-            wordWrap="break-word"
-            maxWidth="100%"
-            opacity={showSidebarLabels ? 1 : 0}
-            aria-hidden={!showSidebarLabels}
-            pointerEvents="none"
-          >
-            {label}
-          </SizableText>
+          {showSidebarLabels ? (
+            <SizableText
+              size="$bodyXsMedium"
+              cursor="default"
+              color="$text"
+              textAlign="center"
+              numberOfLines={2}
+              wordWrap="break-word"
+              maxWidth="100%"
+              pointerEvents="none"
+            >
+              {label}
+            </SizableText>
+          ) : null}
         </YStack>
       ),
     [
@@ -244,7 +239,6 @@ function BasicTabItemView({
       options.hideOnTabBar,
       label,
       showSidebarLabels,
-      tooltipContent,
     ],
   );
 
@@ -466,6 +460,7 @@ function OverflowMoreButton({
   descriptors,
   navigation,
   extraConfig,
+  showSidebarLabels,
 }: {
   overflowRoutes: NavigationState['routes'];
   isAnyOverflowActive: boolean;
@@ -473,6 +468,7 @@ function OverflowMoreButton({
   descriptors: BottomTabBarProps['descriptors'];
   navigation: BottomTabBarProps['navigation'];
   extraConfig?: ITabNavigatorExtraConfig<string>;
+  showSidebarLabels: boolean;
 }) {
   const intl = useIntl();
   const [isOpen, setIsOpen] = useState(false);
@@ -502,30 +498,55 @@ function OverflowMoreButton({
     [],
   );
 
+  const moreIconTrigger = useMemo(
+    () => (
+      <DesktopTabItem
+        isContainerHovered={isOpen}
+        selected={isAnyOverflowActive}
+        tabBarStyle={TAB_BAR_STYLE_WIDTH_40}
+        icon={isAnyOverflowActive ? 'DotHorSolid' : 'DotHorOutline'}
+        label=""
+        aria-label={showSidebarLabels ? undefined : moreLabel}
+        showTooltip={false}
+        testID="tab-more"
+      />
+    ),
+    [isAnyOverflowActive, isOpen, moreLabel, showSidebarLabels],
+  );
   const overflowPopoverTrigger = useMemo(
     () => (
-      <YStack w="100%" ai="center" gap="$0.5" pt={6} pb={6}>
-        <DesktopTabItem
-          isContainerHovered={isOpen}
-          selected={isAnyOverflowActive}
-          tabBarStyle={TAB_BAR_STYLE_WIDTH_40}
-          icon={isAnyOverflowActive ? 'DotHorSolid' : 'DotHorOutline'}
-          label=""
-          showTooltip={false}
-          testID="tab-more"
-        />
-        <SizableText
-          size="$bodyXsMedium"
-          cursor="default"
-          color="$text"
-          textAlign="center"
-          numberOfLines={1}
-        >
-          {moreLabel}
-        </SizableText>
+      <YStack
+        w="100%"
+        ai="center"
+        gap={showSidebarLabels ? '$0.5' : undefined}
+        pt={6}
+        pb={6}
+      >
+        {showSidebarLabels ? (
+          moreIconTrigger
+        ) : (
+          <LazyTooltip
+            placement="right"
+            closeOnScroll
+            disabled={isOpen}
+            renderTrigger={moreIconTrigger}
+            renderContent={moreLabel}
+          />
+        )}
+        {showSidebarLabels ? (
+          <SizableText
+            size="$bodyXsMedium"
+            cursor="default"
+            color="$text"
+            textAlign="center"
+            numberOfLines={1}
+          >
+            {moreLabel}
+          </SizableText>
+        ) : null}
       </YStack>
     ),
-    [isAnyOverflowActive, isOpen, moreLabel],
+    [isOpen, moreIconTrigger, moreLabel, showSidebarLabels],
   );
 
   const overflowPopoverContent = useMemo(
@@ -639,6 +660,7 @@ export function DesktopLeftSideBar({
   extraConfig,
   bottomMenu,
   webPageTabBar,
+  // Native sidebar callers keep visible labels unless explicitly overridden.
   showSidebarLabels = true,
 }: BottomTabBarProps & {
   extraConfig?: ITabNavigatorExtraConfig<string>;
@@ -664,12 +686,15 @@ export function DesktopLeftSideBar({
     }
   }, [focusedRouteName, extraConfig?.name]);
 
-  const [maxVisibleCount, setMaxVisibleCount] = useState(0);
+  const [tabsContainerHeight, setTabsContainerHeight] = useState(0);
+  const maxVisibleCount = Math.floor(
+    tabsContainerHeight /
+      (showSidebarLabels ? ESTIMATED_TAB_ITEM_HEIGHT : COMPACT_TAB_ITEM_HEIGHT),
+  );
   const handleTabsContainerLayout = useCallback((event: LayoutChangeEvent) => {
     const height = event.nativeEvent.layout.height;
     if (height <= 0) return;
-    const count = Math.floor(height / ESTIMATED_TAB_ITEM_HEIGHT);
-    setMaxVisibleCount((prev) => (prev === count ? prev : count));
+    setTabsContainerHeight(height);
   }, []);
 
   const { visibleRoutes, overflowRoutes, deviceRoute } = useMemo(() => {
@@ -804,6 +829,7 @@ export function DesktopLeftSideBar({
                   descriptors={descriptors}
                   navigation={navigation}
                   extraConfig={extraConfig}
+                  showSidebarLabels={showSidebarLabels}
                 />
               ) : null}
             </YStack>
