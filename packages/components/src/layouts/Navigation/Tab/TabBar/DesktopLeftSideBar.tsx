@@ -1,10 +1,22 @@
 /* cspell:ignore hoverable */
 import type { ReactElement } from 'react';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { LazyPopover, LazyTooltip } from '@onekeyhq/components/src/actions';
+import {
+  ActionList,
+  LazyPopover,
+  LazyTooltip,
+} from '@onekeyhq/components/src/actions';
 import type {
   IActionListSection,
   IPopoverProps,
@@ -17,6 +29,7 @@ import {
   XStack,
   YStack,
 } from '@onekeyhq/components/src/primitives';
+import type { TamaguiElement } from '@onekeyhq/components/src/shared/tamagui';
 import { ANIMATE_ONLY_OPACITY_TRANSFORM } from '@onekeyhq/components/src/utils/animationConstants';
 import { MIN_SIDEBAR_WIDTH } from '@onekeyhq/components/src/utils/sidebar';
 import { appEventBus } from '@onekeyhq/shared/src/eventBus/appEventBus';
@@ -33,6 +46,10 @@ import { switchTab } from '../../Navigator/NavigationContainer';
 import { BrowserSubmenuColumn } from './BrowserSubmenuColumn';
 import { DesktopTabItem } from './DesktopTabItem';
 import { MenuHamburger } from './Menu';
+import {
+  SidebarAppearanceContext,
+  useSidebarIconsOnly,
+} from './SidebarAppearanceContext';
 
 import type { ITabNavigatorExtraConfig } from '../../Navigator/types';
 import type {
@@ -118,6 +135,12 @@ function BasicTabItemView({
   onPressOut?: () => void;
   options: ITabItemOptions;
 }) {
+  const iconsOnly = useSidebarIconsOnly();
+  const title =
+    options.collapseTabBarLabel ??
+    (typeof options.tabBarLabel === 'string'
+      ? options.tabBarLabel
+      : route.name);
   useEffect(() => {
     // @ts-expect-error
     const activeIcon = options?.tabBarIcon?.(true) as IKeyOfIcons;
@@ -179,20 +202,24 @@ function BasicTabItemView({
             // @ts-expect-error
             icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
             label=""
+            tooltipLabel={iconsOnly ? title : undefined}
+            aria-label={title}
             actionList={options.actionList}
             testID={route.name.toLowerCase()}
           />
-          <SizableText
-            size="$bodyXsMedium"
-            cursor="default"
-            color="$text"
-            textAlign="center"
-            numberOfLines={2}
-            wordWrap="break-word"
-            maxWidth="100%"
-          >
-            {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
-          </SizableText>
+          {!iconsOnly ? (
+            <SizableText
+              size="$bodyXsMedium"
+              cursor="default"
+              color="$text"
+              textAlign="center"
+              numberOfLines={2}
+              wordWrap="break-word"
+              maxWidth="100%"
+            >
+              {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
+            </SizableText>
+          ) : null}
         </YStack>
       ),
     [
@@ -204,6 +231,8 @@ function BasicTabItemView({
       options,
       route.name,
       tabBarStyleMemo,
+      iconsOnly,
+      title,
     ],
   );
 
@@ -432,6 +461,7 @@ function OverflowMoreButton({
   navigation: BottomTabBarProps['navigation'];
   extraConfig?: ITabNavigatorExtraConfig<string>;
 }) {
+  const iconsOnly = useSidebarIconsOnly();
   const intl = useIntl();
   const [isOpen, setIsOpen] = useState(false);
   const handleTabPress = useTabAction(navigation);
@@ -469,21 +499,26 @@ function OverflowMoreButton({
           tabBarStyle={TAB_BAR_STYLE_WIDTH_40}
           icon={isAnyOverflowActive ? 'DotHorSolid' : 'DotHorOutline'}
           label=""
-          showTooltip={false}
+          tooltipLabel={iconsOnly ? moreLabel : undefined}
+          tooltipPlacement="top"
+          showTooltip={Boolean(iconsOnly)}
+          aria-label={moreLabel}
           testID="tab-more"
         />
-        <SizableText
-          size="$bodyXsMedium"
-          cursor="default"
-          color="$text"
-          textAlign="center"
-          numberOfLines={1}
-        >
-          {moreLabel}
-        </SizableText>
+        {!iconsOnly ? (
+          <SizableText
+            size="$bodyXsMedium"
+            cursor="default"
+            color="$text"
+            textAlign="center"
+            numberOfLines={1}
+          >
+            {moreLabel}
+          </SizableText>
+        ) : null}
       </YStack>
     ),
-    [isAnyOverflowActive, isOpen, moreLabel],
+    [isAnyOverflowActive, isOpen, moreLabel, iconsOnly],
   );
 
   const overflowPopoverContent = useMemo(
@@ -598,6 +633,40 @@ export function DesktopLeftSideBar({
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
 }) {
+  const appearance = useContext(SidebarAppearanceContext);
+  const sidebarRef = useRef<TamaguiElement>(null);
+  useEffect(() => {
+    if (!appearance?.enabled || platformEnv.isNative) return;
+    const sidebar = sidebarRef.current as HTMLElement | null;
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+      // Capture before individual icons can open their own action lists.
+      event.stopPropagation();
+      ActionList.show({
+        title: appearance.showLabel,
+        triggerPosition: { x: event.pageX, y: event.pageY },
+        sections: [
+          {
+            title: appearance.showLabel,
+            items: appearance.options.map((option) => ({
+              label: option.label,
+              testID: `sidebar-appearance-${option.value}`,
+              icon:
+                appearance.value === option.value
+                  ? 'CheckLargeOutline'
+                  : undefined,
+              onPress: async () => {
+                await appearance.onChange(option.value);
+              },
+            })),
+          },
+        ],
+      });
+    };
+    sidebar?.addEventListener('contextmenu', handleContextMenu, true);
+    return () =>
+      sidebar?.removeEventListener('contextmenu', handleContextMenu, true);
+  }, [appearance]);
   const { routes } = state;
   const { top } = useSafeAreaInsets(); // used for ipad
   const handleTabPress = useTabAction(navigation);
@@ -712,7 +781,11 @@ export function DesktopLeftSideBar({
           <MenuHamburger />
         )}
         {/* eslint-enable no-nested-ternary */}
-        <YStack flex={1} testID="Desktop-AppSideBar-Content-Container">
+        <YStack
+          ref={sidebarRef}
+          flex={1}
+          testID="Desktop-AppSideBar-Content-Container"
+        >
           <YStack flex={1}>
             {!platformEnv.isDesktopWithCustomTitleBar &&
             !platformEnv.isNativeIOSPad ? (

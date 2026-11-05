@@ -1,5 +1,9 @@
 export enum ETranslationsMock {
   mock_do_not_delete_this_key = 'mock',
+  sidebar_navigation_appearance__title = 'sidebar_navigation_appearance__title',
+  sidebar_navigation_show__title = 'sidebar_navigation_show__title',
+  sidebar_navigation_icons_and_text__label = 'sidebar_navigation_icons_and_text__label',
+  sidebar_navigation_icons_only__label = 'sidebar_navigation_icons_only__label',
 
   // ----------------------------------------------
   v4_migration_input_v4_password = 'Enter v4 password',

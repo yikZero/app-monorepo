@@ -22,6 +22,7 @@ import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
 import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
+import { useSidebarNavigationAppearance } from '@onekeyhq/kit/src/hooks/useSidebarNavigationAppearance';
 import {
   useDevSettingsPersistAtom,
   usePasswordBiologyAuthInfoAtom,
@@ -88,6 +89,7 @@ import { OFFICIAL_CHANNELS_SEARCH_KEYWORDS } from './officialChannels';
 import { RestoreInfiniPendingTransactionsListItem } from './RestoreInfiniPendingTransactionsListItem';
 import { getSettingsDisplayTitle } from './settingsDisplay';
 import { SETTINGS_SIDEBAR_ORDER } from './settingsRootLayout';
+import { SidebarAppearanceListItem } from './SidebarAppearanceListItem';
 // import { OneKeyIdSubSettings } from './OneKeyIdSubSettings';
 // import { OneKeyIdTabItem } from './OneKeyIdTabItem';
 import { SubSearchSettings } from './SubSettings';
@@ -209,6 +211,7 @@ export type ISettingsConfig = (
 export type ISettingCategoryConfig = NonNullable<ISettingsConfig[number]>;
 
 export const useSettingsConfig: () => ISettingsConfig = () => {
+  const sidebarAppearance = useSidebarNavigationAppearance();
   const appUpdateInfo = useAppUpdateInfo();
   const isShowAppUpdateUI = useMemo(() => {
     return isShowAppUpdateUIWhenUpdating({
@@ -477,6 +480,14 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                     id: ETranslations.settings_split_view_desc,
                   }),
                   renderElement: <SplitViewListItem />,
+                }
+              : undefined,
+            sidebarAppearance.enabled
+              ? {
+                  id: 'sidebar-navigation-appearance',
+                  icon: 'LayoutColumnOutline',
+                  title: sidebarAppearance.title,
+                  renderElement: <SidebarAppearanceListItem />,
                 }
               : undefined,
           ],
@@ -1219,6 +1230,8 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
       return aOrder - bOrder;
     });
   }, [
+    sidebarAppearance.enabled,
+    sidebarAppearance.title,
     intl,
     cloudBackupFeatureInfo?.supportCloudBackup,
     cloudBackupFeatureInfo?.icon,

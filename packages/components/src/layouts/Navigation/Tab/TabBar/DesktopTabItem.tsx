@@ -7,7 +7,10 @@ import {
   IconButton,
   LazyTooltip,
 } from '@onekeyhq/components/src/actions';
-import type { IActionListSection } from '@onekeyhq/components/src/actions';
+import type {
+  IActionListSection,
+  ITooltipProps,
+} from '@onekeyhq/components/src/actions';
 import { useNetInfo } from '@onekeyhq/components/src/hooks/useNetInfo';
 import {
   Icon,
@@ -55,6 +58,8 @@ export interface IDesktopTabItemProps {
   showAvatar?: boolean;
   avatarSrc?: GetProps<typeof AvatarImage>['src'];
   label?: string;
+  tooltipLabel?: string;
+  tooltipPlacement?: ITooltipProps['placement'];
   selected?: boolean;
   tabBarStyle?: Animated.WithAnimatedValue<StyleProp<ViewStyle>>;
   tabBarItemStyle?: IStackStyle;
@@ -131,6 +136,8 @@ export function DesktopTabItem(
   const {
     icon,
     label,
+    tooltipLabel,
+    tooltipPlacement = 'right',
     selected,
     tabBarStyle,
     tabBarItemStyle,
@@ -378,12 +385,13 @@ export function DesktopTabItem(
       ref={stackRef}
       style={tabBarStyle as ViewStyle}
     >
-      {platformEnv.isDesktop && shortcutKey && showTooltip ? (
+      {showTooltip &&
+      (tooltipLabel || (platformEnv.isDesktop && shortcutKey)) ? (
         <LazyTooltip
           shortcutKey={shortcutKey}
           renderTrigger={trigger}
-          renderContent={label}
-          placement="right"
+          renderContent={tooltipLabel ?? label}
+          placement={tooltipPlacement}
         />
       ) : (
         trigger

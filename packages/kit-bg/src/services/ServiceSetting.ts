@@ -918,6 +918,16 @@ class ServiceSetting extends ServiceBase {
   }
 
   @backgroundMethod()
+  public async setSidebarNavigationAppearance(
+    value: 'icons-and-text' | 'icons-only',
+  ) {
+    await settingsPersistAtom.set((prev) => ({
+      ...prev,
+      sidebarNavigationAppearance: value,
+    }));
+  }
+
+  @backgroundMethod()
   public async getEnableMenuBarTray() {
     const { enableMenuBarTray } = await settingsPersistAtom.get();
     // Fall back to true to match settingsAtomInitialValue for upgrades.

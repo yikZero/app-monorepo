@@ -1,6 +1,8 @@
 import { isEmpty } from 'lodash';
 import { createIntl, createIntlCache } from 'react-intl';
 
+import { getSidebarNavigationMessages } from './sidebarNavigationMessages';
+
 import type { ILocaleSymbol } from './type';
 import type { ResolvedIntlConfig } from '@formatjs/intl';
 import type { IntlShape } from 'react-intl';
@@ -43,7 +45,7 @@ class AppLocale {
     this.intl = createIntl(
       {
         locale,
-        messages,
+        messages: { ...getSidebarNavigationMessages(locale), ...messages },
       },
       this.cache,
     );

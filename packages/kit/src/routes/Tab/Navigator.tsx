@@ -14,6 +14,7 @@ import {
   useMedia,
   useSplitSubView,
 } from '@onekeyhq/components';
+import { SidebarAppearanceContext } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { showIntercom } from '@onekeyhq/shared/src/modules3rdParty/intercom';
@@ -24,6 +25,7 @@ import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 
 import { Footer } from '../../components/Footer';
 import { useGlobalShortcuts } from '../../hooks/useGlobalShortcuts';
+import { useSidebarNavigationAppearance } from '../../hooks/useSidebarNavigationAppearance';
 import { BottomMenu } from '../../provider/Container/PortalBodyContainer/BottomMenu';
 import { WebPageTabBar } from '../../provider/Container/PortalBodyContainer/WebPageTabBar';
 import { TabFreezeOnBlurContext } from '../../provider/Container/TabFreezeOnBlurContainer';
@@ -101,6 +103,7 @@ function FloatingDevModeBackButton() {
 }
 
 export function TabNavigator() {
+  const sidebarAppearance = useSidebarNavigationAppearance();
   const intl = useIntl();
   const { freezeOnBlur } = useContext(TabFreezeOnBlurContext);
   // Customer service sits above the tab bar while iOS shows it as a vertical
@@ -210,16 +213,18 @@ export function TabNavigator() {
 
   return (
     <>
-      <TabStackNavigator<ETabRoutes>
-        config={config}
-        extraConfig={isShowWebTabBar ? tabExtraConfig : undefined}
-        showTabBar={Boolean(
-          !(isTabletDetailView && isLandscape) && !shouldHideExtTabBar,
-        )}
-        bottomMenu={<BottomMenu />}
-        webPageTabBar={<WebPageTabBar />}
-        sideAccessory={sideAccessory}
-      />
+      <SidebarAppearanceContext.Provider value={sidebarAppearance}>
+        <TabStackNavigator<ETabRoutes>
+          config={config}
+          extraConfig={isShowWebTabBar ? tabExtraConfig : undefined}
+          showTabBar={Boolean(
+            !(isTabletDetailView && isLandscape) && !shouldHideExtTabBar,
+          )}
+          bottomMenu={<BottomMenu />}
+          webPageTabBar={<WebPageTabBar />}
+          sideAccessory={sideAccessory}
+        />
+      </SidebarAppearanceContext.Provider>
       {platformEnv.isDev && shouldHideExtTabBar ? (
         <FloatingDevModeBackButton />
       ) : null}
