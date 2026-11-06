@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 import { useIntl } from 'react-intl';
 
@@ -125,33 +125,44 @@ function WalletBoundReferralCodeButtonView({
     id: ETranslations.referral_not_applicable_desc,
   });
 
+  // A second tap while the menu is closing would open a second dialog.
+  const isOpeningRef = useRef(false);
   // The item is only enabled when the status checked on open is "bind", and
   // the dialog re-checks every wallet itself, so open it right away instead of
   // blocking the menu on another server round trip. Close the menu first so
   // the dialog is not presented over a sheet that is still dismissing.
   const handlePress = useCallback(
-    (close: () => void | Promise<void>) =>
-      runAfterActionListClose(
-        close,
-        () => {
-          if (isReferralBlocked) {
-            showBotWalletDisabledToast('referral');
-            return;
-          }
-          if (!shouldBoundReferralCode) {
-            return;
-          }
-          bindWalletInviteCode({
-            wallet,
-            onSuccess: () => {
-              setTimeout(() => {
-                void refreshDisplayReferralCodeButton();
-              }, 200);
-            },
-          });
-        },
-        { waitForAnimation: platformEnv.isNative },
-      ),
+    async (close: () => void | Promise<void>) => {
+      if (isOpeningRef.current) {
+        return;
+      }
+      isOpeningRef.current = true;
+      try {
+        await runAfterActionListClose(
+          close,
+          () => {
+            if (isReferralBlocked) {
+              showBotWalletDisabledToast('referral');
+              return;
+            }
+            if (!shouldBoundReferralCode) {
+              return;
+            }
+            bindWalletInviteCode({
+              wallet,
+              onSuccess: () => {
+                setTimeout(() => {
+                  void refreshDisplayReferralCodeButton();
+                }, 200);
+              },
+            });
+          },
+          { waitForAnimation: platformEnv.isNative },
+        );
+      } finally {
+        isOpeningRef.current = false;
+      }
+    },
     [
       isReferralBlocked,
       shouldBoundReferralCode,
