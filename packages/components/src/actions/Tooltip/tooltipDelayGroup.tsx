@@ -7,12 +7,12 @@ import type { ReactNode } from 'react';
 export const TOOLTIP_GROUP_OPEN_DELAY_MS = 400;
 export const TOOLTIP_GROUP_SKIP_DELAY_MS = 300;
 
-export interface ITooltipDelayGroup {
+interface ITooltipDelayGroup {
   isWarm: () => boolean;
   markOpen: () => () => void;
 }
 
-export function createTooltipDelayGroup(): ITooltipDelayGroup {
+function createTooltipDelayGroup(): ITooltipDelayGroup {
   let openCount = 0;
   let lastClosedAt = 0;
   return {

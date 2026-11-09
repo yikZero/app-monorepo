@@ -48,7 +48,7 @@ import { BrowserSubmenuColumn } from './BrowserSubmenuColumn';
 import { DesktopTabItem } from './DesktopTabItem';
 import { MenuHamburger } from './Menu';
 import {
-  SIDEBAR_LABELS_COPY,
+  SIDEBAR_LABELS_MENU_ITEM,
   SidebarAppearanceContext,
   useSidebarIconsOnly,
 } from './SidebarAppearanceContext';
@@ -106,11 +106,6 @@ type ITabItemOptions = BottomTabNavigationOptions & {
   hideOnTabBar?: boolean;
 };
 
-// React Navigation rebuilds the `descriptors[].options` object on every
-// navigator render, but the individual field references (tabBarIcon,
-// tabBarLabel, ...) come from the static screenOptions config so they stay
-// stable. Shallow-compare only the fields the items actually read so memo
-// can short-circuit the 8+ sidebar items whose isActive didn't flip.
 function getTabTitle(
   route: NavigationState['routes'][0],
   options: BottomTabNavigationOptions & { collapseTabBarLabel?: string },
@@ -124,6 +119,11 @@ function getTabTitle(
   );
 }
 
+// React Navigation rebuilds the `descriptors[].options` object on every
+// navigator render, but the individual field references (tabBarIcon,
+// tabBarLabel, ...) come from the static screenOptions config so they stay
+// stable. Shallow-compare only the fields the items actually read so memo
+// can short-circuit the 8+ sidebar items whose isActive didn't flip.
 function areTabOptionsEqual(a: ITabItemOptions, b: ITabItemOptions) {
   if (a === b) return true;
   return (
@@ -378,12 +378,7 @@ function OverflowMenuItem({
 }) {
   // @ts-expect-error tabBarIcon returns icon name string, not ReactNode
   const iconName = options?.tabBarIcon?.(isActive) as IKeyOfIcons;
-  const label =
-    options.collapseTabBarLabel ??
-    (typeof options.tabBarLabel === 'string'
-      ? options.tabBarLabel
-      : undefined) ??
-    route.name;
+  const label = getTabTitle(route, options);
 
   return (
     <XStack
@@ -641,7 +636,7 @@ export function DesktopLeftSideBar({
   webPageTabBar: ReactElement;
 }) {
   const appearance = useContext(SidebarAppearanceContext);
-  const iconsOnly = appearance ? !appearance.showLabels : false;
+  const iconsOnly = useSidebarIconsOnly();
   const sidebarRef = useRef<TamaguiElement>(null);
   useEffect(() => {
     if (!appearance || platformEnv.isNative) return;
@@ -650,13 +645,13 @@ export function DesktopLeftSideBar({
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
       ActionList.show({
-        title: SIDEBAR_LABELS_COPY.menuItem,
+        title: SIDEBAR_LABELS_MENU_ITEM,
         triggerPosition: { x: event.pageX, y: event.pageY },
         sections: [
           {
             items: [
               {
-                label: SIDEBAR_LABELS_COPY.menuItem,
+                label: SIDEBAR_LABELS_MENU_ITEM,
                 testID: 'sidebar-show-labels',
                 icon: appearance.showLabels ? 'CheckLargeOutline' : undefined,
                 onPress: async () => {

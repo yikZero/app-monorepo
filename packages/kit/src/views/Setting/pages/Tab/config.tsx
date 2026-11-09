@@ -11,7 +11,6 @@ import type {
   IStackStyle,
 } from '@onekeyhq/components';
 import { isNativeTablet } from '@onekeyhq/components';
-import { SIDEBAR_LABELS_COPY } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
 import {
   isShowAppUpdateUIWhenUpdating,
   useAppUpdateInfo,
@@ -23,7 +22,10 @@ import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
 import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
-import { isSidebarLabelsToggleSupported } from '@onekeyhq/kit/src/utils/sidebarLabelsUtils';
+import {
+  SIDEBAR_LABELS_SETTING_COPY,
+  isSidebarLabelsToggleSupported,
+} from '@onekeyhq/kit/src/utils/sidebarLabelsUtils';
 import {
   useDevSettingsPersistAtom,
   usePasswordBiologyAuthInfoAtom,
@@ -438,8 +440,8 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               ? {
                   id: 'sidebar-labels',
                   icon: 'LayoutSidebarOutline',
-                  title: SIDEBAR_LABELS_COPY.settingTitle,
-                  subtitle: SIDEBAR_LABELS_COPY.settingDescription,
+                  title: SIDEBAR_LABELS_SETTING_COPY.title,
+                  subtitle: SIDEBAR_LABELS_SETTING_COPY.description,
                   renderElement: <SidebarLabelsListItem />,
                 }
               : undefined,

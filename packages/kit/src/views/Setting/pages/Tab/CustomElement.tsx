@@ -52,6 +52,10 @@ import PasswordUpdateContainer from '@onekeyhq/kit/src/components/Password/conta
 import { SupportUnreadDot } from '@onekeyhq/kit/src/components/SupportUnreadDot';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useIntercomUnreadCount } from '@onekeyhq/kit/src/hooks/useIntercomUnreadCount';
+import {
+  setSidebarShowLabels,
+  useSidebarShowLabels,
+} from '@onekeyhq/kit/src/hooks/useSidebarShowLabels';
 import { TabFreezeOnBlurContext } from '@onekeyhq/kit/src/provider/Container/TabFreezeOnBlurContainer';
 import { useActiveAccount } from '@onekeyhq/kit/src/states/jotai/contexts/accountSelector';
 import { openTravelModeSettingsWithAdmission } from '@onekeyhq/kit/src/utils/onboardingEntryGate';
@@ -1094,25 +1098,18 @@ export function SidebarLabelsListItem({
   analyticsSource,
   ...props
 }: ICustomElementProps) {
-  const [{ sidebarShowLabels }] = useSettingsPersistAtom();
-  const showLabels = sidebarShowLabels !== false;
+  const showLabels = useSidebarShowLabels();
   const toggleSidebarLabels = useCallback(
     (value: boolean) => {
       maybeLogSettingsSearchResultClick({
         source: analyticsSource,
         logItemClick,
       });
-      logSettingValueChanged({
-        itemId: 'sidebar-labels',
-        from: String(showLabels),
-        to: String(value),
-        entry: 'settingsPage',
-      });
       startViewTransition(() => {
-        void backgroundApiProxy.serviceSetting.setSidebarShowLabels(value);
+        void setSidebarShowLabels(value, 'settingsPage');
       });
     },
-    [analyticsSource, logItemClick, showLabels],
+    [analyticsSource, logItemClick],
   );
   return (
     <TabSettingsListItem {...props} userSelect="none">

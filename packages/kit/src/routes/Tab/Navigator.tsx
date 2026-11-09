@@ -16,7 +16,6 @@ import {
   useSplitSubView,
 } from '@onekeyhq/components';
 import { SidebarAppearanceContext } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
-import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { showIntercom } from '@onekeyhq/shared/src/modules3rdParty/intercom';
@@ -25,9 +24,12 @@ import { ETabRoutes } from '@onekeyhq/shared/src/routes';
 import { ERootRoutes } from '@onekeyhq/shared/src/routes/root';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 
-import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import { Footer } from '../../components/Footer';
 import { useGlobalShortcuts } from '../../hooks/useGlobalShortcuts';
+import {
+  setSidebarShowLabels,
+  useSidebarShowLabels,
+} from '../../hooks/useSidebarShowLabels';
 import { BottomMenu } from '../../provider/Container/PortalBodyContainer/BottomMenu';
 import { WebPageTabBar } from '../../provider/Container/PortalBodyContainer/WebPageTabBar';
 import { TabFreezeOnBlurContext } from '../../provider/Container/TabFreezeOnBlurContainer';
@@ -105,25 +107,16 @@ function FloatingDevModeBackButton() {
   );
 }
 
-// Isolated so settings changes only re-render the provider, not the navigator.
-// Used by the sidebar context menu; the settings switch logs its own change.
-const setSidebarShowLabels = (showLabels: boolean) => {
-  defaultLogger.setting.page.settingValueChanged({
-    itemId: 'sidebar-labels',
-    from: String(!showLabels),
-    to: String(showLabels),
-    entry: 'sidebarContextMenu',
-  });
-  return backgroundApiProxy.serviceSetting.setSidebarShowLabels(showLabels);
-};
+const setShowLabelsFromContextMenu = (showLabels: boolean) =>
+  setSidebarShowLabels(showLabels, 'sidebarContextMenu');
 
+// Isolated so settings changes only re-render the provider, not the navigator.
 function SidebarAppearanceProvider({ children }: { children: ReactNode }) {
-  const [{ sidebarShowLabels }] = useSettingsPersistAtom();
-  const showLabels = sidebarShowLabels !== false;
+  const showLabels = useSidebarShowLabels();
   const value = useMemo(
     () =>
       isSidebarLabelsToggleSupported
-        ? { showLabels, setShowLabels: setSidebarShowLabels }
+        ? { showLabels, setShowLabels: setShowLabelsFromContextMenu }
         : undefined,
     [showLabels],
   );
