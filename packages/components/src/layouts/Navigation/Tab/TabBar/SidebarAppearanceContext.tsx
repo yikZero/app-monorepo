@@ -1,8 +1,5 @@
 import { createContext, useContext } from 'react';
 
-// Hardcoded English until the copy is added to Lokalise.
-export const SIDEBAR_LABELS_MENU_ITEM = 'Show labels';
-
 export type ISidebarAppearance = {
   showLabels: boolean;
   setShowLabels: (showLabels: boolean) => Promise<void>;

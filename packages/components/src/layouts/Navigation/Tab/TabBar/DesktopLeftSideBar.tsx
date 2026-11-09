@@ -50,7 +50,6 @@ import { BrowserSubmenuColumn } from './BrowserSubmenuColumn';
 import { DesktopTabItem } from './DesktopTabItem';
 import { MenuHamburger } from './Menu';
 import {
-  SIDEBAR_LABELS_MENU_ITEM,
   SidebarAppearanceContext,
   useSidebarIconsOnly,
 } from './SidebarAppearanceContext';
@@ -637,23 +636,27 @@ export function DesktopLeftSideBar({
   bottomMenu: ReactElement;
   webPageTabBar: ReactElement;
 }) {
+  const intl = useIntl();
   const appearance = useContext(SidebarAppearanceContext);
   const iconsOnly = useSidebarIconsOnly();
   const sidebarRef = useRef<TamaguiElement>(null);
   useEffect(() => {
     if (!appearance || platformEnv.isNative) return;
     const sidebar = sidebarRef.current as HTMLElement | null;
+    const showLabelsLabel = intl.formatMessage({
+      id: ETranslations.global_show_labels__action,
+    });
     // Bubble phase: items with their own action list stop propagation first.
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
       ActionList.show({
-        title: SIDEBAR_LABELS_MENU_ITEM,
+        title: showLabelsLabel,
         triggerPosition: { x: event.pageX, y: event.pageY },
         sections: [
           {
             items: [
               {
-                label: SIDEBAR_LABELS_MENU_ITEM,
+                label: showLabelsLabel,
                 testID: 'sidebar-show-labels',
                 icon: 'SidebarOutline',
                 // Display only: the whole row toggles the setting.
@@ -677,7 +680,7 @@ export function DesktopLeftSideBar({
     };
     sidebar?.addEventListener('contextmenu', handleContextMenu);
     return () => sidebar?.removeEventListener('contextmenu', handleContextMenu);
-  }, [appearance]);
+  }, [appearance, intl]);
   const { routes } = state;
   const { top } = useSafeAreaInsets(); // used for ipad
   const handleTabPress = useTabAction(navigation);

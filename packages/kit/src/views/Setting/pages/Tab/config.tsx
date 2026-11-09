@@ -22,10 +22,7 @@ import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
 import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
-import {
-  SIDEBAR_LABELS_SETTING_COPY,
-  isSidebarLabelsToggleSupported,
-} from '@onekeyhq/kit/src/utils/sidebarLabelsUtils';
+import { isSidebarLabelsToggleSupported } from '@onekeyhq/kit/src/utils/sidebarLabelsUtils';
 import {
   useDevSettingsPersistAtom,
   usePasswordBiologyAuthInfoAtom,
@@ -440,8 +437,12 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               ? {
                   id: 'sidebar-labels',
                   icon: 'SidebarOutline',
-                  title: SIDEBAR_LABELS_SETTING_COPY.title,
-                  subtitle: SIDEBAR_LABELS_SETTING_COPY.description,
+                  title: intl.formatMessage({
+                    id: ETranslations.settings_sidebar_labels__title,
+                  }),
+                  subtitle: intl.formatMessage({
+                    id: ETranslations.settings_sidebar_labels__desc,
+                  }),
                   renderElement: <SidebarLabelsListItem />,
                 }
               : undefined,
