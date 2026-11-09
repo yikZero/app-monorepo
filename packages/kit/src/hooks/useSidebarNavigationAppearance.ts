@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useIntl } from 'react-intl';
-
 import { useMedia } from '@onekeyhq/components';
+import type { ISidebarAppearance } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
-import { ETranslationsMock } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import {
   resolveSidebarNavigationAppearance,
   supportsSidebarNavigationAppearance,
 } from '@onekeyhq/shared/src/utils/sidebarNavigationAppearance';
-import type { ISidebarNavigationAppearance } from '@onekeyhq/shared/src/utils/sidebarNavigationAppearance';
 
 import backgroundApiProxy from '../background/instance/backgroundApiProxy';
 
-export function useSidebarNavigationAppearance() {
-  const intl = useIntl();
+// Hardcoded English until the copy is added to Lokalise.
+export const SIDEBAR_LABELS_COPY = {
+  settingTitle: 'Show sidebar labels',
+  settingDescription: 'Show text under each sidebar icon',
+  menuItem: 'Show labels',
+} as const;
+
+export function useSidebarNavigationAppearance(): ISidebarAppearance & {
+  settingTitle: string;
+  settingDescription: string;
+} {
   const { gtMd } = useMedia();
   const [{ sidebarNavigationAppearance }] = useSettingsPersistAtom();
   const [canHover, setCanHover] = useState(false);
@@ -37,38 +43,23 @@ export function useSidebarNavigationAppearance() {
       isTouchable: Boolean(platformEnv.isWebTouchable),
       canHover,
     });
-  const value = resolveSidebarNavigationAppearance(sidebarNavigationAppearance);
-  const onChange = useCallback(async (next: ISidebarNavigationAppearance) => {
+  const showLabels =
+    resolveSidebarNavigationAppearance(sidebarNavigationAppearance) ===
+    'icons-and-text';
+  const setShowLabels = useCallback(async (next: boolean) => {
     await backgroundApiProxy.serviceSetting.setSidebarNavigationAppearance(
-      next,
+      next ? 'icons-and-text' : 'icons-only',
     );
   }, []);
   return useMemo(
     () => ({
       enabled,
-      value,
-      onChange,
-      title: intl.formatMessage({
-        id: ETranslationsMock.sidebar_navigation_appearance__title,
-      }),
-      showLabel: intl.formatMessage({
-        id: ETranslationsMock.sidebar_navigation_show__title,
-      }),
-      options: [
-        {
-          value: 'icons-and-text' as const,
-          label: intl.formatMessage({
-            id: ETranslationsMock.sidebar_navigation_icons_and_text__label,
-          }),
-        },
-        {
-          value: 'icons-only' as const,
-          label: intl.formatMessage({
-            id: ETranslationsMock.sidebar_navigation_icons_only__label,
-          }),
-        },
-      ],
+      showLabels,
+      setShowLabels,
+      showLabelsMenuText: SIDEBAR_LABELS_COPY.menuItem,
+      settingTitle: SIDEBAR_LABELS_COPY.settingTitle,
+      settingDescription: SIDEBAR_LABELS_COPY.settingDescription,
     }),
-    [enabled, value, onChange, intl],
+    [enabled, showLabels, setShowLabels],
   );
 }

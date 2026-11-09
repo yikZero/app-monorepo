@@ -1,29 +1,47 @@
 import { useCallback } from 'react';
 
-import { Radio, SizableText, YStack } from '@onekeyhq/components';
+import { ESwitchSize, Switch, startViewTransition } from '@onekeyhq/components';
 import { useSidebarNavigationAppearance } from '@onekeyhq/kit/src/hooks/useSidebarNavigationAppearance';
 
-export function SidebarAppearanceListItem() {
-  const { enabled, title, value, options, onChange } =
-    useSidebarNavigationAppearance();
+import { TabSettingsListItem } from './ListItem';
+import {
+  logSettingValueChanged,
+  maybeLogSettingsSearchResultClick,
+} from './settingsAnalytics';
+
+import type { ICustomElementProps } from './CustomElement';
+
+export function SidebarAppearanceListItem({
+  logItemClick,
+  analyticsSource,
+  ...props
+}: ICustomElementProps) {
+  const { showLabels, setShowLabels } = useSidebarNavigationAppearance();
   const handleChange = useCallback(
-    async (next: string) => {
-      if (next === 'icons-and-text' || next === 'icons-only') {
-        await onChange(next);
-      }
+    (value: boolean) => {
+      maybeLogSettingsSearchResultClick({
+        source: analyticsSource,
+        logItemClick,
+      });
+      logSettingValueChanged({
+        itemId: 'sidebar-labels',
+        from: String(showLabels),
+        to: String(value),
+      });
+      startViewTransition(() => {
+        void setShowLabels(value);
+      });
     },
-    [onChange],
+    [analyticsSource, logItemClick, setShowLabels, showLabels],
   );
-  if (!enabled) return null;
   return (
-    <YStack px="$5" py="$3" gap="$3" testID="settings-sidebar-appearance">
-      <SizableText size="$bodyLgMedium">{title}</SizableText>
-      <Radio
-        value={value}
-        options={options}
+    <TabSettingsListItem {...props} userSelect="none">
+      <Switch
+        testID="settings-sidebar-labels-switch"
+        size={ESwitchSize.small}
+        value={showLabels}
         onChange={handleChange}
-        testID="settings-sidebar-appearance-radio"
       />
-    </YStack>
+    </TabSettingsListItem>
   );
 }

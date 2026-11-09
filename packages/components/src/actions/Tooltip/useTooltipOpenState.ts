@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  TOOLTIP_GROUP_OPEN_DELAY_MS,
+  isTooltipDelayGroupWarm,
+  markTooltipDelayGroupOpen,
+} from './tooltipDelayGroup';
 import { registerOpenTooltip } from './tooltipRegistry';
 
 const HOVER_OPEN_DELAY_MS = 250;
@@ -64,9 +69,11 @@ const useHoverTooltip = () => {
 export function useTooltipOpenState({
   hovering,
   closeOnScroll,
+  delayGroup,
 }: {
   hovering?: boolean;
   closeOnScroll?: boolean;
+  delayGroup?: string;
 }) {
   const [isShow, setIsShow] = useState(false);
   const [forceClose, setForceClose] = useState(false);
@@ -79,6 +86,16 @@ export function useTooltipOpenState({
   isPressLatchedRef.current = isPressLatched;
 
   const scrollBlockedUntilRef = useRef(0);
+  const groupOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const clearGroupOpenTimer = useCallback(() => {
+    if (groupOpenTimerRef.current) {
+      clearTimeout(groupOpenTimerRef.current);
+      groupOpenTimerRef.current = null;
+    }
+  }, []);
+  useEffect(() => clearGroupOpenTimer, [clearGroupOpenTimer]);
   const {
     isHovered,
     setIsHovered,
@@ -94,6 +111,7 @@ export function useTooltipOpenState({
     const handleScroll = () => {
       scrollBlockedUntilRef.current = Date.now() + SCROLL_IDLE_MS;
       clearHoverTimers();
+      clearGroupOpenTimer();
       setIsShow(false);
       setIsHovered(false);
     };
@@ -107,7 +125,7 @@ export function useTooltipOpenState({
       document.removeEventListener('scroll', handleScroll, true);
       document.removeEventListener('wheel', handleScroll, true);
     };
-  }, [clearHoverTimers, closeOnScroll, setIsHovered]);
+  }, [clearGroupOpenTimer, clearHoverTimers, closeOnScroll, setIsHovered]);
 
   const isOpen = useMemo(() => {
     if (forceClose || isPressLatched) {
@@ -119,12 +137,23 @@ export function useTooltipOpenState({
     return isDisabled ? false : isShow;
   }, [forceClose, isPressLatched, hovering, isDisabled, isShow, isHovered]);
 
-  const handleOpenChange = useCallback((open: boolean) => {
-    if (open && Date.now() < scrollBlockedUntilRef.current) {
-      return;
-    }
-    setIsShow(open);
-  }, []);
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      clearGroupOpenTimer();
+      if (open && Date.now() < scrollBlockedUntilRef.current) {
+        return;
+      }
+      if (open && delayGroup && !isTooltipDelayGroupWarm(delayGroup)) {
+        groupOpenTimerRef.current = setTimeout(() => {
+          groupOpenTimerRef.current = null;
+          setIsShow(true);
+        }, TOOLTIP_GROUP_OPEN_DELAY_MS);
+        return;
+      }
+      setIsShow(open);
+    },
+    [clearGroupOpenTimer, delayGroup],
+  );
 
   const handleTriggerPointerDown = useCallback(
     (event: ITooltipPointerDownEvent) => {
@@ -132,11 +161,12 @@ export function useTooltipOpenState({
       if (event.pointerType === 'touch') {
         return;
       }
+      clearGroupOpenTimer();
       setIsPressLatched(true);
       setIsShow(false);
       setIsHovered(false);
     },
-    [setIsHovered],
+    [clearGroupOpenTimer, setIsHovered],
   );
 
   const handleTriggerMouseEnter = useCallback(() => {
@@ -153,13 +183,14 @@ export function useTooltipOpenState({
       setIsPressLatched(false);
       // Drop open requests that arrived while latched; the tooltip must only
       // reopen on a fresh hover.
+      clearGroupOpenTimer();
       setIsShow(false);
       setIsHovered(false);
     }
     if (hovering) {
       onContentHoverOut();
     }
-  }, [hovering, onContentHoverOut, setIsHovered]);
+  }, [clearGroupOpenTimer, hovering, onContentHoverOut, setIsHovered]);
 
   const handleContentMouseEnter = useCallback(() => {
     if (Date.now() < scrollBlockedUntilRef.current) {
@@ -178,6 +209,7 @@ export function useTooltipOpenState({
 
   const closeTooltip = useCallback(() => {
     return new Promise<void>((resolve) => {
+      clearGroupOpenTimer();
       setForceClose(true);
       setIsShow(false);
       setIsHovered(false);
@@ -188,7 +220,7 @@ export function useTooltipOpenState({
         setForceClose(false);
       }, FORCE_CLOSE_RELEASE_MS);
     });
-  }, [setIsHovered]);
+  }, [clearGroupOpenTimer, setIsHovered]);
 
   const openTooltip = useCallback(() => {
     return new Promise<void>((resolve) => {
@@ -201,9 +233,10 @@ export function useTooltipOpenState({
   }, [setIsHovered]);
 
   const closeFromRegistry = useCallback(() => {
+    clearGroupOpenTimer();
     setIsShow(false);
     setIsHovered(false);
-  }, [setIsHovered]);
+  }, [clearGroupOpenTimer, setIsHovered]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -211,6 +244,13 @@ export function useTooltipOpenState({
     }
     return registerOpenTooltip(closeFromRegistry);
   }, [isOpen, closeFromRegistry]);
+
+  useEffect(() => {
+    if (!isOpen || !delayGroup) {
+      return undefined;
+    }
+    return markTooltipDelayGroupOpen(delayGroup);
+  }, [isOpen, delayGroup]);
 
   return {
     isOpen,

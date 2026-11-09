@@ -484,9 +484,10 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               : undefined,
             sidebarAppearance.enabled
               ? {
-                  id: 'sidebar-navigation-appearance',
-                  icon: 'LayoutColumnOutline',
-                  title: sidebarAppearance.title,
+                  id: 'sidebar-labels',
+                  icon: 'LayoutSidebarOutline',
+                  title: sidebarAppearance.settingTitle,
+                  subtitle: sidebarAppearance.settingDescription,
                   renderElement: <SidebarAppearanceListItem />,
                 }
               : undefined,
@@ -1231,7 +1232,8 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
     });
   }, [
     sidebarAppearance.enabled,
-    sidebarAppearance.title,
+    sidebarAppearance.settingTitle,
+    sidebarAppearance.settingDescription,
     intl,
     cloudBackupFeatureInfo?.supportCloudBackup,
     cloudBackupFeatureInfo?.icon,

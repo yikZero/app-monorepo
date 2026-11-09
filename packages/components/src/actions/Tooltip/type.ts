@@ -19,6 +19,11 @@ export interface ITooltipProps {
   shortcutKey?: EShortcutEvents | string[];
   hovering?: boolean;
   closeOnScroll?: boolean;
+  /**
+   * Tooltips in the same group wait before the first one opens, then open
+   * immediately while the user moves between members. Web/desktop only.
+   */
+  delayGroup?: string;
   contentProps?: IYStackProps;
   disabled?: boolean;
   onPress?: IStackProps['onPress'];

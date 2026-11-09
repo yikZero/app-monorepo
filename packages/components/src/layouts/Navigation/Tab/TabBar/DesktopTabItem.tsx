@@ -60,6 +60,7 @@ export interface IDesktopTabItemProps {
   label?: string;
   tooltipLabel?: string;
   tooltipPlacement?: ITooltipProps['placement'];
+  tooltipDelayGroup?: string;
   selected?: boolean;
   tabBarStyle?: Animated.WithAnimatedValue<StyleProp<ViewStyle>>;
   tabBarItemStyle?: IStackStyle;
@@ -138,6 +139,7 @@ export function DesktopTabItem(
     label,
     tooltipLabel,
     tooltipPlacement = 'right',
+    tooltipDelayGroup,
     selected,
     tabBarStyle,
     tabBarItemStyle,
@@ -171,7 +173,12 @@ export function DesktopTabItem(
   const [isContextMenuOpened, setIsContextMenuOpened] = useState(false);
   const onOpenContextMenu = useCallback((e: Event) => {
     e.preventDefault();
-    openActionList?.current?.();
+    if (openActionList.current) {
+      // Only items with their own menu keep the right click; others let it
+      // reach the container, e.g. the sidebar's labels menu.
+      e.stopPropagation();
+      openActionList.current();
+    }
   }, []);
 
   useEffect(() => {
@@ -392,6 +399,7 @@ export function DesktopTabItem(
           renderTrigger={trigger}
           renderContent={tooltipLabel ?? label}
           placement={tooltipPlacement}
+          delayGroup={tooltipDelayGroup}
         />
       ) : (
         trigger

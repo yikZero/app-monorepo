@@ -61,6 +61,9 @@ import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
 // Estimated height per tab item (icon ~40px + gap + label ~16-30px + padding 12px)
 const ESTIMATED_TAB_ITEM_HEIGHT = 70;
+// 40px icon button plus the item's 6px vertical padding, without the label.
+const ESTIMATED_ICON_ONLY_TAB_ITEM_HEIGHT = 52;
+const SIDEBAR_TOOLTIP_DELAY_GROUP = 'desktop-sidebar';
 
 const TAB_BAR_STYLE_WIDTH_40 = { width: 40 };
 const TAB_BAR_STYLE_ARRAY_WIDTH_40 = [{ width: 40 }];
@@ -203,6 +206,7 @@ function BasicTabItemView({
             icon={options?.tabBarIcon?.(isActive) as IKeyOfIcons}
             label=""
             tooltipLabel={iconsOnly ? title : undefined}
+            tooltipDelayGroup={SIDEBAR_TOOLTIP_DELAY_GROUP}
             aria-label={title}
             actionList={options.actionList}
             testID={route.name.toLowerCase()}
@@ -217,7 +221,7 @@ function BasicTabItemView({
               wordWrap="break-word"
               maxWidth="100%"
             >
-              {options.collapseTabBarLabel ?? options.tabBarLabel ?? route.name}
+              {title}
             </SizableText>
           ) : null}
         </YStack>
@@ -349,6 +353,7 @@ function SidebarBottomItem({
   return (
     <LazyTooltip
       placement="right"
+      delayGroup={SIDEBAR_TOOLTIP_DELAY_GROUP}
       renderTrigger={renderTriggerMemo}
       renderContent={label}
     />
@@ -501,7 +506,8 @@ function OverflowMoreButton({
           label=""
           tooltipLabel={iconsOnly ? moreLabel : undefined}
           tooltipPlacement="top"
-          showTooltip={Boolean(iconsOnly)}
+          tooltipDelayGroup={SIDEBAR_TOOLTIP_DELAY_GROUP}
+          showTooltip={iconsOnly}
           aria-label={moreLabel}
           testID="tab-more"
         />
@@ -634,38 +640,36 @@ export function DesktopLeftSideBar({
   webPageTabBar: ReactElement;
 }) {
   const appearance = useContext(SidebarAppearanceContext);
+  const iconsOnly = useSidebarIconsOnly();
   const sidebarRef = useRef<TamaguiElement>(null);
   useEffect(() => {
     if (!appearance?.enabled || platformEnv.isNative) return;
     const sidebar = sidebarRef.current as HTMLElement | null;
+    // Bubble phase: items with their own action list stop propagation first.
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
-      // Capture before individual icons can open their own action lists.
-      event.stopPropagation();
       ActionList.show({
-        title: appearance.showLabel,
+        title: appearance.showLabelsMenuText,
         triggerPosition: { x: event.pageX, y: event.pageY },
         sections: [
           {
-            title: appearance.showLabel,
-            items: appearance.options.map((option) => ({
-              label: option.label,
-              testID: `sidebar-appearance-${option.value}`,
-              icon:
-                appearance.value === option.value
-                  ? 'CheckLargeOutline'
-                  : undefined,
-              onPress: async () => {
-                await appearance.onChange(option.value);
+            items: [
+              {
+                label: appearance.showLabelsMenuText,
+                testID: 'sidebar-show-labels',
+                icon: appearance.showLabels ? 'CheckLargeOutline' : undefined,
+                onPress: async () => {
+                  await appearance.setShowLabels(!appearance.showLabels);
+                },
               },
-            })),
+            ],
           },
         ],
       });
     };
-    sidebar?.addEventListener('contextmenu', handleContextMenu, true);
+    sidebar?.addEventListener('contextmenu', handleContextMenu);
     return () =>
-      sidebar?.removeEventListener('contextmenu', handleContextMenu, true);
+      sidebar?.removeEventListener('contextmenu', handleContextMenu);
   }, [appearance]);
   const { routes } = state;
   const { top } = useSafeAreaInsets(); // used for ipad
@@ -685,13 +689,18 @@ export function DesktopLeftSideBar({
     }
   }, [focusedRouteName, extraConfig?.name]);
 
-  const [maxVisibleCount, setMaxVisibleCount] = useState(0);
+  const [tabsContainerHeight, setTabsContainerHeight] = useState(0);
   const handleTabsContainerLayout = useCallback((event: LayoutChangeEvent) => {
     const height = event.nativeEvent.layout.height;
     if (height <= 0) return;
-    const count = Math.floor(height / ESTIMATED_TAB_ITEM_HEIGHT);
-    setMaxVisibleCount((prev) => (prev === count ? prev : count));
+    setTabsContainerHeight(height);
   }, []);
+  const maxVisibleCount = Math.floor(
+    tabsContainerHeight /
+      (iconsOnly
+        ? ESTIMATED_ICON_ONLY_TAB_ITEM_HEIGHT
+        : ESTIMATED_TAB_ITEM_HEIGHT),
+  );
 
   const { visibleRoutes, overflowRoutes, deviceRoute } = useMemo(() => {
     let currentDeviceRoute: (typeof routes)[0] | undefined;
