@@ -446,12 +446,22 @@ describe('usePrimePaymentMethods native purchase', () => {
         requestDate: new Date(now + 5000).toISOString(),
       },
       transaction: {
-        transactionIdentifier: 'existing-tx',
-        productIdentifier: 'prime.yearly',
         purchaseDate: new Date(now - 20 * 24 * 3600 * 1000).toISOString(),
       },
     };
     let dateNowSpy: jest.SpyInstance<number, []>;
+
+    async function purchaseYearly() {
+      const { result } = renderHook(() => usePrimePaymentMethods());
+      await waitFor(() => expect(result.current.isReady).toBe(true));
+      let returnedResult: unknown;
+      await act(async () => {
+        returnedResult = await result.current.purchasePackageNative?.({
+          subscriptionPeriod: 'P1Y',
+        });
+      });
+      return returnedResult;
+    }
 
     beforeEach(() => {
       dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -470,17 +480,9 @@ describe('usePrimePaymentMethods native purchase', () => {
         mockIsMas = isMas;
         mockIsNativeIOS = isNativeIOS;
         mockPurchasePackage.mockResolvedValue(existingSubscriptionResult);
-        const { result } = renderHook(() => usePrimePaymentMethods());
-        await waitFor(() => expect(result.current.isReady).toBe(true));
 
-        let returnedResult: unknown;
-        await act(async () => {
-          returnedResult = await result.current.purchasePackageNative?.({
-            subscriptionPeriod: 'P1Y',
-          });
-        });
+        expect(await purchaseYearly()).toBe(existingSubscriptionResult);
 
-        expect(returnedResult).toBe(existingSubscriptionResult);
         expect(mockDialogConfirm).not.toHaveBeenCalled();
         expect(Toast.success).toHaveBeenCalledWith({
           title: ETranslations.prime_restore_successful,
@@ -505,40 +507,28 @@ describe('usePrimePaymentMethods native purchase', () => {
       },
     );
 
-    it('keeps the payment success flow on Google Play', async () => {
-      mockIsNativeIOS = false;
-      mockIsNativeAndroid = true;
-      mockPurchasePackage.mockResolvedValue(existingSubscriptionResult);
-      const { result } = renderHook(() => usePrimePaymentMethods());
-      await waitFor(() => expect(result.current.isReady).toBe(true));
-
-      await act(async () => {
-        await result.current.purchasePackageNative?.({
-          subscriptionPeriod: 'P1Y',
-        });
-      });
-
-      expect(mockDialogConfirm).toHaveBeenCalledTimes(1);
-      expect(Toast.success).not.toHaveBeenCalled();
-      expect(mockTrackPrimeSubscriptionSuccess).toHaveBeenCalledTimes(1);
-    });
-
-    it('keeps the payment success flow for a transaction charged now', async () => {
-      mockPurchasePackage.mockResolvedValue({
-        ...existingSubscriptionResult,
-        transaction: {
-          ...existingSubscriptionResult.transaction,
-          purchaseDate: new Date(now + 3000).toISOString(),
+    it.each([
+      {
+        name: 'on Google Play',
+        setup: () => {
+          mockIsNativeIOS = false;
+          mockIsNativeAndroid = true;
+          mockPurchasePackage.mockResolvedValue(existingSubscriptionResult);
         },
-      });
-      const { result } = renderHook(() => usePrimePaymentMethods());
-      await waitFor(() => expect(result.current.isReady).toBe(true));
+      },
+      {
+        name: 'for a transaction charged now',
+        setup: () => {
+          mockPurchasePackage.mockResolvedValue({
+            ...existingSubscriptionResult,
+            transaction: { purchaseDate: new Date(now + 3000).toISOString() },
+          });
+        },
+      },
+    ])('keeps the payment success flow $name', async ({ setup }) => {
+      setup();
 
-      await act(async () => {
-        await result.current.purchasePackageNative?.({
-          subscriptionPeriod: 'P1Y',
-        });
-      });
+      await purchaseYearly();
 
       expect(mockDialogConfirm).toHaveBeenCalledTimes(1);
       expect(Toast.success).not.toHaveBeenCalled();

@@ -169,6 +169,21 @@ export function usePrimePaymentMethodsStore<
     [ensureCurrentUser, ensurePaymentReady, instanceId, sdk],
   );
 
+  const reportRestoreSuccess = useCallback(
+    (source?: 'purchaseExistingSubscription') => {
+      defaultLogger.prime.subscription.primeRestorePurchaseResult({
+        result: 'success',
+        source,
+      });
+      Toast.success({
+        title: intl.formatMessage({
+          id: ETranslations.prime_restore_successful,
+        }),
+      });
+    },
+    [intl],
+  );
+
   const restorePurchases = useCallback(async () => {
     const restoreUserId = user.onekeyUserId;
     try {
@@ -185,14 +200,7 @@ export function usePrimePaymentMethodsStore<
       await ensureCurrentUser(restoreUserId);
       const localIsActive = customerInfo?.entitlements?.active?.Prime?.isActive;
       if (localIsActive) {
-        defaultLogger.prime.subscription.primeRestorePurchaseResult({
-          result: 'success',
-        });
-        Toast.success({
-          title: intl.formatMessage({
-            id: ETranslations.prime_restore_successful,
-          }),
-        });
+        reportRestoreSuccess();
         try {
           await backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo();
         } catch (error) {
@@ -232,7 +240,14 @@ export function usePrimePaymentMethodsStore<
     } finally {
       await backgroundApiProxy.serviceApp.hideDialogLoading();
     }
-  }, [ensureCurrentUser, intl, loginPurchasesSdk, sdk, user.onekeyUserId]);
+  }, [
+    ensureCurrentUser,
+    intl,
+    loginPurchasesSdk,
+    reportRestoreSuccess,
+    sdk,
+    user.onekeyUserId,
+  ]);
 
   const getCustomerInfo = useCallback(async () => {
     const customerUserId = user.onekeyUserId;
@@ -328,11 +343,9 @@ export function usePrimePaymentMethodsStore<
       featureName?: EPrimeFeatures;
     }) => {
       // This hook is the single owner of the post-purchase refresh for native
-      // IAP: the success path runs claim -> refresh -> emit below, the
-      // existing-subscription path refreshes without claim/emit, and the
-      // finally block covers failed/cancelled purchases exactly once. Callers
-      // must not add their own refresh.
-      let hasRefreshedPrimeUserInfo = false;
+      // IAP: each branch below refreshes once, and the finally block covers
+      // failed/cancelled purchases. Callers must not add their own refresh.
+      let isPrimeActivated = false;
       const purchaseUserId = user.onekeyUserId;
       try {
         if (!purchaseUserId) {
@@ -358,9 +371,9 @@ export function usePrimePaymentMethodsStore<
         );
         await ensureCurrentUser(purchaseUserId);
 
-        // Set subscriptionManageUrl immediately from purchase result,
-        // because the server may not yet have it (RevenueCat webhook delay).
-        const projectSubscriptionManageUrl = () =>
+        const applyPurchaseCustomerInfo = async () => {
+          // Set subscriptionManageUrl immediately from purchase result,
+          // because the server may not yet have it (RevenueCat webhook delay).
           setPrimePersistAtom(
             (prev): IPrimeUserInfo =>
               prev.onekeyUserId !== purchaseUserId
@@ -373,42 +386,35 @@ export function usePrimePaymentMethodsStore<
                       '',
                   }),
           );
-        const isPrimeActive =
+          await refreshPrimeUserInfoAfterPurchase();
+          await ensureCurrentUser(purchaseUserId);
+        };
+
+        isPrimeActivated = Boolean(
           makePurchaseResult?.customerInfo?.entitlements?.active?.Prime
-            ?.isActive;
-        const isExistingSubscription =
-          isPrimeActive &&
+            ?.isActive,
+        );
+
+        // Google Play rejects an already-owned subscription instead, so only
+        // StoreKit can hand back the Apple ID's existing transaction.
+        if (
+          isPrimeActivated &&
           (platformEnv.isMas || platformEnv.isNativeIOS) &&
           isAppleExistingSubscriptionPurchaseResult({
             purchaseResult: makePurchaseResult,
             purchaseStartedAtMs,
-          });
-
-        if (isExistingSubscription) {
+          })
+        ) {
           // No charge happened: the Apple ID's subscription was moved to this
           // OneKey ID. Report it like a restore and skip purchase analytics
           // and the post-purchase KYT intro.
-          hasRefreshedPrimeUserInfo = true;
-          projectSubscriptionManageUrl();
-          await refreshPrimeUserInfoAfterPurchase();
-          await ensureCurrentUser(purchaseUserId);
-          defaultLogger.prime.subscription.primeRestorePurchaseResult({
-            result: 'success',
-            source: 'purchaseExistingSubscription',
-          });
-          Toast.success({
-            title: intl.formatMessage({
-              id: ETranslations.prime_restore_successful,
-            }),
-          });
-        } else if (isPrimeActive) {
-          hasRefreshedPrimeUserInfo = true;
+          reportRestoreSuccess('purchaseExistingSubscription');
+          await applyPurchaseCustomerInfo();
+        } else if (isPrimeActivated) {
           const purchaseSuccessPayload =
             await preparePrimeSubscriptionPurchaseSuccess(purchaseUserId);
           await ensureCurrentUser(purchaseUserId);
-          projectSubscriptionManageUrl();
-          await refreshPrimeUserInfoAfterPurchase();
-          await ensureCurrentUser(purchaseUserId);
+          await applyPurchaseCustomerInfo();
 
           const rawPrice =
             subscriptionPeriod === 'P1Y'
@@ -465,7 +471,7 @@ export function usePrimePaymentMethodsStore<
         throw error;
       } finally {
         await backgroundApiProxy.serviceApp.hideDialogLoading();
-        if (!hasRefreshedPrimeUserInfo) {
+        if (!isPrimeActivated) {
           // Defensive single refresh after a failed/cancelled purchase, in
           // case the store transaction went further than the SDK reported.
           await refreshPrimeUserInfoAfterPurchase();
@@ -476,6 +482,7 @@ export function usePrimePaymentMethodsStore<
       ensureCurrentUser,
       intl,
       loginPurchasesSdk,
+      reportRestoreSuccess,
       sdk,
       setPrimePersistAtom,
       user.onekeyUserId,

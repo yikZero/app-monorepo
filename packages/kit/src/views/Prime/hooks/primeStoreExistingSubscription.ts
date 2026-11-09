@@ -1,13 +1,13 @@
+import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { IRevenueCatPurchaseResult } from '@onekeyhq/shared/types/prime/revenueCat';
 
 // Covers clock skew and the StoreKit -> RevenueCat receipt round trip.
-const EXISTING_TRANSACTION_TOLERANCE_MS = 2 * 60 * 1000;
+const EXISTING_TRANSACTION_TOLERANCE_MS = timerUtils.getTimeDurationMs({
+  minute: 2,
+});
 
-function parseDateMs(value: string | null | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  const ms = Date.parse(value);
+function parseDateMs(value?: string) {
+  const ms = value ? Date.parse(value) : NaN;
   return Number.isFinite(ms) ? ms : undefined;
 }
 
@@ -26,19 +26,18 @@ export function isAppleExistingSubscriptionPurchaseResult({
   purchaseResult,
   purchaseStartedAtMs,
 }: {
-  purchaseResult: IRevenueCatPurchaseResult | null | undefined;
+  purchaseResult: IRevenueCatPurchaseResult;
   purchaseStartedAtMs: number;
 }): boolean {
   const transactionPurchasedAtMs = parseDateMs(
-    purchaseResult?.transaction?.purchaseDate,
+    purchaseResult.transaction?.purchaseDate,
   );
-  const requestDateMs = parseDateMs(purchaseResult?.customerInfo?.requestDate);
+  const requestDateMs = parseDateMs(purchaseResult.customerInfo.requestDate);
   if (transactionPurchasedAtMs === undefined || requestDateMs === undefined) {
     return false;
   }
   return (
-    purchaseStartedAtMs - transactionPurchasedAtMs >
-      EXISTING_TRANSACTION_TOLERANCE_MS &&
-    requestDateMs - transactionPurchasedAtMs > EXISTING_TRANSACTION_TOLERANCE_MS
+    Math.min(purchaseStartedAtMs, requestDateMs) - transactionPurchasedAtMs >
+    EXISTING_TRANSACTION_TOLERANCE_MS
   );
 }

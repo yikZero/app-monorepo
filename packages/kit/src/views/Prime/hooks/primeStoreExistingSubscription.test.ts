@@ -1,124 +1,69 @@
-import type { IRevenueCatPurchaseResult } from '@onekeyhq/shared/types/prime/revenueCat';
-
 import { isAppleExistingSubscriptionPurchaseResult } from './primeStoreExistingSubscription';
 
 const startedAtMs = Date.parse('2026-10-10T12:00:00.000Z');
-const minute = 60 * 1000;
-
-function buildResult({
-  purchaseDate,
-  requestDate,
-}: {
-  purchaseDate?: string;
-  requestDate?: string;
-}): IRevenueCatPurchaseResult {
-  return {
-    customerInfo: {
-      managementURL: null,
-      requestDate,
-      entitlements: {
-        active: {
-          Prime: {
-            isActive: true,
-            willRenew: true,
-            isSandbox: false,
-            expirationDateMillis: null,
-          },
-        },
-      },
-    },
-    transaction:
-      purchaseDate === undefined
-        ? undefined
-        : {
-            transactionIdentifier: 'tx',
-            productIdentifier: 'prime.yearly',
-            purchaseDate,
-          },
-  };
-}
-
-const iso = (ms: number) => new Date(ms).toISOString();
+const second = 1000;
+const minute = 60 * second;
+const day = 24 * 60 * minute;
+const at = (offsetMs: number) => new Date(startedAtMs + offsetMs).toISOString();
 
 describe('isAppleExistingSubscriptionPurchaseResult', () => {
-  it('detects an existing subscription returned by StoreKit', () => {
+  it.each([
+    {
+      name: 'detects an existing subscription returned by StoreKit',
+      purchaseDate: at(-20 * day),
+      requestDate: at(30 * second),
+      expected: true,
+    },
+    {
+      name: 'treats a transaction charged during the attempt as new',
+      purchaseDate: at(40 * second),
+      requestDate: at(45 * second),
+      expected: false,
+    },
+    {
+      // Device clock 1h ahead; Apple and RevenueCat agree the charge is new.
+      name: 'ignores a device clock that alone is ahead',
+      purchaseDate: at(-60 * minute + 40 * second),
+      requestDate: at(-60 * minute + 45 * second),
+      expected: false,
+    },
+    {
+      name: 'ignores a receipt post that alone is slow',
+      purchaseDate: at(40 * second),
+      requestDate: at(10 * minute),
+      expected: false,
+    },
+    {
+      name: 'falls back without a transaction',
+      purchaseDate: undefined,
+      requestDate: at(0),
+      expected: false,
+    },
+    {
+      name: 'falls back without a request date',
+      purchaseDate: at(-20 * day),
+      requestDate: undefined,
+      expected: false,
+    },
+    {
+      name: 'falls back on an unparsable date',
+      purchaseDate: 'not-a-date',
+      requestDate: at(0),
+      expected: false,
+    },
+  ])('$name', ({ purchaseDate, requestDate, expected }) => {
     expect(
       isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({
-          purchaseDate: iso(startedAtMs - 20 * 24 * 60 * minute),
-          requestDate: iso(startedAtMs + 30 * 1000),
-        }),
+        purchaseResult: {
+          customerInfo: {
+            managementURL: null,
+            requestDate,
+            entitlements: { active: {} },
+          },
+          transaction: purchaseDate ? { purchaseDate } : undefined,
+        },
         purchaseStartedAtMs: startedAtMs,
       }),
-    ).toBe(true);
-  });
-
-  it('treats a transaction charged during the attempt as a new purchase', () => {
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({
-          purchaseDate: iso(startedAtMs + 40 * 1000),
-          requestDate: iso(startedAtMs + 45 * 1000),
-        }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-  });
-
-  it('does not misreport a new purchase when only the device clock is ahead', () => {
-    // Device clock runs 1h ahead; Apple and RevenueCat agree the charge is new.
-    const deviceSkewMs = 60 * minute;
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({
-          purchaseDate: iso(startedAtMs - deviceSkewMs + 40 * 1000),
-          requestDate: iso(startedAtMs - deviceSkewMs + 45 * 1000),
-        }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-  });
-
-  it('does not misreport a new purchase when only the receipt post is slow', () => {
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({
-          purchaseDate: iso(startedAtMs + 40 * 1000),
-          requestDate: iso(startedAtMs + 10 * minute),
-        }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-  });
-
-  it('falls back to the purchase path without transaction or request dates', () => {
-    const oldDate = iso(startedAtMs - 20 * 24 * 60 * minute);
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({ requestDate: iso(startedAtMs) }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({ purchaseDate: oldDate }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: buildResult({
-          purchaseDate: 'not-a-date',
-          requestDate: iso(startedAtMs),
-        }),
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
-    expect(
-      isAppleExistingSubscriptionPurchaseResult({
-        purchaseResult: undefined,
-        purchaseStartedAtMs: startedAtMs,
-      }),
-    ).toBe(false);
+    ).toBe(expected);
   });
 });

@@ -47,9 +47,7 @@ export type IRevenueCatOfferings = {
 };
 
 export type IRevenueCatStoreTransaction = {
-  transactionIdentifier: string;
-  productIdentifier: string;
-  // App Store charge date of this transaction, ISO 8601.
+  // Store charge date of this transaction, ISO 8601.
   purchaseDate: string;
 };
 
