@@ -693,7 +693,7 @@ export function DesktopLeftSideBar({
   const handleTabsContainerLayout = useCallback((event: LayoutChangeEvent) => {
     const height = event.nativeEvent.layout.height;
     if (height <= 0) return;
-    setTabsContainerHeight(height);
+    setTabsContainerHeight(Math.floor(height));
   }, []);
   const maxVisibleCount = Math.floor(
     tabsContainerHeight /
