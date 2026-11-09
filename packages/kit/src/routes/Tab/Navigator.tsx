@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef } from 'react';
+import type { ReactNode } from 'react';
 
 import { CommonActions, useNavigationState } from '@react-navigation/native';
 import { useIntl } from 'react-intl';
@@ -102,8 +103,17 @@ function FloatingDevModeBackButton() {
   );
 }
 
-export function TabNavigator() {
+// Isolated so settings changes only re-render the provider, not the navigator.
+function SidebarAppearanceProvider({ children }: { children: ReactNode }) {
   const sidebarAppearance = useSidebarNavigationAppearance();
+  return (
+    <SidebarAppearanceContext.Provider value={sidebarAppearance}>
+      {children}
+    </SidebarAppearanceContext.Provider>
+  );
+}
+
+export function TabNavigator() {
   const intl = useIntl();
   const { freezeOnBlur } = useContext(TabFreezeOnBlurContext);
   // Customer service sits above the tab bar while iOS shows it as a vertical
@@ -213,7 +223,7 @@ export function TabNavigator() {
 
   return (
     <>
-      <SidebarAppearanceContext.Provider value={sidebarAppearance}>
+      <SidebarAppearanceProvider>
         <TabStackNavigator<ETabRoutes>
           config={config}
           extraConfig={isShowWebTabBar ? tabExtraConfig : undefined}
@@ -224,7 +234,7 @@ export function TabNavigator() {
           webPageTabBar={<WebPageTabBar />}
           sideAccessory={sideAccessory}
         />
-      </SidebarAppearanceContext.Provider>
+      </SidebarAppearanceProvider>
       {platformEnv.isDev && shouldHideExtTabBar ? (
         <FloatingDevModeBackButton />
       ) : null}
