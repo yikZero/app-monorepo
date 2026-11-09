@@ -106,8 +106,16 @@ function FloatingDevModeBackButton() {
 }
 
 // Isolated so settings changes only re-render the provider, not the navigator.
-const setSidebarShowLabels = (showLabels: boolean) =>
-  backgroundApiProxy.serviceSetting.setSidebarShowLabels(showLabels);
+// Used by the sidebar context menu; the settings switch logs its own change.
+const setSidebarShowLabels = (showLabels: boolean) => {
+  defaultLogger.setting.page.settingValueChanged({
+    itemId: 'sidebar-labels',
+    from: String(!showLabels),
+    to: String(showLabels),
+    entry: 'sidebarContextMenu',
+  });
+  return backgroundApiProxy.serviceSetting.setSidebarShowLabels(showLabels);
+};
 
 function SidebarAppearanceProvider({ children }: { children: ReactNode }) {
   const [{ sidebarShowLabels }] = useSettingsPersistAtom();

@@ -1106,6 +1106,7 @@ export function SidebarLabelsListItem({
         itemId: 'sidebar-labels',
         from: String(showLabels),
         to: String(value),
+        entry: 'settingsPage',
       });
       startViewTransition(() => {
         void backgroundApiProxy.serviceSetting.setSidebarShowLabels(value);

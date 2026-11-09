@@ -434,6 +434,15 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
               }),
               renderElement: <ThemeListItem />,
             },
+            isSidebarLabelsToggleSupported
+              ? {
+                  id: 'sidebar-labels',
+                  icon: 'LayoutSidebarOutline',
+                  title: SIDEBAR_LABELS_COPY.settingTitle,
+                  subtitle: SIDEBAR_LABELS_COPY.settingDescription,
+                  renderElement: <SidebarLabelsListItem />,
+                }
+              : undefined,
             platformEnv.isNative
               ? {
                   id: 'haptic-feedback',
@@ -480,15 +489,6 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                     id: ETranslations.settings_split_view_desc,
                   }),
                   renderElement: <SplitViewListItem />,
-                }
-              : undefined,
-            isSidebarLabelsToggleSupported
-              ? {
-                  id: 'sidebar-labels',
-                  icon: 'LayoutSidebarOutline',
-                  title: SIDEBAR_LABELS_COPY.settingTitle,
-                  subtitle: SIDEBAR_LABELS_COPY.settingDescription,
-                  renderElement: <SidebarLabelsListItem />,
                 }
               : undefined,
           ],
