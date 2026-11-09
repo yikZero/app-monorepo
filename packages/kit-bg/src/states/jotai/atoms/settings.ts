@@ -2,7 +2,6 @@ import type { ILocaleSymbol } from '@onekeyhq/shared/src/locale';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
-import type { ISidebarNavigationAppearance } from '@onekeyhq/shared/src/utils/sidebarNavigationAppearance';
 import { EHardwareTransportType, EOnekeyDomain } from '@onekeyhq/shared/types';
 import { EAlignPrimaryAccountMode } from '@onekeyhq/shared/types/dappConnection';
 import { swapSlippageAutoValue } from '@onekeyhq/shared/types/swap/SwapProvider.constants';
@@ -74,7 +73,8 @@ export type ISettingsPersistAtom = {
   // (default-on for back-compat). Toggling triggers app restart.
   enableSplitView?: boolean;
   newBrowserTabPosition?: INewBrowserTabPosition;
-  sidebarNavigationAppearance?: ISidebarNavigationAppearance;
+  // Desktop/web sidebar text under each icon; undefined means shown.
+  sidebarShowLabels?: boolean;
   // Pay eligible network fees from Gas Account (sponsored gas) when available;
   // turning this off makes ServiceGas.estimateFee force gasAccountEnabled=false
   // for every caller (Send / Swap / Perps / Earn / dApp ...).
@@ -123,7 +123,7 @@ export const settingsAtomInitialValue: ISettingsPersistAtom = {
   enableMenuBarTray: true,
   hapticFeedbackEnabled: true,
   newBrowserTabPosition: 'bottom',
-  sidebarNavigationAppearance: 'icons-and-text',
+  sidebarShowLabels: true,
   useGasAccountByDefault: true,
 };
 export const { target: settingsPersistAtom, use: useSettingsPersistAtom } =

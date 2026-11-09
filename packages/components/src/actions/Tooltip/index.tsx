@@ -50,7 +50,6 @@ export function Tooltip({
   shortcutKey,
   hovering,
   closeOnScroll,
-  delayGroup,
   contentProps,
   triggerAsChild,
   disabled,
@@ -71,7 +70,7 @@ export function Tooltip({
     handleContentMouseLeave,
     closeTooltip,
     openTooltip,
-  } = useTooltipOpenState({ hovering, closeOnScroll, delayGroup });
+  } = useTooltipOpenState({ hovering, closeOnScroll });
 
   // A controlled `open` wins, and `onOpenChange` then receives the requests.
   const isOpen = !disabled && (openProp ?? isOpenState);

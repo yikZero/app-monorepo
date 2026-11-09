@@ -11,6 +11,7 @@ import type {
   IStackStyle,
 } from '@onekeyhq/components';
 import { isNativeTablet } from '@onekeyhq/components';
+import { SIDEBAR_LABELS_COPY } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
 import {
   isShowAppUpdateUIWhenUpdating,
   useAppUpdateInfo,
@@ -22,7 +23,7 @@ import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
 import { useShowAddressBook } from '@onekeyhq/kit/src/hooks/useShowAddressBook';
-import { useSidebarNavigationAppearance } from '@onekeyhq/kit/src/hooks/useSidebarNavigationAppearance';
+import { isSidebarLabelsToggleSupported } from '@onekeyhq/kit/src/utils/sidebarLabelsUtils';
 import {
   useDevSettingsPersistAtom,
   usePasswordBiologyAuthInfoAtom,
@@ -79,6 +80,7 @@ import {
   MenuBarTrayListItem,
   ResetAppListItem,
   ResetPinListItem,
+  SidebarLabelsListItem,
   SplitViewListItem,
   ThemeListItem,
   TravelModeListItem,
@@ -89,7 +91,6 @@ import { OFFICIAL_CHANNELS_SEARCH_KEYWORDS } from './officialChannels';
 import { RestoreInfiniPendingTransactionsListItem } from './RestoreInfiniPendingTransactionsListItem';
 import { getSettingsDisplayTitle } from './settingsDisplay';
 import { SETTINGS_SIDEBAR_ORDER } from './settingsRootLayout';
-import { SidebarAppearanceListItem } from './SidebarAppearanceListItem';
 // import { OneKeyIdSubSettings } from './OneKeyIdSubSettings';
 // import { OneKeyIdTabItem } from './OneKeyIdTabItem';
 import { SubSearchSettings } from './SubSettings';
@@ -211,7 +212,6 @@ export type ISettingsConfig = (
 export type ISettingCategoryConfig = NonNullable<ISettingsConfig[number]>;
 
 export const useSettingsConfig: () => ISettingsConfig = () => {
-  const sidebarAppearance = useSidebarNavigationAppearance();
   const appUpdateInfo = useAppUpdateInfo();
   const isShowAppUpdateUI = useMemo(() => {
     return isShowAppUpdateUIWhenUpdating({
@@ -482,13 +482,13 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                   renderElement: <SplitViewListItem />,
                 }
               : undefined,
-            sidebarAppearance.enabled
+            isSidebarLabelsToggleSupported
               ? {
                   id: 'sidebar-labels',
                   icon: 'LayoutSidebarOutline',
-                  title: sidebarAppearance.settingTitle,
-                  subtitle: sidebarAppearance.settingDescription,
-                  renderElement: <SidebarAppearanceListItem />,
+                  title: SIDEBAR_LABELS_COPY.settingTitle,
+                  subtitle: SIDEBAR_LABELS_COPY.settingDescription,
+                  renderElement: <SidebarLabelsListItem />,
                 }
               : undefined,
           ],
@@ -1231,9 +1231,6 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
       return aOrder - bOrder;
     });
   }, [
-    sidebarAppearance.enabled,
-    sidebarAppearance.settingTitle,
-    sidebarAppearance.settingDescription,
     intl,
     cloudBackupFeatureInfo?.supportCloudBackup,
     cloudBackupFeatureInfo?.icon,

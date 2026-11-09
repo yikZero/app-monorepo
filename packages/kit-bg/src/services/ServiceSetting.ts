@@ -38,7 +38,6 @@ import deviceUtils from '@onekeyhq/shared/src/utils/deviceUtils';
 import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import resetUtils from '@onekeyhq/shared/src/utils/resetUtils';
-import type { ISidebarNavigationAppearance } from '@onekeyhq/shared/src/utils/sidebarNavigationAppearance';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import {
   buildAggregateTokenListMapKeyForTokenList,
@@ -919,12 +918,10 @@ class ServiceSetting extends ServiceBase {
   }
 
   @backgroundMethod()
-  public async setSidebarNavigationAppearance(
-    value: ISidebarNavigationAppearance,
-  ) {
+  public async setSidebarShowLabels(value: boolean) {
     await settingsPersistAtom.set((prev) => ({
       ...prev,
-      sidebarNavigationAppearance: value,
+      sidebarShowLabels: value,
     }));
   }
 

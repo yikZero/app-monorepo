@@ -1089,6 +1089,42 @@ export function HapticFeedbackListItem({
   );
 }
 
+export function SidebarLabelsListItem({
+  logItemClick,
+  analyticsSource,
+  ...props
+}: ICustomElementProps) {
+  const [{ sidebarShowLabels }] = useSettingsPersistAtom();
+  const showLabels = sidebarShowLabels !== false;
+  const toggleSidebarLabels = useCallback(
+    (value: boolean) => {
+      maybeLogSettingsSearchResultClick({
+        source: analyticsSource,
+        logItemClick,
+      });
+      logSettingValueChanged({
+        itemId: 'sidebar-labels',
+        from: String(showLabels),
+        to: String(value),
+      });
+      startViewTransition(() => {
+        void backgroundApiProxy.serviceSetting.setSidebarShowLabels(value);
+      });
+    },
+    [analyticsSource, logItemClick, showLabels],
+  );
+  return (
+    <TabSettingsListItem {...props} userSelect="none">
+      <Switch
+        testID={SettingTestIDs.tabSidebarLabelsSwitch}
+        size={ESwitchSize.small}
+        value={showLabels}
+        onChange={toggleSidebarLabels}
+      />
+    </TabSettingsListItem>
+  );
+}
+
 export function BTCFreshAddressListItem({
   logItemClick,
   analyticsSource,

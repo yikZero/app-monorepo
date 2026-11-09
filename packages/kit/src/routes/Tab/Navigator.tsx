@@ -16,6 +16,7 @@ import {
   useSplitSubView,
 } from '@onekeyhq/components';
 import { SidebarAppearanceContext } from '@onekeyhq/components/src/layouts/Navigation/Tab/TabBar/SidebarAppearanceContext';
+import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { showIntercom } from '@onekeyhq/shared/src/modules3rdParty/intercom';
@@ -24,12 +25,13 @@ import { ETabRoutes } from '@onekeyhq/shared/src/routes';
 import { ERootRoutes } from '@onekeyhq/shared/src/routes/root';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 
+import backgroundApiProxy from '../../background/instance/backgroundApiProxy';
 import { Footer } from '../../components/Footer';
 import { useGlobalShortcuts } from '../../hooks/useGlobalShortcuts';
-import { useSidebarNavigationAppearance } from '../../hooks/useSidebarNavigationAppearance';
 import { BottomMenu } from '../../provider/Container/PortalBodyContainer/BottomMenu';
 import { WebPageTabBar } from '../../provider/Container/PortalBodyContainer/WebPageTabBar';
 import { TabFreezeOnBlurContext } from '../../provider/Container/TabFreezeOnBlurContainer';
+import { isSidebarLabelsToggleSupported } from '../../utils/sidebarLabelsUtils';
 
 import { getTabPreloadPolicy } from './preloadPolicy';
 import { tabExtraConfig, useTabRouterConfig } from './router';
@@ -104,10 +106,21 @@ function FloatingDevModeBackButton() {
 }
 
 // Isolated so settings changes only re-render the provider, not the navigator.
+const setSidebarShowLabels = (showLabels: boolean) =>
+  backgroundApiProxy.serviceSetting.setSidebarShowLabels(showLabels);
+
 function SidebarAppearanceProvider({ children }: { children: ReactNode }) {
-  const sidebarAppearance = useSidebarNavigationAppearance();
+  const [{ sidebarShowLabels }] = useSettingsPersistAtom();
+  const showLabels = sidebarShowLabels !== false;
+  const value = useMemo(
+    () =>
+      isSidebarLabelsToggleSupported
+        ? { showLabels, setShowLabels: setSidebarShowLabels }
+        : undefined,
+    [showLabels],
+  );
   return (
-    <SidebarAppearanceContext.Provider value={sidebarAppearance}>
+    <SidebarAppearanceContext.Provider value={value}>
       {children}
     </SidebarAppearanceContext.Provider>
   );
