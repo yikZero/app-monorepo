@@ -1,0 +1,6 @@
+policy:
+  allow_implicit_invocation: true
+interface:
+  display_name: "Gemini Translate"
+  short_description: "Translate prose and i18n via Gemini CLI"
+  default_prompt: "Use $gemini-translate to translate this text with the local Gemini CLI. Do not invent translations if the API fails, and do not upload to Lokalise or edit generated locale files."
