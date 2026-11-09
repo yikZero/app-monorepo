@@ -34,6 +34,7 @@ import {
 
 import { getPrimePaymentApiKey } from './getPrimePaymentApiKey';
 import primePaymentUtils from './primePaymentUtils';
+import { isAppleExistingSubscriptionPurchaseResult } from './primeStoreExistingSubscription';
 
 import type { IPrimeStorePurchasesSdk } from './storePurchasesSdkTypes';
 import type {
@@ -327,10 +328,11 @@ export function usePrimePaymentMethodsStore<
       featureName?: EPrimeFeatures;
     }) => {
       // This hook is the single owner of the post-purchase refresh for native
-      // IAP: the success path runs claim -> refresh -> emit below, and the
+      // IAP: the success path runs claim -> refresh -> emit below, the
+      // existing-subscription path refreshes without claim/emit, and the
       // finally block covers failed/cancelled purchases exactly once. Callers
       // must not add their own refresh.
-      let isPurchaseSuccessful = false;
+      let hasRefreshedPrimeUserInfo = false;
       const purchaseUserId = user.onekeyUserId;
       try {
         if (!purchaseUserId) {
@@ -349,22 +351,16 @@ export function usePrimePaymentMethodsStore<
           throw new OneKeyLocalError('Offering not found');
         }
 
+        const purchaseStartedAtMs = Date.now();
         const makePurchaseResult = await sdk.purchasePackage(
           offering,
           purchaseUserId,
         );
         await ensureCurrentUser(purchaseUserId);
 
-        if (
-          makePurchaseResult?.customerInfo?.entitlements?.active?.Prime
-            ?.isActive
-        ) {
-          isPurchaseSuccessful = true;
-          const purchaseSuccessPayload =
-            await preparePrimeSubscriptionPurchaseSuccess(purchaseUserId);
-          await ensureCurrentUser(purchaseUserId);
-          // Set subscriptionManageUrl immediately from purchase result,
-          // because the server may not yet have it (RevenueCat webhook delay).
+        // Set subscriptionManageUrl immediately from purchase result,
+        // because the server may not yet have it (RevenueCat webhook delay).
+        const projectSubscriptionManageUrl = () =>
           setPrimePersistAtom(
             (prev): IPrimeUserInfo =>
               prev.onekeyUserId !== purchaseUserId
@@ -377,6 +373,40 @@ export function usePrimePaymentMethodsStore<
                       '',
                   }),
           );
+        const isPrimeActive =
+          makePurchaseResult?.customerInfo?.entitlements?.active?.Prime
+            ?.isActive;
+        const isExistingSubscription =
+          isPrimeActive &&
+          (platformEnv.isMas || platformEnv.isNativeIOS) &&
+          isAppleExistingSubscriptionPurchaseResult({
+            purchaseResult: makePurchaseResult,
+            purchaseStartedAtMs,
+          });
+
+        if (isExistingSubscription) {
+          // No charge happened: the Apple ID's subscription was moved to this
+          // OneKey ID. Report it like a restore and skip purchase analytics
+          // and the post-purchase KYT intro.
+          hasRefreshedPrimeUserInfo = true;
+          projectSubscriptionManageUrl();
+          await refreshPrimeUserInfoAfterPurchase();
+          await ensureCurrentUser(purchaseUserId);
+          defaultLogger.prime.subscription.primeRestorePurchaseResult({
+            result: 'success',
+            source: 'purchaseExistingSubscription',
+          });
+          Toast.success({
+            title: intl.formatMessage({
+              id: ETranslations.prime_restore_successful,
+            }),
+          });
+        } else if (isPrimeActive) {
+          hasRefreshedPrimeUserInfo = true;
+          const purchaseSuccessPayload =
+            await preparePrimeSubscriptionPurchaseSuccess(purchaseUserId);
+          await ensureCurrentUser(purchaseUserId);
+          projectSubscriptionManageUrl();
           await refreshPrimeUserInfoAfterPurchase();
           await ensureCurrentUser(purchaseUserId);
 
@@ -435,7 +465,7 @@ export function usePrimePaymentMethodsStore<
         throw error;
       } finally {
         await backgroundApiProxy.serviceApp.hideDialogLoading();
-        if (!isPurchaseSuccessful) {
+        if (!hasRefreshedPrimeUserInfo) {
           // Defensive single refresh after a failed/cancelled purchase, in
           // case the store transaction went further than the SDK reported.
           await refreshPrimeUserInfoAfterPurchase();
