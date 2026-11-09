@@ -15,7 +15,6 @@ import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { Stack } from '../Stack';
 
 import { resolveIconName } from './Icons';
-import { prefetchIcons } from './prefetchIcons';
 
 import type { IKeyOfIcons } from './Icons';
 import type { TextStyle } from 'react-native';
@@ -107,10 +106,9 @@ const BasicIcon = styled(IconContainer, {
   } as const,
 });
 
-const loadIcons = async (...names: IKeyOfIcons[]) => {
-  await prefetchIcons(names);
-  return names.map(() => undefined);
-};
+// Named resources are native-owned; these legacy entry points no longer load JS modules.
+const loadIcons = (...names: IKeyOfIcons[]) =>
+  Promise.resolve(names.map(() => undefined));
 
 export const Icon = withStaticProperties(BasicIcon, {
   prefetch: loadIcons,
