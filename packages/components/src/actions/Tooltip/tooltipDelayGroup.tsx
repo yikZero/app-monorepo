@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 // Tooltips inside a group wait before the first one opens. While one of them
 // is open, or shortly after it closed, moving onto another opens it
 // immediately: the user is scanning labels.
-export const TOOLTIP_GROUP_OPEN_DELAY_MS = 400;
+export const TOOLTIP_GROUP_OPEN_DELAY_MS = 250;
 export const TOOLTIP_GROUP_SKIP_DELAY_MS = 300;
 
 interface ITooltipDelayGroup {

@@ -22,11 +22,13 @@ import type {
   IPopoverProps,
 } from '@onekeyhq/components/src/actions';
 import { TooltipDelayGroup } from '@onekeyhq/components/src/actions/Tooltip/tooltipDelayGroup';
+import { ESwitchSize, Switch } from '@onekeyhq/components/src/forms/Switch';
 import { useSafeAreaInsets } from '@onekeyhq/components/src/hooks';
 import type { IKeyOfIcons } from '@onekeyhq/components/src/primitives';
 import {
   Icon,
   SizableText,
+  Stack,
   XStack,
   YStack,
 } from '@onekeyhq/components/src/primitives';
@@ -653,7 +655,17 @@ export function DesktopLeftSideBar({
               {
                 label: SIDEBAR_LABELS_MENU_ITEM,
                 testID: 'sidebar-show-labels',
-                icon: appearance.showLabels ? 'CheckLargeOutline' : undefined,
+                icon: 'SidebarOutline',
+                // Display only: the whole row toggles the setting.
+                extra: (
+                  <Stack pointerEvents="none">
+                    <Switch
+                      size={ESwitchSize.extraSmall}
+                      value={appearance.showLabels}
+                      testID="sidebar-show-labels-switch"
+                    />
+                  </Stack>
+                ),
                 onPress: async () => {
                   await appearance.setShowLabels(!appearance.showLabels);
                 },

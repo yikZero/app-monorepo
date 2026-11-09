@@ -439,7 +439,7 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
             isSidebarLabelsToggleSupported
               ? {
                   id: 'sidebar-labels',
-                  icon: 'LayoutSidebarOutline',
+                  icon: 'SidebarOutline',
                   title: SIDEBAR_LABELS_SETTING_COPY.title,
                   subtitle: SIDEBAR_LABELS_SETTING_COPY.description,
                   renderElement: <SidebarLabelsListItem />,
