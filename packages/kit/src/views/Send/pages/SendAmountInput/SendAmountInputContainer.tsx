@@ -117,7 +117,10 @@ import type {
   IModalSignatureConfirmParamList,
 } from '@onekeyhq/shared/src/routes';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
-import { getBadgeQueryTokenAddress } from '@onekeyhq/shared/src/utils/cexDepositSupportUtils';
+import {
+  getBadgeQueryTokenAddress,
+  getCexDepositWarningFacts,
+} from '@onekeyhq/shared/src/utils/cexDepositSupportUtils';
 import chainValueUtils from '@onekeyhq/shared/src/utils/chainValueUtils';
 import hexUtils from '@onekeyhq/shared/src/utils/hexUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
@@ -3116,6 +3119,10 @@ function SendAmountInputContainer() {
       networkName: network?.name,
       page: 'amount',
       cexSupportedInfo: queryResult.cexSupportedInfo,
+      exchangeDisplayName: getCexDepositWarningFacts({
+        exchangeLabel: queryResult.cexSupportedInfo?.cexLabel,
+        addressBadges: queryResult.addressBadges,
+      }).exchangeName,
       hasAcknowledgedWarning: hasAcknowledgedCexDepositWarning,
     });
     if (!canProceed) {

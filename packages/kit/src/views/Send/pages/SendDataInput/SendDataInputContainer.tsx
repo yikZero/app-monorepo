@@ -79,7 +79,10 @@ import {
 import { EModalAddressRiskCheckRoutes } from '@onekeyhq/shared/src/routes/addressRiskCheck';
 import { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
-import { getBadgeQueryTokenAddress } from '@onekeyhq/shared/src/utils/cexDepositSupportUtils';
+import {
+  getBadgeQueryTokenAddress,
+  getCexDepositWarningFacts,
+} from '@onekeyhq/shared/src/utils/cexDepositSupportUtils';
 import hexUtils from '@onekeyhq/shared/src/utils/hexUtils';
 import { isReusableLightningRecipient } from '@onekeyhq/shared/src/utils/lnUrlUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
@@ -715,6 +718,7 @@ function SendDataInputContainer() {
           networkName: network?.name,
           page: 'address',
           cexSupportedInfo: toVal?.cexSupportedInfo,
+          exchangeDisplayName: toVal?.exchangeDisplayName,
         });
       if (!canProceed) return;
 
@@ -1423,6 +1427,10 @@ function SendDataInputContainer() {
             networkName: network?.name,
             page: 'address',
             cexSupportedInfo: queryResult.cexSupportedInfo,
+            exchangeDisplayName: getCexDepositWarningFacts({
+              exchangeLabel: queryResult.cexSupportedInfo?.cexLabel,
+              addressBadges: queryResult.addressBadges,
+            }).exchangeName,
           });
         if (!canProceed) return;
 
@@ -1778,6 +1786,8 @@ function SendDataInputContainer() {
                   enableCheckSimilarAddressInAddressBook
                   hasQuickSelectMatches={hasQuickSelectMatches}
                   tokenAddress={badgeQueryTokenAddress}
+                  tokenSymbol={tokenInfo?.symbol}
+                  networkName={network?.name}
                   onFocus={(event) =>
                     requestFocusVisibility(
                       getFocusedInputMeasurement(event.target),
