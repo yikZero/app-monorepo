@@ -82,6 +82,7 @@ import type { IMarketStockPublicItem } from '@onekeyhq/shared/types/marketV2';
 import type {
   IUniversalSearchBatchResult,
   IUniversalSearchResultItem,
+  IUniversalSearchV2MarketToken,
 } from '@onekeyhq/shared/types/search';
 import {
   ESearchStatus,
@@ -114,10 +115,16 @@ import {
   toUniversalSearchStockItem,
   useUniversalSearchSelectorTokens,
 } from '../components/UniversalSearchMarketResults';
+import { UniversalSearchSendCommand } from '../components/UniversalSearchSendCommand';
+import { UniversalSearchTokenCard } from '../components/UniversalSearchTokenCard';
 import { useSettingsSearch } from '../hooks/useSettingsSearch';
 import { useUniversalSearchMarketPress } from '../hooks/useUniversalSearchMarketPress';
 import { UniversalSearchTestIDs } from '../testIDs';
 import { isSearchResponseCurrent } from '../universalSearchRun';
+import {
+  findExactContractAddressItem,
+  parseUniversalSearchSendCommand,
+} from '../universalSearchSendCommand';
 import {
   getUniversalSearchTabIndex,
   prioritizeMarketFocusedSections,
@@ -282,6 +289,22 @@ export function UniversalSearch({
   });
 
   const searchSettings = useSettingsSearch();
+
+  // "<amount><symbol> to @<recipient>" turns the search into a send shortcut.
+  // It needs the wallet in scope and is answered locally: the text holds
+  // address book names, so it never reaches the search services.
+  const isSendCommandEnabled =
+    !isTravelMode &&
+    !platformEnv.isWebDappMode &&
+    (!filterTypes?.length ||
+      filterTypes.includes(EUniversalSearchType.AccountAssets));
+  const sendCommand = useMemo(
+    () =>
+      isSendCommandEnabled
+        ? parseUniversalSearchSendCommand(searchValue)
+        : undefined,
+    [isSendCommandEnabled, searchValue],
+  );
 
   // The set of result categories this search instance is allowed to surface.
   // Defaults to every category (see the route wrapper); the Discovery browser
@@ -853,6 +876,11 @@ export function UniversalSearch({
         currentRun: searchRunRef.current,
         currentInput: searchInputRef.current,
       });
+    if (isSendCommandEnabled && parseUniversalSearchSendCommand(input)) {
+      setStockQuery('');
+      setSections([]);
+      return;
+    }
     setStockQuery(isStockSearchInScope ? input : '');
     if (input) {
       let primarySections: IUniversalSection[] = [];
@@ -977,12 +1005,31 @@ export function UniversalSearch({
     [handleTextChange],
   );
 
+  // A pasted contract address: its token leads the All tab as a card.
+  const exactTokenItem = useMemo(() => {
+    const tokenItems = (sections.find(
+      (section) => section.tabIndex === MARKET_TAB_INDEX,
+    )?.data ?? []) as IUniversalSearchV2MarketToken[];
+    return findExactContractAddressItem(tokenItems, searchValue);
+  }, [searchValue, sections]);
+
   const filterSections = useMemo(() => {
     if (isInAllTab) {
-      const sectionsWithSliceData = displaySections.map((i) => ({
-        ...i,
-        data: i.sliceData ?? i.data,
-      }));
+      const sectionsWithSliceData = displaySections
+        // The card already shows a token section's only result.
+        .filter(
+          (i) =>
+            !(
+              exactTokenItem &&
+              i.tabIndex === MARKET_TAB_INDEX &&
+              i.data.length === 1 &&
+              i.data[0] === exactTokenItem
+            ),
+        )
+        .map((i) => ({
+          ...i,
+          data: i.sliceData ?? i.data,
+        }));
 
       // When focused in Market tab, prioritize Stocks, then Tokens, then Perps.
       if (isFocusInMarketTab) {
@@ -996,7 +1043,13 @@ export function UniversalSearch({
       return sectionsWithSliceData;
     }
     return displaySections.filter((i) => i.title === activeTab);
-  }, [activeTab, displaySections, isFocusInMarketTab, isInAllTab]);
+  }, [
+    activeTab,
+    displaySections,
+    exactTokenItem,
+    isFocusInMarketTab,
+    isInAllTab,
+  ]);
 
   // Searches that cover stocks or tokens follow the Market detail selector on
   // both desktop and mobile: its skeleton under a tab bar that already shows
@@ -1524,8 +1577,22 @@ export function UniversalSearch({
               }
             />
           );
-        } else if (isMarketSearch && isInAllTab && filterSections.length > 0) {
-          content = renderMarketAll();
+        } else if (
+          isMarketSearch &&
+          isInAllTab &&
+          (filterSections.length > 0 || exactTokenItem)
+        ) {
+          content = (
+            <>
+              {exactTokenItem ? (
+                <UniversalSearchTokenCard
+                  item={exactTokenItem}
+                  onPress={pressMarketItem}
+                />
+              ) : null}
+              {filterSections.length > 0 ? renderMarketAll() : null}
+            </>
+          );
         } else {
           content = (
             <SectionList
@@ -1607,6 +1674,7 @@ export function UniversalSearch({
     tokensTabTitle,
     renderMarketAll,
     handleStockRowPress,
+    exactTokenItem,
   ]);
 
   return (
@@ -1635,7 +1703,20 @@ export function UniversalSearch({
             onChangeText={handleChangeText}
           />
         </View>
-        {renderResult()}
+        {sendCommand ? (
+          <UniversalSearchSendCommand
+            command={sendCommand}
+            account={{
+              accountId: activeAccount?.account?.id,
+              networkId: activeAccount?.network?.id,
+              indexedAccountId: activeAccount?.indexedAccount?.id,
+              isAllNetworks: activeAccount?.network?.isAllNetworks,
+            }}
+            tokenList={allTokenList}
+          />
+        ) : (
+          renderResult()
+        )}
       </Page.Body>
     </Page>
   );

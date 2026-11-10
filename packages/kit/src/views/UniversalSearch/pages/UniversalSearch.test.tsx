@@ -285,6 +285,24 @@ jest.mock('../components/SearchResultItems', () => {
     UniversalSearchSettingsItem: Row,
   };
 });
+jest.mock('../components/UniversalSearchSendCommand', () => ({
+  UniversalSearchSendCommand: ({
+    command,
+  }: {
+    command: { amount: string; symbol: string; recipientQuery: string };
+  }) => (
+    <span data-testid="send-command">
+      {`${command.amount}|${command.symbol}|${command.recipientQuery}`}
+    </span>
+  ),
+}));
+jest.mock('../components/UniversalSearchTokenCard', () => ({
+  UniversalSearchTokenCard: ({
+    item,
+  }: {
+    item: IUniversalSearchV2MarketToken;
+  }) => <span data-testid="token-card">{item.payload.symbol}</span>,
+}));
 jest.mock('../components/UniversalSearchMarketResults', () => ({
   useUniversalSearchSelectorTokens: () => mockEmptyTokens,
   toUniversalSearchStockItem: (stock: IMarketStockPublicItem) => ({
@@ -569,4 +587,71 @@ it('keeps Watchlist hidden for DApp-only searches', async () => {
   expect(
     screen.queryByRole('button', { name: ETranslations.global_watchlist }),
   ).toBeNull();
+});
+
+it('answers a send command locally instead of searching', async () => {
+  render(<UniversalSearch source={EUniversalSearchSource.Unknown} />);
+  const input = screen.getByRole('textbox', { name: 'Search' });
+  fireEvent.change(input, { target: { value: '300usdt to @ali' } });
+  expect(screen.getByTestId('send-command').textContent).toBe('300|usdt|ali');
+  expect(mockSearch).not.toHaveBeenCalled();
+
+  // Dropping the command returns to a regular search.
+  fireEvent.change(input, { target: { value: '300usdt' } });
+  expect(screen.queryByTestId('send-command')).toBeNull();
+  await waitFor(() => expect(mockSearch).toHaveBeenCalled());
+});
+
+it('keeps send commands out of searches without the wallet in scope', async () => {
+  render(
+    <UniversalSearch
+      source={EUniversalSearchSource.Unknown}
+      filterTypes={[EUniversalSearchType.Dapp]}
+    />,
+  );
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search' }), {
+    target: { value: '300usdt to @ali' },
+  });
+  expect(screen.queryByTestId('send-command')).toBeNull();
+  await waitFor(() => expect(mockSearch).toHaveBeenCalled());
+});
+
+it('leads a contract address search with its token card', async () => {
+  const address = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  mockResults = {
+    [EUniversalSearchType.V2MarketToken]: {
+      items: [
+        {
+          type: EUniversalSearchType.V2MarketToken,
+          payload: { network: 'evm--1', address, symbol: 'USDT' },
+        } as IUniversalSearchV2MarketToken,
+      ],
+    },
+  };
+  render(<UniversalSearch source={EUniversalSearchSource.Unknown} />);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search' }), {
+    target: { value: address.toLowerCase() },
+  });
+  await waitFor(() =>
+    expect(screen.getByTestId('token-card').textContent).toBe('USDT'),
+  );
+});
+
+it('shows no token card for a name search', async () => {
+  mockResults = {
+    [EUniversalSearchType.V2MarketToken]: {
+      items: [
+        {
+          type: EUniversalSearchType.V2MarketToken,
+          payload: {
+            network: 'evm--1',
+            address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+            symbol: 'USDT',
+          },
+        } as IUniversalSearchV2MarketToken,
+      ],
+    },
+  };
+  await search();
+  expect(screen.queryByTestId('token-card')).toBeNull();
 });
