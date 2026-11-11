@@ -261,9 +261,6 @@ class ServiceUniversalSearch extends ServiceBase {
       searchTypes.includes(EUniversalSearchType.Perp)
         ? this.universalSearchOfPerp({ input })
         : Promise.resolve({ items: [] }),
-      searchTypes.includes(EUniversalSearchType.HelpCenter)
-        ? this.universalSearchOfHelpCenter({ input })
-        : Promise.resolve({ items: [] }),
     ]);
     const [
       addressResultSettled,
@@ -273,7 +270,6 @@ class ServiceUniversalSearch extends ServiceBase {
       accountAssetsResultSettled,
       dappResultSettled,
       perpResultSettled,
-      helpCenterResultSettled,
     ] = promiseResults;
 
     if (
@@ -356,14 +352,6 @@ class ServiceUniversalSearch extends ServiceBase {
       perpResultSettled.value.items.length > 0
     ) {
       result[EUniversalSearchType.Perp] = perpResultSettled.value;
-    }
-
-    if (
-      helpCenterResultSettled.status === 'fulfilled' &&
-      helpCenterResultSettled.value &&
-      helpCenterResultSettled.value.items.length > 0
-    ) {
-      result[EUniversalSearchType.HelpCenter] = helpCenterResultSettled.value;
     }
 
     return result;
@@ -1517,8 +1505,7 @@ class ServiceUniversalSearch extends ServiceBase {
         const response = await client.get<{
           code: number;
           data?: {
-            items?: IUniversalSearchHelpCenterArticle[];
-            total?: number;
+            items?: Partial<IUniversalSearchHelpCenterArticle>[];
           };
         }>('/utility/v1/help-center/search', {
           params: {
@@ -1530,17 +1517,12 @@ class ServiceUniversalSearch extends ServiceBase {
         const items: IUniversalSearchHelpCenterResult['items'] = (
           response?.data?.data?.items ?? []
         )
-          .filter((article) =>
+          .filter((article): article is IUniversalSearchHelpCenterArticle =>
             Boolean(article?.id && article?.title && article?.url),
           )
-          .map((article) => ({
+          .map(({ id, title, summary, url }) => ({
             type: EUniversalSearchType.HelpCenter as const,
-            payload: {
-              id: String(article.id),
-              title: article.title,
-              summary: article.summary ?? '',
-              url: article.url,
-            },
+            payload: { id, title, summary: summary ?? '', url },
           }));
 
         return { items };
@@ -1551,10 +1533,14 @@ class ServiceUniversalSearch extends ServiceBase {
     },
     {
       maxAge: timerUtils.getTimeDurationMs({ seconds: 30 }),
+      max: 50,
       promise: true,
     },
   );
 
+  // Called on its own rather than through `universalSearch`: the endpoint is
+  // slow, so the page appends its results after the other rounds.
+  @backgroundMethod()
   async universalSearchOfHelpCenter({
     input,
   }: {

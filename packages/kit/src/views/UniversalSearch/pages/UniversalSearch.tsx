@@ -176,12 +176,6 @@ const PRIMARY_SEARCH_TYPES: EUniversalSearchType[] = [
 const isBackgroundSearchType = (type: EUniversalSearchType) =>
   type !== EUniversalSearchType.MarketStock;
 
-// Help center articles come from a separate, slower endpoint. They are
-// requested alongside the other rounds and appended when they land, so they
-// never hold back the rest of the results.
-const isStandaloneSearchType = (type: EUniversalSearchType) =>
-  type === EUniversalSearchType.HelpCenter;
-
 // Default scope for the global universal search: every bg-searchable category
 // plus Settings, which is injected client-side rather than via the bg search
 // types. A caller can pass a narrower `filterTypes` (e.g. the browser tab uses
@@ -578,7 +572,10 @@ export function UniversalSearch({
       getSearchTypes().filter(
         (type) =>
           isBackgroundSearchType(type) &&
-          !isStandaloneSearchType(type) &&
+          // Help center comes from a separate, slower endpoint; it is
+          // requested alongside these rounds and appended when it lands, so
+          // it never holds back the rest of the results.
+          type !== EUniversalSearchType.HelpCenter &&
           !PRIMARY_SEARCH_TYPES.includes(type) &&
           allowedSearchTypeSet.has(type),
       ),
@@ -905,19 +902,17 @@ export function UniversalSearch({
       };
       const helpCenterPromise = shouldIncludeHelpCenter
         ? backgroundApiProxy.serviceUniversalSearch
-            .universalSearch({
-              input,
-              searchTypes: [EUniversalSearchType.HelpCenter],
-            })
+            .universalSearchOfHelpCenter({ input })
+            .then(
+              (helpCenter): IUniversalSearchBatchResult => ({
+                [EUniversalSearchType.HelpCenter]: helpCenter,
+              }),
+            )
             .catch((error): IUniversalSearchBatchResult => {
               console.error('[universalSearch] help center failed', error);
               return {};
             })
         : undefined;
-      // While help center results are still on the way, an empty result set
-      // keeps the skeleton instead of flashing "No results".
-      const canPaintDone = (paint: IUniversalSection[]) =>
-        paint.length > 0 || !helpCenterPromise;
       let paintedSections: IUniversalSection[] = [];
       let searchFailed = false;
       try {
@@ -981,7 +976,9 @@ export function UniversalSearch({
         searchFailed = true;
         paintedSections = primarySections;
       }
-      if (canPaintDone(paintedSections)) {
+      // While help center results are still on the way, an empty result set
+      // keeps the skeleton instead of flashing "No results".
+      if (paintedSections.length > 0 || !helpCenterPromise) {
         setSections(paintedSections);
         setSearchStatus(ESearchStatus.done);
       }
@@ -995,12 +992,16 @@ export function UniversalSearch({
           result: helpCenterResult,
           input,
         });
-        paintedSections = mergeSearchResultSections(
-          paintedSections,
-          helpCenterSections,
-        );
-        setSections(paintedSections);
-        setSearchStatus(ESearchStatus.done);
+        // Skip the repaint when nothing new arrived and results are already
+        // on screen.
+        if (helpCenterSections.length > 0 || paintedSections.length === 0) {
+          paintedSections = mergeSearchResultSections(
+            paintedSections,
+            helpCenterSections,
+          );
+          setSections(paintedSections);
+          setSearchStatus(ESearchStatus.done);
+        }
       }
 
       // A failed search with nothing to show is not logged as a query.
