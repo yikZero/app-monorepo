@@ -51,6 +51,15 @@ import { StickyHeader } from './StickyHeader';
 
 import type { IMarketMobileDetailKind } from '../../../utils/marketMobileDetailKind';
 
+function getStickyHeaderHeight(tabKey: string) {
+  // Reserve the destination's column header before iOS displays its list.
+  return tabKey === 'transactions' ||
+    tabKey === 'portfolio' ||
+    tabKey === 'holders'
+    ? 89
+    : 45;
+}
+
 function MobileInformationTabsHeader({
   holdersTabLabel,
   holdersTabName,
@@ -92,7 +101,13 @@ function MobileInformationTabsHeader({
 
   return (
     <MarketDetailHeaderGesture panActiveOffsetY={[-4, 4]} scrollScale={1}>
-      <YStack bg="$bgApp" pointerEvents="box-none">
+      <YStack
+        bg="$bgApp"
+        pointerEvents="box-none"
+        {...(!platformEnv.isNative
+          ? { position: 'sticky', top: 0, zIndex: 10 }
+          : undefined)}
+      >
         <Tabs.TabBar
           {...props}
           scrollable
@@ -198,6 +213,7 @@ export function MobileInformationTabs({
     const portfolioTab = (
       <Tabs.Tab
         key="portfolio"
+        startMounted={platformEnv.isNativeAndroid}
         name={intl.formatMessage({
           id: ETranslations.dexmarket_details_myposition,
         })}
@@ -391,13 +407,18 @@ export function MobileInformationTabs({
     ) : null;
   }
 
-  const initialStickyHeight = preferPosition ? 89 : 45;
+  const initialStickyHeight = getStickyHeaderHeight(
+    preferPosition ? 'portfolio' : 'overview',
+  );
   return (
     <MarketDetailPager
       key={tabsKey}
       initialHeaderHeight={initialHeaderHeight}
       initialStickyHeaderHeight={
         initialHeaderHeight === undefined ? undefined : initialStickyHeight
+      }
+      getStickyHeaderHeight={
+        platformEnv.isNativeIOS ? getStickyHeaderHeight : undefined
       }
       width={platformEnv.isNative ? resolvedContainerWidth : undefined}
       scrollEnabled={scrollEnabled}

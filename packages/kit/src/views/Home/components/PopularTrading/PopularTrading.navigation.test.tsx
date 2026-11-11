@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Toast } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { IMarketBasicConfigResponse } from '@onekeyhq/shared/types/marketV2';
 
 import { PopularTrading } from './PopularTrading';
@@ -39,11 +40,13 @@ jest.mock('@onekeyhq/components', () => {
   const Stack = ({
     children,
     minHeight,
+    height,
     testID,
     onPress,
     disabled,
   }: PropsWithChildren<{
     minHeight?: number;
+    height?: number;
     testID?: string;
     onPress?: () => void;
     disabled?: boolean;
@@ -52,14 +55,14 @@ jest.mock('@onekeyhq/components', () => {
       <button
         type="button"
         data-testid={testID}
-        style={{ minHeight }}
+        style={{ minHeight, height }}
         onClick={onPress}
         disabled={disabled}
       >
         {children}
       </button>
     ) : (
-      <div data-testid={testID} style={{ minHeight }}>
+      <div data-testid={testID} style={{ minHeight, height }}>
         {children}
       </div>
     );
@@ -86,7 +89,7 @@ jest.mock('@onekeyhq/components', () => {
 });
 jest.mock('@onekeyhq/shared/src/platformEnv', () => ({
   __esModule: true,
-  default: { isExtensionUiPopup: true },
+  default: { isExtensionUiPopup: true, isNative: false },
 }));
 jest.mock('@onekeyhq/shared/src/utils/networkUtils', () => ({
   __esModule: true,
@@ -252,6 +255,8 @@ const addWatchList = jest.spyOn(
 );
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.replaceProperty(platformEnv, 'isNative', false);
+  jest.replaceProperty(platformEnv, 'isExtensionUiPopup', true);
   mockShowFavorites = false;
   mockRecommendationResult = undefined;
   mockUseRealPromiseResult = false;
@@ -276,20 +281,86 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-it.each([true, false])(
-  'reserves the same content space when switching from a category to empty favorites in table layout %p',
-  (tableLayout) => {
-    const view = render(<PopularTrading tableLayout={tableLayout} />);
-    const content = screen.getByTestId('home-market-content');
-    const height = content.style.minHeight;
-    expect(Number.parseFloat(height)).toBeGreaterThan(0);
-    expect(screen.getByText('Open token')).toBeTruthy();
+it('reserves the same content space when switching from a category to empty favorites in table layout', async () => {
+  mockRecommendationResult = [mockRecord];
+  const view = render(<PopularTrading tableLayout />);
+  const content = screen.getByTestId('home-market-content');
+  const height = content.style.minHeight;
+  expect(Number.parseFloat(height)).toBeGreaterThan(0);
+  expect(screen.getByText('Open token')).toBeTruthy();
+  mockShowFavorites = true;
+  view.rerender(<PopularTrading tableLayout />);
+  await act(async () => mockRefreshFavorites());
+  expect(screen.queryByText('Open token')).toBeNull();
+  expect(screen.getByTestId('home-header-actions-btn')).toBeTruthy();
+  expect(screen.getByText('Bitcoin').closest('[style*="min-height"]')).toBe(
+    content,
+  );
+  expect(screen.getByTestId('home-market-content')).toBe(content);
+  expect(content.style.minHeight).toBe(height);
+});
+
+it('does not reserve table height for mobile recommendation cards', async () => {
+  mockShowFavorites = true;
+  mockRecommendationResult = [mockRecord];
+  const view = render(<PopularTrading />);
+  await act(async () => mockRefreshFavorites());
+  const content = screen.getByTestId('home-market-content');
+  expect(content.style.minHeight).toBe('');
+  expect(screen.getByText('Bitcoin')).toBeTruthy();
+  expect(
+    screen.getByTestId('home-header-actions-btn').hasAttribute('disabled'),
+  ).toBe(false);
+  view.unmount();
+});
+
+it.each(
+  [1, 2, 3, 4].flatMap((count) => [
+    { count, tableLayout: true, isNative: false },
+    { count, tableLayout: false, isNative: false },
+    { count, tableLayout: true, isNative: true },
+    { count, tableLayout: false, isNative: true },
+  ]),
+)(
+  'sizes $count favorites to their content in table layout $tableLayout on native $isNative',
+  async ({ count, tableLayout, isNative }) => {
+    jest.replaceProperty(platformEnv, 'isNative', isNative);
+    jest.replaceProperty(platformEnv, 'isExtensionUiPopup', !isNative);
     mockShowFavorites = true;
-    view.rerender(<PopularTrading tableLayout={tableLayout} />);
-    expect(screen.queryByText('Open token')).toBeNull();
-    expect(screen.getByText(ETranslations.global_no_data)).toBeTruthy();
-    expect(screen.getByTestId('home-market-content')).toBe(content);
-    expect(content.style.minHeight).toBe(height);
+    getWatchList.mockResolvedValue({
+      data: Array.from({ length: count }, (_, index) => ({
+        assetId: `asset-${index}`,
+        chainId: '',
+        contractAddress: '',
+      })),
+    });
+    render(<PopularTrading tableLayout={tableLayout} />);
+    await act(async () => mockRefreshFavorites());
+
+    const list = screen.getByTestId('favorite-list');
+    expect(list.textContent).toBe(
+      Array.from(
+        { length: Math.min(count, 3) },
+        (_, index) => `asset-${index}`,
+      ).join(', '),
+    );
+    expect(list.closest('[style*="min-height"]')).toBeNull();
+    const viewport = list.closest<HTMLElement>('[style*="height:"]');
+    if (isNative) {
+      expect(viewport?.style.height).toBe(
+        `${Math.min(count, 3) * 68 + (tableLayout ? 32 : 0)}px`,
+      );
+    } else {
+      expect(viewport).toBeNull();
+    }
+    expect(
+      screen
+        .getByTestId('home-market-content')
+        .querySelector('[style*="height: 50px"]'),
+    ).toBeNull();
+    expect(
+      Boolean(screen.queryByTestId('home-show-view-more-button-btn')),
+    ).toBe(count > 3);
   },
 );
 
