@@ -65,14 +65,18 @@ export function UniversalSearchHelpCenterItem({
   ]);
 
   return (
-    <ListItem onPress={handlePress}>
+    <ListItem
+      testID={`universal-search-help-center-item-${id}`}
+      onPress={handlePress}
+      cursor="default"
+    >
       <Icon name="BookOpenOutline" size="$6" color="$iconSubdued" />
       <ListItem.Text
         flex={1}
         primary={title}
-        primaryTextProps={{ numberOfLines: 2 }}
-        secondary={summary || undefined}
-        secondaryTextProps={{ numberOfLines: 2 }}
+        primaryTextProps={{ numberOfLines: 2, userSelect: 'none' }}
+        secondary={summary.replace(/\s+/g, ' ').trim() || undefined}
+        secondaryTextProps={{ numberOfLines: 2, userSelect: 'none' }}
       />
     </ListItem>
   );
