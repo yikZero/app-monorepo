@@ -45,6 +45,8 @@ import type {
   IUniversalSearchAddress,
   IUniversalSearchBatchResult,
   IUniversalSearchDappResult,
+  IUniversalSearchHelpCenterArticle,
+  IUniversalSearchHelpCenterResult,
   IUniversalSearchPerpResult,
   IUniversalSearchResultItem,
   IUniversalSearchSingleResult,
@@ -67,6 +69,9 @@ const PERPS_UNIVERSE_SEARCH_MAX_AGE_MS = timerUtils.getTimeDurationMs({
 // aliases the server may hold beyond our cached map are.
 const PERPS_SEARCH_LITERAL_MATCH_MAX_QUERY_LENGTH = 4;
 const UNIVERSAL_SEARCH_STOCK_LIMIT = 10;
+// Server accepts 1-100 chars for `keyword` and 1-50 for `limit`.
+const HELP_CENTER_SEARCH_KEYWORD_MAX_LENGTH = 100;
+const HELP_CENTER_SEARCH_LIMIT = 20;
 
 @backgroundClass()
 class ServiceUniversalSearch extends ServiceBase {
@@ -256,6 +261,9 @@ class ServiceUniversalSearch extends ServiceBase {
       searchTypes.includes(EUniversalSearchType.Perp)
         ? this.universalSearchOfPerp({ input })
         : Promise.resolve({ items: [] }),
+      searchTypes.includes(EUniversalSearchType.HelpCenter)
+        ? this.universalSearchOfHelpCenter({ input })
+        : Promise.resolve({ items: [] }),
     ]);
     const [
       addressResultSettled,
@@ -265,6 +273,7 @@ class ServiceUniversalSearch extends ServiceBase {
       accountAssetsResultSettled,
       dappResultSettled,
       perpResultSettled,
+      helpCenterResultSettled,
     ] = promiseResults;
 
     if (
@@ -347,6 +356,14 @@ class ServiceUniversalSearch extends ServiceBase {
       perpResultSettled.value.items.length > 0
     ) {
       result[EUniversalSearchType.Perp] = perpResultSettled.value;
+    }
+
+    if (
+      helpCenterResultSettled.status === 'fulfilled' &&
+      helpCenterResultSettled.value &&
+      helpCenterResultSettled.value.items.length > 0
+    ) {
+      result[EUniversalSearchType.HelpCenter] = helpCenterResultSettled.value;
     }
 
     return result;
@@ -1486,6 +1503,74 @@ class ServiceUniversalSearch extends ServiceBase {
     input: string;
   }): Promise<IUniversalSearchPerpResult> {
     return this.universalSearchOfPerpCached(input);
+  }
+
+  // Keyed by locale too: the server localizes articles by the request locale
+  // header, so a language switch must not reuse the previous language's hits.
+  private universalSearchOfHelpCenterCached = memoizee(
+    async (
+      keyword: string,
+      _locale: string,
+    ): Promise<IUniversalSearchHelpCenterResult> => {
+      try {
+        const client = await this.getClient(EServiceEndpointEnum.Utility);
+        const response = await client.get<{
+          code: number;
+          data?: {
+            items?: IUniversalSearchHelpCenterArticle[];
+            total?: number;
+          };
+        }>('/utility/v1/help-center/search', {
+          params: {
+            keyword,
+            limit: HELP_CENTER_SEARCH_LIMIT,
+          },
+        });
+
+        const items: IUniversalSearchHelpCenterResult['items'] = (
+          response?.data?.data?.items ?? []
+        )
+          .filter((article) =>
+            Boolean(article?.id && article?.title && article?.url),
+          )
+          .map((article) => ({
+            type: EUniversalSearchType.HelpCenter as const,
+            payload: {
+              id: String(article.id),
+              title: article.title,
+              summary: article.summary ?? '',
+              url: article.url,
+            },
+          }));
+
+        return { items };
+      } catch (error) {
+        console.error('[universalSearchOfHelpCenter] error:', error);
+        throw error; // Re-throw to prevent caching failed results
+      }
+    },
+    {
+      maxAge: timerUtils.getTimeDurationMs({ seconds: 30 }),
+      promise: true,
+    },
+  );
+
+  async universalSearchOfHelpCenter({
+    input,
+  }: {
+    input: string;
+  }): Promise<IUniversalSearchHelpCenterResult> {
+    const keyword = input
+      .trim()
+      .slice(0, HELP_CENTER_SEARCH_KEYWORD_MAX_LENGTH)
+      .trim();
+    if (!keyword) {
+      return { items: [] };
+    }
+    return this.universalSearchOfHelpCenterCached(
+      keyword,
+      appLocale.getLocale(),
+    );
   }
 
   async universalSearchOfDapp({

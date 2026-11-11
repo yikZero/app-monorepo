@@ -1,0 +1,90 @@
+import { useCallback } from 'react';
+
+import { Icon } from '@onekeyhq/components';
+import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
+import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
+import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import {
+  openUrlExternal,
+  openUrlInDiscovery,
+} from '@onekeyhq/shared/src/utils/openUrlUtils';
+import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
+import type {
+  EUniversalSearchSource,
+  IUniversalSearchHelpCenter,
+} from '@onekeyhq/shared/types/search';
+
+interface IUniversalSearchHelpCenterItemProps {
+  item: IUniversalSearchHelpCenter;
+  getSearchInput: () => string;
+  source: EUniversalSearchSource;
+}
+
+export function UniversalSearchHelpCenterItem({
+  item,
+  getSearchInput,
+  source,
+}: IUniversalSearchHelpCenterItemProps) {
+  const navigation = useAppNavigation();
+  const universalSearchActions = useUniversalSearchActions();
+  const { id, title, summary, url } = item.payload;
+
+  const handlePress = useCallback(async () => {
+    const searchInput = getSearchInput();
+    defaultLogger.universalSearch.search.universalSearchClick({
+      source,
+      searchText: searchInput,
+      type: item.type,
+      itemId: id,
+      itemTitle: title,
+    });
+
+    navigation.pop();
+    await timerUtils.wait(300);
+
+    // Same policy as the Settings "Help center" entry: the in-app browser
+    // where one exists, the system browser elsewhere.
+    if (platformEnv.isDesktop || platformEnv.isNative) {
+      openUrlInDiscovery({ url, title });
+    } else {
+      openUrlExternal(url);
+    }
+
+    await timerUtils.wait(10);
+    universalSearchActions.current.addIntoRecentSearchList({
+      id: `help-center-${id}`,
+      text: title,
+      type: item.type,
+      timestamp: Date.now(),
+      extra: {
+        articleId: id,
+        // Refill the query that found the article, not its long title.
+        autoFillText: searchInput || title,
+      },
+    });
+  }, [
+    getSearchInput,
+    id,
+    item.type,
+    navigation,
+    source,
+    title,
+    universalSearchActions,
+    url,
+  ]);
+
+  return (
+    <ListItem onPress={handlePress}>
+      <Icon name="BookOpenOutline" size="$6" color="$iconSubdued" />
+      <ListItem.Text
+        flex={1}
+        primary={title}
+        primaryTextProps={{ numberOfLines: 2 }}
+        secondary={summary || undefined}
+        secondaryTextProps={{ numberOfLines: 2 }}
+      />
+    </ListItem>
+  );
+}
