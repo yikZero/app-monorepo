@@ -115,16 +115,22 @@ describe('ServiceUniversalSearch help center search', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  test('omits the help center group from batch results when the request fails', async () => {
-    const get = jest.fn().mockRejectedValue(new Error('network'));
+  test('rejects so a failed request is not cached', async () => {
+    const get = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ data: { code: 0, data: { items: [] } } });
     const service = createService(get);
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    const result = await service.universalSearch({
-      input: 'backup',
-      searchTypes: [EUniversalSearchType.HelpCenter],
-    });
-
-    expect(result[EUniversalSearchType.HelpCenter]).toBeUndefined();
+    await expect(
+      service.universalSearchOfHelpCenter({ input: 'backup' }),
+    ).rejects.toThrow('network');
+    // memoizee drops a rejected entry on a later tick.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await expect(
+      service.universalSearchOfHelpCenter({ input: 'backup' }),
+    ).resolves.toEqual({ items: [] });
+    expect(get).toHaveBeenCalledTimes(2);
   });
 });

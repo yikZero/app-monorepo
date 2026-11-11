@@ -5,11 +5,7 @@ import { ListItem } from '@onekeyhq/kit/src/components/ListItem';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useUniversalSearchActions } from '@onekeyhq/kit/src/states/jotai/contexts/universalSearch';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
-import platformEnv from '@onekeyhq/shared/src/platformEnv';
-import {
-  openUrlExternal,
-  openUrlInDiscovery,
-} from '@onekeyhq/shared/src/utils/openUrlUtils';
+import { openUrlInDiscoveryOrExternal } from '@onekeyhq/shared/src/utils/openUrlUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type {
   EUniversalSearchSource,
@@ -44,13 +40,7 @@ export function UniversalSearchHelpCenterItem({
     navigation.pop();
     await timerUtils.wait(300);
 
-    // Same policy as the Settings "Help center" entry: the in-app browser
-    // where one exists, the system browser elsewhere.
-    if (platformEnv.isDesktop || platformEnv.isNative) {
-      openUrlInDiscovery({ url, title });
-    } else {
-      openUrlExternal(url);
-    }
+    openUrlInDiscoveryOrExternal({ url, title });
 
     await timerUtils.wait(10);
     universalSearchActions.current.addIntoRecentSearchList({
@@ -59,7 +49,6 @@ export function UniversalSearchHelpCenterItem({
       type: item.type,
       timestamp: Date.now(),
       extra: {
-        articleId: id,
         // Refill the query that found the article, not its long title.
         autoFillText: searchInput || title,
       },
