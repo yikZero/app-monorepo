@@ -462,6 +462,7 @@ function OneKeyIdPage() {
               screen: EModalRoutes.PrimeModal,
               params: {
                 screen: EPrimePages.PrimeDashboard,
+                params: { fromEntryPoint: 'oneKeyIdPage' },
               },
             });
           } else {
@@ -469,12 +470,13 @@ function OneKeyIdPage() {
               screen: EModalRoutes.PrimeModal,
               params: {
                 screen: EPrimePages.PrimeDashboard,
+                params: { fromEntryPoint: 'oneKeyIdPage' },
               },
             });
           }
         }
       } catch (e) {
-        defaultLogger.prime.subscription.onekeyIdLogout({
+        defaultLogger.prime.subscription.onekeyIdStateTrace({
           reason: `OneKeyIdPage: toPrimePage navigation error: ${String(e)}`,
         });
       }
@@ -488,7 +490,7 @@ function OneKeyIdPage() {
     if (!isLoggedIn && isFocused) {
       await timerUtils.wait(300);
       resetPrimeModal();
-      defaultLogger.prime.subscription.onekeyIdLogout({
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'OneKeyIdPage: is focused and primePersistAtom is not logged in',
       });

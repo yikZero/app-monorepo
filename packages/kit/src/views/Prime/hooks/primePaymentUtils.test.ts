@@ -3,6 +3,17 @@ import { EOneKeyErrorClassNames } from '@onekeyhq/shared/src/errors/types/errorT
 
 import primePaymentUtils from './primePaymentUtils';
 
+jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
+  __esModule: true,
+  default: {
+    simpleDb: {
+      prime: {
+        claimPrimePurchaseAnalyticsEvent: jest.fn(async () => true),
+      },
+    },
+  },
+}));
+
 /*
 yarn test packages/kit/src/views/Prime/hooks/primePaymentUtils.test.ts
 */
@@ -18,6 +29,22 @@ describe('primePaymentUtils', () => {
     it('converts legacy Android RevenueCat prices from micros', () => {
       expect(primePaymentUtils.normalizeNativePrice(29_990_000, 'micros')).toBe(
         29.99,
+      );
+    });
+  });
+
+  describe('normalizePrimePeriodType', () => {
+    it.each([
+      ['TRIAL', 'trial'],
+      ['INTRO', 'intro'],
+      ['NORMAL', 'normal'],
+    ])('normalizes %s', (input, expected) => {
+      expect(primePaymentUtils.normalizePrimePeriodType(input)).toBe(expected);
+    });
+
+    it('omits unknown period types', () => {
+      expect(primePaymentUtils.normalizePrimePeriodType('unknown')).toBe(
+        undefined,
       );
     });
   });
@@ -84,10 +111,12 @@ describe('primePaymentUtils', () => {
           code: 1,
           message: 'Purchase was cancelled.',
         }),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'userCancelled',
         errorCode: '1',
         errorMessage: 'Purchase was cancelled.',
+        errorName: 'PURCHASE_CANCELLED_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
@@ -96,10 +125,12 @@ describe('primePaymentUtils', () => {
         primePaymentUtils.classifyPurchaseError(
           new Error('Purchase was cancelled.'),
         ),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'userCancelled',
         errorCode: undefined,
         errorMessage: 'Purchase was cancelled.',
+        errorName: 'UNKNOWN_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
@@ -109,10 +140,12 @@ describe('primePaymentUtils', () => {
           errorCode: 1,
           message: 'User cancelled',
         }),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'userCancelled',
         errorCode: '1',
         errorMessage: 'User cancelled',
+        errorName: 'PURCHASE_CANCELLED_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
@@ -123,18 +156,22 @@ describe('primePaymentUtils', () => {
           userCancelled: false,
           message: 'Store connection failed',
         }),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'paymentFailed',
         errorCode: '2',
         errorMessage: 'Store connection failed',
+        errorName: 'STORE_PROBLEM_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
     it('handles non-object errors safely', () => {
-      expect(primePaymentUtils.classifyPurchaseError(undefined)).toEqual({
+      expect(primePaymentUtils.classifyPurchaseError(undefined)).toMatchObject({
         reason: 'paymentFailed',
         errorCode: undefined,
         errorMessage: undefined,
+        errorName: 'UNKNOWN_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
@@ -143,10 +180,13 @@ describe('primePaymentUtils', () => {
         primePaymentUtils.classifyPurchaseError(
           new OneKeyLocalError('Offering not found'),
         ),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'clientError',
         errorCode: '-99999',
         errorMessage: 'Offering not found',
+        clientErrorKey: 'offeringNotFound',
+        errorName: 'UNKNOWN_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
     });
 
@@ -156,11 +196,52 @@ describe('primePaymentUtils', () => {
           className: EOneKeyErrorClassNames.OneKeyLocalError,
           message: 'PrimeAuth native not ready!',
         }),
-      ).toEqual({
+      ).toMatchObject({
         reason: 'clientError',
         errorCode: undefined,
         errorMessage: 'PrimeAuth native not ready!',
+        clientErrorKey: 'sdkNotReady',
+        errorName: 'UNKNOWN_ERROR',
+        underlyingErrorCategory: 'unknown',
       });
+    });
+
+    it('classifies RevenueCat payment-pending code 20 separately from payment failure', () => {
+      expect(
+        primePaymentUtils.classifyPurchaseError({
+          code: 20,
+          message: 'Payment pending',
+        }),
+      ).toMatchObject({
+        reason: 'paymentPending',
+        errorCode: '20',
+      });
+      expect(
+        primePaymentUtils.classifyPurchaseError({
+          code: 2,
+          userCancelled: false,
+          message: 'Store problem',
+        }).reason,
+      ).toBe('paymentFailed');
+    });
+  });
+
+  describe('extractWebPaywallPrice', () => {
+    it('preserves non-USD currency and leaves missing currency unset', () => {
+      expect(
+        primePaymentUtils.extractWebPaywallPrice({
+          rcBillingProduct: {
+            currentPrice: { amountMicros: 19_990_000, currency: 'EUR' },
+          },
+        }),
+      ).toEqual({ amount: 19.99, currency: 'EUR' });
+      expect(
+        primePaymentUtils.extractWebPaywallPrice({
+          rcBillingProduct: {
+            currentPrice: { amountMicros: 19_990_000 },
+          },
+        }),
+      ).toEqual({ amount: 19.99, currency: undefined });
     });
   });
 });

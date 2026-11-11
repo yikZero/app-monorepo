@@ -2,9 +2,13 @@ import { Dialog, Toast } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import {
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_CURRENCY_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_FALLBACK_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_FEATURE_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY,
 } from '@onekeyhq/shared/src/consts/deeplinkConsts';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import {
@@ -12,11 +16,11 @@ import {
   appEventBus,
 } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import { closeExtensionPopupAfterExpandTabOpen } from '@onekeyhq/shared/src/utils/extUtils';
 import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeWebCheckoutPendingSession } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import { showPrimeWebCheckoutWaitingDialog } from '../components/PrimeWebCheckoutWaitingDialog';
@@ -48,6 +52,7 @@ export type IPrimeHostedCardCheckoutParams = {
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   currency?: string;
   featureName?: EPrimeFeatures;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
   // Legacy bridge hint; package selection is independently resolved by the host.
   purchasePackage?: unknown;
   // Set when this checkout replaces a failed embedded Stripe checkout.
@@ -63,11 +68,13 @@ async function handOffCardCheckoutToExpandTab({
   currency,
   featureName,
   fallbackFrom,
+  analyticsContext,
 }: {
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   currency?: string;
   featureName?: EPrimeFeatures;
   fallbackFrom?: IPrimeEmbeddedCheckoutFallbackTrigger;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 }) {
   logPrimeWebCheckoutFlow({
     stage: 'extensionHandoff',
@@ -88,6 +95,31 @@ async function handOffCardCheckoutToExpandTab({
         : {}),
       ...(fallbackFrom && currency
         ? { [PRIME_CARD_CHECKOUT_EXT_HANDOFF_CURRENCY_QUERY]: currency }
+        : {}),
+      ...(analyticsContext?.paywallSessionId
+        ? {
+            [PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY]:
+              analyticsContext.paywallSessionId,
+          }
+        : {}),
+      ...(analyticsContext?.purchaseFlowId
+        ? {
+            [PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY]:
+              analyticsContext.purchaseFlowId,
+          }
+        : {}),
+      ...(analyticsContext?.entryPoint
+        ? {
+            [PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY]:
+              analyticsContext.entryPoint,
+          }
+        : {}),
+      ...(analyticsContext?.purchaseStartedAt
+        ? {
+            [PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY]: String(
+              analyticsContext.purchaseStartedAt,
+            ),
+          }
         : {}),
     },
   });
@@ -136,6 +168,7 @@ async function openPrimeHostedCardCheckout({
   currency,
   featureName,
   fallbackFrom,
+  analyticsContext,
 }: IPrimeHostedCardCheckoutParams) {
   try {
     if (platformEnv.isExtensionUiPopup) {
@@ -144,6 +177,7 @@ async function openPrimeHostedCardCheckout({
         currency,
         featureName,
         fallbackFrom,
+        analyticsContext,
       });
       return;
     }
@@ -158,12 +192,13 @@ async function openPrimeHostedCardCheckout({
         featureName,
       });
     } else {
-      defaultLogger.prime.subscription.primeSubscribeIntent({
+      primePaymentUtils.trackPrimeSubscriptionIntent({
         subscriptionPeriod: selectedSubscriptionPeriod,
         featureName,
         currency,
         paymentMethod: 'stripe',
         cardCheckoutFlow: 'hostedLink',
+        context: analyticsContext,
       });
     }
     if (!onekeyUserId) {
@@ -178,6 +213,7 @@ async function openPrimeHostedCardCheckout({
     const baselineEntitlement = await fetchPrimeWebCheckoutEntitlement({
       onekeyUserId,
       isSandbox: isSandboxKey,
+      analyticsContext,
     });
     if (baselineEntitlement?.isActive) {
       logPrimeWebCheckoutFlow({
@@ -204,6 +240,7 @@ async function openPrimeHostedCardCheckout({
       isSandbox: isSandboxKey,
       currency,
       subscriptionPeriod: selectedSubscriptionPeriod,
+      analyticsContext,
     });
     const platform = getPrimeWebCheckoutPlatform();
     const checkoutUrl = buildPrimeWebPurchaseLinkUrl({
@@ -232,6 +269,7 @@ async function openPrimeHostedCardCheckout({
       platform,
       checkoutUrl,
       startedAt: Date.now(),
+      ...analyticsContext,
     };
     const { replacedSession } =
       await backgroundApiProxy.simpleDb.prime.acquireWebCheckoutPendingSession({
@@ -269,6 +307,7 @@ async function openPrimeHostedCardCheckout({
       subscriptionPeriod: selectedSubscriptionPeriod,
       featureName,
       cardCheckoutFlow: 'hostedLink',
+      context: analyticsContext,
     });
     Toast.error({
       title: intl.formatMessage({

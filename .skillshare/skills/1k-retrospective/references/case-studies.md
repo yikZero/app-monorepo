@@ -1459,7 +1459,6 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries â€
 **Root Cause**: The mobile layout rendered positions directly without mounting the stock history list or providing a way to switch to it.
 **Fix**: Restore the Positions and Order History tabs and show the pending preview only on Positions. Use a stock-scoped clear action that also filters queued history writes for the same scope.
 **Catchable by**: Verify both tabs on mobile with pending and completed orders, and test clearing stock history while a write is queued and other swap history exists.
-
 ## Case: Perps deposit reused Solana payer and amount after switching to ETH (OK-66646)
 **Date**: 2026-11-10 | **Platforms**: Desktop/Web single-runtime UI hooks; reproduced and manually regressed on desktop.
 **Symptom**: Switching a Perps deposit from Solana USDC to native ETH sent the old Solana payer address and USDC quantity in an Ethereum quote, producing an invalid-address error.
@@ -1618,3 +1617,16 @@ Cases are appended by AI after each bug fix. Do NOT reorder or delete entries â€
 **Root Cause**: The inactive position tab mounted on first focus, allowing scroll synchronization to run before its incoming list was ready. Warm-switch checks did not exercise this initial mount.
 **Fix**: Enable the existing per-tab eager-mount capability only for the Android position tab. Android 35 verification with an ordinary token and no positions preserved the header on the initial visit and a fresh re-entry; populated position lists and iOS manual regression remain unverified.
 **Catchable by**: Sections 3 and 8: Verify the first tab switch after a fresh detail mount at partial and full header collapse, then compare subsequent switches and a fresh re-entry.
+## Case: Prime purchase attribution was lost across the extension handoff
+**Date**: 2026-11-10 | **Platforms**: browser extension and web embed (isolated JavaScript runtimes)
+**Symptom**: A Prime purchase that continued from the extension popup into the expand tab could no longer be joined to the original paywall and purchase attempt.
+**Root Cause**: The handoff crossed isolated runtimes, but the analytics IDs and entry point were not part of the serialized, validated query contract.
+**Fix**: Serialize the fixed analytics fields in the extension handoff, validate UUIDs and entry-point enums on receipt, and cover valid and malformed contexts with regression tests.
+**Catchable by**: Section 4: Data flow end-to-end: API -> state -> UI (isolated runtimes require explicit serializable context)
+
+## Case: Prime purchase identity attributes were skipped
+**Date**: 2026-11-10 | **Platforms**: iOS and Android (native Prime purchase UI).
+**Symptom**: RevenueCat customer identity attributes were not synchronized after payment-method setup.
+**Root Cause**: An unconditional return from the setup routine occurred before app-user identity verification and attribute synchronization.
+**Fix**: Return the retry result only after the final identity check and attribute synchronization complete.
+**Catchable by**: Section 6: Unit Tests: assert SDK identity attributes are set after a successful purchase setup.

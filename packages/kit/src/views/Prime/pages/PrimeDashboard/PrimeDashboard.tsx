@@ -39,7 +39,9 @@ import {
   type IPrimeParamList,
 } from '@onekeyhq/shared/src/routes/prime';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
+import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import { showOneKeyIdLoginFailedToast } from '../../components/oneKeyIdLoginToastUtils';
 import { PrimeSubscriptionPlans } from '../../components/PrimePurchaseDialog/PrimeSubscriptionPlans';
@@ -118,8 +120,30 @@ export default function PrimeDashboard({
     networkId,
     freeTrialReason,
     fromDeepLink,
+    fromEntryPoint,
+    analyticsContext: routeAnalyticsContext,
     selectedSubscriptionPeriod: routeSelectedSubscriptionPeriod,
   } = route.params || {};
+  const [paywallSessionId] = useState(
+    () => routeAnalyticsContext?.paywallSessionId ?? generateUUID(),
+  );
+  const consumedPurchaseFlowIdRef = useRef<string | undefined>(undefined);
+  let entryPoint = fromEntryPoint ?? routeAnalyticsContext?.entryPoint;
+  if (!entryPoint) {
+    if (fromDeepLink) {
+      entryPoint = 'deepLink';
+    } else if (!routeAnalyticsContext?.purchaseFlowId) {
+      entryPoint = 'primePage';
+    }
+  }
+  const analyticsContext = useMemo<IPrimePurchaseAnalyticsContext>(
+    () => ({
+      ...routeAnalyticsContext,
+      paywallSessionId,
+      entryPoint,
+    }),
+    [entryPoint, paywallSessionId, routeAnalyticsContext],
+  );
   const isTravelMode =
     travelModeManager.getRuntimeEnvironmentSync().profile.kind ===
     'travel-mode';
@@ -156,7 +180,10 @@ export default function PrimeDashboard({
   const mobileTopValue = isMobile ? safeAreaTop + 25 : '$10';
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { ensureOneKeyIDLoggedIn, ensurePrimeSubscriptionActive } =
-    usePrimeRequirements({ networkId: networkId ?? network?.id });
+    usePrimeRequirements({
+      networkId: networkId ?? network?.id,
+      analyticsContext,
+    });
   // Subscribe may await an in-flight login; read the post-login callback so
   // purchase eligibility sees the logged-in user instead of the click closure.
   const ensurePrimeSubscriptionActiveRef = useRef(
@@ -350,8 +377,19 @@ export default function PrimeDashboard({
       isPrimeActive,
       entitlementSource: freeTrialReason ? 'freeTrial' : undefined,
       freeTrialReason,
+      entryPoint,
+      paywallSessionId,
+      isLoggedIn,
     });
-  }, [freeTrialReason, fromFeature, isAuthReady, isPrimeActive]);
+  }, [
+    entryPoint,
+    freeTrialReason,
+    fromFeature,
+    isAuthReady,
+    isLoggedIn,
+    isPrimeActive,
+    paywallSessionId,
+  ]);
 
   useEffect(() => {
     const fn = async () => {
@@ -388,6 +426,7 @@ export default function PrimeDashboard({
   const { packages, isPurchaseReady, restorePurchases } =
     usePrimeSubscriptionPackages({
       enabled: shouldShowSubscriptionPlans,
+      analyticsContext,
     });
 
   const selectedPackage = useMemo(
@@ -450,6 +489,37 @@ export default function PrimeDashboard({
       navigation.setParams({ fromDeepLink: undefined });
     }
     subscribeInFlightRef.current = true;
+    const inheritedFlowId =
+      consumedPurchaseFlowIdRef.current !== analyticsContext.purchaseFlowId
+        ? analyticsContext.purchaseFlowId
+        : undefined;
+    consumedPurchaseFlowIdRef.current = analyticsContext.purchaseFlowId;
+    const purchaseAnalyticsContext = {
+      ...analyticsContext,
+      purchaseFlowId: inheritedFlowId ?? generateUUID(),
+      purchaseStartedAt:
+        (inheritedFlowId ? analyticsContext.purchaseStartedAt : undefined) ??
+        Date.now(),
+    };
+    defaultLogger.prime.subscription.primeSubscribeButtonClick({
+      subscriptionPeriod: selectedSubscriptionPeriod,
+      featureName: fromFeature,
+      isLoggedIn,
+      purchaseFlowId: purchaseAnalyticsContext.purchaseFlowId,
+      paywallSessionId: purchaseAnalyticsContext.paywallSessionId,
+      entryPoint,
+      hasFreeTrialOffer: Boolean(selectedPackage?.freeTrial),
+      trialDays:
+        selectedPackage?.freeTrial?.periodUnit === 'day'
+          ? selectedPackage.freeTrial.periodNumber
+          : undefined,
+      packagePrice:
+        selectedSubscriptionPeriod === 'P1Y'
+          ? selectedPackage?.pricePerYear
+          : selectedPackage?.pricePerMonth,
+      packageCurrency: selectedPackage?.currencyCode,
+      priceCurrency: selectedPackage?.currencyCode,
+    });
     try {
       setIsSubscribeLazyLoading(true);
       const pendingLogin = loginInFlightRef.current;
@@ -462,18 +532,18 @@ export default function PrimeDashboard({
         }
       }
 
-      defaultLogger.prime.subscription.primeSubscribeButtonClick({
-        subscriptionPeriod: selectedSubscriptionPeriod,
-        featureName: fromFeature,
-        isLoggedIn,
-      });
-
       if (isLoggedIn || pendingLogin) {
         pendingSubscribeRef.current = null;
       } else {
         pendingSubscribeRef.current = {
           subscriptionPeriod: selectedSubscriptionPeriod,
           freeTrial: selectedPackage?.freeTrial,
+          packagePrice:
+            selectedSubscriptionPeriod === 'P1Y'
+              ? selectedPackage?.pricePerYear
+              : selectedPackage?.pricePerMonth,
+          packageCurrency: selectedPackage?.currencyCode,
+          analyticsContext: purchaseAnalyticsContext,
         };
       }
 
@@ -483,6 +553,12 @@ export default function PrimeDashboard({
           selectedSubscriptionPeriod,
           featureName: fromFeature,
           freeTrial: selectedPackage?.freeTrial,
+          packagePrice:
+            selectedSubscriptionPeriod === 'P1Y'
+              ? selectedPackage?.pricePerYear
+              : selectedPackage?.pricePerMonth,
+          packageCurrency: selectedPackage?.currencyCode,
+          analyticsContext: purchaseAnalyticsContext,
         }),
       );
     } finally {
@@ -497,6 +573,11 @@ export default function PrimeDashboard({
     fromFeature,
     isLoggedIn,
     selectedPackage?.freeTrial,
+    selectedPackage?.pricePerMonth,
+    selectedPackage?.pricePerYear,
+    selectedPackage?.currencyCode,
+    analyticsContext,
+    entryPoint,
   ]);
 
   const isLoggedInMaybe =
@@ -603,6 +684,7 @@ export default function PrimeDashboard({
               <PrimeBenefitsList
                 selectedSubscriptionPeriod={selectedSubscriptionPeriod}
                 networkId={route.params?.networkId}
+                paywallSessionId={paywallSessionId}
               />
             ) : (
               <Spinner my="$10" />

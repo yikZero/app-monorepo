@@ -551,7 +551,7 @@ function OneKeyIdLegacyOAuthBindActions({
             // didBind=true before a dialog-close failure can propagate
             // here); any follow-up continuation errors surface through the
             // continuation's own error handling, so only log here.
-            defaultLogger.prime.subscription.onekeyIdLogout({
+            defaultLogger.prime.subscription.onekeyIdStateTrace({
               reason: `OneKeyIdLegacyOAuthBindActions: onBindSuccess failed after bind committed: ${getSanitizedAuthErrorText(
                 bindSuccessHandlerError,
               )}`,

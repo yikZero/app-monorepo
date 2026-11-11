@@ -449,6 +449,125 @@ describe('PrimeSubscriptionScene OneKey ID auth failure logging', () => {
 });
 
 describe('PrimeSubscriptionScene sanitized event payloads', () => {
+  it('keeps structured subscribe intent context and package metadata', () => {
+    const { scene, emitLog } = createSceneWithSpy();
+
+    scene.primeSubscribeIntent({
+      subscriptionPeriod: 'P1Y',
+      paymentMethod: 'stripe',
+      purchaseFlowId: 'flow-1',
+      entryPoint: 'settingsPrimeRow',
+      hasFreeTrialOffer: true,
+      trialDays: 7,
+      packagePrice: 99,
+      packageCurrency: 'EUR',
+    });
+
+    const serverCall = getCalls(emitLog, 'primeSubscribeIntent')[0];
+    expect(serverCall?.[1]).toEqual([
+      expect.objectContaining({
+        subscriptionPeriod: 'P1Y',
+        paymentMethod: 'stripe',
+        purchaseFlowId: 'flow-1',
+        entryPoint: 'settingsPrimeRow',
+        hasFreeTrialOffer: true,
+        trialDays: 7,
+        packagePrice: 99,
+        packageCurrency: 'EUR',
+      }),
+    ]);
+  });
+
+  it('deduplicates successful offerings per paywall and suppresses customer info successes', () => {
+    const { scene, emitLog } = createSceneWithSpy();
+
+    scene.primePurchasesSdkCall({
+      method: 'getOfferings',
+      sdk: 'native',
+      status: 'succeeded',
+      durationMs: 25,
+      paywallSessionId: 'paywall-1',
+    });
+    scene.primePurchasesSdkCall({
+      method: 'getOfferings',
+      sdk: 'native',
+      status: 'succeeded',
+      durationMs: 30,
+      paywallSessionId: 'paywall-1',
+    });
+    scene.primePurchasesSdkCall({
+      method: 'getCustomerInfo',
+      sdk: 'native',
+      status: 'succeeded',
+      durationMs: 10,
+    });
+
+    expect(getCalls(emitLog, 'primePurchasesSdkCall')).toHaveLength(1);
+  });
+
+  it('keeps fetch failure context structured and error text local', () => {
+    const { scene, emitLog } = createSceneWithSpy();
+
+    scene.fetchPackagesFailed({
+      errorMessage: 'failed for user@example.com',
+      errorCode: '20',
+      errorName: 'PAYMENT_PENDING_ERROR',
+      underlyingErrorCategory: 'unknown',
+      paywallSessionId: 'paywall-1',
+      purchaseFlowId: 'flow-1',
+      entryPoint: 'settingsPrimeRow',
+    });
+
+    const serverCall = getCalls(emitLog, 'fetchPackagesFailed')[0];
+    expect(serverCall?.[1]?.[0]).toEqual({
+      errorCode: '20',
+      errorName: 'PAYMENT_PENDING_ERROR',
+      underlyingErrorCategory: 'unknown',
+      paywallSessionId: 'paywall-1',
+      purchaseFlowId: 'flow-1',
+      entryPoint: 'settingsPrimeRow',
+    });
+    expect(JSON.stringify(serverCall)).not.toContain('user@example.com');
+  });
+
+  it('only sends the two approved auth-repair types at state commit', () => {
+    const { scene, emitLog } = createSceneWithSpy();
+
+    scene.onekeyIdAuthStateRepair({
+      repairType: 'invalidLoggedInProjection',
+      stage: 'candidateDetected',
+      status: 'started',
+    });
+    scene.onekeyIdAuthStateRepair({
+      repairType: 'legacyLoggedOutWithoutTombstone',
+      stage: 'stateCommit',
+      status: 'succeeded',
+    });
+    scene.onekeyIdAuthStateRepair({
+      repairType: 'invalidLoggedInProjection',
+      stage: 'stateCommit',
+      status: 'succeeded',
+    });
+    scene.onekeyIdAuthStateRepair({
+      repairType: 'incompleteLogoutProjection',
+      stage: 'stateCommit',
+      status: 'succeeded',
+    });
+
+    expect(getCalls(emitLog, 'onekeyIdAuthStateRepair')).toHaveLength(2);
+    expect(getCalls(emitLog, 'onekeyIdAuthStateRepairLocal')).toHaveLength(4);
+  });
+
+  it('logs a fixed-enum OneKey ID logout reason', () => {
+    const { scene, emitLog } = createSceneWithSpy();
+
+    scene.onekeyIdLogout({ reason: 'remoteLogout' });
+
+    expect(getCalls(emitLog, 'onekeyIdLogout')[0]?.[1]?.[0]).toEqual({
+      reason: 'remoteLogout',
+    });
+  });
+
   it('strips url query/hash and scrubs the message on onekeyIdInvalidToken', () => {
     const { scene, emitLog } = createSceneWithSpy();
 
@@ -479,11 +598,12 @@ describe('PrimeSubscriptionScene sanitized event payloads', () => {
       errorMessage: 'store failed for user@example.com',
     });
 
-    const call = emitLog.mock.calls.find(
-      ([methodName]) => methodName === 'fetchPackagesFailed',
-    );
-    const payload = call?.[1]?.[0] as { errorMessage: string };
-    expect(payload.errorMessage).toBe('store failed for [email]');
+    const localCall = getCalls(emitLog, 'fetchPackagesFailedLocal')[0];
+    const serverCall = getCalls(emitLog, 'fetchPackagesFailed')[0];
+    expect(localCall?.[1]?.[0]).toEqual({
+      errorMessage: 'store failed for [email]',
+    });
+    expect(serverCall?.[1]?.[0]).not.toHaveProperty('errorMessage');
   });
 
   it('sends structured primeSubscribeFailed to server and keeps the message local', () => {

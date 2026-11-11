@@ -1,5 +1,6 @@
 import { PRIME_WEB_PURCHASE_LINK_SANDBOX } from '@onekeyhq/shared/src/consts/primeConsts';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeWebCheckoutPendingSession } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import {
@@ -72,6 +73,7 @@ jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
         }) => mockAcquirePendingSession(params),
         clearWebCheckoutPendingSession: (params: unknown) =>
           mockClearPendingSession(params),
+        claimPrimePurchaseAnalyticsEvent: async () => true,
       },
     },
   },
@@ -125,6 +127,7 @@ jest.mock('./getPrimePaymentApiKey', () => ({
 jest.mock('./primePaymentUtils', () => ({
   __esModule: true,
   default: {
+    trackPrimeSubscriptionIntent: jest.fn(),
     trackPrimeSubscriptionFailed: (params: unknown) => mockTrackFailure(params),
   },
 }));
@@ -236,6 +239,23 @@ describe('startPrimeHostedCardCheckout', () => {
     });
   });
 
+  it('persists analytics context in the hosted pending session', async () => {
+    const analyticsContext: IPrimePurchaseAnalyticsContext = {
+      paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+      purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+      entryPoint: 'settingsPrimeRow',
+      purchaseStartedAt: 1_700_000_000_000,
+    };
+
+    await startCheckout({ analyticsContext });
+
+    expect(mockAcquiredSessions.get('user-1')).toMatchObject(analyticsContext);
+    expect(mockOpenPage).toHaveBeenCalledWith(
+      expect.objectContaining(analyticsContext),
+      expect.anything(),
+    );
+  });
+
   it('stores the link without the email and opens it with the email', async () => {
     await startCheckout();
 
@@ -288,6 +308,44 @@ describe('startPrimeHostedCardCheckout', () => {
     expect(mockAcquirePendingSession).not.toHaveBeenCalled();
     expect(mockOpenPage).not.toHaveBeenCalled();
     expect(mockToastError).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports one hosted failure when an embedded checkout fallback fails', async () => {
+    const analyticsContext: IPrimePurchaseAnalyticsContext = {
+      paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+      purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+      entryPoint: 'settingsPrimeRow',
+      purchaseStartedAt: 1_700_000_000_000,
+    };
+    mockResolvePackage.mockRejectedValueOnce(
+      new OneKeyLocalError('Offering unavailable'),
+    );
+
+    await startCheckout({
+      analyticsContext,
+      fallbackFrom: 'checkoutError',
+    });
+
+    expect(mockTrackFailure).toHaveBeenCalledTimes(1);
+    expect(mockTrackFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMethod: 'stripe',
+        cardCheckoutFlow: 'hostedLink',
+        context: analyticsContext,
+      }),
+    );
+  });
+
+  it('does not report a transport-only failure when hosted fallback succeeds', async () => {
+    await startCheckout({
+      fallbackFrom: 'checkoutError',
+      analyticsContext: {
+        purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+      },
+    });
+
+    expect(mockTrackFailure).not.toHaveBeenCalled();
+    expect(mockShowWaitingDialog).toHaveBeenCalledTimes(1);
   });
 
   it('refuses a bridge request that changes the host-selected billing period', async () => {

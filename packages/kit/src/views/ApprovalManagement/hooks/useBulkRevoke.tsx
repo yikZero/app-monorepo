@@ -91,6 +91,7 @@ function useBulkRevoke() {
       try {
         const access = await ensureFeatureAccess({
           featureId: EPrimeFeatures.BulkRevoke,
+          entryPoint: 'approvalBulkRevoke',
           networkId: unsignedTxs[0]?.networkId,
           // The revoke button already shows its loading.
           showLoading: false,

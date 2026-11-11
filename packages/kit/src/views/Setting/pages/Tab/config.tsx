@@ -17,7 +17,6 @@ import {
 } from '@onekeyhq/kit/src/components/AppUpdate';
 import { useKeylessWalletExistsLocal } from '@onekeyhq/kit/src/components/KeylessWallet/useKeylessWallet';
 import { LazyLoadPage } from '@onekeyhq/kit/src/components/LazyLoadPage';
-import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import type useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { useBiometricAuthInfo } from '@onekeyhq/kit/src/hooks/useBiometricAuthInfo';
 import { useHelpLink } from '@onekeyhq/kit/src/hooks/useHelpLink';
@@ -35,7 +34,6 @@ import {
   PLAY_STORE_LINK,
 } from '@onekeyhq/shared/src/config/appConfig';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { showIntercom } from '@onekeyhq/shared/src/modules3rdParty/intercom';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import {
@@ -48,7 +46,7 @@ import {
   ETabDeveloperRoutes,
 } from '@onekeyhq/shared/src/routes';
 import { EManualBackupRoutes } from '@onekeyhq/shared/src/routes/manualBackup';
-import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
+import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import { EModalShortcutsRoutes } from '@onekeyhq/shared/src/routes/shortcuts';
 import { travelModeManager } from '@onekeyhq/shared/src/travelMode';
 import { getOneKeyExtensionStoreUrl } from '@onekeyhq/shared/src/utils/extensionStoreUtils';
@@ -234,8 +232,6 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
   const helpCenterUrl = useHelpLink({ path: '' });
   const [devSettings] = useDevSettingsPersistAtom();
   const [settings] = useSettingsPersistAtom();
-  const { isPrimeActive } = useOneKeyAuth();
-
   const { cloudBackupFeatureInfo, startBackup } = useCloudBackup();
 
   const isKeylessWalletExistsLocal = useKeylessWalletExistsLocal();
@@ -302,12 +298,6 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
                     id: ETranslations.global_onekey_cloud,
                   }),
                   onPress: (navigation) => {
-                    defaultLogger.prime.subscription.primeEntryClick({
-                      featureName: EPrimeFeatures.OneKeyCloud,
-                      entryPoint: 'settingsPage',
-                      isPrimeActive,
-                    });
-
                     navigation?.pushModal(EModalRoutes.PrimeModal, {
                       screen: EPrimePages.PrimeCloudSync,
                     });
@@ -1251,7 +1241,6 @@ export const useSettingsConfig: () => ISettingsConfig = () => {
     helpCenterUrl,
     userAgreementUrl,
     privacyPolicyUrl,
-    isPrimeActive,
     isMobileLayout,
     languageSearchKeywords,
   ]);

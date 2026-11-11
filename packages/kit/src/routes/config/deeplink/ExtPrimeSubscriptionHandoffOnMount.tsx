@@ -23,7 +23,13 @@ import type { IntlShape } from 'react-intl';
 // Nothing is charged automatically: the user confirms the plan again, or
 // after a failed embedded checkout pays on the hosted page opened here.
 async function continuePrimeCardCheckout({
-  handoff: { selectedSubscriptionPeriod, featureName, currency, fallbackFrom },
+  handoff: {
+    selectedSubscriptionPeriod,
+    featureName,
+    currency,
+    fallbackFrom,
+    analyticsContext,
+  },
   intl,
 }: {
   handoff: IPrimeCardCheckoutHandoff;
@@ -36,6 +42,8 @@ async function continuePrimeCardCheckout({
     params: {
       selectedSubscriptionPeriod,
       fromFeature: featureName,
+      fromEntryPoint: analyticsContext?.entryPoint ?? 'primePage',
+      analyticsContext,
     },
   });
   if (!fallbackFrom) {
@@ -53,6 +61,7 @@ async function continuePrimeCardCheckout({
     currency,
     featureName,
     fallbackFrom,
+    analyticsContext,
   });
 }
 

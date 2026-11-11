@@ -128,9 +128,11 @@ export function PrimeBenefitsItem({
 export function PrimeBenefitsList({
   selectedSubscriptionPeriod,
   networkId,
+  paywallSessionId,
 }: {
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   networkId?: string;
+  paywallSessionId?: string;
 }) {
   const navigation = useAppNavigation();
   const { isPrimeActive } = useOneKeyAuth();
@@ -148,6 +150,8 @@ export function PrimeBenefitsList({
         selectedFeature: featureName,
         selectedSubscriptionPeriod,
         networkId,
+        fromEntryPoint: 'primePage' as const,
+        paywallSessionId,
       };
 
       if (isMobile) {
@@ -162,6 +166,7 @@ export function PrimeBenefitsList({
       isPrimeActive,
       networkId,
       navigation,
+      paywallSessionId,
       selectedSubscriptionPeriod,
     ],
   );

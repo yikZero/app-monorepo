@@ -19,9 +19,11 @@ import {
   appEventBus,
 } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { IPrimeWebCheckoutPendingSession } from '@onekeyhq/shared/types/prime/primeTypes';
 
+import primePaymentUtils from '../hooks/primePaymentUtils';
 import {
   PRIME_WEB_CHECKOUT_WAITING_TIMEOUT_MS,
   checkPrimeWebCheckout,
@@ -48,6 +50,15 @@ type IPrimeWebCheckoutTerminalReason =
   | 'purchaseUserChanged'
   // Settled by another surface, or replaced by a newer checkout.
   | 'sessionClosed';
+
+const primeWebCheckoutTerminalIds = new Set<string>();
+const PROGRAMMATIC_WEB_CHECKOUT_CLOSE_FLAGS = new Set([
+  'succeeded',
+  'activatedElsewhere',
+  'purchaseUserChanged',
+  'sessionClosed',
+  'replaced',
+]);
 
 function PrimeWebCheckoutWaitingMonitor({
   session,
@@ -105,8 +116,9 @@ function PrimeWebCheckoutWaitingMonitor({
         result,
         intl,
       });
+      primeWebCheckoutTerminalIds.add(session.checkoutId);
       try {
-        await dialogInstance.close();
+        await dialogInstance.close({ flag: 'succeeded' });
       } catch {
         // A UI failure must not discard an already-settled purchase.
       }
@@ -138,8 +150,10 @@ function PrimeWebCheckoutWaitingMonitor({
         result &&
         result.status !== 'pending'
       ) {
+        primeWebCheckoutTerminalIds.add(session.checkoutId);
         await settlePrimeWebCheckout({ session, result, intl });
       } else {
+        primeWebCheckoutTerminalIds.add(session.checkoutId);
         logPrimeWebCheckoutSessionFlow({
           session,
           stage: 'polling',
@@ -147,7 +161,7 @@ function PrimeWebCheckoutWaitingMonitor({
           reason,
         });
       }
-      await dialogInstance.close();
+      await dialogInstance.close({ flag: reason });
     },
     [dialogInstance, intl, session],
   );
@@ -155,6 +169,15 @@ function PrimeWebCheckoutWaitingMonitor({
   const handleMonitorEvent = useCallback(
     (event: IPrimePurchaseMonitorEvent<IPrimeWebCheckoutResult>) => {
       if (event.type === 'timedOut') {
+        primeWebCheckoutTerminalIds.add(session.checkoutId);
+        primePaymentUtils.trackPrimeSubscriptionFailedReason({
+          paymentMethod: 'stripe',
+          reason: 'timedOut',
+          subscriptionPeriod: session.subscriptionPeriod,
+          featureName: session.featureName as EPrimeFeatures | undefined,
+          cardCheckoutFlow: 'hostedLink',
+          context: session,
+        });
         logPrimeWebCheckoutSessionFlow({
           session,
           stage: 'polling',
@@ -238,7 +261,8 @@ function PrimeWebCheckoutWaitingMonitor({
         !currentUser.isLoggedIn ||
         currentUser.onekeyUserId !== session.onekeyUserId
       ) {
-        await dialogInstance.close();
+        primeWebCheckoutTerminalIds.add(session.checkoutId);
+        await dialogInstance.close({ flag: 'sessionClosed' });
         return;
       }
       await openPrimeWebCheckoutPage(currentSession, {
@@ -333,7 +357,7 @@ export function showPrimeWebCheckoutWaitingDialog({
 }: {
   session: IPrimeWebCheckoutPendingSession;
 }) {
-  void activeWaitingDialog?.close();
+  void activeWaitingDialog?.close({ flag: 'replaced' });
   const dialog: IDialogInstance = Dialog.show({
     testID: 'prime-web-checkout-waiting-dialog',
     dismissOnOverlayPress: false,
@@ -341,9 +365,39 @@ export function showPrimeWebCheckoutWaitingDialog({
     showCancelButton: false,
     showConfirmButton: true,
     renderContent: <PrimeWebCheckoutWaitingMonitor session={session} />,
-    onClose: async () => {
+    onClose: async (extra) => {
       if (activeWaitingDialog === dialog) {
         activeWaitingDialog = undefined;
+      }
+      const wasTerminal = primeWebCheckoutTerminalIds.has(session.checkoutId);
+      primeWebCheckoutTerminalIds.delete(session.checkoutId);
+      if (
+        wasTerminal ||
+        PROGRAMMATIC_WEB_CHECKOUT_CLOSE_FLAGS.has(extra?.flag ?? '')
+      ) {
+        return;
+      }
+      try {
+        if (!(await isPrimeWebCheckoutUserCurrent(session.onekeyUserId))) {
+          return;
+        }
+        const currentSession =
+          await backgroundApiProxy.simpleDb.prime.getWebCheckoutPendingSession({
+            onekeyUserId: session.onekeyUserId,
+          });
+        if (currentSession?.checkoutId !== session.checkoutId) {
+          return;
+        }
+        primePaymentUtils.trackPrimeSubscriptionFailedReason({
+          paymentMethod: 'stripe',
+          reason: 'abandoned',
+          subscriptionPeriod: session.subscriptionPeriod,
+          featureName: session.featureName as EPrimeFeatures | undefined,
+          cardCheckoutFlow: 'hostedLink',
+          context: session,
+        });
+      } catch {
+        // Closing checkout must not depend on analytics or recovery lookups.
       }
     },
   });

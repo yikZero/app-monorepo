@@ -1,5 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 
+import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { REVENUECAT_SANDBOX_OFFERING_ID } from '@onekeyhq/shared/src/consts/primeConsts';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { EOneKeyErrorClassNames } from '@onekeyhq/shared/src/errors/types/errorTypes';
@@ -12,6 +13,17 @@ import type {
 } from '@onekeyhq/shared/src/logger/scopes/prime/scenes/subscription';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import {
+  getPrimeClientErrorKey,
+  getPrimePurchaseErrorAnalytics,
+} from '@onekeyhq/shared/src/utils/primePurchaseErrorAnalytics';
+import type { IPrimePurchaseErrorAnalytics } from '@onekeyhq/shared/src/utils/primePurchaseErrorAnalytics';
+import { runPrimePurchasesSdkCall } from '@onekeyhq/shared/src/utils/primePurchasesSdkTracking';
+import type {
+  IPrimePeriodType,
+  IPrimePurchaseAnalyticsContext,
+  IPrimePurchaseStore,
+} from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import type {
   IPackageFreeTrial,
@@ -29,6 +41,20 @@ function normalizeFreeTrialPeriodUnit(
   return FREE_TRIAL_PERIOD_UNITS.has(lower as IPackageFreeTrial['periodUnit'])
     ? (lower as IPackageFreeTrial['periodUnit'])
     : undefined;
+}
+
+function normalizePrimePeriodType(
+  periodType: string | undefined,
+): IPrimePeriodType | undefined {
+  const normalized = periodType?.toLowerCase();
+  if (
+    normalized === 'trial' ||
+    normalized === 'intro' ||
+    normalized === 'normal'
+  ) {
+    return normalized;
+  }
+  return undefined;
 }
 
 type IWebTrialPhase =
@@ -124,10 +150,12 @@ async function fetchWebTargetOffering({
   purchases,
   isSandboxKey,
   currency,
+  analyticsContext,
 }: {
   purchases: Purchases;
   isSandboxKey: boolean;
   currency?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 }): Promise<{
   offerings: Offerings;
   targetOffering: Offerings['current'];
@@ -139,7 +167,39 @@ async function fetchWebTargetOffering({
   } else if (currency) {
     getOfferingsParams = { currency };
   }
-  const offerings = await purchases.getOfferings(getOfferingsParams);
+  const offerings = await runPrimePurchasesSdkCall(
+    {
+      method: 'getOfferings',
+      sdk: 'web',
+      paywallSessionId: analyticsContext?.paywallSessionId,
+      purchaseFlowId: analyticsContext?.purchaseFlowId,
+    },
+    () => purchases.getOfferings(getOfferingsParams),
+    (result) => {
+      const selectedOffering = isSandboxKey
+        ? result.all[REVENUECAT_SANDBOX_OFFERING_ID]
+        : result.current;
+      const packages = selectedOffering?.availablePackages ?? [];
+      return {
+        offeringId: selectedOffering?.identifier,
+        packageCount: packages.length,
+        hasMonthly: packages.some(
+          (item) => item.rcBillingProduct.normalPeriodDuration === 'P1M',
+        ),
+        hasYearly: packages.some(
+          (item) => item.rcBillingProduct.normalPeriodDuration === 'P1Y',
+        ),
+        hasFreeTrial: packages.some((item) =>
+          Boolean(
+            extractWebFreeTrial(
+              item.rcBillingProduct.defaultSubscriptionOption?.trial,
+            ),
+          ),
+        ),
+        priceCurrency: packages[0]?.rcBillingProduct.currentPrice.currency,
+      };
+    },
+  );
   const targetOffering = isSandboxKey
     ? offerings.all[REVENUECAT_SANDBOX_OFFERING_ID]
     : offerings.current;
@@ -169,6 +229,56 @@ function extractCurrencySymbol(
   return r;
 }
 
+function reportPrimePurchaseAnalyticsEvent({
+  context,
+  event,
+  report,
+}: {
+  context?: IPrimePurchaseAnalyticsContext;
+  event: 'intent' | 'failed' | 'success';
+  report: () => void;
+}) {
+  const purchaseFlowId = context?.purchaseFlowId;
+  if (!purchaseFlowId) {
+    report();
+    return;
+  }
+  void backgroundApiProxy.simpleDb.prime
+    .claimPrimePurchaseAnalyticsEvent({ purchaseFlowId, event })
+    .then((claimed) => {
+      if (claimed) {
+        report();
+      }
+    })
+    .catch(() => {
+      defaultLogger.prime.subscription.primePurchaseAnalyticsDedupError({
+        event,
+      });
+    });
+}
+
+function trackPrimeSubscriptionIntent({
+  context,
+  ...params
+}: Parameters<
+  typeof defaultLogger.prime.subscription.primeSubscribeIntent
+>[0] & {
+  context?: IPrimePurchaseAnalyticsContext;
+}) {
+  reportPrimePurchaseAnalyticsEvent({
+    context,
+    event: 'intent',
+    report: () => {
+      defaultLogger.prime.subscription.primeSubscribeIntent({
+        ...params,
+        purchaseFlowId: context?.purchaseFlowId ?? params.purchaseFlowId,
+        paywallSessionId: context?.paywallSessionId ?? params.paywallSessionId,
+        entryPoint: context?.entryPoint ?? params.entryPoint,
+      });
+    },
+  });
+}
+
 function trackPrimeSubscriptionSuccess({
   amount,
   currency,
@@ -177,13 +287,27 @@ function trackPrimeSubscriptionSuccess({
   paymentMethod,
   cardCheckoutFlow,
   periodType,
+  context,
+  store,
+  productId,
+  offeringId,
+  isSandbox,
+  hasFreeTrial,
+  trialDays,
 }: {
   amount: number;
   currency?: string;
   subscriptionPeriod: ISubscriptionPeriod;
   featureName?: EPrimeFeatures;
   cardCheckoutFlow?: IPrimeCardCheckoutFlow;
-  periodType?: string;
+  periodType?: IPrimePeriodType;
+  context?: IPrimePurchaseAnalyticsContext;
+  store?: IPrimePurchaseStore;
+  productId?: string;
+  offeringId?: string;
+  isSandbox?: boolean;
+  hasFreeTrial?: boolean;
+  trialDays?: number;
   // Required so every success event carries its payment channel: the event
   // pairs with primeSubscribeIntent (logged per channel) to measure the
   // attempt → success rate per channel, which breaks if success events
@@ -191,14 +315,33 @@ function trackPrimeSubscriptionSuccess({
   paymentMethod: IPrimePaymentMethod;
 }) {
   const planType = subscriptionPeriod === 'P1Y' ? 'yearly' : 'monthly';
-  defaultLogger.prime.subscription.primeSubscribeSuccess({
-    planType,
-    amount,
-    currency: currency || 'USD',
-    featureName,
-    paymentMethod,
-    cardCheckoutFlow,
-    periodType,
+  reportPrimePurchaseAnalyticsEvent({
+    context,
+    event: 'success',
+    report: () => {
+      defaultLogger.prime.subscription.primeSubscribeSuccess({
+        planType,
+        amount,
+        ...(currency ? { currency } : {}),
+        featureName,
+        paymentMethod,
+        cardCheckoutFlow,
+        periodType,
+        purchaseFlowId: context?.purchaseFlowId,
+        paywallSessionId: context?.paywallSessionId,
+        entryPoint: context?.entryPoint,
+        productId,
+        offeringId,
+        store,
+        isSandbox,
+        hasFreeTrial,
+        trialDays,
+        durationMs:
+          typeof context?.purchaseStartedAt === 'number'
+            ? Math.max(0, Date.now() - context.purchaseStartedAt)
+            : undefined,
+      });
+    },
   });
 }
 
@@ -207,7 +350,7 @@ function trackPrimeSubscriptionSuccess({
 const REVENUECAT_WEB_USER_CANCELLED_ERROR_CODE = 1;
 const REVENUECAT_NATIVE_CANCELLED_MESSAGE = 'Purchase was cancelled.';
 
-function classifyPurchaseError(error: unknown): {
+function classifyPurchaseError(error: unknown): IPrimePurchaseErrorAnalytics & {
   reason: IPrimeSubscribeFailedReason;
   errorCode?: string;
   errorMessage?: string;
@@ -222,9 +365,8 @@ function classifyPurchaseError(error: unknown): {
     | null
     | undefined;
   const errorMessage = typeof e?.message === 'string' ? e.message : undefined;
-  const rawCode = e?.errorCode ?? e?.code;
-  const errorCode =
-    rawCode === undefined || rawCode === null ? undefined : String(rawCode);
+  const analytics = getPrimePurchaseErrorAnalytics(error);
+  const { errorCode } = analytics;
   const isUserCancelled =
     // react-native-purchases sets PurchasesError.userCancelled; older
     // bridges only expose the readable message.
@@ -232,10 +374,13 @@ function classifyPurchaseError(error: unknown): {
     errorMessage === REVENUECAT_NATIVE_CANCELLED_MESSAGE ||
     // @revenuecat/purchases-js reports cancellation via
     // PurchasesError.errorCode.
-    e?.errorCode === REVENUECAT_WEB_USER_CANCELLED_ERROR_CODE;
+    e?.errorCode === REVENUECAT_WEB_USER_CANCELLED_ERROR_CODE ||
+    errorCode === '1';
   let reason: IPrimeSubscribeFailedReason = 'paymentFailed';
   if (isUserCancelled) {
     reason = 'userCancelled';
+  } else if (errorCode === '20') {
+    reason = 'paymentPending';
   } else if (
     errorUtils.isErrorByClassName({
       error,
@@ -245,8 +390,12 @@ function classifyPurchaseError(error: unknown): {
     reason = 'clientError';
   }
   return {
+    ...analytics,
     reason,
-    errorCode,
+    clientErrorKey:
+      reason === 'clientError'
+        ? getPrimeClientErrorKey(errorMessage)
+        : undefined,
     errorMessage,
   };
 }
@@ -259,22 +408,80 @@ function trackPrimeSubscriptionFailed({
   subscriptionPeriod,
   featureName,
   cardCheckoutFlow,
+  context,
+  productId,
+  offeringId,
 }: {
   error: unknown;
   paymentMethod: IPrimePaymentMethod;
   subscriptionPeriod?: ISubscriptionPeriod;
   featureName?: EPrimeFeatures;
   cardCheckoutFlow?: IPrimeCardCheckoutFlow;
+  context?: IPrimePurchaseAnalyticsContext;
+  productId?: string;
+  offeringId?: string;
 }): ReturnType<typeof classifyPurchaseError> {
   const classification = classifyPurchaseError(error);
-  defaultLogger.prime.subscription.primeSubscribeFailed({
-    paymentMethod,
-    subscriptionPeriod,
-    featureName,
-    cardCheckoutFlow,
-    ...classification,
+  reportPrimePurchaseAnalyticsEvent({
+    context,
+    event: 'failed',
+    report: () => {
+      defaultLogger.prime.subscription.primeSubscribeFailed({
+        paymentMethod,
+        subscriptionPeriod,
+        featureName,
+        cardCheckoutFlow,
+        ...classification,
+        purchaseFlowId: context?.purchaseFlowId,
+        paywallSessionId: context?.paywallSessionId,
+        entryPoint: context?.entryPoint,
+        productId,
+        offeringId,
+        durationMs:
+          typeof context?.purchaseStartedAt === 'number'
+            ? Math.max(0, Date.now() - context.purchaseStartedAt)
+            : undefined,
+      });
+    },
   });
   return classification;
+}
+
+function trackPrimeSubscriptionFailedReason({
+  paymentMethod,
+  reason,
+  subscriptionPeriod,
+  featureName,
+  cardCheckoutFlow,
+  context,
+}: {
+  paymentMethod: IPrimePaymentMethod;
+  reason: IPrimeSubscribeFailedReason;
+  subscriptionPeriod?: ISubscriptionPeriod;
+  featureName?: EPrimeFeatures;
+  cardCheckoutFlow?: IPrimeCardCheckoutFlow;
+  context?: IPrimePurchaseAnalyticsContext;
+}) {
+  reportPrimePurchaseAnalyticsEvent({
+    context,
+    event: 'failed',
+    report: () => {
+      defaultLogger.prime.subscription.primeSubscribeFailed({
+        paymentMethod,
+        reason,
+        subscriptionPeriod,
+        featureName,
+        cardCheckoutFlow,
+        purchaseFlowId: context?.purchaseFlowId,
+        paywallSessionId: context?.paywallSessionId,
+        entryPoint: context?.entryPoint,
+        durationMs:
+          typeof context?.purchaseStartedAt === 'number'
+            ? Math.max(0, Date.now() - context.purchaseStartedAt)
+            : undefined,
+      });
+    },
+  });
 }
 
 function normalizeNativePrice(
@@ -315,12 +522,15 @@ function formatPriceString(
 
 const primePaymentUtils = {
   extractCurrencySymbol,
+  trackPrimeSubscriptionIntent,
   trackPrimeSubscriptionSuccess,
   classifyPurchaseError,
   trackPrimeSubscriptionFailed,
+  trackPrimeSubscriptionFailedReason,
   normalizeNativePrice,
   extractWebPaywallPrice,
   formatPriceString,
+  normalizePrimePeriodType,
   normalizeFreeTrialPeriodUnit,
   extractWebFreeTrial,
   extractNativeFreeTrial,

@@ -53,6 +53,7 @@ export function WalletActionBulkSend({ onClose }: { onClose: () => void }) {
       // the login and page-level gate itself.
       const access = await ensureFeatureAccess({
         featureId: EPrimeFeatures.BulkSend,
+        entryPoint: 'moreActions',
         networkId: network?.id,
         // A wallet, network or account switched while the gate waited drops
         // the press. This item unmounts with the menu, so the latest

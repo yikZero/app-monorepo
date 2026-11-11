@@ -19,7 +19,6 @@ import { usePrimePayment } from '@onekeyhq/kit/src/views/Prime/hooks/usePrimePay
 import { usePrimePersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import errorToastUtils from '@onekeyhq/shared/src/errors/utils/errorToastUtils';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
@@ -332,9 +331,6 @@ export function PrimeDebugPanel({
         </Button>
         <Button
           onPress={() => {
-            defaultLogger.prime.subscription.onekeyIdLogout({
-              reason: 'PrimeDebugPanel Logout Button',
-            });
             void runIdentityExit({
               type: 'logoutOneKeyId',
               scene: 'profile',

@@ -1,5 +1,7 @@
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import type { ILocaleJSONSymbol } from '@onekeyhq/shared/src/locale';
+import { runPrimePurchasesSdkCall } from '@onekeyhq/shared/src/utils/primePurchasesSdkTracking';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import purchaseSdkUtils from './purchaseSdkUtils';
 import { PurchasesSdkBase } from './PurchasesSdkBase';
@@ -20,6 +22,7 @@ export abstract class PurchasesSdkWebBase extends PurchasesSdkBase {
   override async configureWithLogin(params: {
     apiKey: string;
     userId: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
   }): Promise<void> {
     // TODO VPN required
     // await Purchases.setProxyURL('https://api.rc-backup.com/');
@@ -31,7 +34,15 @@ export abstract class PurchasesSdkWebBase extends PurchasesSdkBase {
     if (!userId) {
       throw new OneKeyLocalError('No userId found');
     }
-    Purchases.configure(apiKey, userId);
+    await runPrimePurchasesSdkCall(
+      {
+        method: 'configure',
+        sdk: 'web',
+        paywallSessionId: params.analyticsContext?.paywallSessionId,
+        purchaseFlowId: params.analyticsContext?.purchaseFlowId,
+      },
+      () => Purchases.configure(apiKey, userId),
+    );
   }
 
   override async setDefaultLogLevel(): Promise<void> {
@@ -41,19 +52,58 @@ export abstract class PurchasesSdkWebBase extends PurchasesSdkBase {
     }
   }
 
-  override async getCustomerInfoBase(): Promise<CustomerInfo> {
+  override async getCustomerInfoBase(
+    analyticsContext?: IPrimePurchaseAnalyticsContext,
+  ): Promise<CustomerInfo> {
     const { Purchases } = await loadPurchasesSdkWeb();
-    const customerInfo: CustomerInfo =
-      await Purchases.getSharedInstance().getCustomerInfo();
+    const customerInfo: CustomerInfo = await runPrimePurchasesSdkCall(
+      {
+        method: 'getCustomerInfo',
+        sdk: 'web',
+        paywallSessionId: analyticsContext?.paywallSessionId,
+        purchaseFlowId: analyticsContext?.purchaseFlowId,
+      },
+      () => Purchases.getSharedInstance().getCustomerInfo(),
+    );
     console.log('customerInfo >>>>>> ', customerInfo);
     return customerInfo;
   }
 
-  override async getPaywallPackagesBase(): Promise<Package[]> {
+  override async getPaywallPackagesBase(
+    analyticsContext?: IPrimePurchaseAnalyticsContext,
+  ): Promise<Package[]> {
     const { Purchases } = await loadPurchasesSdkWeb();
-    const offerings = await Purchases.getSharedInstance().getOfferings({
-      currency: 'USD',
-    });
+    const offerings = await runPrimePurchasesSdkCall(
+      {
+        method: 'getOfferings',
+        sdk: 'web',
+        paywallSessionId: analyticsContext?.paywallSessionId,
+        purchaseFlowId: analyticsContext?.purchaseFlowId,
+      },
+      () =>
+        Purchases.getSharedInstance().getOfferings({
+          currency: 'USD',
+        }),
+      (result) => {
+        const packages = result.current?.availablePackages ?? [];
+        return {
+          offeringId: result.current?.identifier,
+          packageCount: packages.length,
+          hasMonthly: packages.some(
+            (item) => item.rcBillingProduct.normalPeriodDuration === 'P1M',
+          ),
+          hasYearly: packages.some(
+            (item) => item.rcBillingProduct.normalPeriodDuration === 'P1Y',
+          ),
+          hasFreeTrial: packages.some(
+            (item) =>
+              item.rcBillingProduct.defaultSubscriptionOption?.trial?.price ===
+              null,
+          ),
+          priceCurrency: packages[0]?.rcBillingProduct.currentPrice.currency,
+        };
+      },
+    );
     const packages: Package[] = [];
 
     // Object.values(offerings.all).forEach((offering) => {
@@ -81,7 +131,7 @@ export abstract class PurchasesSdkWebBase extends PurchasesSdkBase {
       const { packageId, email, locale } = params;
       // const offerings = await this.getPaywallOfferings();
       // const paywallPackage = offerings?.all?.monthly?.packagesById?.[packageId];
-      const packages = await this.getPaywallPackages();
+      const packages = await this.getPaywallPackages(params.analyticsContext);
       const paywallPackage = packages.find((p) => p.identifier === packageId);
       if (!paywallPackage) {
         throw new OneKeyLocalError(
@@ -98,8 +148,15 @@ export abstract class PurchasesSdkWebBase extends PurchasesSdkBase {
       // TODO check package user is Matched to onekeyUserId
       // TODO check if user has already purchased
       const { Purchases } = await loadPurchasesSdkWebForEmbeddedPurchase();
-      const purchase =
-        await Purchases.getSharedInstance().purchase(purchaseParams);
+      const purchase = await runPrimePurchasesSdkCall(
+        {
+          method: 'purchase',
+          sdk: 'web',
+          paywallSessionId: params.analyticsContext?.paywallSessionId,
+          purchaseFlowId: params.analyticsContext?.purchaseFlowId,
+        },
+        () => Purchases.getSharedInstance().purchase(purchaseParams),
+      );
       // test credit card
       // https://docs.stripe.com/testing#testing-interactively
       // Mastercard: 5555555555554444

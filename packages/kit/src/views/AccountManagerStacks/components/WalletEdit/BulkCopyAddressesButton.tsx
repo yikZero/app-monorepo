@@ -84,6 +84,7 @@ export function BulkCopyAddressesButton({
         );
         const access = await ensureFeatureAccess({
           featureId: EPrimeFeatures.BulkCopyAddresses,
+          entryPoint,
           networkId,
           // The wallet may be removed while the user logs in.
           isContextValid: async () =>

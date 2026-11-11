@@ -7,6 +7,7 @@ import {
 } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import { scrubSensitiveErrorMessageText } from '@onekeyhq/shared/src/utils/sensitiveErrorMessageUtils';
 import { EServiceEndpointEnum } from '@onekeyhq/shared/types/endpoint';
 import type {
   INotificationPushMessageAckParams,
@@ -82,8 +83,10 @@ export class PushProviderWebSocket extends PushProviderBase {
     if (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
-    const failureReason = errorMessage ? `${reason}: ${errorMessage}` : reason;
-    defaultLogger.prime.subscription.onekeyIdLogout({
+    const failureReason = scrubSensitiveErrorMessageText(
+      errorMessage ? `${reason}: ${errorMessage}` : reason,
+    );
+    defaultLogger.prime.subscription.onekeyIdStateTrace({
       reason: failureReason,
     });
     this.logRemoteDeviceLogoutFlow({
@@ -187,6 +190,9 @@ export class PushProviderWebSocket extends PushProviderBase {
           oneKeyIdLoggedOut: receipt.oneKeyIdLoggedOut,
         });
         if (receipt.oneKeyIdLoggedOut) {
+          defaultLogger.prime.subscription.onekeyIdLogout({
+            reason: 'remoteLogout',
+          });
           appEventBus.emit(EAppEventBusNames.PrimeDeviceLogout, {
             operationId,
             messageId,
@@ -407,10 +413,6 @@ export class PushProviderWebSocket extends PushProviderBase {
           stage: 'targetMessage',
           status: 'succeeded',
           flowId: payload.msgId,
-        });
-        defaultLogger.prime.subscription.onekeyIdLogout({
-          reason:
-            'WebSocket: DEVICE_LOGOUT, EAppSocketEventNames.primeDeviceLogout',
         });
         let staged: Awaited<
           ReturnType<

@@ -9,8 +9,17 @@ import { EPrimeFeatures, EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 
 import PrimeDashboard from './PrimeDashboard';
 
+import type { usePrimeRequirements } from '../../hooks/usePrimeRequirements';
+
+type IEnsurePrimeSubscriptionActiveParams = Parameters<
+  ReturnType<typeof usePrimeRequirements>['ensurePrimeSubscriptionActive']
+>[0];
+
 const mockLogin = jest.fn<Promise<void>, []>();
-const mockEnsureSubscription = jest.fn(async () => undefined);
+const mockEnsureSubscription = jest.fn<
+  Promise<void>,
+  [IEnsurePrimeSubscriptionActiveParams?]
+>(async () => undefined);
 const mockRequirements = {
   ensurePrimeSubscriptionActive: mockEnsureSubscription,
 };
@@ -346,6 +355,61 @@ describe('PrimeDashboard subscription deep link', () => {
       await jest.advanceTimersByTimeAsync(1000);
     });
     expect(mockEnsureSubscription).toHaveBeenCalledTimes(1);
+  });
+
+  it('carries a named Prime entry point into the checkout request', async () => {
+    mockAuth.isLoggedIn = true;
+    route = {
+      ...route,
+      params: { fromEntryPoint: 'headerPrimeIcon' },
+    };
+    render(<PrimeDashboard route={route} />);
+
+    await act(async () => {
+      clickSubscribe();
+    });
+
+    expect(mockEnsureSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        analyticsContext: expect.objectContaining({
+          entryPoint: 'headerPrimeIcon',
+          paywallSessionId: expect.any(String),
+          purchaseFlowId: expect.any(String),
+          purchaseStartedAt: expect.any(Number),
+        }),
+      }),
+    );
+  });
+
+  it('uses a transferred flow only once and creates a new flow on the next purchase click', async () => {
+    mockAuth.isLoggedIn = true;
+    route = {
+      ...route,
+      params: {
+        analyticsContext: {
+          purchaseFlowId: 'transferred-flow',
+          paywallSessionId: 'transferred-paywall',
+          entryPoint: 'headerPrimeIcon',
+          purchaseStartedAt: 123,
+        },
+      },
+    };
+    render(<PrimeDashboard route={route} />);
+    await act(async () => {
+      clickSubscribe();
+    });
+    await act(async () => {
+      clickSubscribe();
+    });
+
+    const first = mockEnsureSubscription.mock.calls[0]?.[0]?.analyticsContext;
+    const second = mockEnsureSubscription.mock.calls[1]?.[0]?.analyticsContext;
+    expect(first?.purchaseFlowId).toBe('transferred-flow');
+    expect(first?.purchaseStartedAt).toBe(123);
+    expect(second?.purchaseFlowId).not.toBe(first?.purchaseFlowId);
+    expect(second?.purchaseStartedAt).not.toBe(123);
+    expect(second?.paywallSessionId).toBe('transferred-paywall');
+    expect(second?.entryPoint).toBe('headerPrimeIcon');
   });
 
   it('uses the post-login requirements callback for a checkout that awaited login', async () => {

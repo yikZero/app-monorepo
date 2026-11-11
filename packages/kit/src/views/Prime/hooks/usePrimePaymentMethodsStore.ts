@@ -18,7 +18,12 @@ import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import perfUtils from '@onekeyhq/shared/src/utils/debug/perfUtils';
+import { runPrimePurchasesSdkCall } from '@onekeyhq/shared/src/utils/primePurchasesSdkTracking';
 import { getSanitizedErrorLogText } from '@onekeyhq/shared/src/utils/sensitiveErrorMessageUtils';
+import type {
+  IPrimePurchaseAnalyticsContext,
+  IPrimePurchaseStore,
+} from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeUserInfo } from '@onekeyhq/shared/types/prime/primeTypes';
 import type {
   IRevenueCatCustomerInfo,
@@ -45,6 +50,9 @@ import type {
 export function usePrimePaymentMethodsStore<
   TPackage extends IRevenueCatPackage,
 >(sdk: IPrimeStorePurchasesSdk<TPackage>): IUsePrimePayment {
+  const sdkName: 'desktopStore' | 'native' = platformEnv.isDesktop
+    ? 'desktopStore'
+    : 'native';
   const [isPaymentReady, setIsPaymentReady] = useState(false);
   const [initializationError, setInitializationError] = useState<Error>();
   const { isReady: isAuthReady, user } = useOneKeyAuth();
@@ -106,7 +114,10 @@ export function usePrimePaymentMethodsStore<
       const { apiKey } = await getPrimePaymentApiKey({
         apiKeyType: 'native',
       });
-      await sdk.configure({ apiKey });
+      await runPrimePurchasesSdkCall(
+        { method: 'configure', sdk: sdkName },
+        () => sdk.configure({ apiKey }),
+      );
       setIsPaymentReady(true);
     })().catch((error: unknown) => {
       setInitializationError(
@@ -116,22 +127,38 @@ export function usePrimePaymentMethodsStore<
       // Package loading reports the error instead of showing a permanent spinner.
       setIsPaymentReady(true);
     });
-  }, [sdk]);
+  }, [sdk, sdkName]);
 
   const loginPurchasesSdk = useCallback(
-    async (expectedUserId: string) => {
+    async (
+      expectedUserId: string,
+      analyticsContext?: IPrimePurchaseAnalyticsContext,
+    ) => {
       ensurePaymentReady();
       await ensureCurrentUser(expectedUserId);
+      let userMismatchRetried = false;
+      const sdkContext = {
+        method: 'logIn' as const,
+        sdk: sdkName,
+        paywallSessionId: analyticsContext?.paywallSessionId,
+        purchaseFlowId: analyticsContext?.purchaseFlowId,
+      };
       try {
-        await sdk.logIn(expectedUserId);
+        await runPrimePurchasesSdkCall(sdkContext, () =>
+          sdk.logIn(expectedUserId),
+        );
       } catch (error) {
         // A rejected native identity confirmation must not be retried or
         // bypassed by continuing with a previously logged-in SDK account.
         if (platformEnv.isMas) throw error;
         console.error(getSanitizedErrorLogText(error));
         await ensureCurrentUser(expectedUserId);
+        userMismatchRetried = true;
         try {
-          await sdk.logIn(expectedUserId);
+          await runPrimePurchasesSdkCall(
+            { ...sdkContext, userMismatchRetried: true },
+            () => sdk.logIn(expectedUserId),
+          );
         } catch (e) {
           console.error(getSanitizedErrorLogText(e));
         }
@@ -154,19 +181,29 @@ export function usePrimePaymentMethodsStore<
         }
         await ensureCurrentUser(expectedUserId);
         try {
-          await sdk.setAttributes(
+          await runPrimePurchasesSdkCall(
             {
-              '$posthogUserId': instanceId,
+              method: 'setAttributes',
+              sdk: sdkName,
+              paywallSessionId: analyticsContext?.paywallSessionId,
+              purchaseFlowId: analyticsContext?.purchaseFlowId,
             },
-            expectedUserId,
+            () =>
+              sdk.setAttributes(
+                {
+                  '$posthogUserId': instanceId,
+                },
+                expectedUserId,
+              ),
           );
         } catch (e) {
           console.error(getSanitizedErrorLogText(e));
         }
       }
       await ensureCurrentUser(expectedUserId);
+      return userMismatchRetried;
     },
-    [ensureCurrentUser, ensurePaymentReady, instanceId, sdk],
+    [ensureCurrentUser, ensurePaymentReady, instanceId, sdk, sdkName],
   );
 
   const reportRestoreSuccess = useCallback(
@@ -184,154 +221,226 @@ export function usePrimePaymentMethodsStore<
     [intl],
   );
 
-  const restorePurchases = useCallback(async () => {
-    const restoreUserId = user.onekeyUserId;
-    try {
-      if (!restoreUserId) {
-        throw new OneKeyLocalError('User not logged in');
-      }
-      await backgroundApiProxy.serviceApp.showDialogLoading({
-        title: intl.formatMessage({
-          id: ETranslations.prime_restoring_previous_purchases,
-        }),
-      });
-      await loginPurchasesSdk(restoreUserId);
-      const customerInfo = await sdk.restorePurchases(restoreUserId);
-      await ensureCurrentUser(restoreUserId);
-      const localIsActive = customerInfo?.entitlements?.active?.Prime?.isActive;
-      if (localIsActive) {
-        reportRestoreSuccess();
-        try {
-          await backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo();
-        } catch (error) {
-          defaultLogger.prime.subscription.onekeyIdStateTrace({
-            reason: `restorePurchases user-info refresh failed: ${getSanitizedErrorLogText(
-              error,
-            )}`,
-          });
+  const restorePurchases = useCallback(
+    async (analyticsContext?: IPrimePurchaseAnalyticsContext) => {
+      const restoreUserId = user.onekeyUserId;
+      try {
+        if (!restoreUserId) {
+          throw new OneKeyLocalError('User not logged in');
         }
-      } else {
-        defaultLogger.prime.subscription.primeRestorePurchaseResult({
-          result: 'noPurchases',
-        });
-        Toast.message({
+        await backgroundApiProxy.serviceApp.showDialogLoading({
           title: intl.formatMessage({
-            id: ETranslations.prime_no_purchases_found,
+            id: ETranslations.prime_restoring_previous_purchases,
           }),
         });
-      }
-    } catch (e) {
-      if (
-        platformEnv.isMas &&
-        (e as { userCancelled?: boolean })?.userCancelled
-      ) {
-        return;
-      }
-      console.error(
-        '[Prime] Restore purchases failed:',
-        getSanitizedErrorLogText(e),
-      );
-      defaultLogger.prime.subscription.primeRestorePurchaseResult({
-        result: 'failed',
-      });
-      Toast.message({
-        title: (e as Error)?.message || 'Restore purchases failed',
-      });
-    } finally {
-      await backgroundApiProxy.serviceApp.hideDialogLoading();
-    }
-  }, [
-    ensureCurrentUser,
-    intl,
-    loginPurchasesSdk,
-    reportRestoreSuccess,
-    sdk,
-    user.onekeyUserId,
-  ]);
-
-  const getCustomerInfo = useCallback(async () => {
-    const customerUserId = user.onekeyUserId;
-    if (!customerUserId) {
-      throw new OneKeyLocalError('User not logged in');
-    }
-    await loginPurchasesSdk(customerUserId);
-    const customerInfo: IRevenueCatCustomerInfo =
-      await sdk.getCustomerInfo(customerUserId);
-    await ensureCurrentUser(customerUserId);
-
-    setPrimePersistAtom(
-      (prev): IPrimeUserInfo =>
-        prev.onekeyUserId !== customerUserId
-          ? prev
-          : perfUtils.buildNewValueIfChanged(prev, {
-              ...prev,
-              subscriptionManageUrl: customerInfo.managementURL || '',
+        await loginPurchasesSdk(restoreUserId, analyticsContext);
+        const customerInfo = await runPrimePurchasesSdkCall(
+          {
+            method: 'restore',
+            sdk: sdkName,
+            paywallSessionId: analyticsContext?.paywallSessionId,
+            purchaseFlowId: analyticsContext?.purchaseFlowId,
+          },
+          () => sdk.restorePurchases(restoreUserId),
+        );
+        await ensureCurrentUser(restoreUserId);
+        const localIsActive =
+          customerInfo?.entitlements?.active?.Prime?.isActive;
+        if (localIsActive) {
+          reportRestoreSuccess();
+          try {
+            await backgroundApiProxy.servicePrime.apiFetchPrimeUserInfo();
+          } catch (error) {
+            defaultLogger.prime.subscription.onekeyIdStateTrace({
+              reason: `restorePurchases user-info refresh failed: ${getSanitizedErrorLogText(
+                error,
+              )}`,
+            });
+          }
+        } else {
+          defaultLogger.prime.subscription.primeRestorePurchaseResult({
+            result: 'noPurchases',
+          });
+          Toast.message({
+            title: intl.formatMessage({
+              id: ETranslations.prime_no_purchases_found,
             }),
-    );
+          });
+        }
+      } catch (e) {
+        if (
+          platformEnv.isMas &&
+          (e as { userCancelled?: boolean })?.userCancelled
+        ) {
+          return;
+        }
+        console.error(
+          '[Prime] Restore purchases failed:',
+          getSanitizedErrorLogText(e),
+        );
+        defaultLogger.prime.subscription.primeRestorePurchaseResult({
+          result: 'failed',
+        });
+        Toast.message({
+          title: (e as Error)?.message || 'Restore purchases failed',
+        });
+      } finally {
+        await backgroundApiProxy.serviceApp.hideDialogLoading();
+      }
+    },
+    [
+      ensureCurrentUser,
+      intl,
+      loginPurchasesSdk,
+      reportRestoreSuccess,
+      sdk,
+      sdkName,
+      user.onekeyUserId,
+    ],
+  );
 
-    return customerInfo;
-  }, [
-    ensureCurrentUser,
-    loginPurchasesSdk,
-    sdk,
-    setPrimePersistAtom,
-    user.onekeyUserId,
-  ]);
+  const getCustomerInfo = useCallback(
+    async (analyticsContext?: IPrimePurchaseAnalyticsContext) => {
+      const customerUserId = user.onekeyUserId;
+      if (!customerUserId) {
+        throw new OneKeyLocalError('User not logged in');
+      }
+      await loginPurchasesSdk(customerUserId, analyticsContext);
+      const customerInfo: IRevenueCatCustomerInfo =
+        await runPrimePurchasesSdkCall(
+          {
+            method: 'getCustomerInfo',
+            sdk: sdkName,
+            paywallSessionId: analyticsContext?.paywallSessionId,
+            purchaseFlowId: analyticsContext?.purchaseFlowId,
+          },
+          () => sdk.getCustomerInfo(customerUserId),
+        );
+      await ensureCurrentUser(customerUserId);
 
-  const getPackagesNative = useCallback(async () => {
-    ensurePaymentReady();
-    const offerings = await sdk.getOfferings();
-    const packages: IPackage[] = [];
-    const availablePackages = offerings.current?.availablePackages || [];
-    const iosIntroEligibleProductIds =
-      await sdk.getIntroEligibleProductIds(availablePackages);
-    const recurringPriceUnit = sdk.getRecurringPriceUnit();
-
-    availablePackages.forEach((p) => {
-      const { subscriptionPeriod } = p.product;
-      const pricePerYear = primePaymentUtils.normalizeNativePrice(
-        p.product.pricePerYear || 0,
-        recurringPriceUnit,
+      setPrimePersistAtom(
+        (prev): IPrimeUserInfo =>
+          prev.onekeyUserId !== customerUserId
+            ? prev
+            : perfUtils.buildNewValueIfChanged(prev, {
+                ...prev,
+                subscriptionManageUrl: customerInfo.managementURL || '',
+              }),
       );
-      const pricePerMonth = primePaymentUtils.normalizeNativePrice(
-        p.product.pricePerMonth || 0,
-        recurringPriceUnit,
+
+      return customerInfo;
+    },
+    [
+      ensureCurrentUser,
+      loginPurchasesSdk,
+      sdk,
+      sdkName,
+      setPrimePersistAtom,
+      user.onekeyUserId,
+    ],
+  );
+
+  const getPackagesNative = useCallback(
+    async (analyticsContext?: IPrimePurchaseAnalyticsContext) => {
+      ensurePaymentReady();
+      const offeringContext = {
+        method: 'getOfferings' as const,
+        sdk: sdkName,
+        paywallSessionId: analyticsContext?.paywallSessionId,
+        purchaseFlowId: analyticsContext?.purchaseFlowId,
+      };
+      const offerings = await runPrimePurchasesSdkCall(
+        offeringContext,
+        () => sdk.getOfferings(),
+        (result) => {
+          const packages = result.current?.availablePackages ?? [];
+          const currentOfferingId = (
+            result.current as { identifier?: string } | null | undefined
+          )?.identifier;
+          return {
+            offeringId:
+              currentOfferingId ??
+              packages[0]?.presentedOfferingContext?.offeringIdentifier,
+            packageCount: packages.length,
+            hasMonthly: packages.some(
+              (item) => item.product.subscriptionPeriod === 'P1M',
+            ),
+            hasYearly: packages.some(
+              (item) => item.product.subscriptionPeriod === 'P1Y',
+            ),
+            hasFreeTrial: packages.some(
+              (item) => item.product.introPrice?.price === 0,
+            ),
+            priceCurrency: packages[0]?.product.currencyCode,
+          };
+        },
       );
+      const packages: IPackage[] = [];
+      const availablePackages = offerings.current?.availablePackages || [];
+      const iosIntroEligibleProductIds = await runPrimePurchasesSdkCall(
+        { ...offeringContext, method: 'checkTrialEligibility' },
+        () => sdk.getIntroEligibleProductIds(availablePackages),
+        (eligibleIds) => ({
+          trialEligibility: (() => {
+            if (eligibleIds === undefined) {
+              return 'unknown';
+            }
+            if (eligibleIds.size > 0) {
+              return 'eligible';
+            }
+            return 'ineligible';
+          })(),
+        }),
+      );
+      const recurringPriceUnit = sdk.getRecurringPriceUnit();
 
-      const currencyCode = p.product.currencyCode || '';
+      availablePackages.forEach((p) => {
+        const { subscriptionPeriod } = p.product;
+        const pricePerYear = primePaymentUtils.normalizeNativePrice(
+          p.product.pricePerYear || 0,
+          recurringPriceUnit,
+        );
+        const pricePerMonth = primePaymentUtils.normalizeNativePrice(
+          p.product.pricePerMonth || 0,
+          recurringPriceUnit,
+        );
 
-      const canShowFreeTrial = iosIntroEligibleProductIds
-        ? iosIntroEligibleProductIds.has(p.product.identifier)
-        : true;
-      const freeTrial = canShowFreeTrial
-        ? primePaymentUtils.extractNativeFreeTrial(p.product)
-        : undefined;
+        const currencyCode = p.product.currencyCode || '';
 
-      packages.push({
-        subscriptionPeriod: subscriptionPeriod as ISubscriptionPeriod,
-        currencyCode,
-        pricePerYear: pricePerYear || 0,
-        pricePerYearString: primePaymentUtils.formatPriceString(
-          pricePerYear || 0,
+        const canShowFreeTrial = iosIntroEligibleProductIds
+          ? iosIntroEligibleProductIds.has(p.product.identifier)
+          : true;
+        const freeTrial = canShowFreeTrial
+          ? primePaymentUtils.extractNativeFreeTrial(p.product)
+          : undefined;
+
+        packages.push({
+          subscriptionPeriod: subscriptionPeriod as ISubscriptionPeriod,
           currencyCode,
-        ),
-        pricePerMonth: pricePerMonth || 0,
-        pricePerMonthString: primePaymentUtils.formatPriceString(
-          pricePerMonth || 0,
-          currencyCode,
-        ),
-        priceTotalPerYearString: primePaymentUtils.formatPriceString(
-          subscriptionPeriod === 'P1M'
-            ? new BigNumber(pricePerMonth || 0).times(12).toNumber()
-            : pricePerYear || 0,
-          currencyCode,
-        ),
-        freeTrial,
+          pricePerYear: pricePerYear || 0,
+          pricePerYearString: primePaymentUtils.formatPriceString(
+            pricePerYear || 0,
+            currencyCode,
+          ),
+          pricePerMonth: pricePerMonth || 0,
+          pricePerMonthString: primePaymentUtils.formatPriceString(
+            pricePerMonth || 0,
+            currencyCode,
+          ),
+          priceTotalPerYearString: primePaymentUtils.formatPriceString(
+            subscriptionPeriod === 'P1M'
+              ? new BigNumber(pricePerMonth || 0).times(12).toNumber()
+              : pricePerYear || 0,
+            currencyCode,
+          ),
+          freeTrial,
+        });
       });
-    });
 
-    return packages;
-  }, [ensurePaymentReady, sdk]);
+      return packages;
+    },
+    [ensurePaymentReady, sdk, sdkName],
+  );
 
   const getStorefront = useCallback(
     async () => sdk.getStorefront?.() ?? null,
@@ -343,9 +452,11 @@ export function usePrimePaymentMethodsStore<
     async ({
       subscriptionPeriod,
       featureName,
+      analyticsContext,
     }: {
       subscriptionPeriod: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       // This hook is the single owner of the post-purchase refresh for native
       // IAP: each branch below refreshes once, and the finally block covers
@@ -356,9 +467,43 @@ export function usePrimePaymentMethodsStore<
         if (!purchaseUserId) {
           throw new OneKeyLocalError('User not logged in');
         }
-        await loginPurchasesSdk(purchaseUserId);
+        const userMismatchRetried = await loginPurchasesSdk(
+          purchaseUserId,
+          analyticsContext,
+        );
 
-        const offerings = await sdk.getOfferings();
+        const offerings = await runPrimePurchasesSdkCall(
+          {
+            method: 'getOfferings',
+            sdk: sdkName,
+            paywallSessionId: analyticsContext?.paywallSessionId,
+            purchaseFlowId: analyticsContext?.purchaseFlowId,
+          },
+          () => sdk.getOfferings(),
+          (result) => {
+            const packages = result.current?.availablePackages ?? [];
+            const currentOfferingId = (
+              result.current as { identifier?: string } | null | undefined
+            )?.identifier;
+            return {
+              offeringId:
+                currentOfferingId ??
+                packages[0]?.presentedOfferingContext?.offeringIdentifier,
+              packageCount: packages.length,
+              hasMonthly: packages.some(
+                (item) => item.product.subscriptionPeriod === 'P1M',
+              ),
+              hasYearly: packages.some(
+                (item) => item.product.subscriptionPeriod === 'P1Y',
+              ),
+              hasFreeTrial: packages.some(
+                (item) => item.product.introPrice?.price === 0,
+              ),
+              priceCurrency: packages[0]?.product.currencyCode,
+              userMismatchRetried,
+            };
+          },
+        );
         await ensureCurrentUser(purchaseUserId);
 
         const offering = offerings.current?.availablePackages.find(
@@ -370,9 +515,14 @@ export function usePrimePaymentMethodsStore<
         }
 
         const purchaseStartedAtMs = Date.now();
-        const makePurchaseResult = await sdk.purchasePackage(
-          offering,
-          purchaseUserId,
+        const makePurchaseResult = await runPrimePurchasesSdkCall(
+          {
+            method: 'purchase',
+            sdk: sdkName,
+            paywallSessionId: analyticsContext?.paywallSessionId,
+            purchaseFlowId: analyticsContext?.purchaseFlowId,
+          },
+          () => sdk.purchasePackage(offering, purchaseUserId),
         );
         await ensureCurrentUser(purchaseUserId);
 
@@ -429,6 +579,22 @@ export function usePrimePaymentMethodsStore<
             rawPrice || 0,
             sdk.getRecurringPriceUnit(),
           );
+          const entitlement =
+            makePurchaseResult.customerInfo.entitlements.active.Prime;
+          const periodType = primePaymentUtils.normalizePrimePeriodType(
+            entitlement?.periodType,
+          );
+          const freeTrial = primePaymentUtils.extractNativeFreeTrial(
+            offering.product,
+          );
+          let store: IPrimePurchaseStore | undefined;
+          if (platformEnv.isMas || platformEnv.isNativeIOS) {
+            store = 'appStore';
+          } else if (platformEnv.isNativeAndroid) {
+            store = 'playStore';
+          } else if (platformEnv.isDesktop) {
+            store = 'desktopStore';
+          }
 
           primePaymentUtils.trackPrimeSubscriptionSuccess({
             amount,
@@ -437,6 +603,18 @@ export function usePrimePaymentMethodsStore<
             featureName,
             // StoreKit / Play Billing in-app purchase
             paymentMethod: 'iap',
+            context: analyticsContext,
+            store,
+            isSandbox: entitlement?.isSandbox,
+            periodType,
+            productId:
+              entitlement?.productIdentifier ?? offering.product.identifier,
+            offeringId: offering.presentedOfferingContext?.offeringIdentifier,
+            hasFreeTrial: periodType ? periodType === 'trial' : undefined,
+            trialDays:
+              periodType === 'trial' && freeTrial?.periodUnit === 'day'
+                ? freeTrial.periodNumber
+                : undefined,
           });
 
           void Dialog.confirm({
@@ -461,6 +639,14 @@ export function usePrimePaymentMethodsStore<
               emitPrimeSubscriptionPurchaseSuccess(purchaseSuccessPayload);
             },
           });
+        } else {
+          primePaymentUtils.trackPrimeSubscriptionFailedReason({
+            paymentMethod: 'iap',
+            subscriptionPeriod,
+            featureName,
+            reason: 'entitlementInactive',
+            context: analyticsContext,
+          });
         }
         return makePurchaseResult;
       } catch (error) {
@@ -469,6 +655,7 @@ export function usePrimePaymentMethodsStore<
           paymentMethod: 'iap',
           subscriptionPeriod,
           featureName,
+          context: analyticsContext,
         });
         if (reason !== 'userCancelled') {
           errorToastUtils.toastIfError(error);
@@ -489,6 +676,7 @@ export function usePrimePaymentMethodsStore<
       loginPurchasesSdk,
       reportRestoreSuccess,
       sdk,
+      sdkName,
       setPrimePersistAtom,
       user.onekeyUserId,
     ],

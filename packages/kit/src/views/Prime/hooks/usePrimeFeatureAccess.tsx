@@ -24,6 +24,7 @@ import {
   hasPrimeFreeTrialReservationInfo,
 } from '@onekeyhq/shared/src/utils/primeFreeTrialUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
+import type { IPrimeEntryPoint } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type {
   IPrimeFreeTrialError,
   IPrimeFreeTrialFeatureId,
@@ -217,6 +218,7 @@ export function usePrimeFeatureAccess() {
       resetAt,
       networkId,
       afterPageExit,
+      entryPoint,
       notOpenReason,
       reservation,
     }: {
@@ -225,6 +227,7 @@ export function usePrimeFeatureAccess() {
       resetAt?: number;
       networkId?: string;
       afterPageExit?: boolean;
+      entryPoint?: IPrimeEntryPoint;
       notOpenReason?: IPrimeFreeTrialNotOpenReason;
       // Reservation fields of the rejection (90600 data or the quota).
       reservation?: IPrimeFreeTrialReservation;
@@ -247,6 +250,7 @@ export function usePrimeFeatureAccess() {
             networkId,
             freeTrialReason: 'notOpen',
             afterPageExit,
+            entryPoint,
           });
           return;
         }
@@ -283,6 +287,7 @@ export function usePrimeFeatureAccess() {
           networkId,
           freeTrialReason: 'exhausted',
           afterPageExit,
+          entryPoint,
         });
       }
       showFreeTrialNoticeToast({
@@ -306,12 +311,14 @@ export function usePrimeFeatureAccess() {
     ({
       result,
       networkId,
+      entryPoint,
     }: {
       result: Extract<
         IPrimeFreeTrialStartResult,
         { status: 'exhausted' } | { status: 'notOpen' }
       >;
       networkId?: string;
+      entryPoint?: IPrimeEntryPoint;
     }) => {
       showActiveRejectedFeedback({
         featureId: result.featureId,
@@ -321,6 +328,7 @@ export function usePrimeFeatureAccess() {
             ? (result.data.resetAt ?? getResetAtOfSnapshot())
             : undefined,
         networkId,
+        entryPoint,
         reservation: result.status === 'exhausted' ? result.data : undefined,
       });
     },
@@ -334,10 +342,12 @@ export function usePrimeFeatureAccess() {
       error,
       networkId,
       afterPageExit,
+      entryPoint,
     }: {
       error: unknown;
       networkId?: string;
       afterPageExit?: boolean;
+      entryPoint?: IPrimeEntryPoint;
     }): IPrimeFreeTrialError | undefined => {
       const freeTrialError = getPrimeFreeTrialError(error);
       if (!freeTrialError) {
@@ -350,6 +360,7 @@ export function usePrimeFeatureAccess() {
           resetAt: freeTrialError.data.resetAt ?? getResetAtOfSnapshot(),
           networkId,
           afterPageExit,
+          entryPoint,
           reservation: freeTrialError.data,
         });
         return freeTrialError;
@@ -372,6 +383,7 @@ export function usePrimeFeatureAccess() {
             resetAt: access.status === 'exhausted' ? access.resetAt : undefined,
             networkId,
             afterPageExit,
+            entryPoint,
           });
           return freeTrialError;
         }
@@ -381,6 +393,7 @@ export function usePrimeFeatureAccess() {
         reason: 'notOpen',
         networkId,
         afterPageExit,
+        entryPoint,
         notOpenReason: reason,
       });
       return freeTrialError;
@@ -459,6 +472,7 @@ export function usePrimeFeatureAccess() {
       onAttemptDenied,
       showLoading = true,
       loginOnly = false,
+      entryPoint,
     }: {
       featureId: IPrimeFreeTrialFeatureId;
       networkId?: string;
@@ -474,6 +488,7 @@ export function usePrimeFeatureAccess() {
       // Address risk check entries: only a login is needed, to read the
       // history; the check button judges the quota.
       loginOnly?: boolean;
+      entryPoint?: IPrimeEntryPoint;
       // Re-checked before granting after any async step (login, background
       // checks); false drops the continuation.
       isContextValid?: () => boolean | Promise<boolean>;
@@ -509,7 +524,12 @@ export function usePrimeFeatureAccess() {
       const afterPageExit = Boolean(onDenied);
       if (isPrimeFreeTrialTravelMode()) {
         await deny('notOpen');
-        openPrimeDashboard({ featureId, networkId, afterPageExit });
+        openPrimeDashboard({
+          featureId,
+          networkId,
+          afterPageExit,
+          entryPoint,
+        });
         return { granted: false };
       }
 
@@ -537,6 +557,7 @@ export function usePrimeFeatureAccess() {
             reason: 'notOpen',
             networkId,
             afterPageExit,
+            entryPoint,
           });
           return { granted: false };
         }
@@ -617,6 +638,7 @@ export function usePrimeFeatureAccess() {
           reason: 'notOpen',
           networkId,
           afterPageExit,
+          entryPoint,
         });
         return { granted: false };
       }
@@ -637,6 +659,7 @@ export function usePrimeFeatureAccess() {
           resetAt: access.resetAt,
           networkId,
           afterPageExit,
+          entryPoint,
         });
         return { granted: false };
       }

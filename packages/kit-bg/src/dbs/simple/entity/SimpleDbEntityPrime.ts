@@ -80,6 +80,15 @@ const IDENTITY_LINK_REPORTED_USERS_LIMIT = 5;
 // values are re-sent after this TTL so a lost server-side property
 // self-heals; value changes always report immediately.
 const PRIME_PROFILE_REPORT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PRIME_PURCHASE_ANALYTICS_FLOW_LIMIT = 1024;
+
+type IPrimePurchaseAnalyticsEvent = 'intent' | 'failed' | 'success';
+
+type IPrimePurchaseAnalyticsFlow = Partial<
+  Record<IPrimePurchaseAnalyticsEvent, true>
+> & {
+  updatedAt: number;
+};
 
 function isAnalyticsReportDue({
   reportedAt,
@@ -188,6 +197,7 @@ export interface ISimpleDBPrime {
     IPrimeInfiniSupersededPaymentSession[]
   >;
   identityLinkReportedAtByUserId?: Record<string, number>;
+  primePurchaseAnalyticsByFlowId?: Record<string, IPrimePurchaseAnalyticsFlow>;
   // One hosted card checkout per OneKey ID; a new checkout replaces the old.
   webCheckoutPendingSessionByUserId?: Record<
     string,
@@ -1837,8 +1847,24 @@ export class SimpleDbEntityPrime extends SimpleDbEntityBase<ISimpleDBPrime> {
         lastValidatedAt: now,
         flowId:
           currentSession?.payment?.paymentId === session.payment.paymentId
-            ? (session.flowId ?? currentSession.flowId)
+            ? currentSession.flowId
             : session.flowId,
+        purchaseFlowId:
+          currentSession?.payment?.paymentId === session.payment.paymentId
+            ? (currentSession.purchaseFlowId ?? currentSession.flowId)
+            : (session.purchaseFlowId ?? session.flowId),
+        paywallSessionId:
+          currentSession?.payment?.paymentId === session.payment.paymentId
+            ? currentSession.paywallSessionId
+            : session.paywallSessionId,
+        entryPoint:
+          currentSession?.payment?.paymentId === session.payment.paymentId
+            ? currentSession.entryPoint
+            : session.entryPoint,
+        purchaseStartedAt:
+          currentSession?.payment?.paymentId === session.payment.paymentId
+            ? currentSession.purchaseStartedAt
+            : session.purchaseStartedAt,
         payment: nextPayment,
         sendStarted: Boolean(
           session.sendStarted ||
@@ -2838,6 +2864,51 @@ export class SimpleDbEntityPrime extends SimpleDbEntityBase<ISimpleDBPrime> {
       };
     });
     return didClear;
+  }
+
+  @backgroundMethod()
+  async claimPrimePurchaseAnalyticsEvent({
+    purchaseFlowId,
+    event,
+  }: {
+    purchaseFlowId: string;
+    event: IPrimePurchaseAnalyticsEvent;
+  }): Promise<boolean> {
+    if (!isNonEmptyString(purchaseFlowId)) {
+      return false;
+    }
+    let claimed = false;
+    const now = Date.now();
+    await this.setRawData((rawData) => {
+      const entries = { ...rawData?.primePurchaseAnalyticsByFlowId };
+      const current = entries[purchaseFlowId];
+      if (current?.[event] || (event === 'failed' && current?.success)) {
+        return rawData ?? {};
+      }
+      const latestUpdatedAt = Object.values(entries).reduce(
+        (latest, entry) => Math.max(latest, entry.updatedAt),
+        0,
+      );
+      entries[purchaseFlowId] = {
+        ...current,
+        [event]: true,
+        updatedAt: Math.max(now, latestUpdatedAt + 1),
+      };
+      const flowIdsByRecency = Object.keys(entries).toSorted(
+        (first, second) => entries[second].updatedAt - entries[first].updatedAt,
+      );
+      flowIdsByRecency
+        .slice(PRIME_PURCHASE_ANALYTICS_FLOW_LIMIT)
+        .forEach((flowId) => {
+          delete entries[flowId];
+        });
+      claimed = true;
+      return {
+        ...rawData,
+        primePurchaseAnalyticsByFlowId: entries,
+      };
+    });
+    return claimed;
   }
 
   @backgroundMethod()

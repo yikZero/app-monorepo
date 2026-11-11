@@ -169,6 +169,110 @@ describe('SimpleDbEntityPrime.getEffectiveAuthSessionSource', () => {
   });
 });
 
+describe('SimpleDbEntityPrime.claimPrimePurchaseAnalyticsEvent', () => {
+  function makeStore() {
+    const entity = new SimpleDbEntityPrime();
+    let persisted: ISimpleDBPrime = {};
+    let writeQueue = Promise.resolve();
+    jest.spyOn(entity, 'setRawData').mockImplementation((async (
+      updater: unknown,
+    ) => {
+      const operation = writeQueue.then(() => {
+        const update = updater as (
+          data: ISimpleDBPrime | null | undefined,
+        ) => ISimpleDBPrime;
+        persisted = update(persisted);
+        return persisted;
+      });
+      writeQueue = operation.then(() => undefined);
+      return operation;
+    }) as never);
+    return { entity, getPersisted: () => persisted };
+  }
+
+  test('atomically allows only one concurrent claim for the same flow event', async () => {
+    const { entity, getPersisted } = makeStore();
+
+    const claims = await Promise.all([
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'flow-1',
+        event: 'intent',
+      }),
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'flow-1',
+        event: 'intent',
+      }),
+    ]);
+
+    expect(claims.filter(Boolean)).toHaveLength(1);
+    expect(getPersisted().primePurchaseAnalyticsByFlowId?.['flow-1']).toEqual({
+      intent: true,
+      updatedAt: expect.any(Number),
+    });
+  });
+
+  test('retains late success after failure and suppresses a later failure after success', async () => {
+    const { entity, getPersisted } = makeStore();
+
+    await expect(
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'failed-then-success',
+        event: 'failed',
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'failed-then-success',
+        event: 'success',
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'success-then-failed',
+        event: 'success',
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: 'success-then-failed',
+        event: 'failed',
+      }),
+    ).resolves.toBe(false);
+
+    expect(
+      getPersisted().primePurchaseAnalyticsByFlowId?.['failed-then-success'],
+    ).toEqual({
+      failed: true,
+      success: true,
+      updatedAt: expect.any(Number),
+    });
+    expect(
+      getPersisted().primePurchaseAnalyticsByFlowId?.['success-then-failed'],
+    ).toEqual({
+      success: true,
+      updatedAt: expect.any(Number),
+    });
+  });
+
+  test('bounds persisted flow claims to 1024 entries', async () => {
+    const { entity, getPersisted } = makeStore();
+
+    for (let index = 0; index < 1025; index += 1) {
+      await entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: `flow-${index}`,
+        event: 'intent',
+      });
+    }
+
+    expect(
+      Object.keys(getPersisted().primePurchaseAnalyticsByFlowId ?? {}),
+    ).toHaveLength(1024);
+    expect(
+      getPersisted().primePurchaseAnalyticsByFlowId?.['flow-0'],
+    ).toBeUndefined();
+  });
+});
+
 describe('SimpleDbEntityPrime.authStateGeneration', () => {
   test('defaults to 0 for pre-upgrade data', async () => {
     const entity = new SimpleDbEntityPrime();
@@ -1364,6 +1468,66 @@ describe('SimpleDbEntityPrime Infini pending payment session', () => {
     ).resolves.toBe(false);
   });
 
+  test('keeps original analytics attribution across invoice refreshes and legacy flowId correlation', async () => {
+    const { entity } = createSessionStore();
+    const originalSession = {
+      ...session,
+      flowId: 'invoice-flow-1',
+      paywallSessionId: 'paywall-1',
+      entryPoint: 'settingsPage' as const,
+      purchaseStartedAt: 123,
+    };
+    const saved = await entity.setInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+      session: originalSession,
+    });
+
+    const refreshed = await entity.setInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+      session: {
+        ...saved,
+        flowId: 'new-click-flow',
+        purchaseFlowId: 'new-click-flow',
+        paywallSessionId: 'new-paywall',
+        entryPoint: 'primePage',
+        purchaseStartedAt: 456,
+        payment: { ...saved.payment, amountConfirming: '0.5' },
+      },
+    });
+
+    expect(refreshed).toMatchObject({
+      flowId: 'invoice-flow-1',
+      purchaseFlowId: 'invoice-flow-1',
+      paywallSessionId: 'paywall-1',
+      entryPoint: 'settingsPage',
+      purchaseStartedAt: 123,
+      payment: { amountConfirming: '0.5' },
+    });
+  });
+
+  test('uses a legacy invoice flowId as purchase correlation without inventing its source', async () => {
+    const { entity } = createSessionStore();
+    const saved = await entity.setInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+      session: { ...session, flowId: 'legacy-flow' },
+    });
+    const refreshed = await entity.setInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+      session: {
+        ...saved,
+        payment: { ...saved.payment, amountConfirming: '0.5' },
+      },
+    });
+
+    expect(refreshed).toMatchObject({
+      flowId: 'legacy-flow',
+      purchaseFlowId: 'legacy-flow',
+      entryPoint: undefined,
+      paywallSessionId: undefined,
+      purchaseStartedAt: undefined,
+    });
+  });
+
   test('discards an unsent native payment and prevents a stale writer from restoring it', async () => {
     const { entity } = createSessionStore();
     const nativeSession = createNativePaymentSession();
@@ -1842,6 +2006,44 @@ describe('SimpleDbEntityPrime Infini pending payment session', () => {
         }),
       }),
     );
+  });
+
+  test('retains purchase attribution and allows late success after a claimed failure', async () => {
+    const { entity } = createSessionStore();
+    const attribution = {
+      flowId: 'purchase-flow',
+      purchaseFlowId: 'purchase-flow',
+      paywallSessionId: 'paywall-session',
+      entryPoint: 'settingsPrimeRow' as const,
+      purchaseStartedAt: 1_700_000_000_000,
+    };
+    const saved = await entity.setInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+      session: { ...session, ...attribution },
+    });
+    const restored = await entity.getInfiniPendingPaymentSession({
+      onekeyUserId: 'user-1',
+    });
+
+    expect(restored).toMatchObject(attribution);
+    expect(
+      await entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: restored?.purchaseFlowId ?? '',
+        event: 'failed',
+      }),
+    ).toBe(true);
+    expect(
+      await entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: saved.purchaseFlowId ?? '',
+        event: 'failed',
+      }),
+    ).toBe(false);
+    expect(
+      await entity.claimPrimePurchaseAnalyticsEvent({
+        purchaseFlowId: saved.purchaseFlowId ?? '',
+        event: 'success',
+      }),
+    ).toBe(true);
   });
 
   test('lets confirming progress settle without regressing the replacement lock', async () => {

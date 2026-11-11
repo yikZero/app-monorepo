@@ -45,6 +45,9 @@ export default function PagePrimeFeatures() {
                     route.params?.selectedSubscriptionPeriod
                   }
                   networkId={route.params?.networkId}
+                  fromEntryPoint={route.params?.fromEntryPoint}
+                  paywallSessionId={route.params?.paywallSessionId}
+                  analyticsContext={route.params?.analyticsContext}
                   onClose={() => {
                     navigation.pop();
                   }}

@@ -1,4 +1,5 @@
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type {
   IRevenueCatCustomerInfo,
   IRevenueCatPurchaseResult,
@@ -41,14 +42,22 @@ export type IUsePrimePayment = {
   isReady: boolean;
   initializationError?: Error;
   getStorefront?: () => Promise<IRevenueCatStorefront | null>;
-  getCustomerInfo: () => Promise<
+  getCustomerInfo: (
+    context?: IPrimePurchaseAnalyticsContext,
+  ) => Promise<
     | IRevenueCatCustomerInfoWeb
     | IRevenueCatCustomerInfoNative
     | IRevenueCatCustomerInfo
   >;
-  getPackagesNative: (() => Promise<IPackage[]>) | undefined;
-  getPackagesWeb: (() => Promise<IPackage[]>) | undefined;
-  restorePurchases: (() => Promise<void>) | undefined;
+  getPackagesNative:
+    | ((context?: IPrimePurchaseAnalyticsContext) => Promise<IPackage[]>)
+    | undefined;
+  getPackagesWeb:
+    | ((context?: IPrimePurchaseAnalyticsContext) => Promise<IPackage[]>)
+    | undefined;
+  restorePurchases:
+    | ((context?: IPrimePurchaseAnalyticsContext) => Promise<void>)
+    | undefined;
   webEmbedQueryParams?: {
     apiKey: string;
     isSandboxKey: boolean;
@@ -64,9 +73,11 @@ export type IUsePrimePayment = {
     | (({
         subscriptionPeriod,
         featureName,
+        analyticsContext,
       }: {
         subscriptionPeriod: ISubscriptionPeriod;
         featureName?: EPrimeFeatures;
+        analyticsContext?: IPrimePurchaseAnalyticsContext;
       }) => Promise<MakePurchaseResult | IRevenueCatPurchaseResult>)
     | undefined;
   purchasePackageWeb:
@@ -76,12 +87,14 @@ export type IUsePrimePayment = {
         locale,
         currency,
         featureName,
+        analyticsContext,
       }: {
         subscriptionPeriod: ISubscriptionPeriod;
         email: string;
         locale?: string;
         currency?: string;
         featureName?: EPrimeFeatures;
+        analyticsContext?: IPrimePurchaseAnalyticsContext;
       }) => Promise<PurchaseResult>)
     | undefined;
 };

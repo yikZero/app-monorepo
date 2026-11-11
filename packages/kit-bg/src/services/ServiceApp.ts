@@ -432,8 +432,16 @@ class ServiceApp extends ServiceBase {
   @backgroundMethod()
   async resetApp(options: { preserveBackupRecovery?: boolean } = {}) {
     return this.resetAppMutex.runExclusive(async () => {
+      let shouldReportOneKeyIdLogout = false;
       try {
-        await this.resetAppInternal(options);
+        const currentUser =
+          await this.backgroundApi.servicePrime.getLocalUserInfo();
+        shouldReportOneKeyIdLogout = currentUser.isLoggedIn;
+      } catch {
+        // Reset remains available when the current identity cannot be read.
+      }
+      try {
+        await this.resetAppInternal(options, shouldReportOneKeyIdLogout);
       } catch (error) {
         await this.backgroundApi.serviceCloudBackupV2.finishLocalRecoveryReset();
         throw error;
@@ -441,9 +449,12 @@ class ServiceApp extends ServiceBase {
     });
   }
 
-  private async resetAppInternal({
-    preserveBackupRecovery = false,
-  }: { preserveBackupRecovery?: boolean } = {}) {
+  private async resetAppInternal(
+    {
+      preserveBackupRecovery = false,
+    }: { preserveBackupRecovery?: boolean } = {},
+    shouldReportOneKeyIdLogout = false,
+  ) {
     let recoveryErasureFailed = false;
     // Unknown/programmatic callers retain the existing secure-erasure default.
     try {
@@ -456,9 +467,6 @@ class ServiceApp extends ServiceBase {
       // Still erase wallet secrets if recovery storage is unavailable.
       recoveryErasureFailed = true;
     }
-    defaultLogger.prime.subscription.onekeyIdLogout({
-      reason: 'ServiceApp.resetApp',
-    });
     try {
       await this.backgroundApi.serviceIdentityExit.prepareIdentityAuthForAppReset();
     } catch {
@@ -494,6 +502,12 @@ class ServiceApp extends ServiceBase {
     } finally {
       resetUtils.endResetting();
       defaultLogger.setting.page.clearDataStep('endResetting');
+    }
+
+    if (shouldReportOneKeyIdLogout) {
+      defaultLogger.prime.subscription.onekeyIdLogout({
+        reason: 'userInitiated',
+      });
     }
 
     if (!platformEnv.isNative && (platformEnv.isWeb || platformEnv.isDesktop)) {

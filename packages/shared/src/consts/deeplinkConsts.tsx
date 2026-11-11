@@ -59,6 +59,14 @@ export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_FEATURE_QUERY =
   'prime_card_checkout_feature';
 export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_CURRENCY_QUERY =
   'prime_card_checkout_currency';
+export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY =
+  'prime_card_checkout_paywall';
+export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY =
+  'prime_card_checkout_flow';
+export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY =
+  'prime_card_checkout_entry';
+export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY =
+  'prime_card_checkout_started_at';
 // Set when the popup's embedded Stripe checkout failed; the value is the
 // fallback trigger and the expand tab opens the hosted Purchase Link at once.
 export const PRIME_CARD_CHECKOUT_EXT_HANDOFF_FALLBACK_QUERY =

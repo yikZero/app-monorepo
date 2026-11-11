@@ -14,6 +14,8 @@ import {
   isPrimeAppleStorePayment,
   isPrimeStorePayment,
 } from '@onekeyhq/shared/src/prime/primePaymentCapabilities';
+import { getPrimePurchaseErrorAnalytics } from '@onekeyhq/shared/src/utils/primePurchaseErrorAnalytics';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import { shouldShowPrimeChinaStorefrontHint } from './primeChinaStorefront';
 import { usePrimePayment } from './usePrimePayment';
@@ -21,8 +23,10 @@ import { usePrimePaymentMethodsWeb } from './usePrimePaymentMethodsWeb';
 
 export function usePrimeSubscriptionPackages({
   enabled,
+  analyticsContext,
 }: {
   enabled: boolean;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 }) {
   const intl = useIntl();
   const {
@@ -42,10 +46,10 @@ export function usePrimeSubscriptionPackages({
         return [];
       }
 
-      const pkgList = await getPackagesWebFallback?.();
+      const pkgList = await getPackagesWebFallback?.(analyticsContext);
       return pkgList ?? [];
     },
-    [enabled, getPackagesWebFallback, isPurchaseReady],
+    [analyticsContext, enabled, getPackagesWebFallback, isPurchaseReady],
     {
       initResult: [],
     },
@@ -61,8 +65,8 @@ export function usePrimeSubscriptionPackages({
         return errorToastUtils.withErrorAutoToast(async () => {
           try {
             const pkgList = await (isPrimeStorePayment()
-              ? getPackagesNative?.()
-              : getPackagesWeb?.());
+              ? getPackagesNative?.(analyticsContext)
+              : getPackagesWeb?.(analyticsContext));
             if (isPrimeAppleStorePayment() && !pkgList?.length) {
               throw new OneKeyLocalError(
                 'Prime subscription packages unavailable',
@@ -74,6 +78,10 @@ export function usePrimeSubscriptionPackages({
 
             defaultLogger.prime.subscription.fetchPackagesFailed({
               errorMessage: e?.message || 'Unknown error',
+              paywallSessionId: analyticsContext?.paywallSessionId,
+              purchaseFlowId: analyticsContext?.purchaseFlowId,
+              entryPoint: analyticsContext?.entryPoint,
+              ...getPrimePurchaseErrorAnalytics(error),
             });
 
             if (initializationError && error === initializationError) {
@@ -150,6 +158,7 @@ export function usePrimeSubscriptionPackages({
       },
       [
         enabled,
+        analyticsContext,
         intl,
         getPackagesNative,
         getPackagesWeb,

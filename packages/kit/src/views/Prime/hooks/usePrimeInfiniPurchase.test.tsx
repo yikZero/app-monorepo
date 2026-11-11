@@ -31,6 +31,8 @@ const mockCloseWaitingDialog = jest.fn();
 const mockGetInfiniCheckoutAuthContext = jest.fn();
 const mockIsInfiniCheckoutAuthContextCurrent = jest.fn();
 const mockWaitingDelay = jest.fn();
+const mockPrimeSubscribeIntent = jest.fn();
+const mockPrimeSubscribeFailed = jest.fn();
 const checkoutAuthContext = {
   onekeyUserId: 'user-1',
   authSessionSource: EPrimeAuthSessionSource.KeylessOAuth,
@@ -75,6 +77,11 @@ jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
       apiGetInfiniCheckoutUrl: (...args: unknown[]) =>
         mockApiGetInfiniCheckoutUrl(...args),
     },
+    simpleDb: {
+      prime: {
+        claimPrimePurchaseAnalyticsEvent: async () => true,
+      },
+    },
   },
 }));
 
@@ -96,7 +103,10 @@ jest.mock('@onekeyhq/shared/src/logger/logger', () => ({
       subscription: {
         primeCryptoPaymentError: jest.fn(),
         primeCryptoPaymentFlow: jest.fn(),
-        primeSubscribeIntent: jest.fn(),
+        primeSubscribeIntent: (...args: unknown[]) =>
+          mockPrimeSubscribeIntent(...args),
+        primeSubscribeFailed: (...args: unknown[]) =>
+          mockPrimeSubscribeFailed(...args),
       },
     },
   },
@@ -159,6 +169,8 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
     mockIsInfiniCheckoutAuthContextCurrent.mockResolvedValue(true);
     mockWaitingDelay.mockResolvedValue(undefined);
     mockCloseWaitingDialog.mockResolvedValue(undefined);
+    mockPrimeSubscribeIntent.mockReset();
+    mockPrimeSubscribeFailed.mockReset();
     mockShowPrimeInfiniWaitingDialog.mockImplementation(() => ({
       close: mockCloseWaitingDialog,
     }));
@@ -227,10 +239,17 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
   it('opens recovery on the remote order plan instead of creating external checkout', async () => {
     setupRemotePending('monthly');
     mockUnfinishedPaymentChoice.mockResolvedValue('resume');
+    const analyticsContext = {
+      paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+      purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+      entryPoint: 'deviceLimitPage' as const,
+      purchaseStartedAt: 1_700_000_000_000,
+    };
     const { result } = renderHook(() => usePrimeInfiniPurchase());
     await act(async () => {
       await result.current.purchaseByExternalCheckout({
         selectedSubscriptionPeriod: 'P1Y',
+        analyticsContext,
       });
     });
     expect(mockApiGetInfiniCheckoutUrl).not.toHaveBeenCalled();
@@ -239,6 +258,7 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
       params: expect.objectContaining({
         selectedSubscriptionPeriod: 'P1M',
         createNewPayment: false,
+        analyticsContext,
         remotePaymentResumeIntent: {
           paymentId: 'remote-order',
           authContext: checkoutAuthContext,
@@ -258,6 +278,7 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
     });
     expect(mockApiGetInfiniCheckoutUrl).not.toHaveBeenCalled();
     expect(mockPushModal).not.toHaveBeenCalled();
+    expect(mockPrimeSubscribeIntent).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -355,6 +376,10 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
       screen: EPrimePages.PrimeInfiniPayment,
       params: {
         flowId: expect.any(String),
+        analyticsContext: expect.objectContaining({
+          purchaseFlowId: expect.any(String),
+          purchaseStartedAt: expect.any(Number),
+        }),
         selectedSubscriptionPeriod: 'P1Y',
         featureName: undefined,
         createNewPayment: true,
@@ -381,6 +406,7 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
         createNewPayment: false,
       }),
     });
+    expect(mockPrimeSubscribeIntent).not.toHaveBeenCalled();
   });
 
   it('forwards the selected remote invoice and auth lifecycle to the wallet route', async () => {
@@ -419,6 +445,7 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
     });
 
     expect(mockPushModal).not.toHaveBeenCalled();
+    expect(mockPrimeSubscribeIntent).not.toHaveBeenCalled();
   });
 
   it('reports that external checkout did not open when logged out', async () => {
@@ -433,6 +460,44 @@ describe('usePrimeInfiniPurchase internal wallet route', () => {
     });
 
     expect(didOpenCheckout).toBe(false);
+    expect(mockPrimeSubscribeIntent).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed initial external request against the same purchase context', async () => {
+    setupRemotePending('monthly');
+    const analyticsContext = {
+      paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+      purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+      entryPoint: 'settingsPrimeRow' as const,
+      purchaseStartedAt: 1_700_000_000_000,
+    };
+    mockApiGetInfiniCheckoutUrl.mockRejectedValueOnce(
+      new OneKeyLocalError('checkout request failed'),
+    );
+    const { result } = renderHook(() => usePrimeInfiniPurchase());
+
+    await act(async () => {
+      await expect(
+        result.current.purchaseByExternalCheckout({
+          selectedSubscriptionPeriod: 'P1Y',
+          analyticsContext,
+        }),
+      ).rejects.toThrow('checkout request failed');
+    });
+    await act(async () => Promise.resolve());
+
+    expect(mockPrimeSubscribeIntent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currency: 'USD',
+        purchaseFlowId: analyticsContext.purchaseFlowId,
+      }),
+    );
+    expect(mockPrimeSubscribeFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        purchaseFlowId: analyticsContext.purchaseFlowId,
+        paywallSessionId: analyticsContext.paywallSessionId,
+      }),
+    );
   });
 
   it('holds the shared external guard while retiring a prepared payment', async () => {

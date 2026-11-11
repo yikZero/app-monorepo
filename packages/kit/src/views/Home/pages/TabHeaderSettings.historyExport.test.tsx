@@ -427,7 +427,10 @@ describe('TabHeaderSettings history export entry', () => {
           EModalRoutes.BulkExportHistoryModal,
           {
             screen: EModalBulkExportHistoryRoutes.BulkExportHistoryModal,
-            params: { networkId: 'evm--1' },
+            params: {
+              networkId: 'evm--1',
+              fromEntryPoint: 'historySettings',
+            },
           },
         ),
       );

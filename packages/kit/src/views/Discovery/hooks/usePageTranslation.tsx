@@ -768,6 +768,7 @@ export function usePageTranslation(tabId: string) {
       const pageUrlAtPress = currentTabUrlRef.current;
       const access = await ensureFeatureAccess({
         featureId: EPrimeFeatures.DAppTranslate,
+        entryPoint: 'browserTranslate',
         trackAttempt: false,
         onAttemptDenied: (reason) =>
           attempt.finish(

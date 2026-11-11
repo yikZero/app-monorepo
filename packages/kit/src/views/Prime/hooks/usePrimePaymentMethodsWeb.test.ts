@@ -56,6 +56,8 @@ jest.mock('./getPrimePaymentApiKey', () => ({
 jest.mock('./primePaymentUtils', () => ({
   __esModule: true,
   default: {
+    normalizePrimePeriodType: (value: string) =>
+      value.toLowerCase() === 'trial' ? 'trial' : undefined,
     fetchWebTargetOffering: async () => ({
       targetOffering: {
         availablePackages: [
@@ -115,7 +117,12 @@ function startPaymentElement() {
 }
 
 describe('embedded Prime checkout loading failure', () => {
-  const startPurchase = async () => {
+  const startPurchase = async (analyticsContext?: {
+    paywallSessionId: string;
+    purchaseFlowId: string;
+    entryPoint: 'settingsPrimeRow';
+    purchaseStartedAt: number;
+  }) => {
     const { result } = renderHook(() => usePrimePaymentMethodsWeb());
     let failure: unknown;
     await act(async () => {
@@ -123,6 +130,7 @@ describe('embedded Prime checkout loading failure', () => {
         .purchasePackageWeb?.({
           subscriptionPeriod: 'P1M',
           email: 'test@example.com',
+          analyticsContext,
         })
         .catch((error: unknown) => {
           failure = error;
@@ -302,14 +310,43 @@ describe('embedded Prime checkout loading failure', () => {
   it('cleans up when the SDK settles and preserves a successful purchase', async () => {
     mockPurchase.mockImplementationOnce(async () => {
       startPaymentElement();
-      return { customerInfo: { entitlements: { active: {} } } };
+      return {
+        customerInfo: {
+          entitlements: {
+            active: {
+              Prime: {
+                isActive: true,
+                periodType: 'TRIAL',
+                productIdentifier: 'prime_monthly_trial',
+              },
+            },
+          },
+        },
+      };
     });
-    const { getFailure } = await startPurchase();
+    const { getFailure } = await startPurchase({
+      paywallSessionId: 'paywall-1',
+      purchaseFlowId: 'flow-1',
+      entryPoint: 'settingsPrimeRow',
+      purchaseStartedAt: 1_700_000_000_000,
+    });
     await act(async () => {
       await jest.advanceTimersByTimeAsync(60_000);
     });
     expect(getFailure()).toBeUndefined();
     expect(mockTrackSuccess).toHaveBeenCalledTimes(1);
+    expect(mockTrackSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        periodType: 'trial',
+        productId: 'prime_monthly_trial',
+        context: {
+          paywallSessionId: 'paywall-1',
+          purchaseFlowId: 'flow-1',
+          entryPoint: 'settingsPrimeRow',
+          purchaseStartedAt: 1_700_000_000_000,
+        },
+      }),
+    );
     expect(mockClose).not.toHaveBeenCalled();
   });
 

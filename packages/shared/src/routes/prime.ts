@@ -2,6 +2,10 @@
 import type { ISubscriptionPeriod } from '@onekeyhq/kit/src/views/Prime/hooks/usePrimePaymentTypes';
 
 import type {
+  IPrimeEntryPoint,
+  IPrimePurchaseAnalyticsContext,
+} from '../../types/prime/primeAnalytics';
+import type {
   IE2EESocketUserInfo,
   IPrimeTransferData,
 } from '../../types/prime/primeTransferTypes';
@@ -58,6 +62,8 @@ export type IPrimeParamList = {
   [EPrimePages.PrimeDashboard]: {
     networkId?: string;
     fromFeature?: EPrimeFeatures;
+    fromEntryPoint?: IPrimeEntryPoint;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
     // Set when a free-trial entry opened the dashboard (analytics only)
     freeTrialReason?: 'exhausted' | 'notOpen';
     fromDeepLink?: boolean;
@@ -77,6 +83,9 @@ export type IPrimeParamList = {
     selectedFeature?: EPrimeFeatures;
     selectedSubscriptionPeriod?: ISubscriptionPeriod;
     networkId?: string;
+    fromEntryPoint?: IPrimeEntryPoint;
+    paywallSessionId?: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
   };
   [EPrimePages.PrimeDeleteAccount]: undefined;
   [EPrimePages.PrimeTransfer]: IEOneKeyDeepLinkParams[EOneKeyDeepLinkPath.cross_device_transfer];
@@ -94,8 +103,12 @@ export type IPrimeParamList = {
   [EPrimePages.OneKeyIdProfileEdit]: undefined;
   [EPrimePages.PrimeInfiniPayment]: {
     flowId?: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
     selectedSubscriptionPeriod: ISubscriptionPeriod;
     featureName?: EPrimeFeatures;
+    fromEntryPoint?: IPrimeEntryPoint;
+    paywallSessionId?: string;
+    purchaseStartedAt?: number;
     createNewPayment?: boolean;
     remotePaymentResumeIntent?: {
       paymentId: string;

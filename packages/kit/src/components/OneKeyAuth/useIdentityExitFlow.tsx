@@ -17,6 +17,7 @@ import type {
 
 import { scrubSensitiveErrorMessageText } from '../../views/Prime/components/oneKeyIdLoginToastUtils';
 
+import { reportIdentityExitReceiptTelemetry } from './identityExitTelemetry';
 import {
   executeIdentityExitPlan,
   useShowOneKeyIdLogoutDialog,
@@ -94,17 +95,15 @@ export function useIdentityExitFlow() {
             intent,
           );
         if (plan.status === 'completed') {
-          defaultLogger.prime.subscription.onekeyIdLogout({
-            reason:
-              options?.analyticsReason ||
-              `identityExit:${intent.type}:${intent.scene}:alreadyCompleted`,
+          defaultLogger.prime.subscription.onekeyIdStateTrace({
+            reason: `identityExit:${intent.type}:${intent.scene}:alreadyCompleted`,
           });
           try {
             await options?.onCompletedReceipt?.(plan.receipt);
           } catch (error) {
             logIdentityExitError('post-receipt continuation failed', error);
             const message = getErrorMessage(error);
-            defaultLogger.prime.subscription.onekeyIdLogout({
+            defaultLogger.prime.subscription.onekeyIdStateTrace({
               reason: `identityExit: post-receipt continuation failed: ${scrubSensitiveErrorMessageText(
                 message,
               )}`,
@@ -115,7 +114,7 @@ export function useIdentityExitFlow() {
         }
         if (plan.status === 'blocked') {
           logIdentityExitError('prepare blocked', plan);
-          defaultLogger.prime.subscription.onekeyIdLogout({
+          defaultLogger.prime.subscription.onekeyIdStateTrace({
             reason: `identityExit: prepare blocked: ${scrubSensitiveErrorMessageText(
               plan.message,
             )}`,
@@ -153,7 +152,7 @@ export function useIdentityExitFlow() {
         }
         if (exitResult.status === 'blocked') {
           logIdentityExitError('execute blocked', exitResult);
-          defaultLogger.prime.subscription.onekeyIdLogout({
+          defaultLogger.prime.subscription.onekeyIdStateTrace({
             reason: `identityExit: execute blocked: ${scrubSensitiveErrorMessageText(
               exitResult.message,
             )}`,
@@ -162,17 +161,16 @@ export function useIdentityExitFlow() {
           return { status: 'blocked', message: exitResult.message };
         }
 
-        defaultLogger.prime.subscription.onekeyIdLogout({
-          reason:
-            options?.analyticsReason ||
-            `identityExit:${intent.type}:${intent.scene}`,
+        reportIdentityExitReceiptTelemetry({
+          intent,
+          receipt: exitResult.receipt,
         });
         try {
           await options?.onCompletedReceipt?.(exitResult.receipt);
         } catch (error) {
           logIdentityExitError('post-receipt continuation failed', error);
           const message = getErrorMessage(error);
-          defaultLogger.prime.subscription.onekeyIdLogout({
+          defaultLogger.prime.subscription.onekeyIdStateTrace({
             reason: `identityExit: post-receipt continuation failed: ${scrubSensitiveErrorMessageText(
               message,
             )}`,
@@ -183,7 +181,7 @@ export function useIdentityExitFlow() {
       } catch (error) {
         logIdentityExitError('flow failed', error);
         const message = getErrorMessage(error);
-        defaultLogger.prime.subscription.onekeyIdLogout({
+        defaultLogger.prime.subscription.onekeyIdStateTrace({
           reason: `identityExit: flow failed: ${scrubSensitiveErrorMessageText(
             message,
           )}`,

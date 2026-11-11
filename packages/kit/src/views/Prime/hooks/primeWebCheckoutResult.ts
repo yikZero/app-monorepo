@@ -11,6 +11,7 @@ export type IPrimeWebCheckoutEntitlement = {
   isSandbox: boolean;
   periodType: string;
   productIdentifier: string;
+  offeringIdentifier?: string;
 };
 
 export type IPrimeWebCheckoutResult =

@@ -7,6 +7,8 @@ import type { IPrimeWebPurchaseLinkConfig } from '@onekeyhq/shared/src/consts/pr
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
+import { runPrimePurchasesSdkCall } from '@onekeyhq/shared/src/utils/primePurchasesSdkTracking';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type {
   IPrimeWebCheckoutExtensionContext,
   IPrimeWebCheckoutOpenOptions,
@@ -39,16 +41,31 @@ async function getExtensionBrowserSessionId() {
 async function configurePurchasesSdk({
   onekeyUserId,
   isSandbox,
+  analyticsContext,
+  isPolling = false,
 }: {
   onekeyUserId: string;
   isSandbox: boolean;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
+  isPolling?: boolean;
 }) {
   const { Purchases } = await loadPurchasesSdkWeb();
   // Uses the API key of the checkout's sandbox mode rather than the current
   // dev setting, so a mode switch cannot attribute the purchase elsewhere.
-  Purchases.configure(
-    isSandbox ? REVENUECAT_API_KEY_WEB_SANDBOX : REVENUECAT_API_KEY_WEB,
-    onekeyUserId,
+  await runPrimePurchasesSdkCall(
+    {
+      method: 'configure',
+      sdk: 'web',
+      paywallSessionId: analyticsContext?.paywallSessionId,
+      purchaseFlowId: analyticsContext?.purchaseFlowId,
+    },
+    () =>
+      Purchases.configure(
+        isSandbox ? REVENUECAT_API_KEY_WEB_SANDBOX : REVENUECAT_API_KEY_WEB,
+        onekeyUserId,
+      ),
+    undefined,
+    { reportSuccess: !isPolling },
   );
   return Purchases.getSharedInstance();
 }
@@ -56,16 +73,33 @@ async function configurePurchasesSdk({
 export async function fetchPrimeWebCheckoutEntitlement({
   onekeyUserId,
   isSandbox,
+  analyticsContext,
+  isPolling = false,
 }: {
   onekeyUserId: string;
   isSandbox: boolean;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
+  isPolling?: boolean;
 }): Promise<IPrimeWebCheckoutEntitlement | undefined> {
   if (!onekeyUserId) {
     throw new OneKeyLocalError('Prime web checkout: missing OneKey ID');
   }
-  const purchases = await configurePurchasesSdk({ onekeyUserId, isSandbox });
+  const purchases = await configurePurchasesSdk({
+    onekeyUserId,
+    isSandbox,
+    analyticsContext,
+    isPolling,
+  });
   // purchases-js does not cache customer info, so every poll is fresh.
-  const customerInfo = await purchases.getCustomerInfo();
+  const customerInfo = await runPrimePurchasesSdkCall(
+    {
+      method: 'getCustomerInfo',
+      sdk: 'web',
+      paywallSessionId: analyticsContext?.paywallSessionId,
+      purchaseFlowId: analyticsContext?.purchaseFlowId,
+    },
+    () => purchases.getCustomerInfo(),
+  );
   if (purchases.getAppUserId() !== onekeyUserId) {
     throw new OneKeyLocalError('AppUserId not match');
   }
@@ -78,18 +112,25 @@ export async function resolvePrimeWebCheckoutPackage({
   isSandbox,
   currency,
   subscriptionPeriod,
+  analyticsContext,
 }: {
   config: IPrimeWebPurchaseLinkConfig;
   onekeyUserId: string;
   isSandbox: boolean;
   currency?: string;
   subscriptionPeriod: ISubscriptionPeriod;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 }): Promise<IPrimeWebPurchaseLinkPackage> {
-  const purchases = await configurePurchasesSdk({ onekeyUserId, isSandbox });
+  const purchases = await configurePurchasesSdk({
+    onekeyUserId,
+    isSandbox,
+    analyticsContext,
+  });
   const { targetOffering } = await primePaymentUtils.fetchWebTargetOffering({
     purchases,
     isSandboxKey: isSandbox,
     currency,
+    analyticsContext,
   });
   return resolvePrimeWebPurchaseLinkPackage({
     config,

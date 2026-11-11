@@ -2,9 +2,13 @@
 
 import {
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_CURRENCY_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_FALLBACK_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_FEATURE_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY,
   PRIME_CARD_CHECKOUT_EXT_HANDOFF_QUERY,
+  PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY,
   PRIME_SUBSCRIPTION_EXT_HANDOFF_QUERY,
   PRIME_SUBSCRIPTION_EXT_HANDOFF_VALUE,
 } from '@onekeyhq/shared/src/consts/deeplinkConsts';
@@ -131,6 +135,37 @@ describe('consumePrimeCardCheckoutHandoffFromUrl', () => {
       fallbackFrom: 'userRequestedHostedCheckout',
     });
     expect(globalThis.location.hash).toBe('#/');
+  });
+
+  it('preserves only validated purchase analytics context', () => {
+    globalThis.history.replaceState(
+      null,
+      '',
+      `#/?${PRIME_CARD_CHECKOUT_EXT_HANDOFF_QUERY}=P1Y&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY}=123e4567-e89b-12d3-a456-426614174000&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY}=123e4567-e89b-12d3-a456-426614174001&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY}=settingsPrimeRow&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY}=1700000000000`,
+    );
+
+    expect(consumePrimeCardCheckoutHandoffFromUrl()).toMatchObject({
+      selectedSubscriptionPeriod: 'P1Y',
+      analyticsContext: {
+        paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+        purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+        entryPoint: 'settingsPrimeRow',
+        purchaseStartedAt: 1_700_000_000_000,
+      },
+    });
+    expect(globalThis.location.hash).toBe('#/');
+  });
+
+  it('drops malformed analytics context from the extension handoff', () => {
+    globalThis.history.replaceState(
+      null,
+      '',
+      `#/?${PRIME_CARD_CHECKOUT_EXT_HANDOFF_QUERY}=P1M&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_PAYWALL_SESSION_QUERY}=not-a-uuid&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_PURCHASE_FLOW_QUERY}=also-invalid&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_ENTRY_POINT_QUERY}=freeform&${PRIME_CARD_CHECKOUT_EXT_HANDOFF_STARTED_AT_QUERY}=invalid`,
+    );
+
+    const handoff = consumePrimeCardCheckoutHandoffFromUrl();
+    expect(handoff).toMatchObject({ selectedSubscriptionPeriod: 'P1M' });
+    expect(handoff).not.toHaveProperty('analyticsContext');
   });
 
   it('strips but ignores an invalid plan', () => {

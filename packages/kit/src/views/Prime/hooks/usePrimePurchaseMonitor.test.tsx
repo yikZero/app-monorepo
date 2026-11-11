@@ -55,6 +55,31 @@ describe('usePrimePurchaseMonitor', () => {
     routeFocused = true;
   });
 
+  it('delivers a confirmed invoice expiry to the terminal callback', async () => {
+    const onTerminal = jest.fn();
+    const { unmount } = renderHook(() =>
+      usePrimePurchaseMonitor({
+        sessionKey: 'invoice-expired',
+        enabled: true,
+        adapter: async () => ({
+          status: 'terminal',
+          reason: 'expired',
+          data: { invoiceId: 'invoice-1' },
+        }),
+        onSuccess: jest.fn(),
+        onTerminal,
+        pollIntervalMs: 60_000,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(onTerminal).toHaveBeenCalledWith('expired', {
+        invoiceId: 'invoice-1',
+      });
+    });
+    unmount();
+  });
+
   it('coalesces concurrent refresh signals into one follow-up poll', async () => {
     const firstPoll = createDeferred<{
       status: 'pending';

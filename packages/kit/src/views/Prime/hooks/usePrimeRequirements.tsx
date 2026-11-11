@@ -8,6 +8,7 @@ import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKey
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { LazyLoadPage } from '../../../components/LazyLoadPage';
@@ -29,13 +30,19 @@ const PrimePurchaseDialog = LazyLoadPage(
 export function usePrimeRequirements({
   onPurchase,
   networkId,
+  analyticsContext,
 }: {
   onPurchase?: () => void | Promise<void>;
   networkId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 } = {}) {
   const { user, loginOneKeyId } = useOneKeyAuth();
 
-  const { purchase } = usePrimePurchaseCallback({ onPurchase, networkId });
+  const { purchase } = usePrimePurchaseCallback({
+    onPurchase,
+    networkId,
+    analyticsContext,
+  });
 
   const intl = useIntl();
   const ensureOneKeyIDLoggedIn = useCallback(
@@ -81,12 +88,20 @@ export function usePrimeRequirements({
       selectedSubscriptionPeriod,
       featureName,
       freeTrial,
+      packagePrice,
+      packageCurrency,
+      analyticsContext: purchaseAnalyticsContext,
     }: {
       skipDialogConfirm?: boolean;
       selectedSubscriptionPeriod?: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
       freeTrial?: IPackageFreeTrial;
+      packagePrice?: number;
+      packageCurrency?: string;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
     } = {}) => {
+      const resolvedAnalyticsContext =
+        purchaseAnalyticsContext ?? analyticsContext;
       await ensureOneKeyIDLoggedIn({
         skipDialogConfirm,
       });
@@ -110,6 +125,9 @@ export function usePrimeRequirements({
               selectedSubscriptionPeriod,
               featureName,
               freeTrial,
+              packagePrice,
+              packageCurrency,
+              analyticsContext: resolvedAnalyticsContext,
             });
           } else {
             const _purchaseDialog = Dialog.show({
@@ -120,6 +138,7 @@ export function usePrimeRequirements({
                   }}
                   featureName={featureName}
                   networkId={networkId}
+                  analyticsContext={resolvedAnalyticsContext}
                 />
               ),
             });
@@ -148,6 +167,7 @@ export function usePrimeRequirements({
       }
     },
     [
+      analyticsContext,
       ensureOneKeyIDLoggedIn,
       intl,
       networkId,

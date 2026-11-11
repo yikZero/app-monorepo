@@ -39,6 +39,8 @@ import type {
   EPrimePages,
   IPrimeParamList,
 } from '@onekeyhq/shared/src/routes/prime';
+import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import { getPrimeCardCheckoutMode } from '../../hooks/primeCardCheckoutMode';
 import {
@@ -47,6 +49,7 @@ import {
 } from '../../hooks/primeInfiniExternalCheckoutGuard';
 import { getPrimeInfiniPaymentAssets } from '../../hooks/primeInfiniPaymentUtils';
 import { createPrimeInfiniRemotePendingPaymentResolver } from '../../hooks/primeInfiniRemotePendingPayment';
+import primePaymentUtils from '../../hooks/primePaymentUtils';
 import { retirePrimeWebCheckout } from '../../hooks/retirePrimeWebCheckout';
 import { usePrimeInfiniPurchase } from '../../hooks/usePrimeInfiniPurchase';
 import { usePrimePayment } from '../../hooks/usePrimePayment';
@@ -273,9 +276,11 @@ function PrimePaymentMethodItems({
 export function usePrimePurchaseCallback({
   onPurchase,
   networkId,
+  analyticsContext,
 }: {
   onPurchase?: () => void | Promise<void>;
   networkId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 } = {}) {
   const { purchasePackageNative, purchasePackageWeb } = usePrimePayment();
   const { supabaseUser, user } = useOneKeyAuth();
@@ -291,9 +296,11 @@ export function usePrimePurchaseCallback({
     async ({
       selectedSubscriptionPeriod,
       featureName,
+      purchaseAnalyticsContext,
     }: {
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
+      purchaseAnalyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       // purchasePackageNative owns the post-purchase refresh for both
       // outcomes (claim -> refresh -> emit on success, one defensive refresh
@@ -301,9 +308,10 @@ export function usePrimePurchaseCallback({
       await purchasePackageNative?.({
         subscriptionPeriod: selectedSubscriptionPeriod,
         featureName,
+        analyticsContext: purchaseAnalyticsContext ?? analyticsContext,
       });
     },
-    [purchasePackageNative],
+    [analyticsContext, purchasePackageNative],
   );
 
   const purchaseByWebStripeUnchecked = useCallback(
@@ -311,10 +319,12 @@ export function usePrimePurchaseCallback({
       selectedSubscriptionPeriod,
       currency,
       featureName,
+      purchaseAnalyticsContext,
     }: {
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       currency?: string;
       featureName?: EPrimeFeatures;
+      purchaseAnalyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       let successfulPurchase:
         | IPrimeSubscriptionPurchaseSuccessPayload
@@ -335,6 +345,7 @@ export function usePrimePurchaseCallback({
             locale: intl.locale,
             currency,
             featureName,
+            analyticsContext: purchaseAnalyticsContext ?? analyticsContext,
           });
         } catch (error) {
           const fallbackTrigger = getPrimeEmbeddedCheckoutFallbackTrigger({
@@ -349,6 +360,7 @@ export function usePrimePurchaseCallback({
             selectedSubscriptionPeriod,
             currency,
             featureName,
+            analyticsContext: purchaseAnalyticsContext ?? analyticsContext,
           });
           return;
         }
@@ -373,6 +385,7 @@ export function usePrimePurchaseCallback({
     [
       fallbackToHostedLink,
       intl.locale,
+      analyticsContext,
       purchasePackageWeb,
       supabaseUser?.email,
       user?.onekeyUserId,
@@ -383,6 +396,7 @@ export function usePrimePurchaseCallback({
     async (params: {
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
+      purchaseAnalyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       if (
         !(await ensurePrimePurchaseEligible({
@@ -392,9 +406,13 @@ export function usePrimePurchaseCallback({
       ) {
         return;
       }
-      await purchaseByNativeUnchecked(params);
+      await purchaseByNativeUnchecked({
+        ...params,
+        purchaseAnalyticsContext:
+          params.purchaseAnalyticsContext ?? analyticsContext,
+      });
     },
-    [intl, purchaseByNativeUnchecked, user?.onekeyUserId],
+    [analyticsContext, intl, purchaseByNativeUnchecked, user?.onekeyUserId],
   );
 
   const purchaseByWebview = useCallback(
@@ -402,6 +420,7 @@ export function usePrimePurchaseCallback({
       selectedSubscriptionPeriod: ISubscriptionPeriod | undefined;
       currency?: string;
       featureName?: EPrimeFeatures;
+      purchaseAnalyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       if (
         !(await ensurePrimePurchaseEligible({
@@ -411,9 +430,13 @@ export function usePrimePurchaseCallback({
       ) {
         return;
       }
-      await purchaseByWebviewUnchecked(params);
+      const { purchaseAnalyticsContext, ...purchaseParams } = params;
+      await purchaseByWebviewUnchecked({
+        ...purchaseParams,
+        analyticsContext: purchaseAnalyticsContext ?? analyticsContext,
+      });
     },
-    [intl, purchaseByWebviewUnchecked, user?.onekeyUserId],
+    [analyticsContext, intl, purchaseByWebviewUnchecked, user?.onekeyUserId],
   );
 
   // TODO move to jotai context method
@@ -423,12 +446,19 @@ export function usePrimePurchaseCallback({
       currency,
       featureName,
       freeTrial,
+      packagePrice,
+      packageCurrency,
+      analyticsContext: purchaseAnalyticsContext,
     }: {
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       currency?: string;
       featureName?: EPrimeFeatures;
       freeTrial?: IPackageFreeTrial;
+      packagePrice?: number;
+      packageCurrency?: string;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
+      const purchaseContext = purchaseAnalyticsContext ?? analyticsContext;
       // primeSubscribeIntent must fire exactly once per actual payment
       // attempt with its channel (see the scene doc: it pairs with
       // primeSubscribeSuccess to measure attempt → success rate), so it is
@@ -439,12 +469,20 @@ export function usePrimePurchaseCallback({
         paymentMethod: IPrimePaymentMethod,
         cardCheckoutFlow?: IPrimeCardCheckoutFlow,
       ) => {
-        defaultLogger.prime.subscription.primeSubscribeIntent({
+        primePaymentUtils.trackPrimeSubscriptionIntent({
           subscriptionPeriod: selectedSubscriptionPeriod,
           featureName,
           currency,
           paymentMethod,
           cardCheckoutFlow,
+          hasFreeTrialOffer: Boolean(freeTrial),
+          trialDays:
+            freeTrial?.periodUnit === 'day'
+              ? freeTrial.periodNumber
+              : undefined,
+          packagePrice,
+          packageCurrency,
+          context: purchaseContext,
         });
       };
       const startCryptoPayment = async ({
@@ -460,6 +498,7 @@ export function usePrimePurchaseCallback({
           await purchaseByCryptoUnchecked({
             selectedSubscriptionPeriod: subscriptionPeriod,
             featureName,
+            analyticsContext: purchaseContext,
             createNewPayment,
             ...(remotePaymentResumeIntent ? { remotePaymentResumeIntent } : {}),
           });
@@ -699,6 +738,7 @@ export function usePrimePurchaseCallback({
         await purchaseByNativeUnchecked({
           selectedSubscriptionPeriod,
           featureName,
+          purchaseAnalyticsContext: purchaseContext,
         });
         return;
       }
@@ -758,6 +798,7 @@ export function usePrimePurchaseCallback({
                   void purchaseByNativeUnchecked({
                     selectedSubscriptionPeriod,
                     featureName,
+                    purchaseAnalyticsContext: purchaseContext,
                   });
                 } else if (method === 'webview') {
                   logSubscribeIntent('stripe', 'embedded');
@@ -765,6 +806,7 @@ export function usePrimePurchaseCallback({
                     selectedSubscriptionPeriod,
                     currency,
                     featureName,
+                    analyticsContext: purchaseContext,
                   }).catch(errorToastUtils.toastIfError);
                 } else if (method === 'webStripe') {
                   if (
@@ -777,6 +819,7 @@ export function usePrimePurchaseCallback({
                       selectedSubscriptionPeriod,
                       currency,
                       featureName,
+                      analyticsContext: purchaseContext,
                     });
                   } else {
                     logSubscribeIntent('stripe', 'embedded');
@@ -784,6 +827,7 @@ export function usePrimePurchaseCallback({
                       selectedSubscriptionPeriod,
                       currency,
                       featureName,
+                      purchaseAnalyticsContext: purchaseContext,
                     }).catch(errorToastUtils.toastIfError);
                   }
                 } else {
@@ -811,6 +855,7 @@ export function usePrimePurchaseCallback({
     },
     [
       intl,
+      analyticsContext,
       onPurchase,
       purchaseByCryptoUnchecked,
       purchaseByHostedLink,
@@ -832,6 +877,7 @@ export const PrimePurchaseDialog = (props: {
   onPurchase: () => void | Promise<void>;
   featureName?: EPrimeFeatures;
   networkId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
   // Preselected plan, e.g. the renew flow defaults to the plan of the
   // current Infini subscription (integration plan §7.2)
   defaultSelectedSubscriptionPeriod?: ISubscriptionPeriod;
@@ -840,9 +886,13 @@ export const PrimePurchaseDialog = (props: {
     onPurchase,
     featureName,
     networkId,
+    analyticsContext,
     defaultSelectedSubscriptionPeriod,
   } = props;
   const intl = useIntl();
+  const { user } = useOneKeyAuth();
+  const [localPaywallSessionId] = useState(() => generateUUID());
+  const consumedPurchaseFlowIdRef = useRef<string | undefined>(undefined);
   const [selectedSubscriptionPeriod, setSelectedSubscriptionPeriod] =
     useState<ISubscriptionPeriod>(defaultSelectedSubscriptionPeriod ?? 'P1Y');
 
@@ -850,13 +900,25 @@ export const PrimePurchaseDialog = (props: {
 
   const { result: packages } = usePromiseResult(
     async () =>
-      isPrimeStorePayment() ? getPackagesNative?.() : getPackagesWeb?.(),
-    [getPackagesNative, getPackagesWeb],
+      isPrimeStorePayment()
+        ? getPackagesNative?.(
+            analyticsContext ?? { paywallSessionId: localPaywallSessionId },
+          )
+        : getPackagesWeb?.(
+            analyticsContext ?? { paywallSessionId: localPaywallSessionId },
+          ),
+    [
+      analyticsContext,
+      getPackagesNative,
+      getPackagesWeb,
+      localPaywallSessionId,
+    ],
   );
 
   const { purchase } = usePrimePurchaseCallback({
     onPurchase,
     networkId,
+    analyticsContext,
   });
   const selectedPackage = packages?.find(
     (p) => p.subscriptionPeriod === selectedSubscriptionPeriod,
@@ -888,11 +950,55 @@ export const PrimePurchaseDialog = (props: {
           if (!selectedPackage) {
             return undefined;
           }
+          const inheritedFlowId =
+            consumedPurchaseFlowIdRef.current !==
+            analyticsContext?.purchaseFlowId
+              ? analyticsContext?.purchaseFlowId
+              : undefined;
+          consumedPurchaseFlowIdRef.current = analyticsContext?.purchaseFlowId;
+          const purchaseAnalyticsContext: IPrimePurchaseAnalyticsContext = {
+            ...analyticsContext,
+            paywallSessionId:
+              analyticsContext?.paywallSessionId ?? localPaywallSessionId,
+            purchaseFlowId: inheritedFlowId ?? generateUUID(),
+            purchaseStartedAt:
+              (inheritedFlowId
+                ? analyticsContext?.purchaseStartedAt
+                : undefined) ?? Date.now(),
+            entryPoint:
+              analyticsContext?.entryPoint ??
+              (analyticsContext?.purchaseFlowId ? undefined : 'primePage'),
+          };
+          defaultLogger.prime.subscription.primeSubscribeButtonClick({
+            subscriptionPeriod: selectedSubscriptionPeriod,
+            featureName,
+            isLoggedIn: Boolean(user?.onekeyUserId),
+            purchaseFlowId: purchaseAnalyticsContext.purchaseFlowId,
+            paywallSessionId: purchaseAnalyticsContext.paywallSessionId,
+            entryPoint: purchaseAnalyticsContext.entryPoint,
+            hasFreeTrialOffer: Boolean(selectedPackage.freeTrial),
+            trialDays:
+              selectedPackage.freeTrial?.periodUnit === 'day'
+                ? selectedPackage.freeTrial.periodNumber
+                : undefined,
+            packagePrice:
+              selectedSubscriptionPeriod === 'P1Y'
+                ? selectedPackage.pricePerYear
+                : selectedPackage.pricePerMonth,
+            packageCurrency: selectedPackage.currencyCode,
+            priceCurrency: selectedPackage.currencyCode,
+          });
           return purchase({
             selectedSubscriptionPeriod,
             currency: selectedPackage?.currencyCode,
             freeTrial: selectedPackage?.freeTrial,
+            packagePrice:
+              selectedSubscriptionPeriod === 'P1Y'
+                ? selectedPackage.pricePerYear
+                : selectedPackage.pricePerMonth,
+            packageCurrency: selectedPackage.currencyCode,
             featureName,
+            analyticsContext: purchaseAnalyticsContext,
           });
         }}
       />

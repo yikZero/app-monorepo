@@ -9,7 +9,6 @@ import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/background
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes/modal';
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
 import type {
@@ -19,6 +18,7 @@ import type {
 import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeInfiniSubscriptionPlan } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import { showPrimeInfiniWaitingDialog } from '../components/PrimeInfiniWaitingDialog';
@@ -28,6 +28,7 @@ import { logPrimeInfiniPaymentFlow } from '../primeInfiniPaymentLogger';
 import { getPrimeInfiniExternalCheckoutGuard } from './primeInfiniExternalCheckoutGuard';
 import { getPrimeInfiniPaymentAssets } from './primeInfiniPaymentUtils';
 import { createPrimeInfiniRemotePendingPaymentResolver } from './primeInfiniRemotePendingPayment';
+import primePaymentUtils from './primePaymentUtils';
 
 import type { ISubscriptionPeriod } from './usePrimePaymentTypes';
 
@@ -67,18 +68,26 @@ export function usePrimeInfiniPurchase({
 
   const purchaseByExternalCheckout = useCallback(
     async ({
-      flowId = generateUUID(),
+      flowId: requestedFlowId,
+      analyticsContext,
       selectedSubscriptionPeriod,
       featureName,
       beforeCheckout,
       beforeOpenCheckout,
     }: {
       flowId?: string;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
       beforeCheckout?: () => Promise<boolean>;
       beforeOpenCheckout?: () => Promise<void>;
     }) => {
+      const flowId =
+        analyticsContext?.purchaseFlowId ?? requestedFlowId ?? generateUUID();
+      const purchaseContext: IPrimePurchaseAnalyticsContext = {
+        ...analyticsContext,
+        purchaseFlowId: flowId,
+      };
       const plan: IPrimeInfiniSubscriptionPlan =
         selectedSubscriptionPeriod === 'P1Y' ? 'yearly' : 'monthly';
       if (
@@ -265,6 +274,10 @@ export function usePrimeInfiniPurchase({
               screen: EPrimePages.PrimeInfiniPayment,
               params: {
                 flowId,
+                analyticsContext: purchaseContext,
+                fromEntryPoint: purchaseContext.entryPoint,
+                paywallSessionId: purchaseContext.paywallSessionId,
+                purchaseStartedAt: purchaseContext.purchaseStartedAt,
                 selectedSubscriptionPeriod:
                   decision.recovery.plan === 'monthly' ? 'P1M' : 'P1Y',
                 featureName,
@@ -282,19 +295,40 @@ export function usePrimeInfiniPurchase({
         if (!(await validateCheckout())) {
           return false;
         }
-        defaultLogger.prime.subscription.primeSubscribeIntent({
+        primePaymentUtils.trackPrimeSubscriptionIntent({
           subscriptionPeriod: selectedSubscriptionPeriod,
-          featureName,
           currency: 'USD',
+          packagePrice: plan === 'yearly' ? 239 : 29.99,
+          packageCurrency: 'USD',
+          featureName,
           paymentMethod: 'crypto',
+          context: purchaseContext,
         });
-        const checkoutResult =
-          await backgroundApiProxy.servicePrime.apiGetInfiniCheckoutUrl({
-            flowContext: { flowId, paymentSource: 'externalCheckout' },
-            plan,
-            expectedOneKeyUserId: purchaserUserId,
-            authContext,
-          });
+        const checkoutResult = await (async () => {
+          try {
+            return await backgroundApiProxy.servicePrime.apiGetInfiniCheckoutUrl(
+              {
+                flowContext: {
+                  ...purchaseContext,
+                  flowId,
+                  paymentSource: 'externalCheckout',
+                },
+                plan,
+                expectedOneKeyUserId: purchaserUserId,
+                authContext,
+              },
+            );
+          } catch (error) {
+            primePaymentUtils.trackPrimeSubscriptionFailed({
+              error,
+              paymentMethod: 'crypto',
+              subscriptionPeriod: selectedSubscriptionPeriod,
+              featureName,
+              context: purchaseContext,
+            });
+            throw error;
+          }
+        })();
         const postCreateGuard = await getPrimeInfiniExternalCheckoutGuard();
         if (
           !postCreateGuard?.isLoggedIn ||
@@ -326,6 +360,7 @@ export function usePrimeInfiniPurchase({
           onClose: cancelCheckout,
           context: {
             flowId,
+            analyticsContext: purchaseContext,
             checkoutType: 'externalWallet',
             plan,
             onekeyUserId: purchaserUserId,
@@ -410,15 +445,24 @@ export function usePrimeInfiniPurchase({
     async ({
       selectedSubscriptionPeriod,
       featureName,
+      analyticsContext,
       createNewPayment = true,
       remotePaymentResumeIntent,
     }: {
       selectedSubscriptionPeriod: ISubscriptionPeriod;
       featureName?: EPrimeFeatures;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
       createNewPayment?: boolean;
       remotePaymentResumeIntent?: IPrimeParamList[EPrimePages.PrimeInfiniPayment]['remotePaymentResumeIntent'];
     }) => {
-      const flowId = generateUUID();
+      const flowId = analyticsContext?.purchaseFlowId ?? generateUUID();
+      const purchaseContext: IPrimePurchaseAnalyticsContext = {
+        ...analyticsContext,
+        purchaseFlowId: flowId,
+        ...(createNewPayment && !analyticsContext?.purchaseStartedAt
+          ? { purchaseStartedAt: Date.now() }
+          : {}),
+      };
       const plan: IPrimeInfiniSubscriptionPlan =
         selectedSubscriptionPeriod === 'P1Y' ? 'yearly' : 'monthly';
       if (
@@ -465,6 +509,7 @@ export function usePrimeInfiniPurchase({
           screen: EPrimePages.PrimeInfiniPayment,
           params: {
             flowId,
+            analyticsContext: purchaseContext,
             selectedSubscriptionPeriod,
             featureName,
             createNewPayment,

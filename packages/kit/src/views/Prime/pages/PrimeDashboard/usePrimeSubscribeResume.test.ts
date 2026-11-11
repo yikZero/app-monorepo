@@ -5,6 +5,7 @@ import type { MutableRefObject } from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
 import { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import {
   PRIME_SUBSCRIBE_RESUME_DELAY_MS,
@@ -19,12 +20,21 @@ const freeTrial = {
   periodUnit: 'day' as const,
   source: 'web' as const,
 };
+const analyticsContext: IPrimePurchaseAnalyticsContext = {
+  paywallSessionId: '123e4567-e89b-12d3-a456-426614174000',
+  purchaseFlowId: '123e4567-e89b-12d3-a456-426614174001',
+  entryPoint: 'primePage',
+  purchaseStartedAt: 1,
+};
 
 function buildPendingSubscribeRef(): MutableRefObject<IPrimePendingSubscribe | null> {
   return {
     current: {
       subscriptionPeriod: 'P1Y',
       freeTrial,
+      packagePrice: 99,
+      packageCurrency: 'EUR',
+      analyticsContext,
     },
   };
 }
@@ -98,6 +108,9 @@ describe('usePrimeSubscribeResume', () => {
       selectedSubscriptionPeriod: 'P1Y',
       featureName: EPrimeFeatures.ReceiveRiskMonitoring,
       freeTrial,
+      packagePrice: 99,
+      packageCurrency: 'EUR',
+      analyticsContext,
     });
     expect(pendingSubscribeRef.current).toBeNull();
   });

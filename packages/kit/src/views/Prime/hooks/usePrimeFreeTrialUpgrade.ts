@@ -5,6 +5,7 @@ import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EModalRoutes, ERootRoutes } from '@onekeyhq/shared/src/routes';
 import { EPrimePages } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimeEntryPoint } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeFreeTrialFeatureId } from '@onekeyhq/shared/types/prime/primeFreeTrialTypes';
 
 // Opening the Prime dashboard from the free-trial feedback. Needs no auth
@@ -18,10 +19,12 @@ export function usePrimeFreeTrialUpgrade() {
       networkId,
       freeTrialReason,
       afterPageExit,
+      entryPoint,
     }: {
       featureId: IPrimeFreeTrialFeatureId;
       networkId?: string;
       freeTrialReason?: 'exhausted' | 'notOpen';
+      entryPoint?: IPrimeEntryPoint;
       // The calling page was just closed: its navigation object may no
       // longer resolve the root stack, so navigate from the root ref.
       afterPageExit?: boolean;
@@ -30,6 +33,7 @@ export function usePrimeFreeTrialUpgrade() {
         fromFeature: featureId,
         networkId,
         freeTrialReason,
+        fromEntryPoint: entryPoint,
       };
       if (afterPageExit) {
         rootNavigationRef.current?.navigate(ERootRoutes.iOSFullScreen, {
@@ -54,11 +58,13 @@ export function usePrimeFreeTrialUpgrade() {
       networkId,
       afterPageExit,
       freeTrialReason = 'exhausted',
+      entryPoint = 'freeTrialExhaustedToast',
     }: {
       featureId: IPrimeFreeTrialFeatureId;
       networkId?: string;
       afterPageExit?: boolean;
       freeTrialReason?: 'exhausted' | 'notOpen';
+      entryPoint?: IPrimeEntryPoint;
     }) => {
       defaultLogger.prime.subscription.primeFreeTrialUpgradeClick({
         featureName: featureId,
@@ -68,6 +74,7 @@ export function usePrimeFreeTrialUpgrade() {
         featureId,
         networkId,
         freeTrialReason,
+        entryPoint,
         afterPageExit,
       });
     },

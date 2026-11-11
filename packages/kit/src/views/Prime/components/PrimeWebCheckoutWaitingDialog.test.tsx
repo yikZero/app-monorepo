@@ -18,7 +18,10 @@ import { showPrimeWebCheckoutWaitingDialog } from './PrimeWebCheckoutWaitingDial
 
 import type { settlePrimeWebCheckout } from '../hooks/primeWebCheckout';
 import type { IPrimeWebCheckoutResult } from '../hooks/primeWebCheckoutResult';
-import type { IPrimePurchaseMonitorAdapter } from '../hooks/usePrimePurchaseMonitor';
+import type {
+  IPrimePurchaseMonitorAdapter,
+  IPrimePurchaseMonitorEvent,
+} from '../hooks/usePrimePurchaseMonitor';
 
 const mockClose = jest.fn<Promise<void>, []>();
 const mockSettle = jest.fn<
@@ -35,11 +38,18 @@ const mockGetPendingSession = jest.fn<
 >();
 const mockCheck = jest.fn<Promise<IPrimeWebCheckoutResult>, [unknown]>();
 const mockOpenPage = jest.fn<Promise<void>, [unknown, unknown]>();
+const mockTrackPrimeSubscriptionFailedReason = jest.fn();
+let mockDialogOnClose:
+  | ((extra?: { flag?: string }) => Promise<void>)
+  | undefined;
 let mockAdapter:
   | IPrimePurchaseMonitorAdapter<IPrimeWebCheckoutResult, string>
   | undefined;
 let mockOnSuccess:
   | ((result: IPrimeWebCheckoutResult | undefined) => void | Promise<void>)
+  | undefined;
+let mockOnEvent:
+  | ((event: IPrimePurchaseMonitorEvent<IPrimeWebCheckoutResult>) => void)
   | undefined;
 
 jest.mock('react-intl', () => ({
@@ -47,7 +57,8 @@ jest.mock('react-intl', () => ({
 }));
 jest.mock('@onekeyhq/components', () => ({
   Dialog: {
-    show: ({ renderContent }: IDialogShowProps) => {
+    show: ({ renderContent, onClose }: IDialogShowProps) => {
+      mockDialogOnClose = onClose as typeof mockDialogOnClose;
       render(renderContent);
       return { close: mockClose };
     },
@@ -63,6 +74,14 @@ jest.mock('@onekeyhq/components', () => ({
   SizableText: ({ children }: { children?: ReactNode }) => <>{children}</>,
   YStack: ({ children }: { children?: ReactNode }) => <>{children}</>,
   Toast: { message: jest.fn() },
+}));
+jest.mock('../hooks/primePaymentUtils', () => ({
+  __esModule: true,
+  default: {
+    trackPrimeSubscriptionFailedReason: (...args: unknown[]) => {
+      mockTrackPrimeSubscriptionFailedReason(...args);
+    },
+  },
 }));
 jest.mock('@onekeyhq/kit/src/background/instance/backgroundApiProxy', () => ({
   __esModule: true,
@@ -111,14 +130,19 @@ jest.mock('../hooks/usePrimePurchaseMonitor', () => ({
   usePrimePurchaseMonitor: ({
     onSuccess,
     adapter,
+    onEvent,
   }: {
     adapter: IPrimePurchaseMonitorAdapter<IPrimeWebCheckoutResult, string>;
     onSuccess: (
       result: IPrimeWebCheckoutResult | undefined,
     ) => void | Promise<void>;
+    onEvent?: (
+      event: IPrimePurchaseMonitorEvent<IPrimeWebCheckoutResult>,
+    ) => void;
   }) => {
     mockOnSuccess = onSuccess;
     mockAdapter = adapter;
+    mockOnEvent = onEvent;
     return { refresh: jest.fn(), isTimedOut: false };
   },
 }));
@@ -157,7 +181,10 @@ async function completeCheckout() {
 }
 
 describe('hosted checkout waiting-dialog success handoff', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const previousOnClose = mockDialogOnClose;
+    mockDialogOnClose = undefined;
+    await previousOnClose?.({ flag: 'succeeded' });
     jest.resetAllMocks();
     mockClose.mockResolvedValue(undefined);
     mockWait.mockResolvedValue(undefined);
@@ -165,6 +192,7 @@ describe('hosted checkout waiting-dialog success handoff', () => {
     mockIsUserCurrent.mockResolvedValue(true);
     mockSettle.mockResolvedValue({ outcome: 'succeeded', successPayload });
     mockGetPendingSession.mockResolvedValue(session);
+    mockDialogOnClose = undefined;
     showPrimeWebCheckoutWaitingDialog({ session });
     // Opening the singleton also closes the preceding test's dialog.
     mockClose.mockClear();
@@ -220,6 +248,39 @@ describe('hosted checkout waiting-dialog success handoff', () => {
     );
     expect(mockFinish.mock.invocationCallOrder[0]).toBeLessThan(
       mockToast.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('treats the cancel flag as a user abandonment', async () => {
+    await act(async () => {
+      await mockDialogOnClose?.({ flag: 'cancel' });
+    });
+
+    expect(mockTrackPrimeSubscriptionFailedReason).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'abandoned' }),
+    );
+  });
+
+  it('does not treat a programmatic success close as abandonment', async () => {
+    await act(completeCheckout);
+    await act(async () => {
+      await mockDialogOnClose?.({ flag: 'succeeded' });
+    });
+
+    expect(mockTrackPrimeSubscriptionFailedReason).not.toHaveBeenCalled();
+  });
+
+  it('keeps a late success after the monitor timeout', async () => {
+    await act(async () => {
+      mockOnEvent?.({ type: 'timedOut', data: result });
+      await mockOnSuccess?.(result);
+    });
+
+    expect(mockTrackPrimeSubscriptionFailedReason).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'timedOut' }),
+    );
+    expect(mockSettle).toHaveBeenCalledWith(
+      expect.objectContaining({ result }),
     );
   });
 

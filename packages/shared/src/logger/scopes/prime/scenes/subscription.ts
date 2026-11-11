@@ -9,6 +9,7 @@ import type {
   IPrimeFreeTrialResultParams,
 } from '@onekeyhq/shared/src/utils/primeFreeTrialAnalytics';
 import { getPrimeInfiniPaymentSafeLogParams } from '@onekeyhq/shared/src/utils/primeInfiniPaymentDiagnostics';
+import type { IPrimePurchaseErrorAnalytics } from '@onekeyhq/shared/src/utils/primePurchaseErrorAnalytics';
 import {
   getOneKeyIdAuthFailureServerParams,
   getOneKeyIdAuthFailureSite,
@@ -19,6 +20,11 @@ import type {
   IOneKeyIdAuthFailureStep,
   IOneKeyIdAuthFailureTrigger,
 } from '@onekeyhq/shared/src/utils/sensitiveErrorMessageUtils';
+import type {
+  IPrimeEntryPoint,
+  IPrimePeriodType,
+  IPrimePurchaseStore,
+} from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type { IPrimeInfiniPaymentSource } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import { BaseScene } from '../../../base/baseScene';
@@ -70,7 +76,7 @@ export type IPrimeWebCheckoutFlowParams = {
     | 'timedOut'
     | 'cancelled';
   reason?: string;
-  platform?: string;
+  checkoutPlatform?: 'extension' | 'desktop' | 'android' | 'web';
   isSandbox?: boolean;
   subscriptionPeriod?: ISubscriptionPeriod;
   featureName?: EPrimeFeatures | string;
@@ -86,7 +92,46 @@ export type IOneKeyIdLoginMethod = 'email' | 'google' | 'apple' | 'oauth';
 export type IPrimeSubscribeFailedReason =
   | 'userCancelled'
   | 'paymentFailed'
-  | 'clientError';
+  | 'clientError'
+  | 'paymentPending'
+  | 'entitlementInactive'
+  | 'abandoned'
+  | 'expired'
+  | 'timedOut';
+
+export type IOneKeyIdLogoutReason =
+  | 'userInitiated'
+  | 'accountDeleted'
+  | 'remoteLogout'
+  | 'tokenInvalid'
+  | 'deviceLimit'
+  | 'legacyBindFailed'
+  | 'debug';
+
+export type IPrimePurchasesSdkCallParams = {
+  method:
+    | 'configure'
+    | 'logIn'
+    | 'getOfferings'
+    | 'getCustomerInfo'
+    | 'checkTrialEligibility'
+    | 'purchase'
+    | 'restore'
+    | 'setAttributes';
+  status: 'succeeded' | 'failed';
+  sdk: 'native' | 'web' | 'desktopStore';
+  durationMs: number;
+  paywallSessionId?: string;
+  purchaseFlowId?: string;
+  offeringId?: string;
+  packageCount?: number;
+  hasMonthly?: boolean;
+  hasYearly?: boolean;
+  hasFreeTrial?: boolean;
+  priceCurrency?: string;
+  trialEligibility?: 'eligible' | 'ineligible' | 'unknown';
+  userMismatchRetried?: boolean;
+} & Partial<IPrimePurchaseErrorAnalytics>;
 
 export type IPrimeManageSubscriptionTarget =
   | 'infiniPage'
@@ -247,6 +292,44 @@ export type IPrimeGiftStageParams =
     };
 
 export class PrimeSubscriptionScene extends BaseScene {
+  private readonly reportedOfferingsPaywalls = new Set<string>();
+
+  @LogToServer()
+  public primePurchasesSdkCall(params: IPrimePurchasesSdkCallParams) {
+    if (params.status === 'succeeded') {
+      if (params.method === 'getCustomerInfo') {
+        return NO_LOG_OUTPUT;
+      }
+      if (params.method === 'getOfferings') {
+        if (
+          !params.paywallSessionId ||
+          this.reportedOfferingsPaywalls.has(params.paywallSessionId)
+        ) {
+          return NO_LOG_OUTPUT;
+        }
+        this.reportedOfferingsPaywalls.add(params.paywallSessionId);
+        if (this.reportedOfferingsPaywalls.size > 1024) {
+          const oldest = this.reportedOfferingsPaywalls.values().next().value;
+          if (oldest) this.reportedOfferingsPaywalls.delete(oldest);
+        }
+      }
+    }
+    return params;
+  }
+
+  @LogToLocal({ level: 'error' })
+  public primePurchasesSdkCallLocal(params: {
+    method: IPrimePurchasesSdkCallParams['method'];
+    sdk: IPrimePurchasesSdkCallParams['sdk'];
+    errorMessage: string;
+  }) {
+    return {
+      method: params.method,
+      sdk: params.sdk,
+      errorMessage: scrubSensitiveErrorMessageText(params.errorMessage),
+    };
+  }
+
   @LogToLocal()
   public emailOtpCaptchaDiagnostic(params: ICaptchaDiagnostic) {
     return sanitizeCaptchaDiagnostic(params) ?? NO_LOG_OUTPUT;
@@ -293,15 +376,18 @@ export class PrimeSubscriptionScene extends BaseScene {
     featureName,
     entryPoint,
     isPrimeActive,
+    paywallSessionId,
   }: {
     featureName: EPrimeFeatures;
-    entryPoint?: 'settingsPage' | 'moreActions' | 'approvalPopup' | 'primePage';
+    entryPoint?: IPrimeEntryPoint;
     isPrimeActive?: boolean;
+    paywallSessionId?: string;
   }) {
     return {
       featureName,
       entryPoint,
       isPrimeActive,
+      paywallSessionId,
     };
   }
 
@@ -315,18 +401,33 @@ export class PrimeSubscriptionScene extends BaseScene {
     isPrimeActive,
     entitlementSource,
     freeTrialReason,
+    entryPoint,
+    paywallSessionId,
+    isLoggedIn,
+    packagesState,
+    hasFreeTrialOffer,
   }: {
     featureName?: EPrimeFeatures;
     isPrimeActive: boolean;
     // Set when the dashboard is opened by the free-trial flow
     entitlementSource?: IPrimeEntitlementSource;
     freeTrialReason?: 'exhausted' | 'notOpen';
+    entryPoint?: IPrimeEntryPoint;
+    paywallSessionId?: string;
+    isLoggedIn?: boolean;
+    packagesState?: 'loading' | 'ready' | 'failed';
+    hasFreeTrialOffer?: boolean;
   }) {
     return {
       featureName,
       isPrimeActive,
       entitlementSource,
       freeTrialReason,
+      entryPoint,
+      paywallSessionId,
+      isLoggedIn,
+      packagesState,
+      hasFreeTrialOffer,
     };
   }
 
@@ -507,17 +608,41 @@ export class PrimeSubscriptionScene extends BaseScene {
     featureName,
     isLoggedIn,
     paymentMethod,
+    purchaseFlowId,
+    paywallSessionId,
+    entryPoint,
+    hasFreeTrialOffer,
+    trialDays,
+    packagePrice,
+    packageCurrency,
+    priceCurrency,
   }: {
     subscriptionPeriod: ISubscriptionPeriod;
     featureName?: EPrimeFeatures;
     isLoggedIn: boolean;
     paymentMethod?: IPrimePaymentMethod;
+    purchaseFlowId?: string;
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+    hasFreeTrialOffer?: boolean;
+    trialDays?: number;
+    packagePrice?: number;
+    packageCurrency?: string;
+    priceCurrency?: string;
   }) {
     return {
       subscriptionPeriod,
       featureName,
       isLoggedIn,
       paymentMethod,
+      purchaseFlowId,
+      paywallSessionId,
+      entryPoint,
+      hasFreeTrialOffer,
+      trialDays,
+      packagePrice,
+      packageCurrency,
+      priceCurrency,
     };
   }
 
@@ -533,12 +658,32 @@ export class PrimeSubscriptionScene extends BaseScene {
     currency,
     paymentMethod,
     cardCheckoutFlow,
+    purchaseFlowId,
+    paywallSessionId,
+    entryPoint,
+    productId,
+    offeringId,
+    hasFreeTrialOffer,
+    trialDays,
+    packagePrice,
+    packageCurrency,
+    isTrialEligible,
   }: {
     subscriptionPeriod: ISubscriptionPeriod;
     featureName?: EPrimeFeatures;
     currency?: string;
     paymentMethod?: IPrimePaymentMethod;
     cardCheckoutFlow?: IPrimeCardCheckoutFlow;
+    purchaseFlowId?: string;
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+    productId?: string;
+    offeringId?: string;
+    hasFreeTrialOffer?: boolean;
+    trialDays?: number;
+    packagePrice?: number;
+    packageCurrency?: string;
+    isTrialEligible?: 'eligible' | 'ineligible' | 'unknown';
   }) {
     return {
       subscriptionPeriod,
@@ -546,6 +691,16 @@ export class PrimeSubscriptionScene extends BaseScene {
       currency,
       paymentMethod,
       cardCheckoutFlow,
+      purchaseFlowId,
+      paywallSessionId,
+      entryPoint,
+      productId,
+      offeringId,
+      hasFreeTrialOffer,
+      trialDays,
+      packagePrice,
+      packageCurrency,
+      isTrialEligible,
     };
   }
 
@@ -589,7 +744,7 @@ export class PrimeSubscriptionScene extends BaseScene {
     entryPoint,
   }: {
     featureName: EPrimeFeatures;
-    entryPoint?: 'settingsPage' | 'moreActions' | 'approvalPopup' | 'primePage';
+    entryPoint?: IPrimeEntryPoint;
   }) {
     return {
       featureName,
@@ -632,25 +787,55 @@ export class PrimeSubscriptionScene extends BaseScene {
     paymentMethod,
     cardCheckoutFlow,
     periodType,
+    purchaseFlowId,
+    paywallSessionId,
+    entryPoint,
+    productId,
+    offeringId,
+    store,
+    isSandbox,
+    hasFreeTrial,
+    trialDays,
+    durationMs,
   }: {
     planType: 'monthly' | 'yearly';
     amount: number;
-    currency: string;
+    currency?: string;
     featureName?: EPrimeFeatures;
     paymentMethod?: IPrimePaymentMethod;
     cardCheckoutFlow?: IPrimeCardCheckoutFlow;
     // RevenueCat entitlement period type ('trial' / 'intro' / 'normal'),
     // known only when success is confirmed by polling RevenueCat.
-    periodType?: string;
+    periodType?: IPrimePeriodType;
+    purchaseFlowId?: string;
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+    productId?: string;
+    offeringId?: string;
+    store?: IPrimePurchaseStore;
+    isSandbox?: boolean;
+    hasFreeTrial?: boolean;
+    trialDays?: number;
+    durationMs?: number;
   }) {
     return {
       planType,
       amount,
-      currency,
+      ...(currency ? { currency } : {}),
       featureName,
       paymentMethod,
       cardCheckoutFlow,
       periodType,
+      purchaseFlowId,
+      paywallSessionId,
+      entryPoint,
+      productId,
+      offeringId,
+      store,
+      isSandbox,
+      hasFreeTrial,
+      trialDays,
+      durationMs,
     };
   }
 
@@ -670,7 +855,16 @@ export class PrimeSubscriptionScene extends BaseScene {
     errorCode,
     errorMessage,
     cardCheckoutFlow,
-  }: {
+    errorName,
+    clientErrorKey,
+    underlyingErrorCategory,
+    purchaseFlowId,
+    paywallSessionId,
+    entryPoint,
+    productId,
+    offeringId,
+    durationMs,
+  }: Partial<IPrimePurchaseErrorAnalytics> & {
     paymentMethod: IPrimePaymentMethod;
     subscriptionPeriod?: ISubscriptionPeriod;
     featureName?: EPrimeFeatures;
@@ -678,6 +872,12 @@ export class PrimeSubscriptionScene extends BaseScene {
     errorCode?: string;
     errorMessage?: string;
     cardCheckoutFlow?: IPrimeCardCheckoutFlow;
+    purchaseFlowId?: string;
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+    productId?: string;
+    offeringId?: string;
+    durationMs?: number;
   }) {
     this.primeSubscribeFailedLocal({
       paymentMethod,
@@ -692,6 +892,15 @@ export class PrimeSubscriptionScene extends BaseScene {
       reason,
       errorCode,
       cardCheckoutFlow,
+      errorName,
+      clientErrorKey,
+      underlyingErrorCategory,
+      purchaseFlowId,
+      paywallSessionId,
+      entryPoint,
+      productId,
+      offeringId,
+      durationMs,
     };
   }
 
@@ -714,6 +923,15 @@ export class PrimeSubscriptionScene extends BaseScene {
       errorCode,
       errorMessage: scrubSensitiveErrorMessageText(errorMessage),
     };
+  }
+
+  @LogToLocal({ level: 'error' })
+  public primePurchaseAnalyticsDedupError({
+    event,
+  }: {
+    event: 'intent' | 'failed' | 'success';
+  }) {
+    return { event };
   }
 
   /**
@@ -750,11 +968,38 @@ export class PrimeSubscriptionScene extends BaseScene {
     return { target };
   }
 
-  @LogToLocal()
   @LogToServer()
-  public fetchPackagesFailed({ errorMessage }: { errorMessage: string }) {
+  public fetchPackagesFailed({
+    errorMessage,
+    errorCode,
+    errorName,
+    underlyingErrorCategory,
+    paywallSessionId,
+    purchaseFlowId,
+    entryPoint,
+  }: {
+    errorMessage: string;
+    errorCode?: string;
+    errorName?: string;
+    underlyingErrorCategory?: IPrimePurchaseErrorAnalytics['underlyingErrorCategory'];
+    paywallSessionId?: string;
+    purchaseFlowId?: string;
+    entryPoint?: IPrimeEntryPoint;
+  }) {
+    this.fetchPackagesFailedLocal({ errorMessage });
     return {
-      // Store SDK errors are free text; scrub before they leave the device.
+      errorCode,
+      errorName,
+      underlyingErrorCategory,
+      paywallSessionId,
+      purchaseFlowId,
+      entryPoint,
+    };
+  }
+
+  @LogToLocal({ level: 'error' })
+  public fetchPackagesFailedLocal({ errorMessage }: { errorMessage: string }) {
+    return {
       errorMessage: scrubSensitiveErrorMessageText(errorMessage),
     };
   }
@@ -805,9 +1050,8 @@ export class PrimeSubscriptionScene extends BaseScene {
     return { reason: scrubSensitiveErrorMessageText(reason) };
   }
 
-  @LogToLocal()
   @LogToServer()
-  public onekeyIdLogout({ reason }: { reason: string }) {
+  public onekeyIdLogout({ reason }: { reason: IOneKeyIdLogoutReason }) {
     return {
       reason,
     };
@@ -833,9 +1077,20 @@ export class PrimeSubscriptionScene extends BaseScene {
   /**
    * Sanitized diagnostics for repairing an inconsistent local OneKey ID projection.
    */
-  @LogToLocal()
   @LogToServer()
   public onekeyIdAuthStateRepair(params: IOneKeyIdAuthStateRepairParams) {
+    this.onekeyIdAuthStateRepairLocal(params);
+    if (
+      params.repairType === 'legacyLoggedOutWithoutTombstone' ||
+      params.stage !== 'stateCommit'
+    ) {
+      return NO_LOG_OUTPUT;
+    }
+    return params;
+  }
+
+  @LogToLocal()
+  public onekeyIdAuthStateRepairLocal(params: IOneKeyIdAuthStateRepairParams) {
     return params;
   }
 

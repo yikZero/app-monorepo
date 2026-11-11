@@ -31,6 +31,8 @@ const mockSetMixpanelDistinctID = jest.fn<Promise<void>, [string]>();
 const mockSetAttributes = jest.fn<Promise<void>, [Record<string, string>]>();
 const mockPrimeSubscribeFailed = jest.fn<void, [unknown]>();
 const mockPrimeSubscribeFailedLocal = jest.fn<void, [unknown]>();
+const mockPrimePurchasesSdkCall = jest.fn<void, [unknown]>();
+const mockPrimePurchasesSdkCallLocal = jest.fn<void, [unknown]>();
 const mockPrimeRestorePurchaseResult = jest.fn<void, [unknown]>();
 const mockDialogConfirm = jest.fn<void, [unknown]>();
 const mockFetchPrimeUserInfo = jest.fn<Promise<void>, []>();
@@ -131,6 +133,10 @@ jest.mock('@onekeyhq/shared/src/logger/logger', () => ({
     prime: {
       usage: { primeReceiveKytIntroFlowFailed: jest.fn() },
       subscription: {
+        primePurchasesSdkCall: (params: unknown) =>
+          mockPrimePurchasesSdkCall(params),
+        primePurchasesSdkCallLocal: (params: unknown) =>
+          mockPrimePurchasesSdkCallLocal(params),
         primeSubscribeFailed: (params: unknown) =>
           mockPrimeSubscribeFailed(params),
         primeSubscribeFailedLocal: (params: unknown) =>
@@ -198,6 +204,7 @@ type ISuccessDialogOptions = {
 const mockOffering = {
   product: {
     currencyCode: 'USD',
+    identifier: 'prime_yearly',
     pricePerMonth: 9,
     pricePerYear: 99,
     subscriptionPeriod: 'P1Y',
@@ -301,6 +308,9 @@ describe('usePrimePaymentMethods native purchase', () => {
                 ...mockOffering.product,
                 pricePerYear: rawPricePerYear,
               },
+              presentedOfferingContext: {
+                offeringIdentifier: 'native-offering',
+              },
             },
           ],
         },
@@ -309,7 +319,11 @@ describe('usePrimePaymentMethods native purchase', () => {
         customerInfo: {
           entitlements: {
             active: {
-              Prime: { isActive: true, periodType: 'TRIAL' },
+              Prime: {
+                isActive: true,
+                periodType: 'TRIAL',
+                productIdentifier: 'prime_yearly',
+              },
             },
           },
           managementURL: 'https://subscriptions.example.com',
@@ -326,6 +340,12 @@ describe('usePrimePaymentMethods native purchase', () => {
       await act(async () => {
         returnedResult = await result.current.purchasePackageNative?.({
           subscriptionPeriod: 'P1Y',
+          analyticsContext: {
+            paywallSessionId: 'paywall-1',
+            purchaseFlowId: 'flow-1',
+            entryPoint: 'settingsPrimeRow',
+            purchaseStartedAt: 1_700_000_000_000,
+          },
         });
       });
 
@@ -356,13 +376,25 @@ describe('usePrimePaymentMethods native purchase', () => {
       );
       // The hook is the single refresh owner: exactly one refresh per purchase.
       expect(mockFetchPrimeUserInfo).toHaveBeenCalledTimes(1);
-      expect(mockTrackPrimeSubscriptionSuccess).toHaveBeenCalledWith({
-        amount: 99,
-        currency: 'USD',
-        subscriptionPeriod: 'P1Y',
-        featureName: undefined,
-        paymentMethod: 'iap',
-      });
+      expect(mockTrackPrimeSubscriptionSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 99,
+          currency: 'USD',
+          subscriptionPeriod: 'P1Y',
+          featureName: undefined,
+          paymentMethod: 'iap',
+          store: isNativeAndroid ? 'playStore' : 'appStore',
+          periodType: 'trial',
+          productId: 'prime_yearly',
+          context: {
+            paywallSessionId: 'paywall-1',
+            purchaseFlowId: 'flow-1',
+            entryPoint: 'settingsPrimeRow',
+            purchaseStartedAt: 1_700_000_000_000,
+          },
+          offeringId: 'native-offering',
+        }),
+      );
       // RevenueCat -> PostHog identity alignment: server-side subscription
       // events must land on the same analytics person as client events.
       expect(mockSetAttributes).toHaveBeenCalledWith({
@@ -375,6 +407,72 @@ describe('usePrimePaymentMethods native purchase', () => {
       }
     },
   );
+
+  it('includes the purchase context and mismatch retry in native offering telemetry', async () => {
+    const analyticsContext = {
+      paywallSessionId: 'paywall-1',
+      purchaseFlowId: 'flow-1',
+      entryPoint: 'settingsPrimeRow' as const,
+    };
+    mockLogIn.mockRejectedValueOnce(new Error('RevenueCat user mismatch'));
+    mockGetOfferings.mockResolvedValue({
+      current: {
+        availablePackages: [
+          {
+            ...mockOffering,
+            product: {
+              ...mockOffering.product,
+              currencyCode: 'CAD',
+            },
+            presentedOfferingContext: {
+              offeringIdentifier: 'presented-offering',
+            },
+          },
+        ],
+      },
+    });
+    mockPurchasePackage.mockResolvedValue({
+      customerInfo: {
+        entitlements: {
+          active: {
+            Prime: {
+              isActive: true,
+              periodType: 'INTRO',
+              productIdentifier: 'prime_yearly',
+            },
+          },
+        },
+      },
+    });
+    const { result } = renderHook(() => usePrimePaymentMethods());
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+
+    await act(async () => {
+      await result.current.purchasePackageNative?.({
+        subscriptionPeriod: 'P1Y',
+        analyticsContext,
+      });
+    });
+
+    const offeringEvent = mockPrimePurchasesSdkCall.mock.calls
+      .map(([params]) => params as { method?: string; purchaseFlowId?: string })
+      .find(
+        ({ method, purchaseFlowId }) =>
+          method === 'getOfferings' &&
+          purchaseFlowId === analyticsContext.purchaseFlowId,
+      );
+    expect(offeringEvent).toEqual(
+      expect.objectContaining({
+        method: 'getOfferings',
+        paywallSessionId: analyticsContext.paywallSessionId,
+        purchaseFlowId: analyticsContext.purchaseFlowId,
+        offeringId: 'presented-offering',
+        priceCurrency: 'CAD',
+        userMismatchRetried: true,
+      }),
+    );
+    expect(mockLogIn).toHaveBeenCalledTimes(2);
+  });
 
   it('keeps native offering prices in major currency units', async () => {
     const { result } = renderHook(() => usePrimePaymentMethods());
@@ -552,6 +650,14 @@ describe('usePrimePaymentMethods native purchase', () => {
 
     expect(mockDialogConfirm).not.toHaveBeenCalled();
     expect(mockPurchaseSuccessListener).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockPrimeSubscribeFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethod: 'iap',
+          reason: 'entitlementInactive',
+        }),
+      ),
+    );
     // Failed purchases still refresh the server projection exactly once.
     expect(mockFetchPrimeUserInfo).toHaveBeenCalledTimes(1);
   });

@@ -317,6 +317,7 @@ function TxHistorySettingsContent({
       screen: EModalBulkExportHistoryRoutes.BulkExportHistoryModal,
       params: {
         networkId,
+        fromEntryPoint: 'historySettings',
       },
     });
   }, [closePopover, isPrimeSubscriptionActive, navigation, networkId]);

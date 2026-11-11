@@ -60,7 +60,6 @@ import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { appEventBus } from '@onekeyhq/shared/src/eventBus/appEventBus';
 import { EAppEventBusNames } from '@onekeyhq/shared/src/eventBus/appEventBusNames';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { isPrimeCryptoPaymentSupported } from '@onekeyhq/shared/src/prime/primePaymentCapabilities';
 import {
@@ -96,6 +95,7 @@ import {
 } from '@onekeyhq/shared/src/utils/primeInfiniPaymentWarnings';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type {
   IPrimeInfiniPendingPaymentSession as IPersistedPrimeInfiniPendingPaymentSession,
   IPrimeInfiniCheckoutAuthContext,
@@ -153,9 +153,15 @@ import {
   preparePrimeInfiniRemotePayment,
 } from '../hooks/primeInfiniRemotePendingPayment';
 import {
+  createPrimeCryptoPaymentFlowContext,
+  getPrimeCryptoSessionAnalyticsFields,
+  getPrimeCryptoSessionFlowContext,
+} from '../hooks/primeInfiniSessionAnalytics';
+import {
   capturePrimeInfiniSessionRevision,
   releasePrimeInfiniTerminalSession,
 } from '../hooks/primeInfiniTerminalRelease';
+import primePaymentUtils from '../hooks/primePaymentUtils';
 import {
   isPrimeInfiniExternalCheckoutInFlight,
   usePrimeInfiniPurchase,
@@ -265,6 +271,7 @@ type IConfirmAccountSelectedPayload = {
 
 type IPayWithExternalWallet = (params: {
   flowId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   featureName?: EPrimeFeatures;
   beforeCheckout?: () => Promise<boolean>;
@@ -816,8 +823,10 @@ function normalizePendingPaymentSession(
   if (!session) {
     return undefined;
   }
+  const purchaseFlowId = session.purchaseFlowId ?? session.flowId;
   return {
     ...session,
+    ...(purchaseFlowId ? { purchaseFlowId } : {}),
     featureName:
       session.featureName && PRIME_FEATURE_VALUES.has(session.featureName)
         ? (session.featureName as EPrimeFeatures)
@@ -932,7 +941,15 @@ function PrimeInfiniWalletPaymentContent({
   fallbackWarningMessages?: readonly string[];
   onEnableMockPaymentWarnings: () => void;
 }) {
-  const flowContextRef = useRef(useContext(PrimeInfiniPaymentFlowContext));
+  const inheritedFlowContext = useContext(PrimeInfiniPaymentFlowContext);
+  const flowContextRef = useRef(
+    pendingSession
+      ? getPrimeCryptoSessionFlowContext(pendingSession)
+      : inheritedFlowContext,
+  );
+  flowContextRef.current = pendingSession
+    ? getPrimeCryptoSessionFlowContext(pendingSession)
+    : inheritedFlowContext;
   const intl = useIntl();
   const [settings] = useSettingsPersistAtom();
   const [{ currencyMap = {} }] = useCurrencyPersistAtom();
@@ -1145,7 +1162,9 @@ function PrimeInfiniWalletPaymentContent({
                   paymentCacheKey,
                   payment: nextPayment,
                   sendStarted: nextSendStarted,
-                  flowId: flowContextRef.current?.flowId,
+                  ...getPrimeCryptoSessionAnalyticsFields(
+                    flowContextRef.current,
+                  ),
                 },
               },
             );
@@ -1435,7 +1454,7 @@ function PrimeInfiniWalletPaymentContent({
     onExitPreventedChange(false);
     const waitingSession: IPrimeInfiniPendingPaymentSession = {
       schemaVersion: 2,
-      flowId: flowContextRef.current?.flowId,
+      ...getPrimeCryptoSessionAnalyticsFields(flowContextRef.current),
       createdAt: sessionCreatedAtRef.current,
       asset: paymentAssetRef.current,
       baseline: {
@@ -2549,20 +2568,34 @@ function PrimeInfiniWalletPaymentContent({
       });
       const createPayment = async () => {
         preparationStage = 'paymentCreation';
-        defaultLogger.prime.subscription.primeSubscribeIntent({
+        primePaymentUtils.trackPrimeSubscriptionIntent({
           subscriptionPeriod: selectedSubscriptionPeriod,
-          featureName,
           currency: 'USD',
+          featureName,
           paymentMethod: 'crypto',
+          packagePrice: selectedSubscriptionPeriod === 'P1Y' ? 239 : 29.99,
+          packageCurrency: 'USD',
+          context: flowContextRef.current,
         });
-        return backgroundApiProxy.servicePrime.apiCreateInfiniPayment({
-          flowContext: flowContextRef.current,
-          plan,
-          chain: capturedAsset.chain,
-          token: capturedAsset.token,
-          expectedOneKeyUserId,
-          authContext: discoveryAuthContext,
-        });
+        try {
+          return await backgroundApiProxy.servicePrime.apiCreateInfiniPayment({
+            flowContext: flowContextRef.current,
+            plan,
+            chain: capturedAsset.chain,
+            token: capturedAsset.token,
+            expectedOneKeyUserId,
+            authContext: discoveryAuthContext,
+          });
+        } catch (error) {
+          primePaymentUtils.trackPrimeSubscriptionFailed({
+            error,
+            paymentMethod: 'crypto',
+            subscriptionPeriod: selectedSubscriptionPeriod,
+            featureName,
+            context: flowContextRef.current,
+          });
+          throw error;
+        }
       };
       let createdPayment: IPrimeInfiniPayment;
       if (remoteRecovery) {
@@ -3822,6 +3855,7 @@ function PrimeInfiniWalletPaymentContent({
       try {
         const didOpenCheckout = await onPayWithExternalWallet({
           flowId: flowContextRef.current?.flowId,
+          analyticsContext: flowContextRef.current,
           selectedSubscriptionPeriod,
           featureName,
           beforeCheckout: async () => {
@@ -4382,7 +4416,9 @@ export function PrimeInfiniWalletPaymentRoot({
   preferredNetworkId?: string;
   remotePaymentResumeIntent?: IPrimeParamList[EPrimePages.PrimeInfiniPayment]['remotePaymentResumeIntent'];
 }) {
-  const flowContextRef = useRef(useContext(PrimeInfiniPaymentFlowContext));
+  const inheritedFlowContext = useContext(PrimeInfiniPaymentFlowContext);
+  const flowContextRef = useRef(inheritedFlowContext);
+  flowContextRef.current = inheritedFlowContext;
   const intl = useIntl();
   const [devSettings] = useDevSettingsPersistAtom();
   const [primeUserInfo] = usePrimePersistAtom();
@@ -4568,6 +4604,8 @@ export function PrimeInfiniWalletPaymentRoot({
           );
           localSessionSnapshot = restoredSession;
           if (restoredSession) {
+            const restoredFlowContext =
+              getPrimeCryptoSessionFlowContext(restoredSession);
             const canonicalAsset = getCanonicalPrimeInfiniPaymentAsset(
               restoredSession.asset,
             );
@@ -4601,9 +4639,9 @@ export function PrimeInfiniWalletPaymentRoot({
                     : selectedSubscriptionPeriod,
                 fetchLatestPayment: (paymentId) =>
                   backgroundApiProxy.servicePrime.apiGetInfiniPayment({
-                    flowContext: flowContextRef.current
+                    flowContext: restoredFlowContext
                       ? {
-                          ...flowContextRef.current,
+                          ...restoredFlowContext,
                           paymentSource: 'restoreRefresh',
                         }
                       : undefined,
@@ -4645,6 +4683,8 @@ export function PrimeInfiniWalletPaymentRoot({
                   backgroundApiProxy.simpleDb.prime.setInfiniPendingPaymentSession(
                     {
                       onekeyUserId,
+                      // Restore refreshes update the existing invoice, so its
+                      // attribution must come from the stored session.
                       session: {
                         asset: nextRestoredSession.asset,
                         baseline: nextRestoredSession.baseline,
@@ -4657,7 +4697,9 @@ export function PrimeInfiniWalletPaymentRoot({
                         paymentCacheKey: nextRestoredSession.paymentCacheKey,
                         payment: nextRestoredSession.payment,
                         sendStarted: nextRestoredSession.sendStarted,
-                        flowId: flowContextRef.current?.flowId,
+                        ...getPrimeCryptoSessionAnalyticsFields(
+                          nextRestoredSession,
+                        ),
                       },
                     },
                   ),
@@ -4666,8 +4708,13 @@ export function PrimeInfiniWalletPaymentRoot({
                 pendingSession = normalizePendingPaymentSession(
                   restoreResult.session,
                 );
+                if (pendingSession) {
+                  flowContextRef.current =
+                    getPrimeCryptoSessionFlowContext(pendingSession);
+                }
               } else if (restoreResult.type === 'completed') {
                 completedPaymentId = restoredSession.payment.paymentId;
+                flowContextRef.current = restoredFlowContext;
               }
             }
           }
@@ -5432,6 +5479,7 @@ export function PrimeInfiniWalletPaymentRoot({
     try {
       const didOpenCheckout = await onPayWithExternalWallet({
         flowId: flowContextRef.current?.flowId,
+        analyticsContext: flowContextRef.current,
         selectedSubscriptionPeriod,
         featureName,
       });
@@ -5594,10 +5642,26 @@ export default function PrimeInfiniWalletPayment() {
   const intl = useIntl();
   const navigation = useAppNavigation<IPageNavigationProp<IPrimeParamList>>();
   const route = useAppRoute<IPrimeParamList, EPrimePages.PrimeInfiniPayment>();
-  const [flowContext] = useState<IPrimeInfiniPaymentFlowContext>(() => ({
-    flowId: route.params?.flowId ?? generateUUID(),
-    createNewPaymentIntent: route.params?.createNewPayment === true,
-  }));
+  const [flowContext] = useState<IPrimeInfiniPaymentFlowContext>(() => {
+    const routeAnalyticsContext = route.params?.analyticsContext;
+    return {
+      ...createPrimeCryptoPaymentFlowContext({
+        context: {
+          ...routeAnalyticsContext,
+          paywallSessionId:
+            routeAnalyticsContext?.paywallSessionId ??
+            route.params?.paywallSessionId,
+          purchaseStartedAt:
+            routeAnalyticsContext?.purchaseStartedAt ??
+            route.params?.purchaseStartedAt,
+        },
+        flowId: route.params?.flowId,
+        fromEntryPoint: route.params?.fromEntryPoint,
+        createFlowId: generateUUID,
+      }),
+      createNewPaymentIntent: route.params?.createNewPayment === true,
+    };
+  });
   const createNewPaymentRef = useRef(route.params?.createNewPayment === true);
   const { purchaseByExternalCheckout } = usePrimeInfiniPurchase();
   const [isExitPrevented, setIsExitPrevented] = useState(false);

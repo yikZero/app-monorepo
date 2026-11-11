@@ -19,10 +19,10 @@ import type {
 } from '@onekeyhq/components/src/composite/Dialog/type';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 import type {
   IPrimeInfiniPendingPaymentSession,
   IPrimeInfiniPurchaseStatusSnapshot,
@@ -30,6 +30,7 @@ import type {
 } from '@onekeyhq/shared/types/prime/primeTypes';
 
 import { isPrimeInfiniPurchaseCompleted } from '../hooks/primeInfiniPaymentUtils';
+import primePaymentUtils from '../hooks/primePaymentUtils';
 import { usePrimeInfiniPaymentPolling } from '../hooks/usePrimeInfiniPaymentPolling';
 import { usePrimePurchaseMonitor } from '../hooks/usePrimePurchaseMonitor';
 import { showPrimeInfiniPaymentErrorToast } from '../primeInfiniPaymentError';
@@ -49,6 +50,13 @@ import type {
 
 const POLL_INTERVAL_MS = 5000;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000;
+const terminalWaitingFlowKeys = new Set<string>();
+const PROGRAMMATIC_INFINI_CLOSE_FLAGS = new Set([
+  'succeeded',
+  'purchaseUserChanged',
+  'sessionClosed',
+  'replaced',
+]);
 
 type IExternalCheckoutTerminalReason = 'purchaseUserChanged';
 type IInternalPaymentWaitingSession = Omit<
@@ -68,6 +76,7 @@ type IPrimeInfiniCompletionPaymentContext = {
 export type IPrimeInfiniWaitingContext =
   | {
       flowId?: string;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
       checkoutType: 'externalWallet';
       plan: IPrimeInfiniSubscriptionPlan;
       onekeyUserId: string;
@@ -107,6 +116,8 @@ const INFINI_PLAN_USD_AMOUNT: Record<IPrimeInfiniSubscriptionPlan, number> = {
 
 function usePrimeInfiniPurchaseCompletion({
   flowId,
+  analyticsContext,
+  terminalKey,
   plan,
   onekeyUserId,
   featureName,
@@ -116,6 +127,8 @@ function usePrimeInfiniPurchaseCompletion({
   validatePurchaseContext,
 }: {
   flowId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
+  terminalKey?: string;
   plan: IPrimeInfiniSubscriptionPlan;
   onekeyUserId: string;
   featureName?: EPrimeFeatures;
@@ -125,6 +138,9 @@ function usePrimeInfiniPurchaseCompletion({
   validatePurchaseContext?: () => Promise<boolean>;
 }) {
   const flowIdRef = useRef(flowId);
+  const terminalKeyRef = useRef(
+    terminalKey ?? flowId ?? analyticsContext?.purchaseFlowId,
+  );
   const intl = useIntl();
   const dialogInstance = useDialogInstance();
   const isSuccessHandledRef = useRef(false);
@@ -140,6 +156,9 @@ function usePrimeInfiniPurchaseCompletion({
     }) => {
       if (!purchaseUserMismatchLoggedRef.current) {
         purchaseUserMismatchLoggedRef.current = true;
+        if (terminalKeyRef.current) {
+          terminalWaitingFlowKeys.add(terminalKeyRef.current);
+        }
         logPrimeInfiniPaymentFlow({
           flowId: flowIdRef.current,
           stage,
@@ -152,7 +171,7 @@ function usePrimeInfiniPurchaseCompletion({
           reason: 'purchaseUserChanged',
         });
       }
-      await dialogInstance.close();
+      await dialogInstance.close({ flag: 'purchaseUserChanged' });
     },
     [checkoutType, dialogInstance, featureName, plan, subscriptionPeriod],
   );
@@ -247,12 +266,23 @@ function usePrimeInfiniPurchaseCompletion({
           return;
         }
         await beforeComplete?.();
-        defaultLogger.prime.subscription.primeSubscribeSuccess({
-          planType: plan,
+        if (terminalKeyRef.current) {
+          terminalWaitingFlowKeys.add(terminalKeyRef.current);
+        }
+        primePaymentUtils.trackPrimeSubscriptionSuccess({
+          subscriptionPeriod:
+            subscriptionPeriod ?? (plan === 'yearly' ? 'P1Y' : 'P1M'),
           amount: analyticsAmount,
           currency: 'USD',
           featureName,
           paymentMethod: 'crypto',
+          store: 'infini',
+          periodType: 'normal',
+          context:
+            analyticsContext ??
+            (flowIdRef.current
+              ? { purchaseFlowId: flowIdRef.current }
+              : undefined),
         });
         Toast.success({
           title: intl.formatMessage({
@@ -262,7 +292,7 @@ function usePrimeInfiniPurchaseCompletion({
             id: ETranslations.prime_payment_successful_description,
           }),
         });
-        await dialogInstance.close();
+        await dialogInstance.close({ flag: 'succeeded' });
         finishSuccess();
         logPrimeInfiniPaymentFlow({
           flowId: flowIdRef.current,
@@ -297,6 +327,7 @@ function usePrimeInfiniPurchaseCompletion({
       ensurePurchaseUserIsCurrent,
       featureName,
       intl,
+      analyticsContext,
       onekeyUserId,
       plan,
       subscriptionPeriod,
@@ -365,12 +396,16 @@ function PrimeInfiniExternalWaitingMonitor({
     renewalBaselineInfiniPeriodEnd,
     baselineInfiniSubscriptionId,
   } = context;
+  const terminalKey =
+    context.flowId ?? context.analyticsContext?.purchaseFlowId;
   const {
     blockPurchaseUserMismatch,
     completePurchase,
     ensurePurchaseUserIsCurrent,
   } = usePrimeInfiniPurchaseCompletion({
     flowId: context.flowId,
+    analyticsContext: context.analyticsContext,
+    terminalKey,
     plan,
     onekeyUserId,
     featureName,
@@ -473,8 +508,20 @@ function PrimeInfiniExternalWaitingMonitor({
           }),
         });
       }
+      if (event.type === 'timedOut') {
+        if (terminalKey) {
+          terminalWaitingFlowKeys.add(terminalKey);
+        }
+        primePaymentUtils.trackPrimeSubscriptionFailedReason({
+          paymentMethod: 'crypto',
+          reason: 'timedOut',
+          subscriptionPeriod: plan === 'yearly' ? 'P1Y' : 'P1M',
+          featureName,
+          context: context.analyticsContext,
+        });
+      }
     },
-    [featureName, intl, plan],
+    [context.analyticsContext, featureName, intl, plan, terminalKey],
   );
 
   const monitor = usePrimePurchaseMonitor<
@@ -639,6 +686,10 @@ function PrimeInfiniInternalWaitingMonitor({
   const intl = useIntl();
   const { baseline, asset, plan, featureName, selectedSubscriptionPeriod } =
     session;
+  const terminalKey =
+    session.flowId ??
+    session.purchaseFlowId ??
+    session.paymentCacheKey.bindingId;
   const clearPendingSession = useCallback(async () => {
     await backgroundApiProxy.simpleDb.prime.clearInfiniPendingPaymentSession({
       onekeyUserId: baseline.onekeyUserId,
@@ -647,6 +698,8 @@ function PrimeInfiniInternalWaitingMonitor({
   }, [baseline.onekeyUserId, session.paymentCacheKey]);
   const { completePurchase } = usePrimeInfiniPurchaseCompletion({
     flowId: session.flowId,
+    analyticsContext: session,
+    terminalKey,
     plan,
     onekeyUserId: baseline.onekeyUserId,
     featureName,
@@ -680,7 +733,16 @@ function PrimeInfiniInternalWaitingMonitor({
     baseline,
     enabled: true,
     onSuccess: handleSuccess,
-    onTerminal: () => undefined,
+    onTerminal: (outcome) => {
+      terminalWaitingFlowKeys.add(terminalKey);
+      primePaymentUtils.trackPrimeSubscriptionFailedReason({
+        paymentMethod: 'crypto',
+        reason: outcome === 'expired' ? 'expired' : 'paymentFailed',
+        subscriptionPeriod: selectedSubscriptionPeriod,
+        featureName,
+        context: session,
+      });
+    },
     onIssue: (error) => {
       showPrimeInfiniPaymentErrorToast({
         error,
@@ -746,7 +808,13 @@ export function showPrimeInfiniWaitingDialog({
 }: IDialogShowProps & {
   context: IPrimeInfiniWaitingContext;
 }) {
-  void activeWaitingDialog?.close();
+  void activeWaitingDialog?.close({ flag: 'replaced' });
+  const terminalKey =
+    context.checkoutType === 'externalWallet'
+      ? (context.flowId ?? context.analyticsContext?.purchaseFlowId)
+      : (context.session.flowId ??
+        context.session.purchaseFlowId ??
+        context.session.paymentCacheKey.bindingId);
   const dialog: IDialogInstance = Dialog.show({
     // The title/illustration live inside the content so the whole dialog reads
     // as one centered status card; only the corner close button stays.
@@ -757,8 +825,70 @@ export function showPrimeInfiniWaitingDialog({
     showConfirmButton: context.checkoutType === 'externalWallet',
     renderContent: <PrimeInfiniWaitingDialogContent context={context} />,
     onClose: async (extra) => {
+      const wasTerminal = terminalKey
+        ? terminalWaitingFlowKeys.has(terminalKey)
+        : false;
+      if (terminalKey) {
+        terminalWaitingFlowKeys.delete(terminalKey);
+      }
       if (activeWaitingDialog === dialog) {
         activeWaitingDialog = undefined;
+      }
+      if (
+        !wasTerminal &&
+        !PROGRAMMATIC_INFINI_CLOSE_FLAGS.has(extra?.flag ?? '')
+      ) {
+        try {
+          const onekeyUserId =
+            context.checkoutType === 'externalWallet'
+              ? context.onekeyUserId
+              : context.session.baseline.onekeyUserId;
+          const currentUser =
+            await backgroundApiProxy.servicePrime.getLocalUserInfo();
+          if (
+            currentUser.isLoggedIn &&
+            currentUser.onekeyUserId === onekeyUserId
+          ) {
+            let isCurrentFlow = true;
+            if (context.checkoutType === 'internalWallet') {
+              const currentSession =
+                await backgroundApiProxy.simpleDb.prime.getInfiniPendingPaymentSession(
+                  { onekeyUserId },
+                );
+              isCurrentFlow =
+                currentSession?.paymentCacheKey.bindingId ===
+                  context.session.paymentCacheKey.bindingId &&
+                currentSession.sendStarted;
+            }
+            if (isCurrentFlow) {
+              let subscriptionPeriod: 'P1M' | 'P1Y';
+              let featureName: EPrimeFeatures | undefined;
+              let purchaseContext: IPrimePurchaseAnalyticsContext | undefined;
+              if (context.checkoutType === 'internalWallet') {
+                subscriptionPeriod = context.session.selectedSubscriptionPeriod;
+                featureName = context.session.featureName;
+                purchaseContext = context.session;
+              } else if (context.plan === 'yearly') {
+                subscriptionPeriod = 'P1Y';
+                featureName = context.featureName;
+                purchaseContext = context.analyticsContext;
+              } else {
+                subscriptionPeriod = 'P1M';
+                featureName = context.featureName;
+                purchaseContext = context.analyticsContext;
+              }
+              primePaymentUtils.trackPrimeSubscriptionFailedReason({
+                paymentMethod: 'crypto',
+                reason: 'abandoned',
+                subscriptionPeriod,
+                featureName,
+                context: purchaseContext,
+              });
+            }
+          }
+        } catch {
+          // Closing a payment monitor must not depend on analytics or recovery lookups.
+        }
       }
       await onClose?.(extra);
     },

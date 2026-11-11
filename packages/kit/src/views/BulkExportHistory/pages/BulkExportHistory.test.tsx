@@ -91,6 +91,7 @@ const mockExportPageProps: IBulkExportHistoryPageProps = {
     name: EModalBulkExportHistoryRoutes.BulkExportHistoryModal,
     params: {
       networkId: 'evm--1',
+      fromEntryPoint: 'historySettings',
     },
   },
 };
@@ -380,7 +381,10 @@ describe('BulkExportHistory create gating', () => {
     await waitFor(() =>
       expect(mockPushModal).toHaveBeenCalledWith(EModalRoutes.PrimeModal, {
         screen: EPrimePages.PrimeDashboard,
-        params: { fromFeature: EPrimeFeatures.HistoryExport },
+        params: {
+          fromFeature: EPrimeFeatures.HistoryExport,
+          fromEntryPoint: 'historySettings',
+        },
       }),
     );
     expect(mockPushFullModal).not.toHaveBeenCalled();

@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 
 import { useOneKeyAuth } from '@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import {
   fallbackToPrimeHostedCardCheckout,
@@ -17,6 +18,7 @@ type IPrimeHostedCardCheckoutPlan = {
   selectedSubscriptionPeriod: ISubscriptionPeriod;
   currency?: string;
   featureName?: EPrimeFeatures;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 };
 
 export function usePrimeWebCheckoutPurchase() {

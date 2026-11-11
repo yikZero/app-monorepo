@@ -1,3 +1,5 @@
+import type { IPrimeEntryPoint } from '@onekeyhq/shared/types/prime/primeAnalytics';
+
 export enum EModalBulkExportHistoryRoutes {
   BulkExportHistoryModal = 'BulkExportHistoryModal',
   BulkExportHistoryTaskCreated = 'BulkExportHistoryTaskCreated',
@@ -7,6 +9,7 @@ export enum EModalBulkExportHistoryRoutes {
 
 export type IModalBulkExportHistoryParamList = {
   [EModalBulkExportHistoryRoutes.BulkExportHistoryModal]: {
+    fromEntryPoint?: IPrimeEntryPoint;
     // The home network seeds a normal entry; the account is always re-derived
     // from the home scene inside the page.
     networkId: string | undefined;

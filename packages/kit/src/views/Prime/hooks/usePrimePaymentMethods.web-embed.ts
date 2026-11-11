@@ -12,7 +12,12 @@ import { BigNumber } from 'bignumber.js';
 
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import type { ILocaleJSONSymbol } from '@onekeyhq/shared/src/locale';
-import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import { runPrimePurchasesSdkCall } from '@onekeyhq/shared/src/utils/primePurchasesSdkTracking';
+import type {
+  IPrimeEntryPoint,
+  IPrimePurchaseAnalyticsContext,
+} from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import purchaseSdkUtils from '../purchasesSdk/purchaseSdkUtils';
 import {
@@ -28,6 +33,56 @@ import type {
   IUsePrimePayment,
 } from './usePrimePaymentTypes';
 import type { CustomerInfo, PurchaseParams } from '@revenuecat/purchases-js';
+
+const PRIME_ENTRY_POINTS = new Set<IPrimeEntryPoint>([
+  'settingsPage',
+  'moreActions',
+  'approvalPopup',
+  'primePage',
+  'walletEdit',
+  'accountSelectorAddMenu',
+  'browserTranslate',
+  'historySettings',
+  'sendAddressInput',
+  'signatureConfirm',
+  'approvalBulkRevoke',
+  'settingsPrimeRow',
+  'headerPrimeIcon',
+  'oneKeyIdPage',
+  'deepLink',
+  'giftClaimSuccess',
+  'freeTrialExhaustedToast',
+  'deviceLimitPage',
+  'notification',
+]);
+
+function isAnalyticsUuid(value: string | null): value is string {
+  return Boolean(
+    value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    ),
+  );
+}
+
+function getAnalyticsContext(
+  searchParams: URLSearchParams,
+): IPrimePurchaseAnalyticsContext {
+  const paywallSessionId = searchParams.get('paywallSessionId');
+  const purchaseFlowId = searchParams.get('purchaseFlowId');
+  const entryPoint = searchParams.get('entryPoint');
+  const purchaseStartedAt = Number(searchParams.get('purchaseStartedAt'));
+  return {
+    ...(isAnalyticsUuid(paywallSessionId) ? { paywallSessionId } : {}),
+    ...(isAnalyticsUuid(purchaseFlowId) ? { purchaseFlowId } : {}),
+    ...(entryPoint && PRIME_ENTRY_POINTS.has(entryPoint as IPrimeEntryPoint)
+      ? { entryPoint: entryPoint as IPrimeEntryPoint }
+      : {}),
+    ...(Number.isFinite(purchaseStartedAt) && purchaseStartedAt > 0
+      ? { purchaseStartedAt }
+      : {}),
+  };
+}
 
 function getWebEmbedSearchParamsString() {
   if (typeof globalThis.location === 'undefined') {
@@ -82,7 +137,13 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
     const locale = searchParams.get('locale') || 'en';
     const mode = (searchParams.get('mode') || 'prod') as 'dev' | 'prod';
     const currency = searchParams.get('currency') || undefined;
-    const featureName = searchParams.get('featureName') || '';
+    const rawFeatureName = searchParams.get('featureName');
+    const featureName =
+      rawFeatureName &&
+      Object.values(EPrimeFeatures).includes(rawFeatureName as EPrimeFeatures)
+        ? (rawFeatureName as EPrimeFeatures)
+        : '';
+    const analyticsContext = getAnalyticsContext(searchParams);
     return {
       apiKey,
       isSandboxKey,
@@ -93,6 +154,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
       currency,
       mode,
       featureName,
+      analyticsContext,
     };
   }, [searchParams]);
 
@@ -118,16 +180,37 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
     // https://www.revenuecat.com/docs/customers/user-ids#logging-in-with-a-custom-app-user-id
 
     console.log('Purchases.configure', apiKey, primeUserId);
-    Purchases.configure(apiKey, primeUserId);
+    await runPrimePurchasesSdkCall(
+      {
+        method: 'configure',
+        sdk: 'web',
+        paywallSessionId: params.analyticsContext.paywallSessionId,
+        purchaseFlowId: params.analyticsContext.purchaseFlowId,
+      },
+      () => Purchases.configure(apiKey, primeUserId),
+    );
     console.log('Purchases.configure done');
-  }, [isReady, params.apiKey, params.primeUserId]);
+  }, [
+    isReady,
+    params.analyticsContext.paywallSessionId,
+    params.analyticsContext.purchaseFlowId,
+    params.apiKey,
+    params.primeUserId,
+  ]);
 
   const getCustomerInfo = useCallback(async () => {
     await initSdk();
     const { Purchases } = await loadPurchasesSdkWeb();
 
-    const customerInfo: CustomerInfo =
-      await Purchases.getSharedInstance().getCustomerInfo();
+    const customerInfo: CustomerInfo = await runPrimePurchasesSdkCall(
+      {
+        method: 'getCustomerInfo',
+        sdk: 'web',
+        paywallSessionId: params.analyticsContext.paywallSessionId,
+        purchaseFlowId: params.analyticsContext.purchaseFlowId,
+      },
+      () => Purchases.getSharedInstance().getCustomerInfo(),
+    );
 
     console.log('revenuecat customerInfo', customerInfo);
 
@@ -142,7 +225,12 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
     }
 
     return customerInfo;
-  }, [initSdk, params.primeUserId]);
+  }, [
+    initSdk,
+    params.analyticsContext.paywallSessionId,
+    params.analyticsContext.purchaseFlowId,
+    params.primeUserId,
+  ]);
 
   const getPackagesWeb = useCallback(async () => {
     await initSdk();
@@ -157,6 +245,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         purchases: Purchases.getSharedInstance(),
         isSandboxKey: params.isSandboxKey,
         currency: params.currency,
+        analyticsContext: params.analyticsContext,
       });
 
     const packages: IPackage[] =
@@ -197,7 +286,13 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
     });
 
     return packages;
-  }, [initSdk, isReady, params.currency, params.isSandboxKey]);
+  }, [
+    initSdk,
+    isReady,
+    params.analyticsContext,
+    params.currency,
+    params.isSandboxKey,
+  ]);
 
   const purchasePackageWeb = useCallback(
     async ({
@@ -206,12 +301,14 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
       locale,
       currency,
       featureName,
+      analyticsContext,
     }: {
       subscriptionPeriod: ISubscriptionPeriod;
       email: string;
       locale?: string; // https://www.revenuecat.com/docs/tools/paywalls/creating-paywalls#supported-locales
       currency?: string;
       featureName?: EPrimeFeatures;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       console.log('purchasePackageWeb77632723>>>>>>', {
         subscriptionPeriod,
@@ -220,6 +317,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         currency,
         featureName,
       });
+      const purchaseContext = analyticsContext ?? params.analyticsContext;
 
       await initSdk();
       const { Purchases } = await loadPurchasesSdkWebForEmbeddedPurchase();
@@ -247,6 +345,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
             purchases: Purchases.getSharedInstance(),
             isSandboxKey: params.isSandboxKey,
             currency,
+            analyticsContext: purchaseContext,
           });
         console.log('purchasePackageWeb77632723>>>>>> offerings', {
           offerings,
@@ -281,8 +380,19 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         };
         // TODO check package user is Matched to id
         // TODO check if user has already purchased
-        const purchase =
-          await Purchases.getSharedInstance().purchase(purchaseParams);
+        const purchase = await runPrimePurchasesSdkCall(
+          {
+            method: 'purchase',
+            sdk: 'web',
+            paywallSessionId: purchaseContext?.paywallSessionId,
+            purchaseFlowId: purchaseContext?.purchaseFlowId,
+          },
+          () => Purchases.getSharedInstance().purchase(purchaseParams),
+        );
+        const entitlement = purchase.customerInfo.entitlements.active.Prime;
+        const periodType = primePaymentUtils.normalizePrimePeriodType(
+          entitlement?.periodType,
+        );
 
         primePaymentUtils.trackPrimeSubscriptionSuccess({
           ...primePaymentUtils.extractWebPaywallPrice(paywallPackage),
@@ -292,6 +402,15 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
           // the Android in-app webview
           paymentMethod: 'stripe',
           cardCheckoutFlow: 'embedded',
+          context: purchaseContext,
+          store: 'rcBilling',
+          isSandbox: params.isSandboxKey,
+          periodType,
+          productId:
+            entitlement?.productIdentifier ??
+            paywallPackage.rcBillingProduct.identifier,
+          offeringId: targetOffering.identifier,
+          hasFreeTrial: periodType ? periodType === 'trial' : undefined,
         });
 
         // test credit card
@@ -307,6 +426,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
           subscriptionPeriod,
           featureName,
           cardCheckoutFlow: 'embedded',
+          context: purchaseContext,
         });
         // TODO alert error
         // errorToastUtils.toastIfError(error);
@@ -316,7 +436,7 @@ export function usePrimePaymentMethods(): IUsePrimePayment {
         // void backgroundApiProxy.serviceApp.hideDialogLoading();
       }
     },
-    [initSdk, isReady, params.isSandboxKey],
+    [initSdk, isReady, params.analyticsContext, params.isSandboxKey],
   );
 
   return {

@@ -73,7 +73,7 @@ function ProfileEditPage() {
         return;
       }
       resetPrimeModal();
-      defaultLogger.prime.subscription.onekeyIdLogout({
+      defaultLogger.prime.subscription.onekeyIdStateTrace({
         reason:
           'OneKeyIdProfileEditPage: is focused and primePersistAtom is not logged in',
       });

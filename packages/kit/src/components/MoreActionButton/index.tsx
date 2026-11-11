@@ -1166,6 +1166,7 @@ function MoreActionGeneralGrid() {
       screen: EPrimePages.PrimeDashboard,
       params: {
         networkId: network?.id,
+        fromEntryPoint: 'moreActions',
       },
     });
   }, [navigation, network?.id]);
@@ -1291,6 +1292,7 @@ const MoreActionWalletGrid = () => {
 
     const access = await ensureFeatureAccess({
       featureId: EPrimeFeatures.BulkCopyAddresses,
+      entryPoint: 'moreActions',
       networkId: network?.id,
       isContextValid: isSameActiveContext({
         walletId: wallet?.id,
@@ -1328,6 +1330,7 @@ const MoreActionWalletGrid = () => {
       // login and page-level gate itself.
       const access = await ensureFeatureAccess({
         featureId: EPrimeFeatures.BulkSend,
+        entryPoint: 'moreActions',
         networkId: network?.id,
         // Bulk send opens with this account as the sender.
         isContextValid: isSameActiveContext({
@@ -1368,6 +1371,7 @@ const MoreActionWalletGrid = () => {
   const openAddressRiskCheckModule = useCallback(async () => {
     const access = await ensureFeatureAccess({
       featureId: EPrimeFeatures.AddressRiskCheck,
+      entryPoint: 'moreActions',
       networkId: network?.id,
       loginOnly: true,
       isContextValid: isSameActiveContext({

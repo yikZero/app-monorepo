@@ -1,5 +1,6 @@
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
 import { createPromiseTarget } from '@onekeyhq/shared/src/utils/promiseUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import type {
   CustomerInfo,
@@ -12,6 +13,7 @@ export type IPurchasePackageParams = {
   email: string; // auto filled payment email
   locale?: string;
   userId: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 };
 
 export abstract class PurchasesSdkBase {
@@ -24,19 +26,27 @@ export abstract class PurchasesSdkBase {
   abstract configureWithLogin(params: {
     apiKey: string;
     userId: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
   }): Promise<void>;
 
   abstract setDefaultLogLevel(): Promise<void>;
 
-  abstract getCustomerInfoBase(): Promise<CustomerInfo>;
+  abstract getCustomerInfoBase(
+    analyticsContext?: IPrimePurchaseAnalyticsContext,
+  ): Promise<CustomerInfo>;
 
-  abstract getPaywallPackagesBase(): Promise<Package[]>;
+  abstract getPaywallPackagesBase(
+    analyticsContext?: IPrimePurchaseAnalyticsContext,
+  ): Promise<Package[]>;
 
   abstract purchasePackageBase(
     params: IPurchasePackageParams,
   ): Promise<PurchaseResult>;
 
-  async login(params: { userId: string }): Promise<void> {
+  async login(params: {
+    userId: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
+  }): Promise<void> {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
       throw new OneKeyLocalError('No REVENUECAT api key found');
@@ -45,7 +55,11 @@ export abstract class PurchasesSdkBase {
       throw new OneKeyLocalError('No userId found');
     }
     await this.setDefaultLogLevel();
-    await this.configureWithLogin({ apiKey, userId: params.userId });
+    await this.configureWithLogin({
+      apiKey,
+      userId: params.userId,
+      analyticsContext: params.analyticsContext,
+    });
     this.configureDonePromise.resolveTarget(true);
   }
 
@@ -59,16 +73,24 @@ export abstract class PurchasesSdkBase {
     }
   }
 
-  async getCustomerInfo(params: { userId: string }): Promise<CustomerInfo> {
-    await this.login({ userId: params.userId });
+  async getCustomerInfo(params: {
+    userId: string;
+    analyticsContext?: IPrimePurchaseAnalyticsContext;
+  }): Promise<CustomerInfo> {
+    await this.login({
+      userId: params.userId,
+      analyticsContext: params.analyticsContext,
+    });
     await this.ensureUserIdMatched(params.userId);
-    const customerInfo = await this.getCustomerInfoBase();
+    const customerInfo = await this.getCustomerInfoBase(
+      params.analyticsContext,
+    );
     return customerInfo;
   }
 
-  async getPaywallPackages() {
+  async getPaywallPackages(analyticsContext?: IPrimePurchaseAnalyticsContext) {
     await this.configureDonePromise.ready;
-    return this.getPaywallPackagesBase();
+    return this.getPaywallPackagesBase(analyticsContext);
   }
 
   async purchasePackage(params: IPurchasePackageParams) {

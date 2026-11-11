@@ -128,6 +128,7 @@ function BulkExportHistoryContent({
     networkId: homeNetworkId,
     selectedNetworkIds: initialSelectedNetworkIds,
     accountSelectorSceneUrl,
+    fromEntryPoint,
   } = route.params;
 
   // Normal entries default to the wallet home account. Starting a new export
@@ -390,6 +391,7 @@ function BulkExportHistoryContent({
         screen: EPrimePages.PrimeDashboard,
         params: {
           fromFeature: EPrimeFeatures.HistoryExport,
+          ...(fromEntryPoint ? { fromEntryPoint } : {}),
         },
       });
       return;
@@ -650,6 +652,7 @@ function BulkExportHistoryContent({
     hideRiskyTransactions,
     navigation,
     intl,
+    fromEntryPoint,
   ]);
 
   const pageHeader = (

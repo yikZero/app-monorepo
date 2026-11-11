@@ -46,9 +46,14 @@ import { EModalRoutes } from '@onekeyhq/shared/src/routes/modal';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import { EModalSettingRoutes } from '@onekeyhq/shared/src/routes/setting';
 import { ETabRoutes } from '@onekeyhq/shared/src/routes/tab';
+import { generateUUID } from '@onekeyhq/shared/src/utils/miscUtils';
 import networkUtils from '@onekeyhq/shared/src/utils/networkUtils';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
 import { EAccountSelectorSceneName } from '@onekeyhq/shared/types';
+import type {
+  IPrimeEntryPoint,
+  IPrimePurchaseAnalyticsContext,
+} from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import { useBulkSendModeDialog } from '../../../BulkSend/hooks/useBulkSendModeDialog';
 import { useNavigateToBulkSend } from '../../../BulkSend/hooks/useNavigateToBulkSend';
@@ -72,6 +77,9 @@ type IPrimeFeatureIntroContentProps = {
   selectedFeature?: EPrimeFeatures;
   selectedSubscriptionPeriod?: ISubscriptionPeriod;
   networkId?: string;
+  fromEntryPoint?: IPrimeEntryPoint;
+  paywallSessionId?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
   onClose?: () => void | Promise<void>;
   mode?: 'content' | 'page' | 'dialog';
 };
@@ -474,10 +482,28 @@ export function PrimeFeatureIntroContent({
   selectedFeature,
   selectedSubscriptionPeriod,
   networkId,
+  fromEntryPoint,
+  paywallSessionId: routePaywallSessionId,
+  analyticsContext: routeAnalyticsContext,
   onClose,
   mode = 'content',
 }: IPrimeFeatureIntroContentProps) {
   const intl = useIntl();
+  const [paywallSessionId] = useState(
+    () =>
+      routePaywallSessionId ??
+      routeAnalyticsContext?.paywallSessionId ??
+      generateUUID(),
+  );
+  const entryPoint =
+    fromEntryPoint ??
+    routeAnalyticsContext?.entryPoint ??
+    (routeAnalyticsContext?.purchaseFlowId ? undefined : 'primePage');
+  const consumedPurchaseFlowIdRef = useRef<string | undefined>(undefined);
+  const analyticsContext = useMemo<IPrimePurchaseAnalyticsContext>(
+    () => ({ ...routeAnalyticsContext, paywallSessionId, entryPoint }),
+    [entryPoint, paywallSessionId, routeAnalyticsContext],
+  );
   const navigation = useAppNavigation();
   const { gtMd } = useMedia();
   const {
@@ -500,6 +526,7 @@ export function PrimeFeatureIntroContent({
   const { ensurePrimeSubscriptionActive } = usePrimeRequirements({
     onPurchase: handlePurchaseStart,
     networkId: networkId ?? network?.id,
+    analyticsContext,
   });
 
   const features = PRIME_FEATURE_INTROS;
@@ -573,10 +600,17 @@ export function PrimeFeatureIntroContent({
     loggedUpsellFeatureIdsRef.current.add(activeFeatureId);
     defaultLogger.prime.subscription.primeUpsellShow({
       featureName: activeFeatureId,
-      entryPoint: 'primePage',
+      entryPoint,
       isPrimeActive,
+      paywallSessionId,
     });
-  }, [activeFeatureId, isAuthReady, isPrimeActive]);
+  }, [
+    activeFeatureId,
+    entryPoint,
+    isAuthReady,
+    isPrimeActive,
+    paywallSessionId,
+  ]);
 
   const ctaKind = getPrimeFeatureIntroCtaKind({
     featureId: activeFeature?.id,
@@ -590,6 +624,7 @@ export function PrimeFeatureIntroContent({
   const shouldLoadPackages = shouldUseSubscribeCta;
   const { packages, isPackagesLoading } = usePrimeSubscriptionPackages({
     enabled: shouldLoadPackages,
+    analyticsContext,
   });
 
   const selectedPackage = useMemo(
@@ -738,27 +773,64 @@ export function PrimeFeatureIntroContent({
     if (!activeFeature || isPackagesLoading) {
       return;
     }
+    const inheritedFlowId =
+      consumedPurchaseFlowIdRef.current !== analyticsContext.purchaseFlowId
+        ? analyticsContext.purchaseFlowId
+        : undefined;
+    consumedPurchaseFlowIdRef.current = analyticsContext.purchaseFlowId;
+    const purchaseAnalyticsContext: IPrimePurchaseAnalyticsContext = {
+      ...analyticsContext,
+      purchaseFlowId: inheritedFlowId ?? generateUUID(),
+      purchaseStartedAt:
+        (inheritedFlowId ? analyticsContext.purchaseStartedAt : undefined) ??
+        Date.now(),
+    };
     defaultLogger.prime.subscription.primeUpsellActionClick({
       featureName: activeFeature.id,
-      entryPoint: 'primePage',
+      entryPoint,
     });
     defaultLogger.prime.subscription.primeSubscribeButtonClick({
       subscriptionPeriod,
       featureName: activeFeature.id,
       isLoggedIn,
+      purchaseFlowId: purchaseAnalyticsContext.purchaseFlowId,
+      paywallSessionId: purchaseAnalyticsContext.paywallSessionId,
+      entryPoint,
+      hasFreeTrialOffer: Boolean(selectedPackage?.freeTrial),
+      trialDays:
+        selectedPackage?.freeTrial?.periodUnit === 'day'
+          ? selectedPackage.freeTrial.periodNumber
+          : undefined,
+      packagePrice:
+        subscriptionPeriod === 'P1Y'
+          ? selectedPackage?.pricePerYear
+          : selectedPackage?.pricePerMonth,
+      packageCurrency: selectedPackage?.currencyCode,
+      priceCurrency: selectedPackage?.currencyCode,
     });
     await ensurePrimeSubscriptionActive({
       skipDialogConfirm: true,
       selectedSubscriptionPeriod: subscriptionPeriod,
       featureName: activeFeature.id,
       freeTrial: selectedPackage?.freeTrial,
+      packagePrice:
+        subscriptionPeriod === 'P1Y'
+          ? selectedPackage?.pricePerYear
+          : selectedPackage?.pricePerMonth,
+      packageCurrency: selectedPackage?.currencyCode,
+      analyticsContext: purchaseAnalyticsContext,
     });
   }, [
+    analyticsContext,
     activeFeature,
+    entryPoint,
     ensurePrimeSubscriptionActive,
     isLoggedIn,
     isPackagesLoading,
     selectedPackage?.freeTrial,
+    selectedPackage?.pricePerMonth,
+    selectedPackage?.pricePerYear,
+    selectedPackage?.currencyCode,
     subscriptionPeriod,
   ]);
 

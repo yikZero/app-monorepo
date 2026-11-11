@@ -45,12 +45,12 @@ export function getPrimeWebCheckoutPlatform(): IPrimeWebCheckoutPlatform {
 }
 
 export function logPrimeWebCheckoutFlow(
-  params: Omit<IPrimeWebCheckoutFlowParams, 'platform'>,
+  params: Omit<IPrimeWebCheckoutFlowParams, 'checkoutPlatform'>,
 ) {
   try {
     defaultLogger.prime.subscription.primeWebCheckoutFlow({
       ...params,
-      platform: getPrimeWebCheckoutPlatform(),
+      checkoutPlatform: getPrimeWebCheckoutPlatform(),
     });
   } catch {
     // Observability must never break checkout.
@@ -62,7 +62,7 @@ export function logPrimeWebCheckoutSessionFlow({
   ...params
 }: Omit<
   IPrimeWebCheckoutFlowParams,
-  'platform' | 'isSandbox' | 'subscriptionPeriod' | 'featureName'
+  'checkoutPlatform' | 'isSandbox' | 'subscriptionPeriod' | 'featureName'
 > & {
   session: IPrimeWebCheckoutPendingSession;
 }) {
@@ -111,6 +111,8 @@ export async function checkPrimeWebCheckout(
   const entitlement = await fetchPrimeWebCheckoutEntitlement({
     onekeyUserId: session.onekeyUserId,
     isSandbox: session.isSandbox,
+    analyticsContext: session,
+    isPolling: true,
   });
   await assertPrimeWebCheckoutUserCurrent(session.onekeyUserId);
   return evaluatePrimeWebCheckoutResult({ session, entitlement });
@@ -151,7 +153,9 @@ export async function settlePrimeWebCheckout({
     stage: 'settle',
     status: result.status === 'succeeded' ? 'succeeded' : 'blocked',
     reason: result.status === 'succeeded' ? undefined : 'activatedElsewhere',
-    periodType: result.entitlement.periodType,
+    periodType: primePaymentUtils.normalizePrimePeriodType(
+      result.entitlement.periodType,
+    ),
   });
   if (result.status === 'activatedElsewhere') {
     Toast.message({
@@ -162,6 +166,9 @@ export async function settlePrimeWebCheckout({
     void refreshPrimeUserInfoAfterPurchase();
     return { outcome: 'activatedElsewhere' };
   }
+  const periodType = primePaymentUtils.normalizePrimePeriodType(
+    result.entitlement.periodType,
+  );
   primePaymentUtils.trackPrimeSubscriptionSuccess({
     amount: session.amount,
     currency: session.currency,
@@ -169,7 +176,13 @@ export async function settlePrimeWebCheckout({
     featureName: session.featureName as EPrimeFeatures | undefined,
     paymentMethod: 'stripe',
     cardCheckoutFlow: 'hostedLink',
-    periodType: result.entitlement.periodType,
+    periodType,
+    productId: result.entitlement.productIdentifier,
+    offeringId: result.entitlement.offeringIdentifier ?? session.offeringId,
+    hasFreeTrial: periodType ? periodType === 'trial' : undefined,
+    store: 'rcBilling',
+    isSandbox: session.isSandbox,
+    context: session,
   });
   const successPayload = await preparePrimeSubscriptionPurchaseSuccess(
     session.onekeyUserId,

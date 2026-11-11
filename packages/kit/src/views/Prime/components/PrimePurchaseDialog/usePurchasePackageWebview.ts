@@ -8,6 +8,7 @@ import { EWebEmbedRoutePath } from '@onekeyhq/shared/src/consts/webEmbedConsts';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
 import openUrlUtils from '@onekeyhq/shared/src/utils/openUrlUtils';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import { getPrimePaymentApiKey } from '../../hooks/getPrimePaymentApiKey';
 import { retirePrimeWebCheckout } from '../../hooks/retirePrimeWebCheckout';
@@ -24,10 +25,12 @@ export function usePurchasePackageWebview() {
       selectedSubscriptionPeriod,
       currency,
       featureName,
+      analyticsContext,
     }: {
       selectedSubscriptionPeriod: ISubscriptionPeriod | undefined;
       currency?: string;
       featureName?: EPrimeFeatures;
+      analyticsContext?: IPrimePurchaseAnalyticsContext;
     }) => {
       if (!selectedSubscriptionPeriod) {
         return;
@@ -53,6 +56,20 @@ export function usePurchasePackageWebview() {
           mode: platformEnv.isDev ? 'dev' : 'prod',
           apiKey: apiKey || '',
           isSandboxKey: isSandboxKey ? '1' : '0',
+          ...(analyticsContext?.paywallSessionId
+            ? { paywallSessionId: analyticsContext.paywallSessionId }
+            : {}),
+          ...(analyticsContext?.purchaseFlowId
+            ? { purchaseFlowId: analyticsContext.purchaseFlowId }
+            : {}),
+          ...(analyticsContext?.entryPoint
+            ? { entryPoint: analyticsContext.entryPoint }
+            : {}),
+          ...(analyticsContext?.purchaseStartedAt
+            ? {
+                purchaseStartedAt: String(analyticsContext.purchaseStartedAt),
+              }
+            : {}),
           ...(currency ? { currency } : {}),
           ...(featureName ? { featureName } : {}),
         },

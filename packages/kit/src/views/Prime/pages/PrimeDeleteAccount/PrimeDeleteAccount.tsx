@@ -77,7 +77,7 @@ export default function PrimeDeleteAccount() {
           deleteResult.localStateCleared
         ) {
           defaultLogger.prime.subscription.onekeyIdLogout({
-            reason: 'PrimeDeleteAccount: server outcome unknown',
+            reason: 'userInitiated',
           });
           defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
             reason: 'PrimeDeleteAccount: server outcome unknown',
@@ -110,7 +110,7 @@ export default function PrimeDeleteAccount() {
         }
 
         defaultLogger.prime.subscription.onekeyIdLogout({
-          reason: 'PrimeDeleteAccount: handleDeleteAccount',
+          reason: 'accountDeleted',
         });
         defaultLogger.prime.subscription.onekeyIdAtomNotLoggedIn({
           reason: 'PrimeDeleteAccount',

@@ -74,6 +74,7 @@ jest.mock(
 
 import { ECloudBackupProviderType } from '@onekeyhq/shared/src/cloudBackup/cloudBackupTypes';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
+import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import { EAppRestartMode } from '@onekeyhq/shared/src/modules3rdParty/appRestart/types';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import appStorage from '@onekeyhq/shared/src/storage/appStorage';
@@ -474,9 +475,86 @@ describe('ServiceApp.resetApp', () => {
     });
   });
 
+  test('reports OneKey ID logout only after a successful reset for a logged-in user', async () => {
+    const service = new ServiceApp({
+      backgroundApi: {
+        servicePrime: {
+          getLocalUserInfo: jest.fn().mockResolvedValue({ isLoggedIn: true }),
+        },
+        serviceCloudBackupV2: {
+          prepareLocalRecoveryForReset: jest.fn(),
+          finishLocalRecoveryReset: jest.fn(),
+        },
+        serviceIdentityExit: { prepareIdentityAuthForAppReset: jest.fn() },
+        serviceNotification: {
+          unregisterClient: jest.fn().mockResolvedValue(undefined),
+        },
+      },
+    });
+    const resetData = jest
+      .spyOn(
+        service as unknown as { resetData: () => Promise<void> },
+        'resetData',
+      )
+      .mockResolvedValue(undefined);
+    jest.spyOn(service, 'restartApp').mockResolvedValue(undefined);
+    const logout = jest.spyOn(
+      defaultLogger.prime.subscription,
+      'onekeyIdLogout',
+    );
+    jest.spyOn(timerUtils, 'wait').mockResolvedValue(undefined);
+
+    await service.resetApp();
+
+    expect(logout).toHaveBeenCalledWith({ reason: 'userInitiated' });
+    expect(logout.mock.invocationCallOrder[0]).toBeGreaterThan(
+      resetData.mock.invocationCallOrder[0],
+    );
+    expect(logout.mock.invocationCallOrder[0]).toBeLessThan(
+      (service.restartApp as jest.Mock).mock.invocationCallOrder[0],
+    );
+  });
+
+  test('does not report logout when the user is not logged in', async () => {
+    const service = new ServiceApp({
+      backgroundApi: {
+        servicePrime: {
+          getLocalUserInfo: jest.fn().mockResolvedValue({ isLoggedIn: false }),
+        },
+        serviceCloudBackupV2: {
+          prepareLocalRecoveryForReset: jest.fn(),
+          finishLocalRecoveryReset: jest.fn(),
+        },
+        serviceIdentityExit: { prepareIdentityAuthForAppReset: jest.fn() },
+        serviceNotification: {
+          unregisterClient: jest.fn().mockResolvedValue(undefined),
+        },
+      },
+    });
+    jest
+      .spyOn(
+        service as unknown as { resetData: () => Promise<void> },
+        'resetData',
+      )
+      .mockResolvedValue(undefined);
+    jest.spyOn(service, 'restartApp').mockResolvedValue(undefined);
+    const logout = jest.spyOn(
+      defaultLogger.prime.subscription,
+      'onekeyIdLogout',
+    );
+    jest.spyOn(timerUtils, 'wait').mockResolvedValue(undefined);
+
+    await service.resetApp();
+
+    expect(logout).not.toHaveBeenCalled();
+  });
+
   test('does not restart after a storage reset failure', async () => {
     const service = new ServiceApp({
       backgroundApi: {
+        servicePrime: {
+          getLocalUserInfo: jest.fn().mockResolvedValue({ isLoggedIn: true }),
+        },
         serviceCloudBackupV2: {
           prepareLocalRecoveryForReset: jest.fn(),
           finishLocalRecoveryReset: jest.fn(),
@@ -503,10 +581,15 @@ describe('ServiceApp.resetApp', () => {
       .spyOn(service, 'restartApp')
       .mockResolvedValue(undefined);
     const endResetting = jest.spyOn(resetUtils, 'endResetting');
+    const logout = jest.spyOn(
+      defaultLogger.prime.subscription,
+      'onekeyIdLogout',
+    );
     jest.spyOn(timerUtils, 'wait').mockResolvedValue(undefined);
 
     await expect(service.resetApp()).rejects.toThrow('jotai reset failed');
 
+    expect(logout).not.toHaveBeenCalled();
     expect(endResetting).toHaveBeenCalledTimes(1);
     expect(restartApp).not.toHaveBeenCalled();
   });

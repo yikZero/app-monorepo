@@ -1,4 +1,6 @@
 /* cspell:ignore Infini */
+import type { IPrimePurchaseAnalyticsContext } from './primeAnalytics';
+
 export type IPrimeSubscriptionInfo = {
   isActive: boolean;
   expiresAt: number;
@@ -205,7 +207,7 @@ export type IPrimeInfiniPaymentSource =
   | 'polling'
   | 'externalCheckout';
 
-export type IPrimeInfiniPaymentFlowContext = {
+export type IPrimeInfiniPaymentFlowContext = IPrimePurchaseAnalyticsContext & {
   flowId: string;
   paymentSource?: IPrimeInfiniPaymentSource;
   expectedChain?: string;
@@ -283,35 +285,36 @@ export type IPrimeInfiniPaymentTransferClaim = {
  * flow. It is keyed by OneKey ID in SimpleDB so a main-runtime restart cannot
  * silently forget an invoice that may already have been submitted.
  */
-export type IPrimeInfiniPendingPaymentSession = {
-  schemaVersion: 2;
-  asset: IPrimeInfiniPaymentAsset;
-  baseline: {
-    onekeyUserId: string;
-    wasPrimeActive: boolean;
-    primeExpiresAt?: number;
-    infiniPeriodEnd?: number;
-    // undefined is a legacy baseline; null means no subscription was observed.
-    infiniSubscriptionId?: string | null;
+export type IPrimeInfiniPendingPaymentSession =
+  IPrimePurchaseAnalyticsContext & {
+    schemaVersion: 2;
+    asset: IPrimeInfiniPaymentAsset;
+    baseline: {
+      onekeyUserId: string;
+      wasPrimeActive: boolean;
+      primeExpiresAt?: number;
+      infiniPeriodEnd?: number;
+      // undefined is a legacy baseline; null means no subscription was observed.
+      infiniSubscriptionId?: string | null;
+    };
+    plan: IPrimeInfiniSubscriptionPlan;
+    selectedSubscriptionPeriod: 'P1Y' | 'P1M';
+    featureName?: string;
+    payerAccountId: string;
+    payerAddress: string;
+    paymentCacheKey: IPrimeInfiniPaymentCacheKey;
+    payment: IPrimeInfiniPayment;
+    // Durable no-replacement latch. It becomes true after either the local
+    // broadcast claim or any server-observed payment progress.
+    sendStarted: boolean;
+    // Optional only for legacy v2 records. SimpleDB anchors missing lifecycle
+    // fields to the old updatedAt before any refresh can advance that timestamp.
+    flowId?: string;
+    createdAt?: number;
+    lastValidatedAt?: number;
+    localRetentionDeadline?: number;
+    updatedAt: number;
   };
-  plan: IPrimeInfiniSubscriptionPlan;
-  selectedSubscriptionPeriod: 'P1Y' | 'P1M';
-  featureName?: string;
-  payerAccountId: string;
-  payerAddress: string;
-  paymentCacheKey: IPrimeInfiniPaymentCacheKey;
-  payment: IPrimeInfiniPayment;
-  // Durable no-replacement latch. It becomes true after either the local
-  // broadcast claim or any server-observed payment progress.
-  sendStarted: boolean;
-  // Optional only for legacy v2 records. SimpleDB anchors missing lifecycle
-  // fields to the old updatedAt before any refresh can advance that timestamp.
-  flowId?: string;
-  createdAt?: number;
-  lastValidatedAt?: number;
-  localRetentionDeadline?: number;
-  updatedAt: number;
-};
 
 export type IPrimeInfiniPendingPaymentSessionInput = Omit<
   IPrimeInfiniPendingPaymentSession,
@@ -344,7 +347,7 @@ export type IPrimeWebCheckoutExtensionContext = {
  * app. Success is decided only by polling RevenueCat; this record lets any
  * runtime resume that check after the checkout page returns.
  */
-export type IPrimeWebCheckoutPendingSession = {
+export type IPrimeWebCheckoutPendingSession = IPrimePurchaseAnalyticsContext & {
   checkoutId: string;
   onekeyUserId: string;
   subscriptionPeriod: 'P1Y' | 'P1M';

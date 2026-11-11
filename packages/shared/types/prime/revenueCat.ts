@@ -19,6 +19,9 @@ export type IRevenueCatCustomerInfo = {
         willRenew: boolean;
         isSandbox: boolean;
         expirationDateMillis: number | null;
+        periodType?: string;
+        productIdentifier?: string;
+        store?: string;
       }
     >;
   };

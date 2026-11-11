@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { MutableRefObject } from 'react';
 
 import type { EPrimeFeatures } from '@onekeyhq/shared/src/routes/prime';
+import type { IPrimePurchaseAnalyticsContext } from '@onekeyhq/shared/types/prime/primeAnalytics';
 
 import type {
   IPackageFreeTrial,
@@ -14,6 +15,9 @@ export const PRIME_SUBSCRIBE_RESUME_DELAY_MS = 1000;
 export type IPrimePendingSubscribe = {
   subscriptionPeriod: ISubscriptionPeriod;
   freeTrial?: IPackageFreeTrial;
+  packagePrice?: number;
+  packageCurrency?: string;
+  analyticsContext?: IPrimePurchaseAnalyticsContext;
 };
 
 export function usePrimeSubscribeResume({
@@ -55,6 +59,9 @@ export function usePrimeSubscribeResume({
           selectedSubscriptionPeriod: pendingSubscribe.subscriptionPeriod,
           featureName,
           freeTrial: pendingSubscribe.freeTrial,
+          packagePrice: pendingSubscribe.packagePrice,
+          packageCurrency: pendingSubscribe.packageCurrency,
+          analyticsContext: pendingSubscribe.analyticsContext,
         });
       } catch {
         // Login was completed but subscription check may throw

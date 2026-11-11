@@ -530,6 +530,7 @@ function SendDataInputContainer() {
     try {
       access = await ensureFeatureAccess({
         featureId: EPrimeFeatures.AddressRiskCheck,
+        entryPoint: 'sendAddressInput',
         networkId: currentAccount.networkId,
         isContextValid: () =>
           !isUnmountedRef.current &&
