@@ -525,6 +525,12 @@ async function processDeepLinkUrlAccount(
         case EOneKeyDeepLinkPath.prime_subscription:
           await openPrimeInfiniSubscriptionFromDeepLink({ navigation });
           break;
+        case EOneKeyDeepLinkPath.prime_dashboard:
+          await whenAppUnlocked();
+          navigation.pushModal(EModalRoutes.PrimeModal, {
+            screen: EPrimePages.PrimeDashboard,
+          });
+          break;
         case EOneKeyDeepLinkPath.prime_purchase_complete: {
           // Return from the hosted card checkout. Only a hint to re-check
           // RevenueCat; the purchase is never confirmed from the link.

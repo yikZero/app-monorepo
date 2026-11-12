@@ -781,6 +781,45 @@ describe('prime_subscription deep link', () => {
   });
 });
 
+describe('prime_dashboard deep link', () => {
+  const pushModal = jest.fn();
+  const originalRootAppNavigation = appGlobals.$rootAppNavigation;
+  const backgroundApiProxy = jest.requireMock(
+    '../../../../background/instance/backgroundApiProxy',
+  ).default as {
+    servicePrime: { isLoggedIn: jest.Mock };
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    appGlobals.$rootAppNavigation = {
+      pushModal,
+    } as unknown as typeof appGlobals.$rootAppNavigation;
+  });
+
+  afterEach(() => {
+    appGlobals.$rootAppNavigation = originalRootAppNavigation;
+  });
+
+  it.each([false, true])(
+    'opens the plain Prime dashboard (logged in: %s)',
+    async (isLoggedIn) => {
+      backgroundApiProxy.servicePrime.isLoggedIn.mockResolvedValue(isLoggedIn);
+
+      handleDeepLinkUrl({
+        url: `onekey-wallet://${EOneKeyDeepLinkPath.prime_dashboard}`,
+      });
+      await flushAsyncTasks();
+      await flushAsyncTasks();
+
+      expect(pushModal).toHaveBeenCalledTimes(1);
+      expect(pushModal).toHaveBeenCalledWith(EModalRoutes.PrimeModal, {
+        screen: EPrimePages.PrimeDashboard,
+      });
+    },
+  );
+});
+
 describe('walletconnect pay deep links', () => {
   // oxlint-disable-next-line @cspell/spellchecker
   const payUrl = 'wc:pay-1@2?relay-protocol=irn&symKey=abc';
