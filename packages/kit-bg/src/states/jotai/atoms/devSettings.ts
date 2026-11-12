@@ -32,6 +32,16 @@ export interface ITestAccount {
   name?: string;
 }
 
+export type IPrimeFetchPackagesFault =
+  | 'off'
+  | '2'
+  | '3'
+  | '5'
+  | '10'
+  | '23'
+  | '33'
+  | 'emptyOffering';
+
 export interface IDevSettings {
   // Resume the isolated storage recovery scenario from Home after a restart.
   nativeStorageRecoveryTestOnHome?: boolean;
@@ -70,6 +80,9 @@ export interface IDevSettings {
   // Load the pre-#13914 Stripe.js to reproduce its retired iframe resources.
   // Web / desktop / extension only; needs a restart.
   useFaultyPrimeStripeJs?: boolean;
+  // Make Prime plan loading fail with this RevenueCat error code to check
+  // each paywall fail state. 'off' loads plans normally.
+  primeFetchPackagesFault?: IPrimeFetchPackagesFault;
   showWebviewDevTools?: boolean;
   // strict signature alert display
   strictSignatureAlert?: boolean;
@@ -203,6 +216,7 @@ export const {
       usePrimeSandboxPayment: platformEnv.isDev,
       usePrimeHostedCardCheckout: false,
       useFaultyPrimeStripeJs: false,
+      primeFetchPackagesFault: 'off',
       showPerformanceMonitor: false,
       showPerformanceMonitorV2: false,
       autoNavigation: {
