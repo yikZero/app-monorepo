@@ -4430,7 +4430,7 @@
   "prime.new_password": "Kata Sandi Baru",
   "prime.new_password_description": "Anda sedang mengatur ulang kata sandi baru untuk: {email}",
   "prime.no_order_yet": "Belum ada pesanan",
-  "prime.no_order_yet_desc": "Pesanan Anda terhubung dengan email ID OneKey Anda. Jika Anda melakukan pemesanan dengan email yang berbeda, Anda dapat mencarinya di situs web kami.",
+  "prime.no_order_yet_desc": "Hanya pesanan yang dibuat dengan email OneKey ID Anda dalam 6 bulan terakhir yang ditampilkan. Menggunakan email yang berbeda? Cari pesanan Anda di situs web kami.",
   "prime.no_purchases_found": "Belum ada pembelian",
   "prime.not_logged_in_description": "Harap masuk ke OneKey ID untuk menggunakan fitur ini",
   "prime.not_logged_in_title": "Belum masuk",

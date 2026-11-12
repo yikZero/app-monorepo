@@ -4430,7 +4430,7 @@
   "prime.new_password": "Nueva Contraseña",
   "prime.new_password_description": "Está restableciendo la nueva contraseña para: {email}",
   "prime.no_order_yet": "No hay pedidos todavía",
-  "prime.no_order_yet_desc": "Los pedidos se vinculan a tu correo electrónico de OneKey ID. Si realizaste un pedido con otro correo electrónico, puedes buscarlo en nuestra web.",
+  "prime.no_order_yet_desc": "Solo se muestran los pedidos realizados en los últimos 6 meses con tu correo electrónico de OneKey ID. ¿Usaste otro correo electrónico? Busca tu pedido en nuestra web.",
   "prime.no_purchases_found": "No se encontraron compras",
   "prime.not_logged_in_description": "Inicia sesión con OneKey ID para usar esta función",
   "prime.not_logged_in_title": "Sin sesión iniciada",

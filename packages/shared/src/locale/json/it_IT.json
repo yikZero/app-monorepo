@@ -4430,7 +4430,7 @@
   "prime.new_password": "Nuova Password",
   "prime.new_password_description": "Stai reimpostando la password per: {email}",
   "prime.no_order_yet": "Nessun ordine ancora",
-  "prime.no_order_yet_desc": "Gli ordini sono collegati all'indirizzo email del tuo ID OneKey. Se hai effettuato un ordine con un indirizzo email diverso, puoi cercarlo sul nostro sito web.",
+  "prime.no_order_yet_desc": "Vengono mostrati solo gli ordini effettuati negli ultimi 6 mesi con l'indirizzo email del tuo OneKey ID. Hai utilizzato un indirizzo email diverso? Cerca il tuo ordine sul nostro sito web.",
   "prime.no_purchases_found": "Nessun acquisto trovato",
   "prime.not_logged_in_description": "Accedi con OneKey ID per utilizzare questa funzione",
   "prime.not_logged_in_title": "Accesso non effettuato",

@@ -4430,7 +4430,7 @@
   "prime.new_password": "新しいパスワード",
   "prime.new_password_description": "新しいパスワードをリセットしています: {email}",
   "prime.no_order_yet": "まだ注文はありません",
-  "prime.no_order_yet_desc": "ご注文はOneKey IDのメールアドレスに紐付けられています。別のメールアドレスでご注文いただいた場合は、当社のウェブサイトで検索いただけます。",
+  "prime.no_order_yet_desc": "過去6か月間にOneKey IDのメールアドレスで行われたご注文のみが表示されます。別のメールアドレスでご注文された場合は、当社のウェブサイトでご注文を検索できます。",
   "prime.no_purchases_found": "購入履歴がありません",
   "prime.not_logged_in_description": "この機能を使用するには OneKey ID でログインしてください",
   "prime.not_logged_in_title": "ログインしていません",
