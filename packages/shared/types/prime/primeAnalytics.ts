@@ -36,3 +36,11 @@ export type IPrimePurchaseStore =
   | 'promotional';
 
 export type IPrimePeriodType = 'trial' | 'intro' | 'normal';
+
+// Which paywall fail state a package-loading error maps to.
+export type IPrimePackagesFailureKind =
+  | 'network'
+  | 'storeUnavailable'
+  | 'purchaseNotAllowed'
+  | 'productUnavailable'
+  | 'unknown';

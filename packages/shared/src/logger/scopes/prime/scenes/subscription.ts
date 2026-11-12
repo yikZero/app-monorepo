@@ -22,6 +22,7 @@ import type {
 } from '@onekeyhq/shared/src/utils/sensitiveErrorMessageUtils';
 import type {
   IPrimeEntryPoint,
+  IPrimePackagesFailureKind,
   IPrimePeriodType,
   IPrimePurchaseStore,
 } from '@onekeyhq/shared/types/prime/primeAnalytics';
@@ -977,6 +978,8 @@ export class PrimeSubscriptionScene extends BaseScene {
     paywallSessionId,
     purchaseFlowId,
     entryPoint,
+    failureKind,
+    storefrontCountryCode,
   }: {
     errorMessage: string;
     errorCode?: string;
@@ -985,6 +988,11 @@ export class PrimeSubscriptionScene extends BaseScene {
     paywallSessionId?: string;
     purchaseFlowId?: string;
     entryPoint?: IPrimeEntryPoint;
+    // Fail state shown on the paywall for this error.
+    failureKind?: IPrimePackagesFailureKind;
+    // Purchase account Storefront country, not the device region or IP:
+    // ISO 3166-1 alpha-3 on Apple stores, alpha-2 on Google Play.
+    storefrontCountryCode?: string;
   }) {
     this.fetchPackagesFailedLocal({ errorMessage });
     return {
@@ -994,7 +1002,58 @@ export class PrimeSubscriptionScene extends BaseScene {
       paywallSessionId,
       purchaseFlowId,
       entryPoint,
+      failureKind,
+      storefrontCountryCode,
     };
+  }
+
+  /**
+   * Paywall fail state shown because no subscription plans could be loaded.
+   * Pairs with fetchPackagesFailed (cause) and primePackagesFailStateAction
+   * (recovery attempt). Fired each time the fail state appears, including
+   * after a failed retry.
+   */
+  @LogToServer()
+  public primePackagesFailStateShow({
+    failureKind,
+    storefrontCountryCode,
+    canPurchaseWithoutPackages,
+    paywallSessionId,
+    entryPoint,
+  }: {
+    failureKind: IPrimePackagesFailureKind;
+    storefrontCountryCode?: string;
+    // Subscribe stays enabled for card or crypto checkout (APK, desktop, web).
+    canPurchaseWithoutPackages: boolean;
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+  }) {
+    return {
+      failureKind,
+      storefrontCountryCode,
+      canPurchaseWithoutPackages,
+      paywallSessionId,
+      entryPoint,
+    };
+  }
+
+  /**
+   * Retry pressed on the plans fail state. Whether it recovered shows up as
+   * a later primeSubscribeButtonClick in the same paywallSessionId.
+   */
+  @LogToServer()
+  public primePackagesFailStateAction({
+    failureKind,
+    action,
+    paywallSessionId,
+    entryPoint,
+  }: {
+    failureKind: IPrimePackagesFailureKind;
+    action: 'retry';
+    paywallSessionId?: string;
+    entryPoint?: IPrimeEntryPoint;
+  }) {
+    return { failureKind, action, paywallSessionId, entryPoint };
   }
 
   @LogToLocal({ level: 'error' })
