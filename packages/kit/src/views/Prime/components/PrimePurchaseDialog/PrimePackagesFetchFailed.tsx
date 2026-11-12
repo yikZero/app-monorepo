@@ -8,14 +8,14 @@ import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 
 import { getPrimePackagesFailureDescriptionId } from '../../hooks/primePackagesFetchFailure';
 
-import type { IPrimePackagesFailureState } from '../../hooks/usePrimeSubscriptionPackages';
+import type { IPrimePackagesFetchFailure } from '../../hooks/primePackagesFetchFailure';
 
 export function PrimePackagesFetchFailed({
   failure,
   canPurchaseWithoutPackages,
   onRetry,
 }: {
-  failure: IPrimePackagesFailureState;
+  failure: IPrimePackagesFetchFailure;
   // The footer Subscribe button stays enabled for card or crypto checkout.
   canPurchaseWithoutPackages: boolean;
   onRetry: () => Promise<void>;
