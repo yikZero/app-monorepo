@@ -1,9 +1,40 @@
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
+import { ETranslations } from '@onekeyhq/shared/src/locale';
 
 import {
+  getPrimePackagesFailureDescriptionId,
   getPrimePackagesFailureKind,
   getPrimeStorefrontCountryCode,
 } from './primePackagesFetchFailure';
+
+let mockIsAppleStore = true;
+jest.mock('@onekeyhq/shared/src/prime/primePaymentCapabilities', () => ({
+  isPrimeAppleStorePayment: () => mockIsAppleStore,
+}));
+
+describe('Prime packages fail state copy', () => {
+  it('uses the China copy only for unavailable products on a CHN Apple Storefront', () => {
+    mockIsAppleStore = true;
+    expect(
+      getPrimePackagesFailureDescriptionId({
+        kind: 'productUnavailable',
+        storefrontCountryCode: 'CHN',
+      }),
+    ).toBe(ETranslations.prime_subscription_china_storefront__msg);
+    expect(
+      getPrimePackagesFailureDescriptionId({
+        kind: 'productUnavailable',
+        storefrontCountryCode: 'USA',
+      }),
+    ).toBe(ETranslations.prime_plans_app_store_no_plans__desc);
+    expect(
+      getPrimePackagesFailureDescriptionId({
+        kind: 'network',
+        storefrontCountryCode: 'CHN',
+      }),
+    ).toBe(ETranslations.prime_plans_network_error__desc);
+  });
+});
 
 describe('Prime packages fail state classification', () => {
   it.each([

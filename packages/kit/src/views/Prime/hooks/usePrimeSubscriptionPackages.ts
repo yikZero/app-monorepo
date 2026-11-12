@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { usePromiseResult } from '@onekeyhq/kit/src/hooks/usePromiseResult';
 import { OneKeyLocalError } from '@onekeyhq/shared/src/errors';
@@ -7,14 +7,12 @@ import errorToastUtils from '@onekeyhq/shared/src/errors/utils/errorToastUtils';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import {
-  isPrimeAppleStorePayment,
   isPrimeCryptoPaymentSupported,
   isPrimeStorePayment,
 } from '@onekeyhq/shared/src/prime/primePaymentCapabilities';
 import { getPrimePurchaseErrorAnalytics } from '@onekeyhq/shared/src/utils/primePurchaseErrorAnalytics';
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 
-import { shouldShowPrimeChinaStorefrontHint } from './primeChinaStorefront';
 import {
   getPrimePackagesFailureKind,
   getPrimeStorefrontCountryCode,
@@ -30,9 +28,20 @@ import type { IPackage } from './usePrimePaymentTypes';
 const EMPTY_OFFERING_MESSAGE = 'Prime subscription packages unavailable';
 const TRANSIENT_RETRY_DELAY_MS = 1000;
 
-export type IPrimePackagesFailureState = IPrimePackagesFetchFailure & {
-  isChinaStorefront: boolean;
-};
+const EMPTY_SDK_RESULT: {
+  packages: IPackage[];
+  failure?: IPrimePackagesFetchFailure;
+} = { packages: [] };
+
+function classifyPackagesError(error: unknown) {
+  const errorAnalytics = getPrimePurchaseErrorAnalytics(error);
+  const failureKind = getPrimePackagesFailureKind({
+    ...errorAnalytics,
+    isEmptyOffering:
+      (error as IOneKeyError | undefined)?.message === EMPTY_OFFERING_MESSAGE,
+  });
+  return { errorAnalytics, failureKind };
+}
 
 export function usePrimeSubscriptionPackages({
   enabled,
@@ -49,9 +58,6 @@ export function usePrimeSubscriptionPackages({
   } = usePrimePayment();
   const { getPackagesWeb: getPackagesWebFallback } =
     usePrimePaymentMethodsWeb();
-  const [failure, setFailure] = useState<
-    IPrimePackagesFailureState | undefined
-  >();
 
   const { result: webPackages, run: reloadWebPackages } = usePromiseResult(
     async () => {
@@ -76,97 +82,80 @@ export function usePrimeSubscriptionPackages({
   );
 
   const {
-    result: sdkPackages,
+    result: sdkResult,
     isLoading: isPackagesLoading,
     run: reloadSdkPackages,
   } = usePromiseResult(
     async () => {
       if (!enabled || !isPurchaseReady) {
-        return [];
+        return EMPTY_SDK_RESULT;
       }
 
       return errorToastUtils.withErrorAutoToast(async () => {
+        const simulatedFault = await getPrimeSimulatedPackagesFault();
         const loadOnce = async () => {
-          const simulatedFault = await getPrimeSimulatedPackagesFault();
-          if (simulatedFault?.type === 'error') {
+          if (simulatedFault?.error) {
             throw simulatedFault.error;
           }
-          const pkgList =
-            simulatedFault?.type === 'emptyOffering'
-              ? []
-              : await (isPrimeStorePayment()
-                  ? getPackagesNative?.()
-                  : getPackagesWeb?.());
+          const pkgList = simulatedFault
+            ? []
+            : await (isPrimeStorePayment()
+                ? getPackagesNative?.()
+                : getPackagesWeb?.());
           // An empty list blocks purchase as much as an error does.
           if (!pkgList?.length) {
             throw new OneKeyLocalError(EMPTY_OFFERING_MESSAGE);
           }
           return pkgList;
         };
+        const isInitializationError = (error: unknown) =>
+          Boolean(initializationError && error === initializationError);
+
+        let error: unknown;
         try {
-          let pkgList: IPackage[];
-          try {
-            pkgList = await loadOnce();
-          } catch (firstError) {
-            // Play Billing documents SERVICE_UNAVAILABLE, SERVICE_DISCONNECTED
-            // and NETWORK_ERROR as transient and asks apps to retry them;
-            // RevenueCat maps those to codes 2 and 10. Retry once silently.
-            if (
-              firstError === initializationError ||
-              !isPrimeTransientPackagesFailure(
-                getPrimePackagesFailureKind(
-                  getPrimePurchaseErrorAnalytics(firstError),
-                ),
-              )
-            ) {
-              throw firstError;
-            }
-            await timerUtils.wait(TRANSIENT_RETRY_DELAY_MS);
-            pkgList = await loadOnce();
-          }
-          setFailure(undefined);
-          return pkgList;
-        } catch (error) {
-          const e = error as IOneKeyError | undefined;
-          const isInitializationError = Boolean(
-            initializationError && error === initializationError,
-          );
-          const errorAnalytics = getPrimePurchaseErrorAnalytics(error);
-          const failureKind = getPrimePackagesFailureKind({
-            ...errorAnalytics,
-            isEmptyOffering: e?.message === EMPTY_OFFERING_MESSAGE,
-          });
-          // Initialization failures need a newer native shell, not Storefront.
-          const storefrontCountryCode = isInitializationError
-            ? undefined
-            : await getPrimeStorefrontCountryCode(getStorefront);
-
-          defaultLogger.prime.subscription.fetchPackagesFailed({
-            errorMessage: e?.message || 'Unknown error',
-            ...errorAnalytics,
-            failureKind,
-            storefrontCountryCode,
-          });
-
-          if (isInitializationError) {
-            // Keep the actionable update message outside the fail state.
-            throw error;
-          }
-
-          const isChinaStorefront =
-            isPrimeAppleStorePayment() &&
-            (await shouldShowPrimeChinaStorefrontHint(error, async () =>
-              storefrontCountryCode
-                ? { countryCode: storefrontCountryCode }
-                : null,
-            ));
-          setFailure({
-            kind: failureKind,
-            storefrontCountryCode,
-            isChinaStorefront,
-          });
-          return [];
+          return { packages: await loadOnce() };
+        } catch (firstError) {
+          error = firstError;
         }
+        let { errorAnalytics, failureKind } = classifyPackagesError(error);
+        // Play Billing documents SERVICE_UNAVAILABLE, SERVICE_DISCONNECTED and
+        // NETWORK_ERROR as transient and asks apps to retry them; RevenueCat
+        // maps those to codes 2 and 10. Retry once silently.
+        if (
+          !isInitializationError(error) &&
+          isPrimeTransientPackagesFailure(failureKind)
+        ) {
+          await timerUtils.wait(TRANSIENT_RETRY_DELAY_MS);
+          try {
+            return { packages: await loadOnce() };
+          } catch (retryError) {
+            error = retryError;
+            ({ errorAnalytics, failureKind } = classifyPackagesError(error));
+          }
+        }
+
+        // Initialization failures need a newer native shell, not Storefront.
+        const storefrontCountryCode = isInitializationError(error)
+          ? undefined
+          : (simulatedFault?.storefrontCountryCode ??
+            (await getPrimeStorefrontCountryCode(getStorefront)));
+
+        defaultLogger.prime.subscription.fetchPackagesFailed({
+          errorMessage:
+            (error as IOneKeyError | undefined)?.message || 'Unknown error',
+          ...errorAnalytics,
+          failureKind,
+          storefrontCountryCode,
+        });
+
+        if (initializationError && isInitializationError(error)) {
+          // Keep the actionable update message outside the fail state.
+          throw initializationError;
+        }
+        return {
+          packages: [],
+          failure: { kind: failureKind, storefrontCountryCode },
+        };
       });
     },
     [
@@ -178,11 +167,12 @@ export function usePrimeSubscriptionPackages({
       initializationError,
     ],
     {
-      initResult: [],
+      initResult: EMPTY_SDK_RESULT,
       watchLoading: true,
     },
   );
 
+  const sdkPackages = sdkResult?.packages;
   const packages = useMemo(() => {
     if (sdkPackages?.length) {
       return sdkPackages;
@@ -192,7 +182,9 @@ export function usePrimeSubscriptionPackages({
 
   // Android APKs fall back to card prices; only an empty list blocks purchase.
   const packagesFailure =
-    enabled && !isPackagesLoading && !packages.length ? failure : undefined;
+    enabled && !isPackagesLoading && !packages.length
+      ? sdkResult?.failure
+      : undefined;
 
   const reloadPackages = useCallback(async () => {
     await Promise.all([reloadSdkPackages(), reloadWebPackages()]);

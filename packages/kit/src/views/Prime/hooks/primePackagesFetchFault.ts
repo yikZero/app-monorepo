@@ -1,53 +1,37 @@
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import type { IPrimeFetchPackagesFault } from '@onekeyhq/kit-bg/src/states/jotai/atoms/devSettings';
 
-// Shapes follow the native PurchasesError (string `code`) so the simulated
-// error goes through the same classification and analytics as a real one.
-// Messages are marked as simulated; only code 23 keeps the RevenueCat wording
-// because the China Storefront check matches it.
-const SIMULATED_ERRORS: Record<
-  Exclude<IPrimeFetchPackagesFault, 'off' | 'emptyOffering'>,
-  { code: string; message: string; underlyingErrorMessage: string }
-> = {
-  '2': {
-    code: '2',
-    message: '[Simulated] store problem',
-    underlyingErrorMessage: '',
-  },
-  '3': {
-    code: '3',
-    message: '[Simulated] purchase not allowed',
-    underlyingErrorMessage: '',
-  },
-  '5': {
-    code: '5',
-    message: '[Simulated] product not available',
-    underlyingErrorMessage: '',
-  },
-  '10': {
-    code: '10',
-    message: '[Simulated] network error',
-    underlyingErrorMessage: '',
-  },
-  '23': {
-    code: '23',
-    message:
-      '[Simulated] None of the products registered in the RevenueCat dashboard could be fetched',
-    underlyingErrorMessage: '',
-  },
-  '33': {
-    code: '33',
-    message: '[Simulated] API endpoint blocked',
-    underlyingErrorMessage: '',
-  },
+type ISimulatedErrorCode = Exclude<
+  IPrimeFetchPackagesFault,
+  'off' | 'emptyOffering' | 'chinaStorefront'
+>;
+
+const SIMULATED_ERROR_MESSAGES: Record<ISimulatedErrorCode, string> = {
+  '0': 'unknown error',
+  '2': 'store problem',
+  '3': 'purchase not allowed',
+  '5': 'product not available',
+  '10': 'network error',
+  '23': 'none of the store products could be fetched',
+  '33': 'API endpoint blocked',
 };
 
-export type IPrimeSimulatedPackagesFault =
-  | {
-      type: 'error';
-      error: (typeof SIMULATED_ERRORS)[keyof typeof SIMULATED_ERRORS];
-    }
-  | { type: 'emptyOffering' };
+// Shapes follow the native PurchasesError (string `code`) so the simulated
+// error goes through the same classification and analytics as a real one.
+function buildSimulatedError(code: ISimulatedErrorCode) {
+  return {
+    code,
+    message: `[Simulated] ${SIMULATED_ERROR_MESSAGES[code]}`,
+    underlyingErrorMessage: '',
+  };
+}
+
+export type IPrimeSimulatedPackagesFault = {
+  // Undefined means the store returned an empty offering without an error.
+  error?: ReturnType<typeof buildSimulatedError>;
+  // Overrides the purchase account Storefront.
+  storefrontCountryCode?: string;
+};
 
 export async function getPrimeSimulatedPackagesFault(): Promise<
   IPrimeSimulatedPackagesFault | undefined
@@ -58,13 +42,21 @@ export async function getPrimeSimulatedPackagesFault(): Promise<
     const fault = devSettings?.enabled
       ? devSettings.settings?.primeFetchPackagesFault
       : undefined;
-    if (!fault || fault === 'off') {
-      return undefined;
+    switch (fault) {
+      case undefined:
+      case 'off':
+        return undefined;
+      case 'emptyOffering':
+        return {};
+      case 'chinaStorefront':
+        // What a mainland China Apple Account gets: code 23 on a CHN Storefront.
+        return {
+          error: buildSimulatedError('23'),
+          storefrontCountryCode: 'CHN',
+        };
+      default:
+        return { error: buildSimulatedError(fault) };
     }
-    if (fault === 'emptyOffering') {
-      return { type: 'emptyOffering' };
-    }
-    return { type: 'error', error: { ...SIMULATED_ERRORS[fault] } };
   } catch {
     // Dev overrides must never block plan loading.
     return undefined;

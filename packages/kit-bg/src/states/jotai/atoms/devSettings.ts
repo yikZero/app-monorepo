@@ -34,13 +34,15 @@ export interface ITestAccount {
 
 export type IPrimeFetchPackagesFault =
   | 'off'
+  | '0'
   | '2'
   | '3'
   | '5'
   | '10'
   | '23'
   | '33'
-  | 'emptyOffering';
+  | 'emptyOffering'
+  | 'chinaStorefront';
 
 export interface IDevSettings {
   // Resume the isolated storage recovery scenario from Home after a restart.

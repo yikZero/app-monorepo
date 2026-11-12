@@ -49,15 +49,6 @@ const WEB_ERROR_NAMES: Record<string, string> = {
   '38': 'INVALID_EMAIL_ERROR',
 };
 
-export type IPrimeClientErrorKey =
-  | 'offeringNotFound'
-  | 'userNotLoggedIn'
-  | 'appUserIdMismatch'
-  | 'sdkNotReady'
-  | 'userChanged'
-  | 'invalidPackage'
-  | 'unknown';
-
 export type IPrimeUnderlyingErrorCategory =
   | 'billingUnavailable'
   | 'network'
@@ -78,29 +69,7 @@ export type IPrimePurchaseErrorAnalytics = {
   errorCode?: string;
   errorName: string;
   underlyingErrorCategory: IPrimeUnderlyingErrorCategory;
-  clientErrorKey?: IPrimeClientErrorKey;
 };
-
-export function getPrimeClientErrorKey(message?: string): IPrimeClientErrorKey {
-  switch (message) {
-    case 'Offering not found':
-      return 'offeringNotFound';
-    case 'User not logged in':
-    case 'No userId found':
-      return 'userNotLoggedIn';
-    case 'AppUserId not match':
-      return 'appUserIdMismatch';
-    case 'PrimeAuth Not ready':
-    case 'PrimeAuth native not ready!':
-      return 'sdkNotReady';
-    case 'Prime purchase user changed':
-      return 'userChanged';
-    case 'purchasePaywallPackage ERROR: Invalid packageId':
-      return 'invalidPackage';
-    default:
-      return 'unknown';
-  }
-}
 
 function classifyUnderlyingError(
   code: string | undefined,

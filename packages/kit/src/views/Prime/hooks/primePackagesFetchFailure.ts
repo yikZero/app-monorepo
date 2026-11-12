@@ -8,8 +8,6 @@ import type {
 import timerUtils from '@onekeyhq/shared/src/utils/timerUtils';
 import type { IRevenueCatStorefront } from '@onekeyhq/shared/types/prime/revenueCat';
 
-export type { IPrimePackagesFailureKind };
-
 export type IPrimePackagesFetchFailure = {
   kind: IPrimePackagesFailureKind;
   // Purchase account Storefront: ISO 3166-1 alpha-3 on Apple, alpha-2 on
@@ -97,12 +95,11 @@ export async function getPrimeStorefrontCountryCode(
 // purchase), Google Play codes 5 / 23 (3).
 export function getPrimePackagesFailureDescriptionId({
   kind,
-  isChinaStorefront,
-}: {
-  kind: IPrimePackagesFailureKind;
-  isChinaStorefront?: boolean;
-}): ETranslations | undefined {
+  storefrontCountryCode,
+}: IPrimePackagesFetchFailure): ETranslations | undefined {
   const isAppStore = isPrimeAppleStorePayment();
+  // APK builds also load plans from Play Billing first, so their store errors
+  // are Google Play errors too.
   const isGooglePlay = !isAppStore && platformEnv.isNativeAndroid;
   switch (kind) {
     case 'network':
@@ -120,8 +117,9 @@ export function getPrimePackagesFailureDescriptionId({
       if (!isAppStore) {
         return undefined;
       }
-      // Keep the existing mainland China copy; it names the fix.
-      return isChinaStorefront
+      // Prime's Apple IAP products are not sold in mainland China. Judge by
+      // the purchase account's Storefront, never the system region or IP.
+      return storefrontCountryCode === 'CHN'
         ? ETranslations.prime_subscription_china_storefront__msg
         : ETranslations.prime_plans_app_store_no_plans__desc;
     default:

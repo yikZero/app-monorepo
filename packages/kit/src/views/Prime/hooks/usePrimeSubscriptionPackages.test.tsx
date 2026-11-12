@@ -10,7 +10,9 @@ import { usePrimeSubscriptionPackages } from './usePrimeSubscriptionPackages';
 
 import type { IPackage } from './usePrimePaymentTypes';
 
-const mockRequests: Array<() => Promise<IPackage[]>> = [];
+type ISdkResult = { packages: IPackage[]; failure?: unknown };
+const mockRequests: Array<() => Promise<ISdkResult>> = [];
+let mockSdkResult: ISdkResult | undefined;
 const mockGetPackages = jest.fn<Promise<IPackage[]>, []>();
 const mockGetStorefront = jest.fn<
   Promise<{ countryCode: string } | null>,
@@ -21,9 +23,21 @@ let mockIsMas = true;
 let mockIsNativeAndroid = false;
 
 jest.mock('@onekeyhq/kit/src/hooks/usePromiseResult', () => ({
-  usePromiseResult: (request: () => Promise<IPackage[]>) => {
+  usePromiseResult: (
+    request: () => Promise<ISdkResult>,
+    _deps: unknown[],
+    options: { initResult: unknown },
+  ) => {
+    // The card-price loader starts from [], the SDK loader from an object.
+    if (Array.isArray(options.initResult)) {
+      return { result: [], isLoading: false, run: jest.fn() };
+    }
     mockRequests.push(request);
-    return { result: [], isLoading: false, run: jest.fn() };
+    return {
+      result: mockSdkResult ?? options.initResult,
+      isLoading: false,
+      run: jest.fn(),
+    };
   },
 }));
 jest.mock('@onekeyhq/kit/src/components/OneKeyAuth/useOneKeyAuth', () => ({
@@ -92,16 +106,18 @@ async function loadPackages() {
   const hook = renderHook(() =>
     usePrimeSubscriptionPackages({ enabled: true }),
   );
-  const request = mockRequests[1];
+  const request = mockRequests[0];
   let packages: IPackage[] | undefined;
   let error: unknown;
   await act(async () => {
     try {
-      packages = await request();
+      mockSdkResult = await request();
+      packages = mockSdkResult.packages;
     } catch (e) {
       error = e;
     }
   });
+  hook.rerender();
   return { hook, packages, error };
 }
 
@@ -113,6 +129,7 @@ describe('Prime subscription loading fail states', () => {
     mockIsMas = true;
     mockIsNativeAndroid = false;
     mockSimulatedFault = undefined;
+    mockSdkResult = undefined;
     mockGetPackages.mockResolvedValue([]);
     mockGetStorefront.mockResolvedValue({ countryCode: 'CHN' });
   });
@@ -137,14 +154,13 @@ describe('Prime subscription loading fail states', () => {
     },
   );
 
-  it('marks a CHN Storefront for a product error', async () => {
+  it('keeps a CHN Storefront for a product error', async () => {
     mockGetPackages.mockRejectedValue({ code: '5' });
     const { hook, packages } = await loadPackages();
     expect(packages).toEqual([]);
     expect(hook.result.current.packagesFailure).toEqual({
       kind: 'productUnavailable',
       storefrontCountryCode: 'CHN',
-      isChinaStorefront: true,
     });
     expect(mockFetchPackagesFailed).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -168,16 +184,14 @@ describe('Prime subscription loading fail states', () => {
     expect(hook.result.current.packagesFailure).toEqual({
       kind,
       storefrontCountryCode: 'USA',
-      isChinaStorefront: false,
     });
   });
 
-  it('treats an empty Apple offering as product unavailable without the China copy', async () => {
+  it('treats an empty Apple offering as product unavailable', async () => {
     const { hook } = await loadPackages();
     expect(hook.result.current.packagesFailure).toEqual({
       kind: 'productUnavailable',
       storefrontCountryCode: 'CHN',
-      isChinaStorefront: false,
     });
   });
 
@@ -193,7 +207,6 @@ describe('Prime subscription loading fail states', () => {
     expect(hook.result.current.packagesFailure).toEqual({
       kind: 'purchaseNotAllowed',
       storefrontCountryCode: 'US',
-      isChinaStorefront: false,
     });
   });
 
@@ -209,7 +222,6 @@ describe('Prime subscription loading fail states', () => {
   it('runs a simulated dev fault through the real classification', async () => {
     mockGetPackages.mockResolvedValue([{} as IPackage]);
     mockSimulatedFault = {
-      type: 'error',
       error: { code: '10', message: '[Simulated] network error' },
     };
     const { hook } = await loadPackages();
@@ -225,7 +237,6 @@ describe('Prime subscription loading fail states', () => {
     expect(hook.result.current.packagesFailure).toEqual({
       kind: 'productUnavailable',
       storefrontCountryCode: 'US',
-      isChinaStorefront: false,
     });
   });
 
@@ -238,6 +249,20 @@ describe('Prime subscription loading fail states', () => {
     expect(packages).toHaveLength(1);
     expect(mockFetchPackagesFailed).not.toHaveBeenCalled();
     expect(hook.result.current.packagesFailure).toBeUndefined();
+  });
+
+  it('applies a simulated Storefront override', async () => {
+    mockSimulatedFault = {
+      error: { code: '23', message: '[Simulated] none' },
+      storefrontCountryCode: 'CHN',
+    };
+    mockGetStorefront.mockResolvedValue({ countryCode: 'USA' });
+    const { hook } = await loadPackages();
+    expect(mockGetStorefront).not.toHaveBeenCalled();
+    expect(hook.result.current.packagesFailure).toEqual({
+      kind: 'productUnavailable',
+      storefrontCountryCode: 'CHN',
+    });
   });
 
   it('does not retry a non-transient failure', async () => {

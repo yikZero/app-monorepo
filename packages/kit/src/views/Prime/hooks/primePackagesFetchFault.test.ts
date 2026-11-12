@@ -24,7 +24,7 @@ describe('Prime simulated packages fault', () => {
     await expect(getPrimeSimulatedPackagesFault()).resolves.toBeUndefined();
   });
 
-  it.each(['2', '3', '5', '10', '23', '33'])(
+  it.each(['0', '2', '3', '5', '10', '23', '33'])(
     'throws RevenueCat code %s',
     async (code) => {
       mockGetDevSetting.mockResolvedValue({
@@ -32,7 +32,6 @@ describe('Prime simulated packages fault', () => {
         settings: { primeFetchPackagesFault: code },
       });
       await expect(getPrimeSimulatedPackagesFault()).resolves.toEqual({
-        type: 'error',
         error: expect.objectContaining({ code }),
       });
     },
@@ -43,10 +42,19 @@ describe('Prime simulated packages fault', () => {
       enabled: true,
       settings: { primeFetchPackagesFault: 'emptyOffering' },
     });
-    await expect(getPrimeSimulatedPackagesFault()).resolves.toEqual({
-      type: 'emptyOffering',
-    });
+    await expect(getPrimeSimulatedPackagesFault()).resolves.toEqual({});
     mockGetDevSetting.mockRejectedValue(new OneKeyLocalError('unavailable'));
     await expect(getPrimeSimulatedPackagesFault()).resolves.toBeUndefined();
+  });
+
+  it('simulates a mainland China Apple Account', async () => {
+    mockGetDevSetting.mockResolvedValue({
+      enabled: true,
+      settings: { primeFetchPackagesFault: 'chinaStorefront' },
+    });
+    await expect(getPrimeSimulatedPackagesFault()).resolves.toEqual({
+      error: expect.objectContaining({ code: '23' }),
+      storefrontCountryCode: 'CHN',
+    });
   });
 });
