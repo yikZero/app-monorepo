@@ -59,8 +59,8 @@ export const ReferFriendsTestIDs = {
   exportBtn: 'refer-friends-export-btn',
 
   // --- Invited By Friend ---
-  cancelBtn: 'refer-friends-cancel-btn',
   acceptBtn: 'refer-friends-accept-btn',
+  inviteFooterBtn: 'refer-friends-invite-footer-btn',
   openDesktopBtn: 'refer-friends-open-desktop-btn',
   getExtensionBtn: 'refer-friends-get-extension-btn',
   webOptionsCancelBtn: 'refer-friends-web-options-cancel-btn',

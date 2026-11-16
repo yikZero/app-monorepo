@@ -1,9 +1,5 @@
-import { FormattedMessage, useIntl } from 'react-intl';
+import { Icon, SizableText, XStack, YStack } from '@onekeyhq/components';
 
-import { SizableText, Stack } from '@onekeyhq/components';
-import { ETranslations } from '@onekeyhq/shared/src/locale';
-
-import { ReferralBenefitsList } from '../../../components';
 import { useInvitePostConfig } from '../../../hooks/useInvitePostConfig';
 import {
   formatInviteeDiscountFromConfig,
@@ -11,64 +7,49 @@ import {
 } from '../../../utils';
 
 function InvitedByFriendContent({ referralCode }: { referralCode?: string }) {
-  const intl = useIntl();
   const { postConfig, isSettled } = useInvitePostConfig();
   const inviteeDiscountAmount = formatInviteeDiscountFromConfig(
     postConfig?.inviteeDiscount,
   );
   // A zero rate means the server has paused the invitee rebate, so promise
-  // none rather than render "0%".
-  const isDiscountDeclined = isInviteeDiscountDeclined(
-    postConfig?.inviteeDiscount,
-  );
-
-  // Held back until the config has answered, so a first open never shows the
-  // default rate and then swaps it for the server's.
-  const benefits =
-    !isSettled || isDiscountDeclined
-      ? []
-      : [
-          {
-            icon: 'GiftOutline' as const,
-            text: intl.formatMessage(
-              {
-                id: ETranslations.referral_modal_been_invited_point1,
-              },
-              {
-                amount: inviteeDiscountAmount,
-              },
-            ),
-          },
-        ];
+  // none rather than render "0%". Held back until the config has answered,
+  // so a first open never shows the default rate and then swaps it.
+  const showRebate =
+    isSettled && !isInviteeDiscountDeclined(postConfig?.inviteeDiscount);
 
   return (
-    <Stack mx="auto" gap="$10" px="$5" mt="$4">
-      <ReferralBenefitsList
-        title={
-          <FormattedMessage
-            id={ETranslations.referral_modal_been_invited_title_code}
-            values={{
-              ABCDEF: (
-                <SizableText size="$heading2xl" color="$textInfo">
-                  {referralCode}
-                </SizableText>
-              ),
-            }}
-          />
-        }
-        subtitle={intl.formatMessage({
-          id: ETranslations.referral_modal_been_invited_desc,
-        })}
-        benefits={benefits}
-        bottomNote={
-          benefits.length
-            ? intl.formatMessage({
-                id: ETranslations.referral_intro_p2_note,
-              })
-            : undefined
-        }
-      />
-    </Stack>
+    <YStack px="$5" pt="$5" gap="$5">
+      <YStack gap="$2" alignItems="flex-start">
+        <SizableText size="$heading2xl">You’ve been invited</SizableText>
+        {referralCode ? (
+          <XStack
+            bg="$bgStrong"
+            borderRadius="$full"
+            px="$2.5"
+            py="$1"
+            gap="$1.5"
+            alignItems="center"
+          >
+            <SizableText size="$bodyMdMedium" color="$textSubdued">
+              {`Referral code ${referralCode}`}
+            </SizableText>
+          </XStack>
+        ) : null}
+      </YStack>
+      {showRebate ? (
+        <XStack gap="$3" alignItems="flex-start">
+          <Icon name="GiftOutline" color="$iconSubdued" size="$6" />
+          <YStack flex={1} gap="$0.5">
+            <SizableText size="$bodyLgMedium">
+              {`Get ${inviteeDiscountAmount} back on trading fees`}
+            </SizableText>
+            <SizableText size="$bodyMd" color="$textSubdued">
+              Rate varies by service
+            </SizableText>
+          </YStack>
+        </XStack>
+      ) : null}
+    </YStack>
   );
 }
 

@@ -1,9 +1,7 @@
 import { useRoute } from '@react-navigation/core';
-import { useIntl } from 'react-intl';
 
 import { Page, YStack } from '@onekeyhq/components';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
-import { ETranslations } from '@onekeyhq/shared/src/locale';
 import type {
   EModalReferFriendsRoutes,
   IModalReferFriendsParamList,
@@ -21,7 +19,6 @@ import {
 import type { RouteProp } from '@react-navigation/native';
 
 function InvitedByFriendPage() {
-  const intl = useIntl();
   const route =
     useRoute<
       RouteProp<
@@ -35,11 +32,8 @@ function InvitedByFriendPage() {
 
   return (
     <Page scrollEnabled>
-      <Page.Header
-        title={intl.formatMessage({
-          id: ETranslations.sidebar_refer_a_friend,
-        })}
-      />
+      {/* The hero title already names the page; the header only carries close. */}
+      <Page.Header title="" />
       <Page.Body>
         <ReferFriendsPageContainer flex={1}>
           <YStack

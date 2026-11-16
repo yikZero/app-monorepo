@@ -12,42 +12,20 @@ let mockPostConfigState: {
   isSettled: boolean;
 };
 
-jest.mock('@onekeyhq/components', () => ({
-  SizableText: ({ children }: { children?: ReactNode }) => (
-    <span>{children}</span>
-  ),
-  Stack: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-}));
-
-jest.mock('react-intl', () => ({
-  FormattedMessage: ({ id }: { id: string }) => <span>{id}</span>,
-  useIntl: () => ({
-    formatMessage: ({ id }: { id: string }, values?: Record<string, string>) =>
-      values?.amount ? `${id}:${values.amount}` : id,
-  }),
-}));
+jest.mock('@onekeyhq/components', () => {
+  const Box = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
+  return {
+    Icon: () => <i />,
+    SizableText: ({ children }: { children?: ReactNode }) => (
+      <span>{children}</span>
+    ),
+    XStack: Box,
+    YStack: Box,
+  };
+});
 
 jest.mock('../../../hooks/useInvitePostConfig', () => ({
   useInvitePostConfig: () => mockPostConfigState,
-}));
-
-jest.mock('../../../components', () => ({
-  ReferralBenefitsList: ({
-    benefits,
-    bottomNote,
-  }: {
-    benefits: { text: ReactNode }[];
-    bottomNote?: ReactNode;
-  }) => (
-    <div>
-      {benefits.map((benefit, index) => (
-        <p key={index} data-testid="benefit">
-          {benefit.text}
-        </p>
-      ))}
-      {bottomNote ? <p data-testid="bottom-note">{bottomNote}</p> : null}
-    </div>
-  ),
 }));
 
 import { InvitedByFriendContent } from './InvitedByFriendContent';
@@ -63,23 +41,29 @@ describe('InvitedByFriendContent', () => {
     mockPostConfigState = { postConfig: withDiscount(15), isSettled: true };
     render(<InvitedByFriendContent referralCode="ABCDEF" />);
 
-    expect(screen.getByTestId('benefit').textContent).toContain('15%');
-    expect(screen.getByTestId('bottom-note')).toBeTruthy();
+    expect(screen.getByText(/15%/)).toBeTruthy();
+    expect(screen.getByText(/ABCDEF/)).toBeTruthy();
   });
 
   it('promises no rebate when the server declines it', () => {
     mockPostConfigState = { postConfig: withDiscount(0), isSettled: true };
     render(<InvitedByFriendContent referralCode="ABCDEF" />);
 
-    expect(screen.queryByTestId('benefit')).toBeNull();
-    expect(screen.queryByTestId('bottom-note')).toBeNull();
+    expect(screen.queryByText(/0%/)).toBeNull();
+    expect(screen.queryByText(/varies/i)).toBeNull();
   });
 
   it('holds the rebate line back until the config settles', () => {
     mockPostConfigState = { postConfig: undefined, isSettled: false };
     render(<InvitedByFriendContent referralCode="ABCDEF" />);
 
-    expect(screen.queryByTestId('benefit')).toBeNull();
-    expect(screen.queryByTestId('bottom-note')).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
+  });
+
+  it('omits the code pill when the link carried no code', () => {
+    mockPostConfigState = { postConfig: undefined, isSettled: false };
+    const { container } = render(<InvitedByFriendContent referralCode="" />);
+
+    expect(container.textContent).not.toMatch(/referral code/i);
   });
 });
