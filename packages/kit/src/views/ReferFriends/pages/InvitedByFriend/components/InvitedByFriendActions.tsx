@@ -173,9 +173,21 @@ function WebWalletOptions({
   );
 }
 
+// Matches the hero illustration so the footer and the art share edges.
+const MAX_CONTENT_WIDTH = 480;
+
 function ActionsFooter({ children }: { children: React.ReactNode }) {
   return (
-    <YStack gap="$3" w="100%" px="$4" py="$4" bg="$bgApp">
+    <YStack
+      gap="$3"
+      w="100%"
+      px="$5"
+      pt="$3"
+      pb="$5"
+      bg="$bgApp"
+      maxWidth={MAX_CONTENT_WIDTH}
+      alignSelf="center"
+    >
       {children}
     </YStack>
   );
@@ -187,8 +199,7 @@ function PrimaryButton(props: React.ComponentProps<typeof Button>) {
       testID={ReferFriendsTestIDs.inviteFooterBtn}
       variant="primary"
       w="100%"
-      $md={{ size: 'large' }}
-      $gtMd={{ alignSelf: 'flex-end', w: 'auto', minWidth: 160 }}
+      size="large"
       {...props}
     />
   );
@@ -392,7 +403,7 @@ function WalletBindActions({ referralCode }: IInvitedByFriendActionsProps) {
   if (!isDataReady) {
     return (
       <ActionsFooter>
-        <Skeleton h="$11" w="100%" borderRadius="$3" />
+        <Skeleton h="$16" w="100%" borderRadius="$4" />
         <PrimaryButton disabled loading>
           Apply
         </PrimaryButton>
@@ -426,7 +437,7 @@ function WalletBindActions({ referralCode }: IInvitedByFriendActionsProps) {
         <SizableText size="$bodyMd" color="$textSubdued" textAlign="center">
           {hasUnknown
             ? 'Couldn’t load wallet status'
-            : 'Your wallets are already applied or over 14 days old'}
+            : 'All your wallets already have a code or are over 14 days old'}
         </SizableText>
         {hasUnknown ? (
           <PrimaryButton onPress={() => void refreshWalletsWithStatus()}>
@@ -444,12 +455,12 @@ function WalletBindActions({ referralCode }: IInvitedByFriendActionsProps) {
   const canPickWallet = walletsWithStatus.length > 1;
   const walletRow = (
     <XStack
-      gap="$2"
+      gap="$3"
       ai="center"
-      py="$2.5"
-      px="$3"
+      py="$3"
+      px="$4"
       bg="$bgSubdued"
-      borderRadius="$3"
+      borderRadius="$4"
       borderWidth={StyleSheet.hairlineWidth}
       borderColor="$borderSubdued"
       {...(canPickWallet
@@ -459,15 +470,15 @@ function WalletBindActions({ referralCode }: IInvitedByFriendActionsProps) {
           }
         : null)}
     >
-      <SizableText size="$bodyMd" color="$textSubdued" flexShrink={0}>
-        Apply to
-      </SizableText>
-      <XStack gap="$2" ai="center" flex={1} minWidth={0} jc="flex-end">
-        <WalletAvatar wallet={selectedWallet} size="$6" />
-        <SizableText size="$bodyLgMedium" numberOfLines={1} flexShrink={1}>
+      <WalletAvatar wallet={selectedWallet} size="$10" />
+      <YStack flex={1} minWidth={0}>
+        <SizableText size="$bodyMd" color="$textSubdued">
+          Apply to
+        </SizableText>
+        <SizableText size="$bodyLgMedium" numberOfLines={1}>
           {selectedWallet.name}
         </SizableText>
-      </XStack>
+      </YStack>
       {canPickWallet ? (
         <Icon
           name="ChevronDownSmallOutline"
@@ -480,44 +491,44 @@ function WalletBindActions({ referralCode }: IInvitedByFriendActionsProps) {
 
   return (
     <ActionsFooter>
+      {canPickWallet ? (
+        <Select
+          testID="refer-friends-select"
+          title={intl.formatMessage({
+            id: ETranslations.global_select_wallet,
+          })}
+          items={walletItems}
+          value={selectedWallet.id}
+          disabled={isBinding}
+          onChange={(walletId) => {
+            if (typeof walletId === 'string') {
+              setPickedWalletId(walletId);
+              setErrorMessage(undefined);
+            }
+          }}
+          renderTrigger={() => walletRow}
+        />
+      ) : (
+        walletRow
+      )}
+      {errorMessage ? (
+        <SizableText size="$bodySm" color="$textCritical" px="$1">
+          {errorMessage}
+        </SizableText>
+      ) : null}
       <YStack gap="$2">
-        {canPickWallet ? (
-          <Select
-            testID="refer-friends-select"
-            title={intl.formatMessage({
-              id: ETranslations.global_select_wallet,
-            })}
-            items={walletItems}
-            value={selectedWallet.id}
-            disabled={isBinding}
-            onChange={(walletId) => {
-              if (typeof walletId === 'string') {
-                setPickedWalletId(walletId);
-                setErrorMessage(undefined);
-              }
-            }}
-            renderTrigger={() => walletRow}
-          />
-        ) : (
-          walletRow
-        )}
-        <SizableText size="$bodySm" color="$textSubdued" px="$1">
+        <PrimaryButton
+          testID={ReferFriendsTestIDs.acceptBtn}
+          onPress={() => void handleApply()}
+          loading={isBinding}
+          disabled={isBinding || !walletInfo}
+        >
+          Apply
+        </PrimaryButton>
+        <SizableText size="$bodySm" color="$textSubdued" textAlign="center">
           Can’t be changed after applying
         </SizableText>
-        {errorMessage ? (
-          <SizableText size="$bodySm" color="$textCritical" px="$1">
-            {errorMessage}
-          </SizableText>
-        ) : null}
       </YStack>
-      <PrimaryButton
-        testID={ReferFriendsTestIDs.acceptBtn}
-        onPress={() => void handleApply()}
-        loading={isBinding}
-        disabled={isBinding || !walletInfo}
-      >
-        Apply
-      </PrimaryButton>
     </ActionsFooter>
   );
 }

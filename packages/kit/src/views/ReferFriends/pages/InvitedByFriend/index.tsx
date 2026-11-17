@@ -18,6 +18,12 @@ import {
 
 import type { RouteProp } from '@react-navigation/native';
 
+// Lets the body fill the viewport so its content can center vertically.
+const SCROLL_PROPS = {
+  showsVerticalScrollIndicator: false,
+  contentContainerStyle: { flexGrow: 1 },
+};
+
 function InvitedByFriendPage() {
   const route =
     useRoute<
@@ -31,18 +37,14 @@ function InvitedByFriendPage() {
   const page = route.params?.page;
 
   return (
-    <Page scrollEnabled>
-      {/* The hero title already names the page; the header only carries close. */}
+    <Page scrollEnabled scrollProps={SCROLL_PROPS}>
+      {/* The hero names the page; the header only carries close. */}
       <Page.Header title="" />
       <Page.Body>
         <ReferFriendsPageContainer flex={1}>
-          <YStack
-            $gtMd={{ py: '$5' }}
-            pb="$5"
-            maxWidth={640}
-            mx="auto"
-            flex={1}
-          >
+          {/* Centered in the space above the footer, so tall phones split
+              the slack above and below instead of leaving one gap. */}
+          <YStack flex={1} jc="center" gap="$6" py="$5">
             <InvitedByFriendImage />
             <InvitedByFriendContent referralCode={referralCode} />
           </YStack>

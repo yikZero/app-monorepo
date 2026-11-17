@@ -16,6 +16,11 @@ jest.mock('@onekeyhq/components', () => {
   const Box = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   return {
     Icon: () => <i />,
+    Skeleton: {
+      BodyLg: () => <i data-testid="skeleton" />,
+      BodyMd: () => <i data-testid="skeleton" />,
+      HeadingXl: () => <i data-testid="skeleton" />,
+    },
     SizableText: ({ children }: { children?: ReactNode }) => (
       <span>{children}</span>
     ),
@@ -58,6 +63,7 @@ describe('InvitedByFriendContent', () => {
     render(<InvitedByFriendContent referralCode="ABCDEF" />);
 
     expect(screen.queryByText(/%/)).toBeNull();
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
   });
 
   it('omits the code pill when the link carried no code', () => {

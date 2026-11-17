@@ -1,49 +1,43 @@
-import {
-  LottieView,
-  Stack,
-  useMedia,
-  usePageWidth,
-} from '@onekeyhq/components';
+import { useWindowDimensions } from 'react-native';
+
+import { Image, useMedia, usePageWidth } from '@onekeyhq/components';
 import { useThemeVariant } from '@onekeyhq/kit/src/hooks/useThemeVariant';
-import { useReferLottieSource } from '@onekeyhq/kit/src/views/ReferFriends/hooks/useReferLottieSource';
-import platformEnv from '@onekeyhq/shared/src/platformEnv';
+import {
+  getInviteCodeStepImageHeight,
+  getInviteCodeStepImageWidth,
+} from '@onekeyhq/kit/src/views/ReferFriends/pages/ReferAFriend/components/InviteCodeStepImage';
 
-// Short enough that the desktop modal fits the bind footer without scrolling.
-const DESKTOP_ASPECT_RATIO = 240 / 640;
-const DESKTOP_WIDTH = 640;
-// The composition is 786×446. Sizing the mobile frame to it, rather than to
-// a square, drops the empty bands above and below the artwork so the bind
-// controls stay on the first screen.
-const MOBILE_ASPECT_RATIO = 446 / 786;
+// In the desktop modal the full 480pt art pushes the bind footer below the
+// fold; this keeps the whole page on one screen.
+const DESKTOP_MAX_WIDTH = 360;
+// On short phones (iPhone SE) the full-width art leaves no room for the
+// hero and the bind footer; cap its height to a share of the window.
+const MAX_HEIGHT_SHARE_OF_WINDOW = 0.26;
 
+// The same still the invite home shows, so both sides of an invite share one
+// illustration, and the page paints at once instead of waiting on a Lottie.
 export function InvitedByFriendImage() {
-  const { gtSm } = useMedia();
-  const themeVariant = useThemeVariant();
+  const isDark = useThemeVariant() === 'dark';
   const pageWidth = usePageWidth();
-  const lottieSource = useReferLottieSource();
-
-  const isDesktop =
-    !platformEnv.isNative && (gtSm || platformEnv.isExtensionUiPopup);
-  const renderMode =
-    platformEnv.isNativeIOS && themeVariant !== 'dark' ? 'HARDWARE' : undefined;
-  const width = !platformEnv.isNative && gtSm ? DESKTOP_WIDTH : pageWidth;
-  const height =
-    width * (isDesktop ? DESKTOP_ASPECT_RATIO : MOBILE_ASPECT_RATIO);
+  const { gtMd } = useMedia();
+  const { height: windowHeight } = useWindowDimensions();
+  const width = getInviteCodeStepImageWidth(pageWidth);
+  const height = getInviteCodeStepImageHeight(pageWidth);
+  const scale = gtMd
+    ? Math.min(1, DESKTOP_MAX_WIDTH / width)
+    : Math.min(1, (windowHeight * MAX_HEIGHT_SHARE_OF_WINDOW) / height);
 
   return (
-    <Stack w={width} h={height} alignSelf="center" bg="$bgApp">
-      {lottieSource ? (
-        <LottieView
-          source={lottieSource}
-          width={width}
-          height={height}
-          autoPlay
-          loop
-          resizeMode="contain"
-          renderMode={renderMode}
-          backgroundColor="$bgApp"
-        />
-      ) : null}
-    </Stack>
+    <Image
+      w={width * scale}
+      h={height * scale}
+      alignSelf="center"
+      resizeMode="contain"
+      source={
+        isDark
+          ? require('@onekeyhq/kit/assets/referral_invite_hero_dark.png')
+          : require('@onekeyhq/kit/assets/referral_invite_hero.png')
+      }
+    />
   );
 }
