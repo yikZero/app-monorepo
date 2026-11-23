@@ -65,31 +65,22 @@ export function ApprovalTypeSegment({
           testID: 'approval-list-type-token',
         },
         {
-          // The dot hangs off the text so the label stays centered like the
-          // plain string option.
+          // The dot sits inline (not absolute) so a content-sized segment on
+          // desktop leaves room for it; the group is centered for full width.
           label: ({ color }) => (
-            <XStack justifyContent="center">
-              <Stack>
-                <SizableText
-                  size="$bodyMdMedium"
-                  textAlign="center"
-                  numberOfLines={1}
-                  color={color}
-                >
-                  {DEMO_COPY.eip7702}
-                </SizableText>
-                {hasRisk ? (
-                  <Stack
-                    position="absolute"
-                    right={-10}
-                    top={2}
-                    w="$1.5"
-                    h="$1.5"
-                    borderRadius="$full"
-                    bg="$bgCriticalStrong"
-                  />
-                ) : null}
-              </Stack>
+            <XStack justifyContent="center" gap="$1">
+              <SizableText size="$bodyMdMedium" numberOfLines={1} color={color}>
+                {DEMO_COPY.eip7702}
+              </SizableText>
+              {hasRisk ? (
+                <Stack
+                  mt="$1"
+                  w="$1.5"
+                  h="$1.5"
+                  borderRadius="$full"
+                  bg="$bgCriticalStrong"
+                />
+              ) : null}
             </XStack>
           ),
           value: EApprovalListType.Eip7702,
