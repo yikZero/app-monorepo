@@ -10,6 +10,7 @@ export enum EModalApprovalManagementRoutes {
   ApprovalList = 'ApprovalList',
   BulkRevoke = 'BulkRevoke',
   TxConfirm = 'TxConfirm',
+  Eip7702RevokeConfirm = 'Eip7702RevokeConfirm',
 }
 
 export type IModalApprovalManagementParamList = {
@@ -64,5 +65,12 @@ export type IModalApprovalManagementParamList = {
   [EModalApprovalManagementRoutes.BulkRevoke]: {
     unsignedTxs: IUnsignedTxPro[];
     contractMap: Record<string, IAddressInfo>;
+  };
+  [EModalApprovalManagementRoutes.Eip7702RevokeConfirm]: {
+    accountId: string;
+    networkId: string;
+    delegateAddress: string;
+    delegateLabel?: string;
+    riskReason?: string;
   };
 };

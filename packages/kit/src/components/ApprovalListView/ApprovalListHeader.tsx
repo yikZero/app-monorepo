@@ -21,6 +21,7 @@ import {
 import { ListItem } from '../ListItem';
 
 import { useApprovalListViewContext } from './ApprovalListViewContext';
+import Eip7702DelegationSection from './Eip7702DelegationSection';
 
 function HeaderItem({ label }: { label: string }) {
   return (
@@ -329,6 +330,7 @@ function ApprovalListHeader({
   return (
     <YStack>
       {renderRiskOverview()}
+      <Eip7702DelegationSection />
       {renderTableHeader()}
     </YStack>
   );

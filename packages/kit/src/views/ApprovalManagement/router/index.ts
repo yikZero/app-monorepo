@@ -10,6 +10,9 @@ const RevokeSuggestion = LazyLoadPage(
 );
 const ApprovalList = LazyLoadPage(() => import('../pages/ApprovalList'));
 const BulkRevoke = LazyLoadPage(() => import('../pages/BulkRevoke'));
+const Eip7702RevokeConfirm = LazyLoadPage(
+  () => import('../pages/Eip7702RevokeConfirm'),
+);
 
 const TxConfirm = LazyLoadPage(
   () =>
@@ -39,5 +42,9 @@ export const ModalApprovalManagementStack: IModalFlowNavigatorConfig<
   {
     name: EModalApprovalManagementRoutes.TxConfirm,
     component: TxConfirm,
+  },
+  {
+    name: EModalApprovalManagementRoutes.Eip7702RevokeConfirm,
+    component: Eip7702RevokeConfirm,
   },
 ];
