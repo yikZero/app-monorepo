@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useIntl } from 'react-intl';
 
-import { Alert, SizableText, Stack, YStack } from '@onekeyhq/components';
+import { Icon, SizableText, Stack, YStack } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import platformEnv from '@onekeyhq/shared/src/platformEnv';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
@@ -197,7 +197,7 @@ function ApprovalListHeader({
     [navigation, contractMap, tokenMap, accountId, networkId, indexedAccountId],
   );
 
-  const handleCloseApprovalsAlert = useCallback(async () => {
+  const markApprovalsAlertSeen = useCallback(async () => {
     const tasks = [];
 
     if (riskApprovals.length > 0) {
@@ -219,10 +219,10 @@ function ApprovalListHeader({
     }
 
     await Promise.all(tasks);
-
-    setShowApprovalsAlert(false);
   }, [accountId, networkId, riskApprovals.length, warningApprovals.length]);
 
+  // Demo (OK-67574): a quiet list row instead of the colored banner. Only the
+  // icon turns red when something is risky; numbers stay plain text.
   const renderRiskOverview = useCallback(() => {
     if (hideRiskOverview || !isReady) {
       return null;
@@ -235,76 +235,57 @@ function ApprovalListHeader({
       return null;
     }
 
+    const isRisky = riskyNumber > 0;
+    const subtitle = [
+      riskyNumber > 0 ? `${riskyNumber} risky` : '',
+      inactiveNumber > 0 ? `${inactiveNumber} unused for 90+ days` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
     return (
-      <YStack px="$pagePadding" py="$3" gap="$5" opacity={isVisible ? 1 : 0}>
-        <Alert
-          onClose={handleCloseApprovalsAlert}
-          icon="ShieldExclamationOutline"
+      <YStack pb="$2" opacity={isVisible ? 1 : 0}>
+        <ListItem
+          testID="approval-list-revoke-suggestion-row"
+          drillIn
           title={intl.formatMessage({
             id: ETranslations.wallet_revoke_suggestion,
           })}
-          description={(() => {
-            if (riskyNumber > 0 && inactiveNumber > 0) {
-              return intl.formatMessage(
-                { id: ETranslations.wallet_approval_alert_title_summary },
-                {
-                  riskyNumber: (
-                    <SizableText color="$textCritical">
-                      {riskyNumber}
-                    </SizableText>
-                  ) as unknown as string,
-                  inactiveNumber: (
-                    <SizableText color="$textCaution">
-                      {inactiveNumber}
-                    </SizableText>
-                  ) as unknown as string,
-                },
-              );
+          subtitle={subtitle}
+          renderAvatar={
+            <Stack
+              w="$10"
+              h="$10"
+              borderRadius="$full"
+              bg={isRisky ? '$bgCritical' : '$bgStrong'}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Icon
+                name="ShieldExclamationOutline"
+                size="$5"
+                color={isRisky ? '$iconCritical' : '$icon'}
+              />
+            </Stack>
+          }
+          onPress={() => {
+            let approvalsToView: IContractApproval[] = [];
+            if (riskApprovals.length > 0 && inactiveNumber > 0) {
+              approvalsToView = [...riskApprovals, ...warningApprovals];
+            } else if (riskApprovals.length > 0) {
+              approvalsToView = riskApprovals;
+            } else {
+              approvalsToView = warningApprovals;
             }
-            if (riskyNumber > 0) {
-              return intl.formatMessage(
-                { id: ETranslations.wallet_approval_risky_suggestion_title },
-                {
-                  number: (
-                    <SizableText color="$textCritical">
-                      {riskyNumber}
-                    </SizableText>
-                  ) as unknown as string,
-                },
-              );
-            }
-            return intl.formatMessage(
-              { id: ETranslations.wallet_approval_inactive_suggestion_title },
-              {
-                number: (
-                  <SizableText color="$textCaution">
-                    {inactiveNumber}
-                  </SizableText>
-                ) as unknown as string,
-              },
-            );
-          })()}
-          closable
-          type={riskyNumber > 0 ? 'danger' : 'warning'}
-          action={{
-            primary: intl.formatMessage({ id: ETranslations.global_view }),
-            onPrimaryPress: () => {
-              let approvalsToView: IContractApproval[] = [];
-              if (riskyNumber > 0 && inactiveNumber > 0) {
-                approvalsToView = [...riskApprovals, ...warningApprovals];
-              } else if (riskyNumber > 0) {
-                approvalsToView = riskApprovals;
-              } else {
-                approvalsToView = warningApprovals;
-              }
-              handleViewRiskApprovals({ approvals: approvalsToView });
-            },
+            handleViewRiskApprovals({ approvals: approvalsToView });
+            // Seen once: it resurfaces after the existing interval.
+            void markApprovalsAlertSeen();
           }}
         />
       </YStack>
     );
   }, [
-    handleCloseApprovalsAlert,
+    markApprovalsAlertSeen,
     handleViewRiskApprovals,
     hideRiskOverview,
     intl,

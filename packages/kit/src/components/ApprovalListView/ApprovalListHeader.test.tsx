@@ -4,9 +4,8 @@ import { act, render, waitFor } from '@testing-library/react-native';
 
 import ApprovalListHeader from './ApprovalListHeader';
 
-type IMockAlertProps = {
-  closable?: boolean;
-  onClose?: () => Promise<void> | void;
+type IMockRowProps = {
+  onPress?: () => void;
 };
 
 type IAlertConfigParams = {
@@ -20,7 +19,8 @@ const mockUpdateRiskApprovalsAlertConfig: jest.MockedFunction<
 const mockUpdateInactiveApprovalsAlertConfig: jest.MockedFunction<
   (params: IAlertConfigParams) => Promise<void>
 > = jest.fn();
-let mockAlertProps: IMockAlertProps | undefined;
+let mockRowProps: IMockRowProps | undefined;
+const mockPushModal = jest.fn();
 let mockIsNative = false;
 let mockIsBulkRevokeMode = false;
 let mockTableLayout = false;
@@ -46,13 +46,8 @@ jest.mock('@onekeyhq/components', () => {
     return <>{children}</>;
   }
 
-  function Alert(props: IMockAlertProps) {
-    mockAlertProps = props;
-    return null;
-  }
-
   return {
-    Alert,
+    Icon: () => null,
     SizableText: Container,
     Stack: Container,
     YStack: Container,
@@ -115,7 +110,7 @@ jest.mock('../../background/instance/backgroundApiProxy', () => ({
 jest.mock('../../hooks/useAppNavigation', () => ({
   __esModule: true,
   default: () => ({
-    pushModal: jest.fn(),
+    pushModal: mockPushModal,
   }),
 }));
 
@@ -147,13 +142,18 @@ jest.mock('../ListItem', () => ({
     children,
     childrenBefore,
     testID,
+    onPress,
   }: {
     children?: ReactNode;
     childrenBefore?: ReactNode;
     testID?: string;
+    onPress?: () => void;
   }) => {
     if (testID === 'Wallet-Approval-List-Header') {
       mockHeaderBefore = childrenBefore;
+    }
+    if (testID === 'approval-list-revoke-suggestion-row') {
+      mockRowProps = { onPress };
     }
     return <>{children}</>;
   },
@@ -173,7 +173,7 @@ describe('ApprovalListHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    mockAlertProps = undefined;
+    mockRowProps = undefined;
     mockHeaderBefore = undefined;
     mockIsNative = false;
     mockIsBulkRevokeMode = false;
@@ -188,17 +188,21 @@ describe('ApprovalListHeader', () => {
     jest.useRealTimers();
   });
 
-  it('renders a closable risk banner and persists its dismissal', async () => {
+  it('opens the revoke suggestion from the row and marks it seen', async () => {
     render(<ApprovalListHeader contractMap={{}} tokenMap={{}} />);
 
     await waitFor(() => {
-      expect(mockAlertProps?.closable).toBe(true);
+      expect(mockRowProps?.onPress).toBeDefined();
     });
 
     await act(async () => {
-      await mockAlertProps?.onClose?.();
+      mockRowProps?.onPress?.();
     });
 
+    expect(mockPushModal).toHaveBeenCalledWith(
+      'ApprovalManagementModal',
+      expect.objectContaining({ screen: 'RevokeSuggestion' }),
+    );
     expect(mockUpdateRiskApprovalsAlertConfig).toHaveBeenCalledWith({
       accountId: 'account-1',
       networkId: 'evm--1',
