@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRoute } from '@react-navigation/native';
 import { CanceledError } from 'axios';
@@ -6,7 +6,14 @@ import { isNil, pickBy } from 'lodash';
 import { useIntl } from 'react-intl';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { Button, Page, Toast, XStack } from '@onekeyhq/components';
+import {
+  Button,
+  Page,
+  ScrollView,
+  Stack,
+  Toast,
+  XStack,
+} from '@onekeyhq/components';
 import useAppNavigation from '@onekeyhq/kit/src/hooks/useAppNavigation';
 import { getNetworkIdsMap } from '@onekeyhq/shared/src/config/networkIds';
 import { getNetworksSupportBulkRevokeApproval } from '@onekeyhq/shared/src/config/presetNetworks';
@@ -25,6 +32,11 @@ import type { IContractApproval } from '@onekeyhq/shared/types/approval';
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { NetworkSelectorTriggerApproval } from '../../../components/AccountSelector';
 import ApprovalListView from '../../../components/ApprovalListView';
+import Eip7702DelegationList, {
+  ApprovalTypeSegment,
+  EApprovalListType,
+} from '../../../components/ApprovalListView/Eip7702DelegationList';
+import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
 import { usePromiseResult } from '../../../hooks/usePromiseResult';
 import {
   ProviderJotaiContextApprovalList,
@@ -78,6 +90,16 @@ function ApprovalList() {
 
   const approvalListInitRef = useRef(false);
 
+  const [listType, setListType] = useState(EApprovalListType.TokenApprovals);
+  const delegations = useMemo(
+    () =>
+      getEip7702DemoDelegations({
+        networkId: networkId ?? '',
+        isAllNetworks: networkUtils.isAllNetwork({ networkId }),
+      }),
+    [networkId],
+  );
+
   const { navigationToBulkRevokeProcess, isBuildingRevokeTxs } =
     useBulkRevoke();
 
@@ -87,6 +109,12 @@ function ApprovalList() {
   const [{ approvals }] = useApprovalListAtom();
   const [{ tokenMap }] = useTokenMapAtom();
   const [{ contractMap }] = useContractMapAtom();
+
+  // Demo (OK-67574): the switch only appears when the account has delegations;
+  // search, network filter and edit belong to token approvals only.
+  const showTypeSegment = delegations.length > 0 && !isBulkRevokeMode;
+  const isEip7702List =
+    showTypeSegment && listType === EApprovalListType.Eip7702;
 
   const { result: availableWallets } = usePromiseResult(async () => {
     const { wallets } = await backgroundApiProxy.serviceAccount.getWallets({
@@ -421,22 +449,49 @@ function ApprovalList() {
               })
             : intl.formatMessage({ id: ETranslations.global_approval_list })
         }
-        headerRight={renderHeaderRight}
-        headerSearchBarOptions={{
-          placeholder: intl.formatMessage({ id: ETranslations.global_search }),
-          onSearchTextChange: handleSearchTextChange,
-        }}
+        headerRight={isEip7702List ? undefined : renderHeaderRight}
+        headerSearchBarOptions={
+          isEip7702List
+            ? undefined
+            : {
+                placeholder: intl.formatMessage({
+                  id: ETranslations.global_search,
+                }),
+                onSearchTextChange: handleSearchTextChange,
+              }
+        }
       />
       <Page.Body>
-        {renderNetworkFilter()}
-        <ApprovalListView
-          withHeader
-          hideRiskOverview={accountUtils.isWatchingWallet({ walletId })}
-          accountId={accountId}
-          networkId={searchNetworkId}
-          indexedAccountId={indexedAccountId}
-          onPress={handleApprovalOnPress}
-        />
+        {showTypeSegment ? (
+          <Stack px="$5" pb="$3">
+            <ApprovalTypeSegment
+              fullWidth
+              value={listType}
+              onChange={setListType}
+              delegations={delegations}
+            />
+          </Stack>
+        ) : null}
+        {isEip7702List ? (
+          <ScrollView>
+            <Eip7702DelegationList
+              delegations={delegations}
+              revokeDisabled={accountUtils.isWatchingWallet({ walletId })}
+            />
+          </ScrollView>
+        ) : (
+          <>
+            {renderNetworkFilter()}
+            <ApprovalListView
+              withHeader
+              hideRiskOverview={accountUtils.isWatchingWallet({ walletId })}
+              accountId={accountId}
+              networkId={searchNetworkId}
+              indexedAccountId={indexedAccountId}
+              onPress={handleApprovalOnPress}
+            />
+          </>
+        )}
       </Page.Body>
       {renderBulkRevokeActions()}
     </Page>

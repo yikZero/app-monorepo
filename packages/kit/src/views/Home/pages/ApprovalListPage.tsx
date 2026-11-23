@@ -8,6 +8,7 @@ import {
   IconButton,
   NavBackButton,
   Page,
+  ScrollView,
   SizableText,
   Skeleton,
   Stack,
@@ -41,6 +42,11 @@ import type { IContractApproval } from '@onekeyhq/shared/types/approval';
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '../../../components/AccountSelector';
 import ApprovalListView from '../../../components/ApprovalListView';
+import Eip7702DelegationList, {
+  ApprovalTypeSegment,
+  EApprovalListType,
+} from '../../../components/ApprovalListView/Eip7702DelegationList';
+import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
 import { ListItem } from '../../../components/ListItem';
 import { TabPageHeader } from '../../../components/TabPageHeader';
 import useAppNavigation from '../../../hooks/useAppNavigation';
@@ -195,6 +201,20 @@ function ApprovalListPageContent() {
   const [{ tokenMap }] = useTokenMapAtom();
   const [{ contractMap }] = useContractMapAtom();
   const [approvalListState] = useApprovalListStateAtom();
+
+  // Demo (OK-67574): the switch only appears when the account has delegations.
+  const [listType, setListType] = useState(EApprovalListType.TokenApprovals);
+  const delegations = useMemo(
+    () =>
+      getEip7702DemoDelegations({
+        networkId: networkId ?? '',
+        isAllNetworks: networkUtils.isAllNetwork({ networkId }),
+      }),
+    [networkId],
+  );
+  const showTypeSegment = delegations.length > 0;
+  const isEip7702List =
+    showTypeSegment && listType === EApprovalListType.Eip7702;
 
   const { result: isBulkRevokeApprovalEnabled } = usePromiseResult(async () => {
     if (!networkId) return undefined;
@@ -357,7 +377,10 @@ function ApprovalListPageContent() {
   return (
     <Page>
       {media.gtMd ? null : (
-        <Page.Header title={pageTitle} headerRight={renderManageButton} />
+        <Page.Header
+          title={pageTitle}
+          headerRight={isEip7702List ? undefined : renderManageButton}
+        />
       )}
       <ApprovalListBar />
       <Page.Body>
@@ -375,10 +398,29 @@ function ApprovalListPageContent() {
               mb="$3"
             >
               <SizableText size="$heading2xl">{pageTitle}</SizableText>
-              {renderManageButton()}
+              {isEip7702List ? null : renderManageButton()}
             </XStack>
           ) : null}
-          {isBulkRevokeApprovalEnabled === false ? (
+          {showTypeSegment ? (
+            <XStack px="$pagePadding" pb="$3">
+              <ApprovalTypeSegment
+                fullWidth={!media.gtMd}
+                value={listType}
+                onChange={setListType}
+                delegations={delegations}
+              />
+            </XStack>
+          ) : null}
+          {isEip7702List ? (
+            <ScrollView>
+              <Eip7702DelegationList
+                delegations={delegations}
+                tableLayout={tableLayout}
+                revokeDisabled={isWatchingWallet}
+              />
+            </ScrollView>
+          ) : null}
+          {!isEip7702List && isBulkRevokeApprovalEnabled === false ? (
             <Empty
               testID="Wallet-Approval-Unsupported-Empty"
               title={intl.formatMessage({
@@ -386,12 +428,14 @@ function ApprovalListPageContent() {
               })}
             />
           ) : null}
-          {isBulkRevokeApprovalEnabled !== false &&
+          {!isEip7702List &&
+          isBulkRevokeApprovalEnabled !== false &&
           (isBulkRevokeApprovalEnabled !== true ||
             !approvalListState.initialized) ? (
             <ApprovalListSkeleton tableLayout={tableLayout} />
           ) : null}
-          {isBulkRevokeApprovalEnabled === true &&
+          {!isEip7702List &&
+          isBulkRevokeApprovalEnabled === true &&
           approvalListState.initialized ? (
             <ApprovalListView
               withHeader

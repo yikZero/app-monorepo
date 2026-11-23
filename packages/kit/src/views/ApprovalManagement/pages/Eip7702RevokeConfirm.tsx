@@ -24,6 +24,8 @@ const DEMO_COPY = {
   title: 'Cancel EIP-7702 Delegation',
   description: 'You are canceling EIP-7702 delegation',
   currentDelegate: 'Current delegate',
+  confirm: 'Revoke delegation',
+  cancel: 'Keep delegation',
   demoToast: 'Demo only, no transaction sent',
 };
 
@@ -97,11 +99,11 @@ function Eip7702RevokeConfirm() {
         </YStack>
       </Page.Body>
       <Page.Footer
-        onConfirmText={intl.formatMessage({ id: ETranslations.global_confirm })}
+        onConfirmText={DEMO_COPY.confirm}
         onConfirm={() => {
           Toast.message({ title: DEMO_COPY.demoToast });
         }}
-        onCancelText={intl.formatMessage({ id: ETranslations.global_cancel })}
+        onCancelText={DEMO_COPY.cancel}
         onCancel={(close) => close()}
       />
     </Page>

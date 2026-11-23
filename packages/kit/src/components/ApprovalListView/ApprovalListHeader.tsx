@@ -21,7 +21,7 @@ import {
 import { ListItem } from '../ListItem';
 
 import { useApprovalListViewContext } from './ApprovalListViewContext';
-import Eip7702DelegationSection from './Eip7702DelegationSection';
+import { getEip7702DemoDelegations } from './eip7702DemoData';
 
 function HeaderItem({ label }: { label: string }) {
   return (
@@ -57,6 +57,7 @@ function ApprovalListHeader({
     networkId,
     indexedAccountId,
     selectDisabled,
+    isAllNetworks,
   } = useApprovalListViewContext();
   const [isBulkRevokeMode] = useIsBulkRevokeModeAtom();
 
@@ -86,6 +87,16 @@ function ApprovalListHeader({
     );
   }, [approvals]);
 
+  // Demo (OK-67574): risky EIP-7702 delegations count toward the alert.
+  const riskyDelegationsCount = useMemo(
+    () =>
+      getEip7702DemoDelegations({
+        networkId,
+        isAllNetworks: !!isAllNetworks,
+      }).filter((d) => !!d.riskReason).length,
+    [networkId, isAllNetworks],
+  );
+
   const { result } = usePromiseResult(async () => {
     const [_shouldShowInactiveApprovalsAlert, _shouldShowRiskApprovalsAlert] =
       await Promise.all([
@@ -102,9 +113,16 @@ function ApprovalListHeader({
       shouldShowInactiveApprovalsAlert:
         _shouldShowInactiveApprovalsAlert && warningApprovals.length > 0,
       shouldShowRiskApprovalsAlert:
-        _shouldShowRiskApprovalsAlert && riskApprovals.length > 0,
+        _shouldShowRiskApprovalsAlert &&
+        riskApprovals.length + riskyDelegationsCount > 0,
     };
-  }, [accountId, networkId, riskApprovals.length, warningApprovals.length]);
+  }, [
+    accountId,
+    networkId,
+    riskApprovals.length,
+    riskyDelegationsCount,
+    warningApprovals.length,
+  ]);
 
   const { shouldShowInactiveApprovalsAlert, shouldShowRiskApprovalsAlert } =
     result ?? {};
@@ -210,7 +228,7 @@ function ApprovalListHeader({
       return null;
     }
 
-    const riskyNumber = riskApprovals.length;
+    const riskyNumber = riskApprovals.length + riskyDelegationsCount;
     const inactiveNumber = warningApprovals.length;
 
     if (!showApprovalsAlert || (riskyNumber === 0 && inactiveNumber === 0)) {
@@ -291,6 +309,7 @@ function ApprovalListHeader({
     hideRiskOverview,
     intl,
     riskApprovals,
+    riskyDelegationsCount,
     showApprovalsAlert,
     warningApprovals,
     isReady,
@@ -330,7 +349,6 @@ function ApprovalListHeader({
   return (
     <YStack>
       {renderRiskOverview()}
-      <Eip7702DelegationSection />
       {renderTableHeader()}
     </YStack>
   );

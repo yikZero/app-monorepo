@@ -67,7 +67,6 @@ export type IModalApprovalManagementParamList = {
     contractMap: Record<string, IAddressInfo>;
   };
   [EModalApprovalManagementRoutes.Eip7702RevokeConfirm]: {
-    accountId: string;
     networkId: string;
     delegateAddress: string;
     delegateLabel?: string;

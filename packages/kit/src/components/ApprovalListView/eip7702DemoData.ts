@@ -1,3 +1,5 @@
+import platformEnv from '@onekeyhq/shared/src/platformEnv';
+
 // Demo-only data for the EIP-7702 delegation design (OK-67574). Mirrors the
 // server fields: erc7702DelegatorMap[`${networkId}_${owner}`].address plus
 // contractMap[`${networkId}_${delegate}`] (label / logoURI) and riskReason.
@@ -28,3 +30,18 @@ export const EIP7702_DEMO_DELEGATIONS: IEip7702DelegationDemo[] = [
     riskReason: 'Known phishing contract. Revoke now to protect your assets.',
   },
 ];
+
+export function getEip7702DemoDelegations({
+  networkId,
+  isAllNetworks,
+}: {
+  networkId: string;
+  isAllNetworks: boolean;
+}): IEip7702DelegationDemo[] {
+  if (!platformEnv.isDev) {
+    return [];
+  }
+  return isAllNetworks
+    ? EIP7702_DEMO_DELEGATIONS
+    : EIP7702_DEMO_DELEGATIONS.filter((d) => d.networkId === networkId);
+}
