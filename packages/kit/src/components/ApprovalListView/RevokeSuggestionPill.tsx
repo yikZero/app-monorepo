@@ -77,10 +77,21 @@ function RevokeSuggestionPill({
         networkId,
       }),
     ]);
+    // The demo keeps no seen state for delegations, so a risky delegation
+    // always shows the pill.
     return (
-      (showInactive && inactiveNumber > 0) || (showRisk && riskyNumber > 0)
+      riskyDelegationsCount > 0 ||
+      (showInactive && inactiveNumber > 0) ||
+      (showRisk && riskyNumber > 0)
     );
-  }, [initialized, accountId, networkId, riskyNumber, inactiveNumber]);
+  }, [
+    initialized,
+    accountId,
+    networkId,
+    riskyNumber,
+    inactiveNumber,
+    riskyDelegationsCount,
+  ]);
 
   const handlePress = useCallback(() => {
     const tokenItems = [...riskApprovals, ...warningApprovals];
