@@ -64,19 +64,31 @@ export function ApprovalTypeSegment({
           testID: 'approval-list-type-token',
         },
         {
+          // The dot hangs off the text so the label stays centered like the
+          // plain string option.
           label: ({ color }) => (
-            <XStack alignItems="center" gap="$1.5">
-              <SizableText size="$bodyMdMedium" color={color}>
-                {DEMO_COPY.eip7702}
-              </SizableText>
-              {hasRisk ? (
-                <Stack
-                  w="$1.5"
-                  h="$1.5"
-                  borderRadius="$full"
-                  bg="$bgCriticalStrong"
-                />
-              ) : null}
+            <XStack justifyContent="center">
+              <Stack>
+                <SizableText
+                  size="$bodyMdMedium"
+                  textAlign="center"
+                  numberOfLines={1}
+                  color={color}
+                >
+                  {DEMO_COPY.eip7702}
+                </SizableText>
+                {hasRisk ? (
+                  <Stack
+                    position="absolute"
+                    right={-10}
+                    top={2}
+                    w="$1.5"
+                    h="$1.5"
+                    borderRadius="$full"
+                    bg="$bgCriticalStrong"
+                  />
+                ) : null}
+              </Stack>
             </XStack>
           ),
           value: EApprovalListType.Eip7702,
@@ -186,21 +198,32 @@ function DelegationItem({
     );
   }
 
+  // The icon and button stay centered on the two text lines; the risk reason
+  // hangs below, aligned with the text column.
   return (
-    <ListItem userSelect="none" gap="$3" alignItems="center">
-      <NetworkAvatar networkId={delegation.networkId} size="$10" />
-      <YStack flex={1} gap="$0.5">
-        {networkName}
-        <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
-          {`${name} · ${accountUtils.shortenAddress({
-            address: delegation.delegateAddress,
-            leadingLength: 6,
-            trailingLength: 4,
-          })}`}
-        </SizableText>
-        {riskReason ? <Stack pt="$1">{riskReason}</Stack> : null}
+    <ListItem userSelect="none">
+      <YStack flex={1} gap="$1.5">
+        <XStack alignItems="center" gap="$3">
+          <NetworkAvatar networkId={delegation.networkId} size="$10" />
+          <YStack flex={1} gap="$0.5">
+            {networkName}
+            <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
+              {`${name} · ${accountUtils.shortenAddress({
+                address: delegation.delegateAddress,
+                leadingLength: 6,
+                trailingLength: 4,
+              })}`}
+            </SizableText>
+          </YStack>
+          {revokeButton}
+        </XStack>
+        {riskReason ? (
+          <XStack gap="$3">
+            <Stack w="$10" />
+            <Stack flex={1}>{riskReason}</Stack>
+          </XStack>
+        ) : null}
       </YStack>
-      {revokeButton}
     </ListItem>
   );
 }
