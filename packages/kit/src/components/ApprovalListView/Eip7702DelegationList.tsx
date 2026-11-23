@@ -16,7 +16,6 @@ import {
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
-import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 
 import useAppNavigation from '../../hooks/useAppNavigation';
 import { ListItem } from '../ListItem';
@@ -215,13 +214,23 @@ function DelegationItem({
       <NetworkAvatar networkId={delegation.networkId} size="$10" />
       <YStack flex={1} gap="$0.5">
         {networkName}
-        <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
-          {`${name} · ${accountUtils.shortenAddress({
-            address: delegation.delegateAddress,
-            leadingLength: 6,
-            trailingLength: 4,
-          })}`}
-        </SizableText>
+        {/* Same mono short address as the token approval rows. */}
+        <XStack alignItems="center" gap="$1.5">
+          <SizableText
+            size="$bodyMd"
+            color="$textSubdued"
+            numberOfLines={1}
+            flexShrink={1}
+          >
+            {`${name} ·`}
+          </SizableText>
+          <ContractAddressView
+            address={delegation.delegateAddress}
+            networkId={delegation.networkId}
+            showShortAddress
+            addressStyleProps={{ size: '$bodyMd', color: '$textSubdued' }}
+          />
+        </XStack>
       </YStack>
       {revokeButton}
     </ListItem>
