@@ -22,9 +22,10 @@ const DEMO_COPY = {
 };
 
 // Demo (OK-67574): the revoke suggestion as a small pill in the filter bar,
-// replacing the colored banner above the list. Only the shield turns red when
-// something is risky. The demo reads the existing alert settings but never
-// writes them, so mock delegations cannot change a real account's reminders.
+// replacing the colored banner above the list. Only the shield is colored:
+// red for risk, yellow for long-unused approvals. The demo reads the existing
+// alert settings but never writes them, so mock delegations cannot change a
+// real account's reminders.
 function RevokeSuggestionPill({
   accountId,
   networkId,
@@ -155,7 +156,8 @@ function RevokeSuggestionPill({
       <Icon
         name="ShieldExclamationOutline"
         size="$4"
-        color={isRisky ? '$iconCritical' : '$iconSubdued'}
+        // Risk is red, long-unused approvals are yellow.
+        color={isRisky ? '$iconCritical' : '$iconCaution'}
       />
       <SizableText size="$bodySmMedium" color="$text">
         {summary}
