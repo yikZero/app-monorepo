@@ -13,6 +13,7 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
+import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
 
@@ -30,7 +31,7 @@ import type { IEip7702DelegationDemo } from './eip7702DemoData';
 const DEMO_COPY = {
   tokenApprovals: 'Token approvals',
   eip7702: 'EIP-7702',
-  desc: 'Contracts that can act on behalf of your address. Revoking clears the delegation on that network.',
+  desc: "Each network can delegate your address to one contract. Revoke any you don't recognize.",
   delegatedTo: 'Delegated to',
 };
 
@@ -66,7 +67,7 @@ export function ApprovalTypeSegment({
           label: ({ color }) => (
             <XStack alignItems="center" gap="$1.5">
               <SizableText size="$bodyMdMedium" color={color}>
-                {`${DEMO_COPY.eip7702} (${delegations.length})`}
+                {DEMO_COPY.eip7702}
               </SizableText>
               {hasRisk ? (
                 <Stack
@@ -97,43 +98,6 @@ function RiskReason({ reason }: { reason: string }) {
   );
 }
 
-function DelegateView({
-  delegation,
-  withLinks,
-}: {
-  delegation: IEip7702DelegationDemo;
-  withLinks?: boolean;
-}) {
-  const intl = useIntl();
-  const name =
-    delegation.label ||
-    intl.formatMessage({ id: ETranslations.global_unknown });
-  return (
-    <XStack alignItems="center" gap="$1.5" flexWrap="wrap">
-      <Token
-        isNFT
-        size="xs"
-        tokenImageUri={delegation.logoURI}
-        fallbackIcon="Document2Outline"
-      />
-      <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
-        {name}
-      </SizableText>
-      <ContractAddressView
-        address={delegation.delegateAddress}
-        networkId={delegation.networkId}
-        showShortAddress
-        showCopy
-        showExternalLink={withLinks}
-        addressStyleProps={{
-          size: '$bodyMd',
-          color: '$textSubdued',
-        }}
-      />
-    </XStack>
-  );
-}
-
 function DelegationItem({
   delegation,
   tableLayout,
@@ -144,29 +108,21 @@ function DelegationItem({
   onRevoke?: (delegation: IEip7702DelegationDemo) => void;
 }) {
   const intl = useIntl();
+  const name =
+    delegation.label ||
+    intl.formatMessage({ id: ETranslations.global_unknown });
 
-  // Each network holds at most one delegation, so the network leads the row.
-  const networkView = (
-    <XStack alignItems="center" gap="$3" flex={1}>
-      <NetworkAvatar networkId={delegation.networkId} size="$10" />
-      <YStack flex={1}>
-        <XStack alignItems="center" gap="$1">
-          <ContractNetworkView
-            networkId={delegation.networkId}
-            networkStyleProps={{ size: '$bodyLgMedium', color: '$text' }}
-          />
-          {delegation.riskReason ? (
-            <Badge badgeSize="sm" badgeType="critical">
-              <Badge.Text>
-                {intl.formatMessage({ id: ETranslations.global_risk })}
-              </Badge.Text>
-            </Badge>
-          ) : null}
-        </XStack>
-        {tableLayout ? null : <DelegateView delegation={delegation} />}
-      </YStack>
-    </XStack>
-  );
+  const riskBadge = delegation.riskReason ? (
+    <Badge badgeSize="sm" badgeType="critical">
+      <Badge.Text>
+        {intl.formatMessage({ id: ETranslations.global_risk })}
+      </Badge.Text>
+    </Badge>
+  ) : null;
+
+  const riskReason = delegation.riskReason ? (
+    <RiskReason reason={delegation.riskReason} />
+  ) : null;
 
   const revokeButton = onRevoke ? (
     <Button
@@ -179,21 +135,51 @@ function DelegationItem({
     </Button>
   ) : null;
 
+  // Each network holds at most one delegation, so the network leads the row.
+  const networkName = (
+    <XStack alignItems="center" gap="$1.5">
+      <ContractNetworkView
+        networkId={delegation.networkId}
+        networkStyleProps={{
+          size: '$bodyLgMedium',
+          color: '$text',
+          numberOfLines: 1,
+        }}
+      />
+      {riskBadge}
+    </XStack>
+  );
+
   if (tableLayout) {
     return (
       <ListItem userSelect="none" gap="$3" alignItems="center">
-        <XStack flexGrow={1} flexBasis={0}>
-          {networkView}
+        <XStack alignItems="center" gap="$3" flexGrow={1} flexBasis={0}>
+          <NetworkAvatar networkId={delegation.networkId} size="$10" />
+          {networkName}
         </XStack>
-        <Stack flexGrow={1} flexBasis={0}>
-          <DelegateView delegation={delegation} withLinks />
-        </Stack>
-        <Stack flexGrow={1} flexBasis={0}>
-          {delegation.riskReason ? (
-            <RiskReason reason={delegation.riskReason} />
-          ) : null}
-        </Stack>
-        <XStack flexGrow={1} flexBasis={0} maxWidth="$36" jc="flex-end">
+        <YStack flexGrow={2} flexBasis={0} gap="$1">
+          <XStack alignItems="center" gap="$2">
+            <Token
+              isNFT
+              size="xs"
+              tokenImageUri={delegation.logoURI}
+              fallbackIcon="Document2Outline"
+            />
+            <SizableText size="$bodyMdMedium" numberOfLines={1}>
+              {name}
+            </SizableText>
+            <ContractAddressView
+              address={delegation.delegateAddress}
+              networkId={delegation.networkId}
+              showShortAddress
+              showCopy
+              showExternalLink
+              addressStyleProps={{ size: '$bodyMd', color: '$textSubdued' }}
+            />
+          </XStack>
+          {riskReason}
+        </YStack>
+        <XStack w="$24" jc="flex-end">
           {revokeButton}
         </XStack>
       </ListItem>
@@ -202,13 +188,17 @@ function DelegationItem({
 
   return (
     <ListItem userSelect="none" gap="$3" alignItems="center">
-      <YStack flex={1} gap="$1.5">
-        {networkView}
-        {delegation.riskReason ? (
-          <Stack pl="$13">
-            <RiskReason reason={delegation.riskReason} />
-          </Stack>
-        ) : null}
+      <NetworkAvatar networkId={delegation.networkId} size="$10" />
+      <YStack flex={1} gap="$0.5">
+        {networkName}
+        <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
+          {`${name} · ${accountUtils.shortenAddress({
+            address: delegation.delegateAddress,
+            leadingLength: 6,
+            trailingLength: 4,
+          })}`}
+        </SizableText>
+        {riskReason ? <Stack pt="$1">{riskReason}</Stack> : null}
       </YStack>
       {revokeButton}
     </ListItem>
@@ -269,15 +259,10 @@ function Eip7702DelegationList({
               label={intl.formatMessage({ id: ETranslations.network__network })}
             />
           </Stack>
-          <Stack flexGrow={1} flexBasis={0}>
+          <Stack flexGrow={2} flexBasis={0}>
             <HeaderLabel label={DEMO_COPY.delegatedTo} />
           </Stack>
-          <Stack flexGrow={1} flexBasis={0}>
-            <HeaderLabel
-              label={intl.formatMessage({ id: ETranslations.global_risk })}
-            />
-          </Stack>
-          <Stack flexGrow={1} flexBasis={0} maxWidth="$36" />
+          <Stack w="$24" />
         </ListItem>
       ) : null}
       {delegations.map((delegation) => (
