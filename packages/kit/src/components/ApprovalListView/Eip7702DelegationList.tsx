@@ -137,11 +137,11 @@ function DelegationItem({
           </XStack>
         </Badge>
       }
-      // The mobile sheet header already pads below the title; pull the body up
-      // so the reason reads as the title's description. The anchored desktop
-      // panel has no header.
+      // The mobile sheet header already pads the title, so the body only
+      // continues its side and bottom padding; the anchored desktop panel has
+      // no header.
       renderContent={
-        <YStack px="$5" pb="$5" mt="$-3" $gtMd={{ p: '$4', mt: 0 }}>
+        <YStack px="$5" pb="$5" $gtMd={{ p: '$4' }}>
           <SizableText size="$bodyMd">{delegation.riskReason}</SizableText>
         </YStack>
       }
