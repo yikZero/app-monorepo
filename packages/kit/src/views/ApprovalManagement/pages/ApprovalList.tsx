@@ -328,7 +328,12 @@ function ApprovalList() {
     });
 
     return (
-      <XStack alignItems="center" justifyContent="space-between" px="$5">
+      <XStack
+        alignItems="center"
+        justifyContent="space-between"
+        px="$5"
+        pb="$2"
+      >
         <NetworkSelectorTriggerApproval
           networkIds={availableNetworkIds}
           value={searchNetworkId}
