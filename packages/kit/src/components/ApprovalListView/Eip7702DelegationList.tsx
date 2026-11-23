@@ -13,9 +13,9 @@ import {
   YStack,
 } from '@onekeyhq/components';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
-import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 import { EModalRoutes } from '@onekeyhq/shared/src/routes';
 import { EModalApprovalManagementRoutes } from '@onekeyhq/shared/src/routes/approvalManagement';
+import accountUtils from '@onekeyhq/shared/src/utils/accountUtils';
 
 import useAppNavigation from '../../hooks/useAppNavigation';
 import { ListItem } from '../ListItem';
