@@ -45,3 +45,16 @@ export function getEip7702DemoDelegations({
     ? EIP7702_DEMO_DELEGATIONS
     : EIP7702_DEMO_DELEGATIONS.filter((d) => d.networkId === networkId);
 }
+
+// Demo stand-in for the home More dot's review record: a risky delegation
+// lights the dot until Approvals is opened once in this session. The real
+// build would persist it with the existing risk review and resurface interval.
+let demoRiskDotSeen = false;
+
+export function isEip7702DemoRiskDotSeen() {
+  return demoRiskDotSeen;
+}
+
+export function markEip7702DemoRiskDotSeen() {
+  demoRiskDotSeen = true;
+}

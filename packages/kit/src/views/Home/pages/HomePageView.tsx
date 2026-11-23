@@ -63,6 +63,10 @@ import { EHomeWalletTab } from '@onekeyhq/shared/types/wallet';
 
 import backgroundApiProxy from '../../../background/instance/backgroundApiProxy';
 import { useUnifiedNetworkSelectorTrigger } from '../../../components/AccountSelector/hooks/useUnifiedNetworkSelectorTrigger';
+import {
+  getEip7702DemoDelegations,
+  isEip7702DemoRiskDotSeen,
+} from '../../../components/ApprovalListView/eip7702DemoData';
 import { EmptyAccount, EmptyWallet } from '../../../components/Empty';
 import { NetworkAlert } from '../../../components/NetworkAlert';
 import { NotificationEnableAlert } from '../../../components/NotificationEnableAlert';
@@ -471,9 +475,16 @@ function BaseHomePageView({
             accountAddress: account.address,
           });
         if (cancelled) return;
+        // Demo (OK-67574): risky EIP-7702 delegations light the same dot.
+        const hasDemoRiskyDelegation =
+          !isEip7702DemoRiskDotSeen() &&
+          getEip7702DemoDelegations({
+            networkId: network.id,
+            isAllNetworks: networkUtils.isAllNetwork({ networkId: network.id }),
+          }).some((d) => !!d.riskReason);
         updateApprovalsInfo({
           ownerKey: approvalOwnerKey,
-          showRiskApprovalsDot: shouldShowDot,
+          showRiskApprovalsDot: shouldShowDot || hasDemoRiskyDelegation,
         });
       } catch (error) {
         if (error instanceof CanceledError) {
