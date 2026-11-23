@@ -1,7 +1,7 @@
 import { useRoute } from '@react-navigation/core';
 import { useIntl } from 'react-intl';
 
-import { Page, Toast, YStack } from '@onekeyhq/components';
+import { Alert, Page, Toast, YStack } from '@onekeyhq/components';
 import { useAccountData } from '@onekeyhq/kit/src/hooks/useAccountData';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import type {
@@ -47,6 +47,9 @@ function Eip7702RevokeConfirm() {
       <Page.Header title={DEMO_COPY.title} />
       <Page.Body px="$5">
         <YStack gap="$5" py="$2.5">
+          {riskReason ? (
+            <Alert icon="ErrorSolid" type="danger" title={riskReason} />
+          ) : null}
           <Network
             component={{
               type: EParseTxComponentType.Network,

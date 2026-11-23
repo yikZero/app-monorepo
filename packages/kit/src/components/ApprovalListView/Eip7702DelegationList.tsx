@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Icon,
+  Popover,
   SegmentControl,
   SizableText,
   Stack,
@@ -99,17 +100,6 @@ export function ApprovalTypeSegment({
   );
 }
 
-function RiskReason({ reason }: { reason: string }) {
-  return (
-    <XStack gap="$1" alignItems="flex-start">
-      <Icon name="ErrorSolid" size="$4" color="$iconCritical" mt="$0.5" />
-      <SizableText size="$bodySm" color="$textCritical" flex={1}>
-        {reason}
-      </SizableText>
-    </XStack>
-  );
-}
-
 function DelegationItem({
   delegation,
   tableLayout,
@@ -124,16 +114,28 @@ function DelegationItem({
     delegation.label ||
     intl.formatMessage({ id: ETranslations.global_unknown });
 
+  // The reason sits behind the badge, like token approvals keep theirs on the
+  // detail page; the confirm page repeats it as an alert.
   const riskBadge = delegation.riskReason ? (
-    <Badge badgeSize="sm" badgeType="critical">
-      <Badge.Text>
-        {intl.formatMessage({ id: ETranslations.global_risk })}
-      </Badge.Text>
-    </Badge>
-  ) : null;
-
-  const riskReason = delegation.riskReason ? (
-    <RiskReason reason={delegation.riskReason} />
+    <Popover
+      placement="top"
+      title={intl.formatMessage({ id: ETranslations.global_risk })}
+      renderTrigger={
+        <Badge badgeSize="sm" badgeType="critical">
+          <XStack alignItems="center" gap="$0.5">
+            <Badge.Text>
+              {intl.formatMessage({ id: ETranslations.global_risk })}
+            </Badge.Text>
+            <Icon name="InfoCircleOutline" size="$3.5" color="$iconCritical" />
+          </XStack>
+        </Badge>
+      }
+      renderContent={
+        <YStack p="$4">
+          <SizableText size="$bodyMd">{delegation.riskReason}</SizableText>
+        </YStack>
+      }
+    />
   ) : null;
 
   const revokeButton = onRevoke ? (
@@ -189,7 +191,6 @@ function DelegationItem({
               addressStyleProps={{ size: '$bodyMd', color: '$textSubdued' }}
             />
           </XStack>
-          {riskReason}
         </YStack>
         <XStack w="$24" jc="flex-end">
           {revokeButton}
@@ -198,32 +199,20 @@ function DelegationItem({
     );
   }
 
-  // The icon and button stay centered on the two text lines; the risk reason
-  // hangs below, aligned with the text column.
   return (
-    <ListItem userSelect="none">
-      <YStack flex={1} gap="$1.5">
-        <XStack alignItems="center" gap="$3">
-          <NetworkAvatar networkId={delegation.networkId} size="$10" />
-          <YStack flex={1} gap="$0.5">
-            {networkName}
-            <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
-              {`${name} · ${accountUtils.shortenAddress({
-                address: delegation.delegateAddress,
-                leadingLength: 6,
-                trailingLength: 4,
-              })}`}
-            </SizableText>
-          </YStack>
-          {revokeButton}
-        </XStack>
-        {riskReason ? (
-          <XStack gap="$3">
-            <Stack w="$10" />
-            <Stack flex={1}>{riskReason}</Stack>
-          </XStack>
-        ) : null}
+    <ListItem userSelect="none" gap="$3" alignItems="center">
+      <NetworkAvatar networkId={delegation.networkId} size="$10" />
+      <YStack flex={1} gap="$0.5">
+        {networkName}
+        <SizableText size="$bodyMd" color="$textSubdued" numberOfLines={1}>
+          {`${name} · ${accountUtils.shortenAddress({
+            address: delegation.delegateAddress,
+            leadingLength: 6,
+            trailingLength: 4,
+          })}`}
+        </SizableText>
       </YStack>
+      {revokeButton}
     </ListItem>
   );
 }
