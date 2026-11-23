@@ -1,39 +1,14 @@
 import type { ReactNode } from 'react';
 
-import { act, render, waitFor } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
 
 import ApprovalListHeader from './ApprovalListHeader';
 
-type IMockRowProps = {
-  onPress?: () => void;
-};
-
-type IAlertConfigParams = {
-  accountId: string;
-  networkId: string;
-};
-
-const mockUpdateRiskApprovalsAlertConfig: jest.MockedFunction<
-  (params: IAlertConfigParams) => Promise<void>
-> = jest.fn();
-const mockUpdateInactiveApprovalsAlertConfig: jest.MockedFunction<
-  (params: IAlertConfigParams) => Promise<void>
-> = jest.fn();
-let mockRowProps: IMockRowProps | undefined;
-const mockPushModal = jest.fn();
 let mockIsNative = false;
 let mockIsBulkRevokeMode = false;
 let mockTableLayout = false;
 let mockSelectDisabled = false;
 let mockHeaderBefore: ReactNode;
-
-Object.defineProperty(globalThis, 'requestAnimationFrame', {
-  configurable: true,
-  value: jest.fn((callback: FrameRequestCallback) => {
-    callback(0);
-    return 0;
-  }),
-});
 
 jest.mock('react-intl', () => ({
   useIntl: () => ({
@@ -47,7 +22,6 @@ jest.mock('@onekeyhq/components', () => {
   }
 
   return {
-    Icon: () => null,
     SizableText: Container,
     Stack: Container,
     YStack: Container,
@@ -59,14 +33,7 @@ jest.mock('@onekeyhq/shared/src/locale', () => ({
     global_contract: 'global.contract',
     global_contract_address: 'global.contract_address',
     global_approval_time: 'global.approval_time',
-    global_view: 'global.view',
-    wallet_approval_alert_title_summary: 'wallet.approval_alert_title_summary',
     wallet_approval_approved_token: 'wallet.approval_approved_token',
-    wallet_approval_inactive_suggestion_title:
-      'wallet.approval_inactive_suggestion_title',
-    wallet_approval_risky_suggestion_title:
-      'wallet.approval_risky_suggestion_title',
-    wallet_revoke_suggestion: 'wallet.revoke_suggestion',
   },
 }));
 
@@ -79,62 +46,9 @@ jest.mock('@onekeyhq/shared/src/platformEnv', () => ({
   },
 }));
 
-jest.mock('@onekeyhq/shared/src/routes', () => ({
-  EModalRoutes: {
-    ApprovalManagementModal: 'ApprovalManagementModal',
-  },
-}));
-
-jest.mock('@onekeyhq/shared/src/routes/approvalManagement', () => ({
-  EModalApprovalManagementRoutes: {
-    RevokeSuggestion: 'RevokeSuggestion',
-  },
-}));
-
-jest.mock('../../background/instance/backgroundApiProxy', () => ({
-  __esModule: true,
-  default: {
-    serviceApproval: {
-      updateInactiveApprovalsAlertConfig: async (
-        params: IAlertConfigParams,
-      ) => {
-        await mockUpdateInactiveApprovalsAlertConfig(params);
-      },
-      updateRiskApprovalsAlertConfig: async (params: IAlertConfigParams) => {
-        await mockUpdateRiskApprovalsAlertConfig(params);
-      },
-    },
-  },
-}));
-
-jest.mock('../../hooks/useAppNavigation', () => ({
-  __esModule: true,
-  default: () => ({
-    pushModal: mockPushModal,
-  }),
-}));
-
-jest.mock('../../hooks/usePromiseResult', () => ({
-  usePromiseResult: () => ({
-    result: {
-      shouldShowInactiveApprovalsAlert: false,
-      shouldShowRiskApprovalsAlert: true,
-    },
-  }),
-}));
-
 jest.mock('../../states/jotai/contexts/approvalList', () => ({
   useIsBulkRevokeModeAtom: () => [mockIsBulkRevokeMode],
-  useApprovalListAtom: () => [
-    {
-      approvals: [
-        {
-          isInactiveApproval: false,
-          isRiskContract: true,
-        },
-      ],
-    },
-  ],
+  useApprovalListAtom: () => [{ approvals: [{ isRiskContract: true }] }],
 }));
 
 jest.mock('../ListItem', () => ({
@@ -142,18 +56,13 @@ jest.mock('../ListItem', () => ({
     children,
     childrenBefore,
     testID,
-    onPress,
   }: {
     children?: ReactNode;
     childrenBefore?: ReactNode;
     testID?: string;
-    onPress?: () => void;
   }) => {
     if (testID === 'Wallet-Approval-List-Header') {
       mockHeaderBefore = childrenBefore;
-    }
-    if (testID === 'approval-list-revoke-suggestion-row') {
-      mockRowProps = { onPress };
     }
     return <>{children}</>;
   },
@@ -161,9 +70,6 @@ jest.mock('../ListItem', () => ({
 
 jest.mock('./ApprovalListViewContext', () => ({
   useApprovalListViewContext: () => ({
-    accountId: 'account-1',
-    indexedAccountId: 'indexed-account-1',
-    networkId: 'evm--1',
     tableLayout: mockTableLayout,
     selectDisabled: mockSelectDisabled,
   }),
@@ -171,66 +77,30 @@ jest.mock('./ApprovalListViewContext', () => ({
 
 describe('ApprovalListHeader', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    mockRowProps = undefined;
     mockHeaderBefore = undefined;
     mockIsNative = false;
     mockIsBulkRevokeMode = false;
     mockTableLayout = false;
     mockSelectDisabled = false;
-    mockUpdateRiskApprovalsAlertConfig.mockResolvedValue(undefined);
-    mockUpdateInactiveApprovalsAlertConfig.mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-  });
-
-  it('opens the revoke suggestion from the row and marks it seen', async () => {
-    render(<ApprovalListHeader contractMap={{}} tokenMap={{}} />);
-
-    await waitFor(() => {
-      expect(mockRowProps?.onPress).toBeDefined();
-    });
-
-    await act(async () => {
-      mockRowProps?.onPress?.();
-    });
-
-    expect(mockPushModal).toHaveBeenCalledWith(
-      'ApprovalManagementModal',
-      expect.objectContaining({ screen: 'RevokeSuggestion' }),
-    );
-    expect(mockUpdateRiskApprovalsAlertConfig).toHaveBeenCalledWith({
-      accountId: 'account-1',
-      networkId: 'evm--1',
-    });
-    expect(mockUpdateInactiveApprovalsAlertConfig).not.toHaveBeenCalled();
-  });
-
-  it('reserves the native wide bulk checkbox slot only while selection is enabled', async () => {
+  it('reserves the native wide bulk checkbox slot only while selection is enabled', () => {
     mockIsNative = true;
     mockIsBulkRevokeMode = true;
     mockTableLayout = true;
-    const props = {
-      contractMap: {},
-      tokenMap: {},
-    };
-    const { rerender } = render(<ApprovalListHeader {...props} />);
-    await waitFor(() => expect(mockHeaderBefore).toBeDefined());
+    render(<ApprovalListHeader />);
     expect((mockHeaderBefore as { props: { width: string } }).props.width).toBe(
       '$8',
     );
 
+    // The header is memoized without props, so each case renders fresh.
     mockSelectDisabled = true;
-    rerender(<ApprovalListHeader {...props} hideRiskOverview />);
+    render(<ApprovalListHeader />);
     expect(mockHeaderBefore).toBeUndefined();
 
     mockSelectDisabled = false;
     mockIsNative = false;
-    rerender(<ApprovalListHeader {...props} />);
+    render(<ApprovalListHeader />);
     expect(mockHeaderBefore).toBeUndefined();
   });
 });

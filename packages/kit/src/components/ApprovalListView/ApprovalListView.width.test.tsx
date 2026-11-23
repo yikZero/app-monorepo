@@ -146,7 +146,7 @@ it('keeps Web default compact when no tableLayout is supplied', () => {
 });
 
 it('shows a table-only header in revoke suggestions only in native wide mode', () => {
-  render(<ApprovalListView {...props} withHeader hideRiskOverview />);
+  render(<ApprovalListView {...props} withHeader />);
   const list = screen.getByTestId('approval-list-root');
   expect(list.dataset.hasHeader).toBe('false');
   mockLayoutWidth = 768;

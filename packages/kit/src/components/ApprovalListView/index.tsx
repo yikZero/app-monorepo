@@ -17,7 +17,6 @@ import {
   useContractMapAtom,
   useSearchKeyAtom,
   useSearchNetworkAtom,
-  useTokenMapAtom,
 } from '../../states/jotai/contexts/approvalList';
 import useActiveTabDAppInfo from '../../views/DAppConnection/hooks/useActiveTabDAppInfo';
 import { PullToRefresh } from '../../views/Home/components/PullToRefresh';
@@ -48,7 +47,6 @@ type IProps = {
   selectDisabled?: boolean;
   searchDisabled?: boolean;
   filterByNetworkDisabled?: boolean;
-  hideRiskOverview?: boolean;
 };
 
 function ApprovalListViewCmp(
@@ -62,7 +60,6 @@ function ApprovalListViewCmp(
     withHeader,
     searchDisabled,
     filterByNetworkDisabled,
-    hideRiskOverview,
   } = props;
   const intl = useIntl();
   const [{ approvals }] = useApprovalListAtom();
@@ -70,7 +67,6 @@ function ApprovalListViewCmp(
   const [searchKey] = useSearchKeyAtom();
   const [searchNetwork] = useSearchNetworkAtom();
   const [{ contractMap }] = useContractMapAtom();
-  const [{ tokenMap }] = useTokenMapAtom();
 
   const {
     ListHeaderComponentStyle,
@@ -189,12 +185,8 @@ function ApprovalListViewCmp(
       ListFooterComponentStyle={resolvedListFooterComponentStyle as any}
       ListEmptyComponent={EmptyComponentElement}
       ListHeaderComponent={
-        withHeader && !showSkeleton && (tableLayout || !hideRiskOverview) ? (
-          <ApprovalListHeader
-            hideRiskOverview={hideRiskOverview}
-            tokenMap={tokenMap}
-            contractMap={contractMap}
-          />
+        withHeader && !showSkeleton && tableLayout ? (
+          <ApprovalListHeader />
         ) : undefined
       }
       renderItem={({ item }) => (

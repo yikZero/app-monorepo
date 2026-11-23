@@ -37,6 +37,7 @@ import Eip7702DelegationList, {
   EApprovalListType,
 } from '../../../components/ApprovalListView/Eip7702DelegationList';
 import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
+import RevokeSuggestionPill from '../../../components/ApprovalListView/RevokeSuggestionPill';
 import { usePromiseResult } from '../../../hooks/usePromiseResult';
 import {
   ProviderJotaiContextApprovalList,
@@ -303,7 +304,7 @@ function ApprovalList() {
     });
 
     return (
-      <XStack alignItems="center" px="$5">
+      <XStack alignItems="center" justifyContent="space-between" px="$5">
         <NetworkSelectorTriggerApproval
           networkIds={availableNetworkIds}
           value={searchNetworkId}
@@ -312,9 +313,25 @@ function ApprovalList() {
             updateSearchNetwork(value);
           }}
         />
+        {accountUtils.isWatchingWallet({ walletId }) ? null : (
+          <RevokeSuggestionPill
+            accountId={accountId}
+            networkId={searchNetworkId}
+            indexedAccountId={indexedAccountId}
+            isAllNetworks={networkUtils.isAllNetwork({
+              networkId: searchNetworkId,
+            })}
+          />
+        )}
       </XStack>
     );
-  }, [searchNetworkId, updateSearchNetwork]);
+  }, [
+    searchNetworkId,
+    updateSearchNetwork,
+    walletId,
+    accountId,
+    indexedAccountId,
+  ]);
   const renderHeaderRight = useCallback(() => {
     return (
       <Button
@@ -484,7 +501,6 @@ function ApprovalList() {
             {renderNetworkFilter()}
             <ApprovalListView
               withHeader
-              hideRiskOverview={accountUtils.isWatchingWallet({ walletId })}
               accountId={accountId}
               networkId={searchNetworkId}
               indexedAccountId={indexedAccountId}

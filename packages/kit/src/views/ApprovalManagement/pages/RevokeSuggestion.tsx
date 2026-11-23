@@ -207,7 +207,6 @@ function RevokeSuggestion() {
     return (
       <ApprovalListView
         withHeader
-        hideRiskOverview
         hideRiskBadge={!shouldShowBadge}
         onPress={handleApprovalItemOnPress}
         accountId={accountId}

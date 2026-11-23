@@ -47,6 +47,7 @@ import Eip7702DelegationList, {
   EApprovalListType,
 } from '../../../components/ApprovalListView/Eip7702DelegationList';
 import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
+import RevokeSuggestionPill from '../../../components/ApprovalListView/RevokeSuggestionPill';
 import { ListItem } from '../../../components/ListItem';
 import { TabPageHeader } from '../../../components/TabPageHeader';
 import useAppNavigation from '../../../hooks/useAppNavigation';
@@ -398,7 +399,20 @@ function ApprovalListPageContent() {
               mb="$3"
             >
               <SizableText size="$heading2xl">{pageTitle}</SizableText>
-              {isEip7702List ? null : renderManageButton()}
+              {isEip7702List ? null : (
+                <XStack alignItems="center" gap="$2">
+                  {isWatchingWallet ||
+                  isBulkRevokeApprovalEnabled !== true ? null : (
+                    <RevokeSuggestionPill
+                      accountId={accountId ?? ''}
+                      networkId={networkId ?? ''}
+                      indexedAccountId={indexedAccountId}
+                      isAllNetworks={networkUtils.isAllNetwork({ networkId })}
+                    />
+                  )}
+                  {renderManageButton()}
+                </XStack>
+              )}
             </XStack>
           ) : null}
           {showTypeSegment ? (
@@ -442,7 +456,6 @@ function ApprovalListPageContent() {
               searchDisabled
               selectDisabled
               filterByNetworkDisabled
-              hideRiskOverview={isWatchingWallet}
               accountId={accountId ?? ''}
               networkId={networkId ?? ''}
               indexedAccountId={indexedAccountId}

@@ -22774,6 +22774,7 @@
     "packages/kit/src/components/ApprovalListView/ContractNameView.tsx": 5600,
     "packages/kit/src/components/ApprovalListView/ContractNetworkView.tsx": 22438,
     "packages/kit/src/components/ApprovalListView/Eip7702DelegationList.tsx": 373,
+    "packages/kit/src/components/ApprovalListView/RevokeSuggestionPill.tsx": 571,
     "packages/kit/src/components/ApprovalListView/eip7702DemoData.ts": 15541,
     "packages/kit/src/components/ApprovalListView/index.tsx": 15504,
     "packages/kit/src/components/BaseInput/index.tsx": 12356,
