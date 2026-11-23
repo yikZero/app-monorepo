@@ -32,7 +32,6 @@ import type { IEip7702DelegationDemo } from './eip7702DemoData';
 const DEMO_COPY = {
   tokenApprovals: 'Token approvals',
   eip7702: 'EIP-7702',
-  desc: "Each network can delegate your address to one contract. Revoke any you don't recognize.",
   delegatedTo: 'Delegated to',
 };
 
@@ -65,14 +64,32 @@ export function ApprovalTypeSegment({
           testID: 'approval-list-type-token',
         },
         {
-          // The dot sits inline (not absolute) so a content-sized segment on
-          // desktop leaves room for it; the group is centered for full width.
+          // Full width (iOS): the text is centered and the dot hangs off it.
+          // Content-sized (desktop): the dot sits inline so the thumb has
+          // room for it.
           label: ({ color }) => (
             <XStack justifyContent="center" gap="$1">
-              <SizableText size="$bodyMdMedium" numberOfLines={1} color={color}>
-                {DEMO_COPY.eip7702}
-              </SizableText>
-              {hasRisk ? (
+              <Stack>
+                <SizableText
+                  size="$bodyMdMedium"
+                  numberOfLines={1}
+                  color={color}
+                >
+                  {DEMO_COPY.eip7702}
+                </SizableText>
+                {hasRisk && fullWidth ? (
+                  <Stack
+                    position="absolute"
+                    right={-10}
+                    top={2}
+                    w="$1.5"
+                    h="$1.5"
+                    borderRadius="$full"
+                    bg="$bgCriticalStrong"
+                  />
+                ) : null}
+              </Stack>
+              {hasRisk && !fullWidth ? (
                 <Stack
                   mt="$1"
                   w="$1.5"
@@ -112,7 +129,7 @@ function DelegationItem({
       placement="top"
       title={intl.formatMessage({ id: ETranslations.global_risk })}
       renderTrigger={
-        <Badge badgeSize="sm" badgeType="critical">
+        <Badge badgeSize="sm" badgeType="critical" hitSlop={8}>
           <XStack alignItems="center" gap="$0.5">
             <Badge.Text>
               {intl.formatMessage({ id: ETranslations.global_risk })}
@@ -121,8 +138,11 @@ function DelegationItem({
           </XStack>
         </Badge>
       }
+      // The mobile sheet header already pads the title, so the body only
+      // continues its side and bottom padding; the anchored desktop panel has
+      // no header.
       renderContent={
-        <YStack p="$4">
+        <YStack px="$5" pb="$5" $gtMd={{ p: '$4' }}>
           <SizableText size="$bodyMd">{delegation.riskReason}</SizableText>
         </YStack>
       }
@@ -246,15 +266,6 @@ function Eip7702DelegationList({
 
   return (
     <YStack pb="$5">
-      <SizableText
-        px="$pagePadding"
-        pt="$1"
-        pb="$2"
-        size="$bodyMd"
-        color="$textSubdued"
-      >
-        {DEMO_COPY.desc}
-      </SizableText>
       {tableLayout ? (
         <ListItem>
           <Stack flexGrow={1} flexBasis={0}>

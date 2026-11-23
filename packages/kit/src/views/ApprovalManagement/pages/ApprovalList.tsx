@@ -116,6 +116,10 @@ function ApprovalList() {
   const showTypeSegment = delegations.length > 0 && !isBulkRevokeMode;
   const isEip7702List =
     showTypeSegment && listType === EApprovalListType.Eip7702;
+  const riskyDelegationsCount = useMemo(
+    () => delegations.filter((d) => !!d.riskReason).length,
+    [delegations],
+  );
 
   const { result: availableWallets } = usePromiseResult(async () => {
     const { wallets } = await backgroundApiProxy.serviceAccount.getWallets({
@@ -293,6 +297,26 @@ function ApprovalList() {
     });
   }, [filteredSelectedTokensByNetwork, filteredApprovalsByNetwork]);
 
+  const handleSearchTextChange = useDebouncedCallback((text: string) => {
+    updateSearchKey(text);
+  }, 500);
+
+  // The header search bar unmounts on the EIP-7702 tab; drop its keyword so
+  // the token list is not filtered by text the user can no longer see.
+  const handleListTypeChange = useCallback(
+    (value: EApprovalListType) => {
+      if (value === EApprovalListType.Eip7702) {
+        handleSearchTextChange.cancel();
+        updateSearchKey('');
+      }
+      setListType(value);
+    },
+    [handleSearchTextChange, updateSearchKey],
+  );
+  const showEip7702List = useCallback(() => {
+    handleListTypeChange(EApprovalListType.Eip7702);
+  }, [handleListTypeChange]);
+
   const renderNetworkFilter = useCallback(() => {
     const networksSupportBulkRevokeApproval =
       getNetworksSupportBulkRevokeApproval();
@@ -318,9 +342,8 @@ function ApprovalList() {
             accountId={accountId}
             networkId={searchNetworkId}
             indexedAccountId={indexedAccountId}
-            isAllNetworks={networkUtils.isAllNetwork({
-              networkId: searchNetworkId,
-            })}
+            riskyDelegationsCount={riskyDelegationsCount}
+            onViewDelegations={showEip7702List}
           />
         )}
       </XStack>
@@ -331,6 +354,8 @@ function ApprovalList() {
     walletId,
     accountId,
     indexedAccountId,
+    riskyDelegationsCount,
+    showEip7702List,
   ]);
   const renderHeaderRight = useCallback(() => {
     return (
@@ -357,10 +382,6 @@ function ApprovalList() {
       </Button>
     );
   }, [intl, toggleIsBulkRevokeMode, isBulkRevokeMode, walletId]);
-
-  const handleSearchTextChange = useDebouncedCallback((text: string) => {
-    updateSearchKey(text);
-  }, 500);
 
   const handleApprovalOnPress = useCallback(
     (approval: IContractApproval) => {
@@ -484,7 +505,7 @@ function ApprovalList() {
             <ApprovalTypeSegment
               fullWidth
               value={listType}
-              onChange={setListType}
+              onChange={handleListTypeChange}
               delegations={delegations}
             />
           </Stack>

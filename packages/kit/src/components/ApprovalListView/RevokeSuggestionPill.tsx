@@ -15,8 +15,6 @@ import {
   useTokenMapAtom,
 } from '../../states/jotai/contexts/approvalList';
 
-import { getEip7702DemoDelegations } from './eip7702DemoData';
-
 // Demo copy (OK-67574), not yet in onekey-i18n.
 const DEMO_COPY = {
   risky: (n: number) => `${n} risky`,
@@ -25,21 +23,27 @@ const DEMO_COPY = {
 
 // Demo (OK-67574): the revoke suggestion as a small pill in the filter bar,
 // replacing the colored banner above the list. Only the shield turns red when
-// something is risky; it resurfaces by the existing alert interval once seen.
+// something is risky. The demo reads the existing alert settings but never
+// writes them, so mock delegations cannot change a real account's reminders.
 function RevokeSuggestionPill({
   accountId,
   networkId,
   indexedAccountId,
-  isAllNetworks,
+  riskyDelegationsCount,
+  onViewDelegations,
 }: {
   accountId: string;
   networkId: string;
   indexedAccountId?: string;
-  isAllNetworks: boolean;
+  // Counted for the whole account, matching the EIP-7702 tab.
+  riskyDelegationsCount: number;
+  // The suggestion page lists token approvals only; with nothing there, the
+  // pill leads to the EIP-7702 tab instead.
+  onViewDelegations: () => void;
 }) {
   const navigation = useAppNavigation();
   const [{ approvals }] = useApprovalListAtom();
-  const [{ initialized }] = useApprovalListStateAtom();
+  const [{ initialized, isRefreshing }] = useApprovalListStateAtom();
   const [{ tokenMap }] = useTokenMapAtom();
   const [{ contractMap }] = useContractMapAtom();
 
@@ -55,14 +59,6 @@ function RevokeSuggestionPill({
     });
     return { riskApprovals: risk, warningApprovals: warning };
   }, [approvals]);
-
-  const riskyDelegationsCount = useMemo(
-    () =>
-      getEip7702DemoDelegations({ networkId, isAllNetworks }).filter(
-        (d) => !!d.riskReason,
-      ).length,
-    [networkId, isAllNetworks],
-  );
 
   const riskyNumber = riskApprovals.length + riskyDelegationsCount;
   const inactiveNumber = warningApprovals.length;
@@ -87,10 +83,15 @@ function RevokeSuggestionPill({
   }, [initialized, accountId, networkId, riskyNumber, inactiveNumber]);
 
   const handlePress = useCallback(() => {
+    const tokenItems = [...riskApprovals, ...warningApprovals];
+    if (tokenItems.length === 0) {
+      onViewDelegations();
+      return;
+    }
     navigation.pushModal(EModalRoutes.ApprovalManagementModal, {
       screen: EModalApprovalManagementRoutes.RevokeSuggestion,
       params: {
-        approvals: [...riskApprovals, ...warningApprovals],
+        approvals: tokenItems,
         contractMap,
         tokenMap,
         accountId,
@@ -98,24 +99,6 @@ function RevokeSuggestionPill({
         indexedAccountId,
       },
     });
-    const tasks: Promise<void>[] = [];
-    if (riskyNumber > 0) {
-      tasks.push(
-        backgroundApiProxy.serviceApproval.updateRiskApprovalsAlertConfig({
-          accountId,
-          networkId,
-        }),
-      );
-    }
-    if (inactiveNumber > 0) {
-      tasks.push(
-        backgroundApiProxy.serviceApproval.updateInactiveApprovalsAlertConfig({
-          accountId,
-          networkId,
-        }),
-      );
-    }
-    void Promise.all(tasks);
   }, [
     navigation,
     riskApprovals,
@@ -125,11 +108,12 @@ function RevokeSuggestionPill({
     accountId,
     networkId,
     indexedAccountId,
-    riskyNumber,
-    inactiveNumber,
+    onViewDelegations,
   ]);
 
-  if (!shouldShow) {
+  // Hidden while the list reloads for another network, so the pill never
+  // carries the previous network's approvals.
+  if (!shouldShow || isRefreshing) {
     return null;
   }
 
@@ -154,6 +138,7 @@ function RevokeSuggestionPill({
       hoverStyle={{ bg: '$bgStrongHover' }}
       pressStyle={{ bg: '$bgStrongActive' }}
       onPress={handlePress}
+      hitSlop={8}
       userSelect="none"
     >
       <Icon

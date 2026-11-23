@@ -407,7 +407,12 @@ function ApprovalListPageContent() {
                       accountId={accountId ?? ''}
                       networkId={networkId ?? ''}
                       indexedAccountId={indexedAccountId}
-                      isAllNetworks={networkUtils.isAllNetwork({ networkId })}
+                      riskyDelegationsCount={
+                        delegations.filter((d) => !!d.riskReason).length
+                      }
+                      onViewDelegations={() =>
+                        setListType(EApprovalListType.Eip7702)
+                      }
                     />
                   )}
                   {renderManageButton()}

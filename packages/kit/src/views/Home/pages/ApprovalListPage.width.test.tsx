@@ -94,6 +94,21 @@ jest.mock('../../../components/ApprovalListView', () => ({
     return <div data-testid="approval-list" />;
   },
 }));
+// The EIP-7702 demo parts are unrelated to width; keep their token/network
+// imports out of this suite.
+jest.mock('../../../components/ApprovalListView/Eip7702DelegationList', () => ({
+  __esModule: true,
+  default: () => null,
+  ApprovalTypeSegment: () => null,
+  EApprovalListType: { TokenApprovals: 'token', Eip7702: 'eip7702' },
+}));
+jest.mock('../../../components/ApprovalListView/RevokeSuggestionPill', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+jest.mock('../../../components/ApprovalListView/eip7702DemoData', () => ({
+  getEip7702DemoDelegations: () => [],
+}));
 jest.mock('../../../components/ListItem', () => ({
   ListItem: ({ children }: { children: ReactNode }) => (
     <div data-testid="approval-skeleton-row">{children}</div>
