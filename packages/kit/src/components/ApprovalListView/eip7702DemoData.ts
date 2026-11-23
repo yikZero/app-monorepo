@@ -31,6 +31,36 @@ export const EIP7702_DEMO_DELEGATIONS: IEip7702DelegationDemo[] = [
   },
 ];
 
+// Delegations "revoked" from the demo confirm page in this session, so the
+// list, tab dot and pill show what happens after a revoke.
+const revokedKeys = new Set<string>();
+const listeners = new Set<() => void>();
+let snapshotVersion = 0;
+
+function buildKey(d: { networkId: string; delegateAddress: string }) {
+  return `${d.networkId}_${d.delegateAddress}`;
+}
+
+export function revokeEip7702DemoDelegation(d: {
+  networkId: string;
+  delegateAddress: string;
+}) {
+  revokedKeys.add(buildKey(d));
+  snapshotVersion += 1;
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribeEip7702DemoDelegations(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function getEip7702DemoSnapshotVersion() {
+  return snapshotVersion;
+}
+
 export function getEip7702DemoDelegations({
   networkId,
   isAllNetworks,
@@ -41,15 +71,19 @@ export function getEip7702DemoDelegations({
   if (!platformEnv.isDev) {
     return [];
   }
-  return isAllNetworks
-    ? EIP7702_DEMO_DELEGATIONS
-    : EIP7702_DEMO_DELEGATIONS.filter((d) => d.networkId === networkId);
+  return EIP7702_DEMO_DELEGATIONS.filter(
+    (d) =>
+      !revokedKeys.has(buildKey(d)) &&
+      (isAllNetworks || d.networkId === networkId),
+  );
 }
 
 // Demo stand-in for the home More dot's review record: a risky delegation
 // lights the dot until Approvals is opened once in this session. The real
 // build would persist it with the existing risk review and resurface interval.
+// Tracked apart from the real record so a demo-only dot never writes it.
 let demoRiskDotSeen = false;
+let demoOnlyRiskDot = false;
 
 export function isEip7702DemoRiskDotSeen() {
   return demoRiskDotSeen;
@@ -57,4 +91,12 @@ export function isEip7702DemoRiskDotSeen() {
 
 export function markEip7702DemoRiskDotSeen() {
   demoRiskDotSeen = true;
+}
+
+export function setEip7702DemoOnlyRiskDot(value: boolean) {
+  demoOnlyRiskDot = value;
+}
+
+export function isEip7702DemoOnlyRiskDot() {
+  return demoOnlyRiskDot;
 }

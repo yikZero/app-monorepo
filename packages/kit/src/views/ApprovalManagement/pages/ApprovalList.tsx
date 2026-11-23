@@ -36,8 +36,8 @@ import Eip7702DelegationList, {
   ApprovalTypeSegment,
   EApprovalListType,
 } from '../../../components/ApprovalListView/Eip7702DelegationList';
-import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
 import RevokeSuggestionPill from '../../../components/ApprovalListView/RevokeSuggestionPill';
+import { useEip7702DemoDelegations } from '../../../components/ApprovalListView/useEip7702DemoDelegations';
 import { usePromiseResult } from '../../../hooks/usePromiseResult';
 import {
   ProviderJotaiContextApprovalList,
@@ -92,14 +92,10 @@ function ApprovalList() {
   const approvalListInitRef = useRef(false);
 
   const [listType, setListType] = useState(EApprovalListType.TokenApprovals);
-  const delegations = useMemo(
-    () =>
-      getEip7702DemoDelegations({
-        networkId: networkId ?? '',
-        isAllNetworks: networkUtils.isAllNetwork({ networkId }),
-      }),
-    [networkId],
-  );
+  const delegations = useEip7702DemoDelegations({
+    networkId: networkId ?? '',
+    isAllNetworks: networkUtils.isAllNetwork({ networkId }),
+  });
 
   const { navigationToBulkRevokeProcess, isBuildingRevokeTxs } =
     useBulkRevoke();
@@ -314,8 +310,10 @@ function ApprovalList() {
     [handleSearchTextChange, updateSearchKey],
   );
   const showEip7702List = useCallback(() => {
+    // The switch is hidden in edit mode; leave it so the tab can show.
+    updateIsBulkRevokeMode(false);
     handleListTypeChange(EApprovalListType.Eip7702);
-  }, [handleListTypeChange]);
+  }, [handleListTypeChange, updateIsBulkRevokeMode]);
 
   const renderNetworkFilter = useCallback(() => {
     const networksSupportBulkRevokeApproval =

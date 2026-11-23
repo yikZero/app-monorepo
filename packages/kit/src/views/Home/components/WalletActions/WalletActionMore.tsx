@@ -4,7 +4,10 @@ import { useCallback, useContext, useMemo } from 'react';
 import { Divider } from '@onekeyhq/components';
 import backgroundApiProxy from '@onekeyhq/kit/src/background/instance/backgroundApiProxy';
 import { AccountSelectorProviderMirror } from '@onekeyhq/kit/src/components/AccountSelector';
-import { markEip7702DemoRiskDotSeen } from '@onekeyhq/kit/src/components/ApprovalListView/eip7702DemoData';
+import {
+  isEip7702DemoOnlyRiskDot,
+  markEip7702DemoRiskDotSeen,
+} from '@onekeyhq/kit/src/components/ApprovalListView/eip7702DemoData';
 import { useReviewControl } from '@onekeyhq/kit/src/components/ReviewControl';
 import { getRewardCenterConfig } from '@onekeyhq/kit/src/components/RewardCenter';
 import { useBotWalletDeactivatedStatus } from '@onekeyhq/kit/src/hooks/useBotWalletDeactivatedStatus';
@@ -74,6 +77,8 @@ export function WalletActionMore({ iconOnly }: { iconOnly?: boolean } = {}) {
   const markRiskApprovalsSeen = useCallback(() => {
     updateApprovalsInfo({ showRiskApprovalsDot: false });
     markEip7702DemoRiskDotSeen();
+    // A dot lit only by mock delegations must not write the real review record.
+    if (isEip7702DemoOnlyRiskDot()) return;
     if (!account?.id || !network?.id) return;
     // Opening Approvals counts as reviewing the risks until they resurface.
     void backgroundApiProxy.serviceApproval

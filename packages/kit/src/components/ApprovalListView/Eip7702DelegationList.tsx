@@ -152,6 +152,7 @@ function DelegationItem({
     <Button
       testID="approval-list-eip7702-revoke-btn"
       size="small"
+      hitSlop={{ top: 8, bottom: 8 }}
       variant={delegation.riskReason ? 'destructive' : 'secondary'}
       onPress={() => onRevoke(delegation)}
     >

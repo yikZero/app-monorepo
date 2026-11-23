@@ -22777,6 +22777,7 @@
     "packages/kit/src/components/ApprovalListView/RevokeSuggestionPill.tsx": 571,
     "packages/kit/src/components/ApprovalListView/eip7702DemoData.ts": 15541,
     "packages/kit/src/components/ApprovalListView/index.tsx": 15504,
+    "packages/kit/src/components/ApprovalListView/useEip7702DemoDelegations.ts": 16648,
     "packages/kit/src/components/BaseInput/index.tsx": 12356,
     "packages/kit/src/components/BiologyAuthComponent/components/BiologyAuthSwitch.tsx": 11283,
     "packages/kit/src/components/BiologyAuthComponent/components/WebAuthSwitch.tsx": 8531,

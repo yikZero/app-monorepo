@@ -10,6 +10,7 @@ import type {
 } from '@onekeyhq/shared/src/routes/approvalManagement';
 import { EParseTxComponentType } from '@onekeyhq/shared/types/signatureConfirm';
 
+import { revokeEip7702DemoDelegation } from '../../../components/ApprovalListView/eip7702DemoData';
 import {
   Address,
   Default,
@@ -26,7 +27,7 @@ const DEMO_COPY = {
   currentDelegate: 'Current delegate',
   confirm: 'Revoke',
   cancel: 'Not now',
-  demoToast: 'Demo only, no transaction sent',
+  demoToast: 'Delegation revoked (demo, no transaction sent)',
 };
 
 function Eip7702RevokeConfirm() {
@@ -103,8 +104,12 @@ function Eip7702RevokeConfirm() {
       </Page.Body>
       <Page.Footer
         onConfirmText={DEMO_COPY.confirm}
-        onConfirm={() => {
-          Toast.message({ title: DEMO_COPY.demoToast });
+        onConfirm={(close) => {
+          // Demo: drop the mock delegation for this session so the list, tab
+          // dot and pill show the state after a revoke. No transaction is sent.
+          revokeEip7702DemoDelegation({ networkId, delegateAddress });
+          Toast.success({ title: DEMO_COPY.demoToast });
+          close();
         }}
         onCancelText={DEMO_COPY.cancel}
         onCancel={(close) => close()}

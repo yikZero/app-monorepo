@@ -66,6 +66,7 @@ import { useUnifiedNetworkSelectorTrigger } from '../../../components/AccountSel
 import {
   getEip7702DemoDelegations,
   isEip7702DemoRiskDotSeen,
+  setEip7702DemoOnlyRiskDot,
 } from '../../../components/ApprovalListView/eip7702DemoData';
 import { EmptyAccount, EmptyWallet } from '../../../components/Empty';
 import { NetworkAlert } from '../../../components/NetworkAlert';
@@ -482,6 +483,7 @@ function BaseHomePageView({
             networkId: network.id,
             isAllNetworks: networkUtils.isAllNetwork({ networkId: network.id }),
           }).some((d) => !!d.riskReason);
+        setEip7702DemoOnlyRiskDot(!shouldShowDot && hasDemoRiskyDelegation);
         updateApprovalsInfo({
           ownerKey: approvalOwnerKey,
           showRiskApprovalsDot: shouldShowDot || hasDemoRiskyDelegation,

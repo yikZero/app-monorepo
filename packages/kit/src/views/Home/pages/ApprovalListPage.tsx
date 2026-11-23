@@ -46,8 +46,8 @@ import Eip7702DelegationList, {
   ApprovalTypeSegment,
   EApprovalListType,
 } from '../../../components/ApprovalListView/Eip7702DelegationList';
-import { getEip7702DemoDelegations } from '../../../components/ApprovalListView/eip7702DemoData';
 import RevokeSuggestionPill from '../../../components/ApprovalListView/RevokeSuggestionPill';
+import { useEip7702DemoDelegations } from '../../../components/ApprovalListView/useEip7702DemoDelegations';
 import { ListItem } from '../../../components/ListItem';
 import { TabPageHeader } from '../../../components/TabPageHeader';
 import useAppNavigation from '../../../hooks/useAppNavigation';
@@ -205,14 +205,10 @@ function ApprovalListPageContent() {
 
   // Demo (OK-67574): the switch only appears when the account has delegations.
   const [listType, setListType] = useState(EApprovalListType.TokenApprovals);
-  const delegations = useMemo(
-    () =>
-      getEip7702DemoDelegations({
-        networkId: networkId ?? '',
-        isAllNetworks: networkUtils.isAllNetwork({ networkId }),
-      }),
-    [networkId],
-  );
+  const delegations = useEip7702DemoDelegations({
+    networkId: networkId ?? '',
+    isAllNetworks: networkUtils.isAllNetwork({ networkId }),
+  });
   const showTypeSegment = delegations.length > 0;
   const isEip7702List =
     showTypeSegment && listType === EApprovalListType.Eip7702;

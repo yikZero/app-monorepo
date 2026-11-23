@@ -106,9 +106,12 @@ jest.mock('../../../components/ApprovalListView/RevokeSuggestionPill', () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock('../../../components/ApprovalListView/eip7702DemoData', () => ({
-  getEip7702DemoDelegations: () => [],
-}));
+jest.mock(
+  '../../../components/ApprovalListView/useEip7702DemoDelegations',
+  () => ({
+    useEip7702DemoDelegations: () => [],
+  }),
+);
 jest.mock('../../../components/ListItem', () => ({
   ListItem: ({ children }: { children: ReactNode }) => (
     <div data-testid="approval-skeleton-row">{children}</div>
