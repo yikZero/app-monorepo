@@ -24,8 +24,8 @@ const DEMO_COPY = {
   title: 'Cancel EIP-7702 Delegation',
   description: 'You are canceling EIP-7702 delegation',
   currentDelegate: 'Current delegate',
-  confirm: 'Revoke delegation',
-  cancel: 'Keep delegation',
+  confirm: 'Revoke',
+  cancel: 'Not now',
   demoToast: 'Demo only, no transaction sent',
 };
 
